@@ -1,0 +1,34 @@
+.loc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+.loc-card { transition: opacity 0.2s; }
+.loc-card.loc-inactive { opacity: 0.6; }
+.loc-card-hdr { display: flex; align-items: flex-start; gap: 0.875rem; margin-bottom: 1rem; }
+.loc-icon-wrap {
+  width: 38px; height: 38px; border-radius: var(--radius);
+  background: var(--color-primary-dim); color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.loc-info { flex: 1; min-width: 0; }
+.loc-name { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; }
+.loc-addr { font-size: 0.72rem; color: var(--color-text-muted); }
+.loc-details { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-border); }
+.loc-detail-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--color-text-muted); }
+.loc-toggles { display: flex; flex-direction: column; gap: 0.625rem; }
+.loc-toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.loc-toggle-label { font-size: 0.78rem; color: var(--color-text-muted); }
+.loc-toggle-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+  transition: all 0.15s;
+}
+.loc-toggle-btn.on { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+.loc-toggle-btn.off { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+.loc-toggle-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.loc-toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.loc-modal-toggles { display: flex; flex-direction: column; gap: 0.5rem; }
+.loc-modal-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; }
+.loc-modal-toggle input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+.loc-partners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem; }

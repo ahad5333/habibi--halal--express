@@ -1,0 +1,7 @@
+.urgent-page { display: flex; flex-direction: column; gap: 1rem; }
+.urg-admin-layout { display: flex; gap: 1rem; align-items: flex-start; }
+.urg-admin-detail { width: 300px; flex-shrink: 0; position: sticky; top: calc(var(--topbar-height) + 1.5rem); display: flex; flex-direction: column; gap: 1rem; }
+.urg-unread td { border-left: 2px solid var(--color-error) !important; }
+.urg-detail-fields { display: flex; flex-direction: column; gap: 0.625rem; }
+.urg-detail-field { display: flex; flex-direction: column; gap: 0.15rem; }
+.urg-message { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); border-radius: var(--radius); padding: 0.875rem; }

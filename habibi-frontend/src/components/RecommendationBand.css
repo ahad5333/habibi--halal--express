@@ -1,0 +1,175 @@
+.rb-root {
+  margin: 0 0 2rem;
+}
+
+.rb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
+  padding: 0 .25rem;
+}
+
+.rb-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.rb-sparkle {
+  color: #E5B64E;
+  flex-shrink: 0;
+}
+
+.rb-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: #111111;
+  margin: 0;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rb-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+}
+
+.rb-drag-hint {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Track */
+.rb-track {
+  display: flex;
+  gap: .75rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: .5rem;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.rb-track:active {
+  cursor: grabbing;
+}
+
+.rb-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card */
+.rb-card {
+  flex: 0 0 176px;
+  scroll-snap-align: start;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid rgba(229, 182, 78, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.rb-card:hover {
+  border-color: var(--color-gold, #E5B64E);
+  transform: translateY(-8px) rotateX(5deg) rotateY(-4deg) scale(1.01);
+  box-shadow: 
+    -6px 12px 24px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(229, 182, 78, 0.08);
+}
+
+.rb-img-wrap {
+  width: calc(100% - 12px);
+  height: 110px;
+  margin: 6px 6px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface-2, #f1f5f9);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.rb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.rb-card:hover .rb-img {
+  transform: scale(1.06);
+}
+
+.rb-card-body {
+  padding: 0.65rem 0.75rem 0.4rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.rb-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-main, #111111);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.2em;
+}
+
+.rb-item-price {
+  font-size: 0.88rem;
+  color: var(--color-secondary, #dc2626);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Add button */
+.rb-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0 0.75rem 0.75rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--color-surface-2, #f1f5f9);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 20px;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rb-add-btn:hover {
+  background: var(--color-gold-dim, rgba(229,182,78,.15));
+  border-color: var(--color-gold, #E5B64E);
+  color: var(--color-primary, #1e3a8a);
+  transform: translateY(-1px);
+}
+
+.rb-add-btn.added {
+  background: rgba(34,197,94,.12);
+  border-color: #22c55e;
+  color: #22c55e;
+}

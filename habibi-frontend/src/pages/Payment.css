@@ -1,0 +1,485 @@
+/* ============================================================
+   JUST MAKE A PAYMENT PAGE — Habibi Halal Express
+   ============================================================ */
+
+.pay-hero {
+  position: relative;
+  min-height: 300px;
+  background: url('/images/title/main-title.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+}
+
+.pay-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.92) 45%, rgba(0,0,0,0.6) 100%);
+}
+
+.pay-hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 4rem 0;
+  max-width: 600px;
+}
+
+.pay-eyebrow {
+  display: block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.pay-hero-title {
+  font-family: var(--font-serif);
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 0.875rem;
+}
+
+.pay-hero-sub {
+  color: rgba(255,255,255,0.68);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  margin-bottom: 1.25rem;
+}
+
+.pay-hero-tags {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pay-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.25);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+}
+
+.pay-tag svg { color: var(--color-primary); }
+
+/* ── Steps bar ── */
+.pay-steps-bar {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.pay-steps {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  gap: 0;
+}
+
+.pay-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.pay-step.active { color: var(--color-primary); font-weight: 600; }
+.pay-step.done   { color: var(--color-text-muted); }
+
+.pay-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.pay-step.active .pay-step-num {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #000;
+}
+
+.pay-step.done .pay-step-num {
+  background: rgba(229,182,78,0.1);
+  border-color: rgba(229,182,78,0.3);
+  color: var(--color-primary);
+}
+
+.pay-step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 1rem;
+  max-width: 80px;
+}
+
+.pay-step-line.done { background: rgba(229,182,78,0.3); }
+
+/* ── Container ── */
+.pay-container {
+  max-width: 900px;
+}
+
+/* ── Card ── */
+.pay-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.pay-card-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pay-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pay-card-title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--color-text-main);
+}
+
+.pay-card-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* ── Form ── */
+.pay-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pay-error {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+}
+
+.pay-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pay-group label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.req { color: var(--color-primary); }
+
+.pay-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.pay-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(229,182,78,0.03);
+}
+
+.pay-input::placeholder { color: rgba(255,255,255,0.2); }
+
+.pay-select { cursor: pointer; }
+
+/* Amount with $ icon */
+.pay-amount-wrap {
+  position: relative;
+}
+
+.pay-amount-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.pay-amount-input { padding-left: 2.25rem; }
+
+/* Card number with icon */
+.pay-card-num-wrap {
+  position: relative;
+}
+
+.pay-card-icon-field {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.pay-card-num { padding-left: 2.5rem; letter-spacing: 0.1em; }
+
+.pay-row.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.pay-search-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pay-search-row .pay-input { flex: 1; }
+
+.pay-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.pay-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.pay-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  padding: 0;
+}
+
+.pay-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+}
+
+.pay-secure-note svg { color: var(--color-success); }
+
+.pay-actions {
+  display: flex;
+  gap: 0.875rem;
+}
+
+.pay-pay-btn { flex: 1; font-weight: 700; font-size: 0.95rem; }
+
+/* ── Two-column layout for step 2 ── */
+.pay-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+/* ── Summary panel ── */
+.pay-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 80px;
+}
+
+.pay-summary-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.pay-summary-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pay-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.pay-summary-val { color: var(--color-text-main); font-weight: 500; }
+.pay-summary-val.gold { color: var(--color-primary); font-weight: 700; }
+.pay-summary-val.mono { font-family: monospace; letter-spacing: 0.04em; }
+
+.pay-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pay-summary-total > span:first-child {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.pay-summary-amount {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+}
+
+.pay-summary-accept p {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.pay-accept-logos {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.pay-accept-chip {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.pay-accept-chip.visa  { background: #1a1f71; color: #fff; }
+.pay-accept-chip.mc    { background: #eb001b; color: #fff; }
+.pay-accept-chip.amex  { background: #007bc1; color: #fff; }
+.pay-accept-chip.disc  { background: #f76f20; color: #fff; }
+
+/* ── Success ── */
+.pay-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.25rem;
+  padding: 4rem 2rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.pay-success-icon {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pay-success-title {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--color-text-main);
+}
+
+.pay-success-sub {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.pay-success-ref {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+}
+
+.pay-success-ref strong { color: var(--color-text-main); font-family: monospace; }
+
+.pay-success-email {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.pay-success-btns {
+  display: flex;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .pay-layout { grid-template-columns: 1fr; }
+  .pay-summary { position: static; }
+  .pay-hero-title { font-size: 2.25rem; }
+}
+
+@media (max-width: 600px) {
+  .pay-row.two-col { grid-template-columns: 1fr; }
+  .pay-actions { flex-direction: column; }
+  .pay-hero-title { font-size: 1.85rem; }
+  .pay-card { padding: 1.25rem; }
+}

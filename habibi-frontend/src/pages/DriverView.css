@@ -1,0 +1,343 @@
+/* ===== Driver View — Mobile-First Dark Interface ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
+.dv-shell {
+  min-height: 100dvh;
+  background: #0a0a0a;
+  color: #f1f1f1;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.dv-shell.dv-center {
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255,255,255,0.45);
+}
+
+/* ─ Header ──────────────────────────────────────────────── */
+.dv-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #141414;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dv-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #E5B64E;
+}
+
+/* ─ Content ─────────────────────────────────────────────── */
+.dv-content {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ─ Cards ────────────────────────────────────────────────── */
+.dv-card {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.dv-card-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 0.875rem;
+}
+
+/* ─ Info rows ─────────────────────────────────────────────── */
+.dv-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.4);
+}
+.dv-info-row:last-child { border-bottom: none; }
+
+.dv-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 0.2rem;
+}
+.dv-value {
+  font-size: 0.9rem;
+  color: #f1f1f1;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.dv-phone {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: #60a5fa;
+  text-decoration: none;
+}
+.dv-phone:hover { text-decoration: underline; }
+
+/* ─ GPS status ────────────────────────────────────────────── */
+.dv-gps-status {
+  font-size: 0.8rem;
+  color: #E5B64E;
+  background: rgba(229,182,78,0.08);
+  border: 1px solid rgba(229,182,78,0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.dv-coords {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  font-family: 'Courier New', monospace;
+  margin-bottom: 0.75rem;
+}
+
+/* ─ Buttons ──────────────────────────────────────────────── */
+.dv-btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.dv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.15s, background 0.15s;
+  text-decoration: none;
+  width: 100%;
+}
+.dv-btn-primary  { background: #E5B64E; color: #0a0a0a; }
+.dv-btn-primary:hover  { filter: brightness(1.1); }
+.dv-btn-danger   { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
+.dv-btn-danger:hover   { background: rgba(239,68,68,0.22); }
+.dv-btn-maps     { background: rgba(59,130,246,0.1);  border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; }
+.dv-btn-maps:hover     { background: rgba(59,130,246,0.2); }
+.dv-btn-delivered { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #4ade80; font-size: 1rem; padding: 1rem; }
+.dv-btn-delivered:hover { background: rgba(34,197,94,0.2); }
+
+/* ─ Success state ─────────────────────────────────────────── */
+.dv-success {
+  text-align: center;
+  padding: 2rem;
+  color: #4ade80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dv-muted { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+
+/* ─ Badges ───────────────────────────────────────────────── */
+.dv-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.dv-badge-warn    { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.dv-badge-info    { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.dv-badge-success { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.dv-badge-muted   { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.08); }
+
+/* ─ Arrived button ──────────────────────────────────────── */
+.dv-btn-arrived {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-size: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+}
+.dv-btn-arrived:hover { filter: brightness(1.15); }
+
+/* ─ Contact card ─────────────────────────────────────────── */
+.dv-contact-card {
+  border-color: rgba(59,130,246,0.2);
+}
+
+.dv-contact-hint {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.dv-contact-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.dv-btn-call {
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #4ade80;
+  font-size: 1rem;
+  padding: 0.9rem;
+  text-decoration: none;
+}
+.dv-btn-call:hover { background: rgba(34,197,94,0.22); }
+
+.dv-btn-sms {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.25);
+  color: #60a5fa;
+  font-size: 1rem;
+  padding: 0.9rem;
+  text-decoration: none;
+}
+.dv-btn-sms:hover { background: rgba(59,130,246,0.2); }
+
+.dv-contact-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0.75rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.3);
+}
+.dv-contact-divider::before,
+.dv-contact-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.dv-btn-noanswer {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.25);
+  color: #fbbf24;
+  flex: 1;
+}
+.dv-btn-noanswer:hover { background: rgba(245,158,11,0.2); }
+
+/* ─ Proof card ───────────────────────────────────────────── */
+.dv-proof-card {
+  border-color: rgba(245,158,11,0.2);
+}
+
+.dv-proof-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dv-proof-icon {
+  color: #fbbf24;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dv-proof-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.dv-btn-camera {
+  background: rgba(229,182,78,0.1);
+  border: 1px dashed rgba(229,182,78,0.4);
+  color: #E5B64E;
+  font-size: 0.95rem;
+  padding: 1rem;
+  width: 100%;
+}
+.dv-btn-camera:hover { background: rgba(229,182,78,0.18); }
+
+.dv-proof-preview-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(34,197,94,0.4);
+}
+
+.dv-proof-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.dv-proof-retake {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dv-proof-error {
+  font-size: 0.8rem;
+  color: #f87171;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.dv-btn-back {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4);
+  font-size: 0.8rem;
+  padding: 0.6rem;
+  margin-top: 0.4rem;
+}
+.dv-btn-back:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.2); }
+
+/* ─ Spinner ─────────────────────────────────────────────── */
+.dv-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(229,182,78,0.15);
+  border-top-color: #E5B64E;
+  border-radius: 50%;
+  animation: dvSpin 0.75s linear infinite;
+}
+@keyframes dvSpin { to { transform: rotate(360deg); } }

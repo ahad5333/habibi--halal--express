@@ -1,0 +1,105 @@
+.dashboard { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card-value {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  line-height: 1;
+}
+
+.stat-card-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+.stat-card-sub {
+  font-size: 0.65rem;
+  color: var(--color-text-dim);
+  margin-top: 0.15rem;
+}
+
+.dash-orders-card { padding: 0; overflow: hidden; }
+
+.dash-orders-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dash-section-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dash-section-sub { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.15rem; }
+
+.dash-quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.dash-quick-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.dash-quick-card:hover { border-color: rgba(var(--color-gold-rgb), 0.2); background: var(--color-surface-2); }
+
+.dash-quick-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-quick-card span { flex: 1; }
+
+@media (max-width: 1200px) {
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
+  .dash-quick { grid-template-columns: repeat(2, 1fr); }
+}

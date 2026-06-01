@@ -1,0 +1,184 @@
+.opm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.opm-modal {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.opm-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: color 0.15s;
+}
+.opm-close:hover { color: #111827; }
+
+.opm-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.opm-brand-img {
+  height: 44px;
+  object-fit: contain;
+}
+
+.opm-brand-emoji {
+  font-size: 2.5rem;
+}
+
+.opm-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: #111827;
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.opm-instruction {
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}
+
+.opm-instruction.muted { color: #9ca3af; font-size: 0.82rem; }
+
+.opm-amount {
+  color: #1e3a8a;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.opm-handle-row {
+  display: flex;
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+}
+
+.opm-handle {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+}
+
+.opm-memo { background: #fffbeb; border-color: #fde68a; }
+.opm-memo .opm-handle { color: #92400e; font-size: 0.9rem; font-weight: 600; }
+
+.opm-copy-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  transition: color 0.15s;
+}
+.opm-copy-btn:hover { color: #1e3a8a; }
+
+.opm-memo-label {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: -0.5rem 0 -0.75rem;
+}
+
+.opm-steps {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.opm-steps-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.75rem;
+}
+
+.opm-steps-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.opm-steps-list li {
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.opm-steps-list strong { color: #111827; }
+
+.opm-cash-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+}
+
+.opm-confirm-btn {
+  width: 100%;
+  background: #111827;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.opm-confirm-btn:hover { background: #1f2937; transform: translateY(-1px); }
+
+.opm-disclaimer {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  text-align: center;
+  margin: -0.5rem 0 0;
+  line-height: 1.5;
+}

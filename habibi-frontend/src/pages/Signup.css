@@ -1,0 +1,639 @@
+/* ============================================================
+   SIGNUP PAGE — Habibi Halal Express
+   ============================================================ */
+
+.signup-page {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+/* ── Left Panel ──────────────────────────────────────────────── */
+.signup-panel {
+  width: 360px;
+  flex-shrink: 0;
+  background: linear-gradient(175deg, #0e0e0e 0%, #111 100%);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.signup-panel::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(229,182,78,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.signup-panel-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  margin-bottom: 3rem;
+}
+
+.sp-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 3px;
+  object-fit: contain;
+  box-shadow: 0 0 16px rgba(229,182,78,0.25);
+  flex-shrink: 0;
+}
+
+.sp-brand {
+  font-family: var(--font-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.sp-brand-sub {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+}
+
+.signup-panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sp-eyebrow {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-primary);
+}
+
+.sp-headline {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--color-text-main);
+  line-height: 1.25;
+}
+
+.sp-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.sp-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sp-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.sp-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(229,182,78,0.12);
+  border: 1px solid rgba(229,182,78,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.sp-halal-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(229,182,78,0.06);
+  border: 1px solid rgba(229,182,78,0.15);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  margin-top: auto;
+}
+
+.sp-halal-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sp-halal-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.sp-halal-sub {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.sp-panel-footer {
+  font-size: 0.62rem;
+  color: var(--color-text-muted);
+  margin-top: 1.5rem;
+}
+
+/* ── Right Form Side ─────────────────────────────────────────── */
+.signup-form-side {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.signup-form-wrap {
+  width: 100%;
+  max-width: 560px;
+}
+
+/* ── Step Indicators ─────────────────────────────────────────── */
+.signup-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 2.5rem;
+}
+
+.ss-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ss-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+  background: var(--color-surface);
+}
+
+.ss-step.active .ss-circle {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(229,182,78,0.08);
+  box-shadow: 0 0 0 4px rgba(229,182,78,0.1);
+}
+
+.ss-step.done .ss-circle {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #000;
+}
+
+.ss-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.ss-step.active .ss-label,
+.ss-step.done .ss-label {
+  color: var(--color-primary);
+}
+
+.ss-line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border);
+  margin: 0 0.5rem;
+  margin-bottom: 1.25rem;
+  transition: background 0.2s;
+}
+
+.ss-line.done {
+  background: var(--color-primary);
+}
+
+/* ── Error ───────────────────────────────────────────────────── */
+.signup-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Section cards ───────────────────────────────────────────── */
+.signup-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.signup-section-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ss-icon-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.ss-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--color-text-main);
+}
+
+.ss-sub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ── Form elements ───────────────────────────────────────────── */
+.form-row.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-row.three-col {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 0.7fr;
+  gap: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.req {
+  color: var(--color-primary);
+}
+
+.opt {
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.form-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  width: 100%;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(229,182,78,0.03);
+}
+
+.form-input::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+.input-icon-wrap {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.form-input.with-icon {
+  padding-left: 2.4rem;
+}
+
+.form-input.with-eye {
+  padding-right: 2.75rem;
+}
+
+.eye-btn {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.eye-btn:hover {
+  color: var(--color-primary);
+}
+
+.input-hint {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Phone note ──────────────────────────────────────────────── */
+.phone-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.phone-note-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* ── Address section label ───────────────────────────────────── */
+.addr-section-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(229,182,78,0.15);
+}
+
+.same-billing-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.same-billing-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* ── Delivery preference ─────────────────────────────────────── */
+.pref-options {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pref-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+}
+
+.pref-option input {
+  display: none;
+}
+
+.pref-option.selected {
+  border-color: var(--color-primary);
+  background: rgba(229,182,78,0.06);
+  color: var(--color-text-main);
+}
+
+.pref-emoji {
+  font-size: 1rem;
+}
+
+/* ── Password strength ───────────────────────────────────────── */
+.pw-strength {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.pw-bar {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--color-border);
+  transition: background 0.2s;
+}
+
+.pw-bar.good {
+  background: var(--color-primary);
+}
+
+.pw-bar.weak {
+  background: #ef4444;
+}
+
+.pw-label {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.match-hint {
+  font-size: 0.72rem;
+  margin-top: 0.2rem;
+}
+
+.match-hint.match {
+  color: #4ade80;
+}
+
+.match-hint.no-match {
+  color: #f87171;
+}
+
+/* ── Account summary ─────────────────────────────────────────── */
+.account-summary {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.as-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.as-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.as-row span:first-child {
+  color: var(--color-text-muted);
+}
+
+.as-row span:last-child {
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+/* ── Terms ───────────────────────────────────────────────────── */
+.terms-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.terms-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Navigation ──────────────────────────────────────────────── */
+.signup-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.signup-next-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.signup-login-link {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .signup-panel {
+    display: none;
+  }
+
+  .signup-form-side {
+    padding: 2rem 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-row.two-col,
+  .form-row.three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .pref-options {
+    flex-direction: column;
+  }
+
+  .signup-section {
+    padding: 1.5rem;
+  }
+}

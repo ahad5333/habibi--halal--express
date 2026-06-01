@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Habibi Merchant",
+    "slug": "habibi-merchant",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B0D"
+    },
+    "scheme": "habibi-merchant",
+    "ios": {
+      "supportsTablet": true,
+      "requiresFullScreen": true,
+      "bundleIdentifier": "com.habibihe.merchant"
+    },
+    "android": {
+      "package": "com.habibihe.merchant",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0B0D"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e059b736-213a-4ae8-a999-1f268ed9a456"
+      }
+    },
+    "owner": "habibihalal",
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+.nf-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0a;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.nf-content { max-width: 480px; }
+.nf-code {
+  font-size: clamp(5rem, 20vw, 9rem);
+  font-weight: 900;
+  color: var(--color-primary, #E5B64E);
+  line-height: 1;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.04em;
+}
+.nf-title {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.75rem;
+}
+.nf-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 2rem;
+}
+.nf-actions { display: flex; gap: 0.875rem; justify-content: center; flex-wrap: wrap; }
+.nf-btn { min-width: 140px; }

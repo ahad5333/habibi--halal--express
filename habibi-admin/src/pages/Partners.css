@@ -1,0 +1,7 @@
+.partners-page { display: flex; flex-direction: column; gap: 1rem; }
+.partners-layout { display: flex; gap: 1rem; align-items: flex-start; }
+.partner-detail { width: 300px; flex-shrink: 0; position: sticky; top: calc(var(--topbar-height) + 1.5rem); display: flex; flex-direction: column; gap: 1rem; }
+.partner-fields { display: flex; flex-direction: column; gap: 0.625rem; }
+.partner-field { display: flex; flex-direction: column; gap: 0.15rem; }
+.partner-notes { background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 0.75rem; }
+.partner-actions { display: flex; flex-direction: column; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); }

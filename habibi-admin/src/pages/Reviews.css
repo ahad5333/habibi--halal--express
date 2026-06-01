@@ -1,0 +1,363 @@
+.reviews-admin {
+  padding: 0;
+}
+
+/* Tabs */
+.rev-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0;
+}
+
+.rev-tab {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: var(--font-sans);
+}
+
+.rev-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.rev-tab:hover:not(.active) {
+  color: var(--color-text-main);
+}
+
+.rev-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+/* List */
+.rev-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rev-empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.rev-error {
+  color: #ef4444;
+}
+
+/* Card */
+.rev-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  transition: box-shadow 0.15s;
+}
+
+.rev-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.rev-card-featured {
+  border-left: 3px solid #E5B64E;
+}
+
+.rev-card-pending {
+  border-left: 3px solid #f59e0b;
+  opacity: 0.9;
+}
+
+.rev-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Meta */
+.rev-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rev-author-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rev-author {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-main);
+}
+
+.rev-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.rev-stars {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
+}
+
+.rev-star-filled {
+  color: #E5B64E;
+}
+
+.rev-star-empty {
+  color: var(--color-border);
+}
+
+.rev-date {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.rev-order {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Chips */
+.rev-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 99px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rev-chip-featured {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.rev-chip-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+/* Actions */
+.rev-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.rev-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-sans);
+}
+
+.rev-action-btn:hover {
+  background: var(--color-bg);
+  color: var(--color-text-main);
+}
+
+.rev-action-btn.active-green {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.rev-action-btn.active-gold {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.rev-action-delete {
+  color: #ef4444;
+  border-color: transparent;
+  padding: 0.3rem 0.5rem;
+}
+
+.rev-action-delete:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* Comment & reply */
+.rev-comment {
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+  line-height: 1.55;
+  margin-top: 0.7rem;
+}
+
+.rev-reply-block {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--color-bg);
+  border-left: 2px solid var(--color-primary);
+  border-radius: 0 6px 6px 0;
+}
+
+.rev-reply-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rev-reply-text {
+  font-size: 0.83rem;
+  color: var(--color-text-main);
+  margin-top: 0.25rem;
+  line-height: 1.5;
+}
+
+/* Modal */
+.rev-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.rev-modal {
+  background: var(--color-surface);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.rev-modal-sm {
+  max-width: 360px;
+}
+
+.rev-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rev-modal-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.rev-modal-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.rev-modal-close:hover {
+  background: var(--color-bg);
+  color: var(--color-text-main);
+}
+
+.rev-modal-quote {
+  margin: 1rem 1.25rem 0;
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.5;
+  border-left: 2px solid var(--color-border);
+  padding-left: 0.75rem;
+}
+
+.rev-modal-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+}
+
+.rev-textarea {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  color: var(--color-text-main);
+  background: var(--color-bg);
+  border: none;
+  border-top: 1px solid var(--color-border);
+  resize: vertical;
+  outline: none;
+  display: block;
+  box-sizing: border-box;
+}
+
+.rev-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Reuse btn-admin classes from Careers.css */
+.btn-admin-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+}
+
+.btn-admin-danger:hover {
+  background: #dc2626;
+}

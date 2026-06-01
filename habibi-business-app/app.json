@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Habibi Business",
+    "slug": "habibi-business",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d1117"
+    },
+    "scheme": "habibi-business",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.habibihe.business",
+      "infoPlist": {
+        "NSContactsUsageDescription": "Habibi Business uses your contacts to quickly assign orders and fill in customer details."
+      }
+    },
+    "android": {
+      "package": "com.habibihe.business",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d1117"
+      },
+      "permissions": [
+        "android.permission.READ_CONTACTS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "themeColor": "#0d1117",
+      "backgroundColor": "#0d1117"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

@@ -1,0 +1,184 @@
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--color-sidebar);
+  border-right: 1px solid rgba(255, 215, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+/* ── Brand ── */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1rem;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+}
+
+.sidebar-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(229, 182, 78, 0.15);
+  border: 1px solid rgba(229, 182, 78, 0.3);
+  color: #E5B64E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+  font-family: 'Bebas Neue', var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 3px;
+  color: #E5B64E;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sidebar-brand-sub {
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-top: 2px;
+}
+
+/* ── Nav ── */
+.sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  overflow-y: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  position: relative;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.sidebar-link.active {
+  background: rgba(229, 182, 78, 0.1);
+  color: #E5B64E;
+  border-color: rgba(229, 182, 78, 0.2);
+}
+
+.sidebar-link.urgent:hover,
+.sidebar-link.urgent.active {
+  background: rgba(220, 38, 38, 0.1);
+  color: #f87171;
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+.sidebar-link-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.sidebar-link.active .sidebar-link-icon,
+.sidebar-link:hover .sidebar-link-icon {
+  opacity: 1;
+}
+
+.sidebar-link-label { flex: 1; }
+
+.sidebar-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Footer ── */
+.sidebar-footer {
+  padding: 0.875rem 1rem;
+  border-top: 1px solid rgba(255, 215, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-user { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
+
+.sidebar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(229, 182, 78, 0.15);
+  border: 1px solid rgba(229, 182, 78, 0.3);
+  color: #E5B64E;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.6rem;
+  color: #E5B64E;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebar-logout {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.sidebar-logout:hover {
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #f87171;
+  background: rgba(220, 38, 38, 0.08);
+}

@@ -1,0 +1,126 @@
+.stripe-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.stripe-pr-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stripe-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #555;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stripe-divider::before,
+.stripe-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #252525;
+}
+
+.stripe-card-wrap {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  transition: border-color 0.15s;
+}
+
+.stripe-card-wrap:focus-within {
+  border-color: rgba(229,182,78,0.5);
+}
+
+.stripe-mock-note {
+  font-size: 0.78rem;
+  color: #666;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.stripe-mock-note code {
+  background: rgba(255,255,255,0.06);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.stripe-card-mock-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.stripe-mock-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stripe-mock-input {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #555;
+  font-size: 0.875rem;
+  padding: 0.65rem 0.875rem;
+  cursor: not-allowed;
+}
+
+.stripe-pay-btn {
+  width: 100%;
+  background: #E5B64E;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 10px;
+  padding: 0.875rem;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.stripe-pay-btn:hover { background: #d4a544; }
+.stripe-pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* PayPal */
+.paypal-btn-wrap {
+  margin-top: 0.5rem;
+}
+
+.paypal-loading {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  padding: 1rem 0;
+}
+
+.paypal-unconfigured {
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed #333;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.paypal-unconfigured code {
+  background: rgba(255,255,255,0.06);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.mt-2 { margin-top: 0.5rem; }

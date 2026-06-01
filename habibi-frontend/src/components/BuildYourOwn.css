@@ -1,0 +1,186 @@
+/* ===== Build Your Own Wizard Modal ===== */
+.byo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: byoFadeIn 0.2s ease;
+}
+@keyframes byoFadeIn { from { opacity: 0; } }
+
+@media (min-width: 600px) {
+  .byo-overlay { align-items: center; padding: 1.5rem; }
+}
+
+.byo-modal {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: byoSlideUp 0.25s ease;
+}
+@media (min-width: 600px) {
+  .byo-modal { border-radius: 20px; }
+}
+@keyframes byoSlideUp { from { transform: translateY(30px); opacity: 0; } }
+
+/* ─ Header ─────────────────────────────────────── */
+.byo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 1rem;
+  gap: 1rem;
+}
+.byo-step-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E5B64E;
+  margin-bottom: 0.25rem;
+}
+.byo-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #f1f1f1;
+  margin: 0 0 0.25rem;
+}
+.byo-sub {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+.byo-close {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.6);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.byo-close:hover { background: rgba(255,255,255,0.12); }
+
+/* ─ Progress bar ────────────────────────────────── */
+.byo-progress-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  margin: 0 1.5rem;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.byo-progress-fill {
+  height: 100%;
+  background: #E5B64E;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ─ Options grid ────────────────────────────────── */
+.byo-options {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.byo-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.byo-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 380px) {
+  .byo-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.byo-option {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+  min-height: 90px;
+}
+.byo-option:hover { border-color: rgba(229,182,78,0.4); background: rgba(229,182,78,0.04); }
+.byo-option.selected {
+  border-color: #E5B64E;
+  background: rgba(229,182,78,0.1);
+}
+
+.byo-emoji { font-size: 1.75rem; line-height: 1; }
+.byo-opt-label { font-size: 0.82rem; font-weight: 600; color: #f1f1f1; }
+.byo-opt-desc  { font-size: 0.7rem; color: rgba(255,255,255,0.4); line-height: 1.3; }
+
+.byo-check {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #E5B64E;
+  color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─ Footer ──────────────────────────────────────── */
+.byo-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.byo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s, background 0.15s;
+  border: none;
+}
+.byo-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.byo-btn-back {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.7);
+}
+.byo-btn-next {
+  background: #1e3a8a;
+  color: #fff;
+}
+.byo-btn-next:not(:disabled):hover { filter: brightness(1.15); }
+.byo-btn-add {
+  background: #E5B64E;
+  color: #0a0a0a;
+  flex: 1;
+  justify-content: center;
+}
+.byo-btn-add:not(:disabled):hover { filter: brightness(1.08); }

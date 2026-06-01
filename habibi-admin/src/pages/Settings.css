@@ -1,0 +1,17 @@
+.settings-page { display: flex; flex-direction: column; gap: 2rem; }
+.settings-section { display: flex; flex-direction: column; gap: 1rem; }
+.settings-section-hdr { }
+.settings-section-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; margin-bottom: 0.25rem; }
+.settings-section-sub { font-size: 0.78rem; color: var(--color-text-muted); }
+
+.tiers-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.tier-card { }
+.tier-top { display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap; }
+.tier-range { display: flex; flex-direction: column; gap: 0.35rem; }
+.tier-range-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); font-weight: 600; }
+.tier-range-inputs { display: flex; align-items: center; gap: 0.5rem; }
+.tier-active { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted); }
+.tier-active input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+
+.integrations-list { display: flex; flex-direction: column; gap: 0.625rem; }
+.integration-row { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; }

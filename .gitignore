@@ -1,0 +1,47 @@
+# Root gitignore — protects the entire project
+
+# Environment files — NEVER commit these
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Expo / React Native
+.expo/
+android/
+ios/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+temp_docx_extract1/
+temp_docx_extract2/
+/tmp/
+
+# Client docs — contain sensitive credentials, never push
+habibi media docs/
+
+# Deployment zip packages — generated locally, not needed in repo
+*.zip
+
+# Claude AI settings
+.claude/
+
+# GitHub workflows (not needed in repo)
+.github/

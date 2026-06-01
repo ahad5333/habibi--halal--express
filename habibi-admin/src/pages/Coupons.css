@@ -1,0 +1,2 @@
+.coupons-page { display: flex; flex-direction: column; gap: 1rem; }
+.coupon-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }

@@ -1,0 +1,291 @@
+.orc-page {
+  min-height: 100vh;
+  background: #f8f9fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.orc-container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Hero ── */
+.orc-hero {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+.orc-check-ring {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.1);
+  border: 2px solid rgba(16,185,129,0.35);
+  display: flex; align-items: center; justify-content: center;
+  color: #059669;
+  margin: 0 auto 1.25rem;
+  animation: orc-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes orc-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.orc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.orc-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Info cards ── */
+.orc-info-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.875rem;
+}
+
+.orc-info-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: #b45309;
+}
+
+.orc-info-card svg { flex-shrink: 0; margin-top: 2px; }
+
+.orc-info-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin: 0 0 0.25rem;
+}
+
+.orc-info-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* ── Status tracker ── */
+.orc-tracker {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.orc-tracker-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin: 0 0 1.5rem;
+}
+
+.orc-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+}
+
+.orc-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+  text-align: center;
+}
+
+.orc-step-dot {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.orc-step.active .orc-step-dot {
+  background: rgba(229,182,78,0.12);
+  border-color: #E5B64E;
+  animation: orc-pulse 2s infinite;
+}
+
+@keyframes orc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229,182,78,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(229,182,78,0); }
+}
+
+.orc-step-line {
+  position: absolute;
+  top: 22px;
+  left: 60%;
+  width: 80%;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+
+.orc-step.active ~ .orc-step .orc-step-dot { opacity: 0.4; }
+
+.orc-step-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.orc-step.pending .orc-step-label { color: #9ca3af; }
+
+.orc-step-desc {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ── Halal badge ── */
+.orc-halal {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+}
+
+.orc-halal img { width: 48px; height: 48px; object-fit: contain; }
+
+.orc-halal-title { font-weight: 700; font-size: 0.9rem; color: #92400e; margin: 0 0 0.15rem; }
+.orc-halal-sub   { font-size: 0.75rem; color: #b45309; margin: 0; }
+
+/* ── Actions ── */
+.orc-actions {
+  display: flex;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.orc-btn-primary {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.orc-btn-primary:hover { background: #1f2937; transform: translateY(-1px); }
+
+.orc-btn-secondary {
+  flex: 1;
+  min-width: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.orc-btn-secondary:hover { border-color: #9ca3af; color: #111827; }
+
+@media (max-width: 500px) {
+  .orc-steps { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .orc-step-line { display: none; }
+  .orc-title { font-size: 1.75rem; }
+}
+
+/* ── Review widget ─────────────────────────────────────────────────────────── */
+.orc-review-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+.orc-review-card.orc-review-done {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.6rem;
+  color: #059669;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.orc-review-title { font-weight: 600; font-size: 1rem; color: #1e293b; margin: 0; }
+.orc-stars { display: flex; gap: 0.25rem; }
+.orc-star-btn {
+  background: none;
+  border: none;
+  padding: 0.15rem;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.orc-star-btn:hover, .orc-star-btn.lit { transform: scale(1.15); }
+.orc-review-textarea {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  font-size: 0.85rem;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+.orc-review-error { font-size: 0.78rem; color: #ef4444; margin: 0; }
+.orc-btn-review {
+  background: #E5B64E;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.orc-btn-review:disabled { opacity: 0.5; cursor: not-allowed; }
