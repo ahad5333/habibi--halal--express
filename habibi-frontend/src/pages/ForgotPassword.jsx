@@ -30,7 +30,7 @@ export default function ForgotPassword() {
         <Link to="/login" className="fp-back"><ArrowLeft size={15} /> Back to Login</Link>
 
         <div className="fp-logo">
-          <img src="/images/logos/habibi-logo.png" alt="Habibi" onError={e => e.target.style.display='none'} />
+          <img src="/images/logos/logo.png" alt="Habibi" onError={e => e.target.style.display='none'} />
         </div>
 
         {sent ? (
