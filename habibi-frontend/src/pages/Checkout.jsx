@@ -94,13 +94,13 @@ const Checkout = () => {
       .then(p => {
         setLoyaltyPoints(p.loyalty_points || 0);
         // Only pre-fill if the field is still blank (don't overwrite what the user typed)
-        if (!customerName  && (p.name  || user?.name))  setReceiverName(p.name  || user?.name  || '');
+        if (!receiverName   && (p.name  || user?.name))  setReceiverName(p.name  || user?.name  || '');
         if (!customerEmail && (p.email || user?.email)) setCustomerEmail(p.email || user?.email || '');
         if (!customerPhone && p.phone_number)           setCustomerPhone(p.phone_number);
       })
       .catch(() => {
         // Fallback to JWT payload if profile call fails
-        if (!customerName  && user?.name)  setReceiverName(user.name);
+        if (!receiverName   && user?.name)  setReceiverName(user.name);
         if (!customerEmail && user?.email) setCustomerEmail(user.email);
       });
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
