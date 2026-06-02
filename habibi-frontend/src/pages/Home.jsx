@@ -160,7 +160,7 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════
           HERO SECTION (Image Matched)
       ═══════════════════════════════════════════════════════ */}
-      <section className="hero-section text-center">
+      <section className="hero-section">
         <div className="hero-top-dark">
           
           <div className="hero-halal-badge">
@@ -173,7 +173,8 @@ const Home = () => {
           <div className="container hero-content">
             <h1 className="hero-title-exact">
               <span className="hero-title-line-1">Savor the True Taste of</span><br />
-              <span className="hero-title-line-2">Premium Halal <span className="animated-hero-words">{typedText}<span className="typewriter-cursor">|</span></span></span>
+              <span className="hero-title-line-2">Premium Halal</span><br />
+              <span className="animated-hero-words">{typedText}<span className="typewriter-cursor">|</span></span>
             </h1>
 
             <p className="hero-creative-line">

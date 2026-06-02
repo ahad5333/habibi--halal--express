@@ -75,7 +75,9 @@
 .hero-top-dark {
   position: relative;
   z-index: 2;
-  background: linear-gradient(180deg, #090915 0%, #0d0d21 100%);
+  background-image: url('/images/hero/slate_bg.png');
+  background-size: cover;
+  background-position: center;
   padding-top: 8rem;
   padding-bottom: 8rem; /* Enough padding to contain the content */
   display: flex;
@@ -190,12 +192,17 @@
   position: relative;
   z-index: 2;
   width: 100%;
+  max-width: 650px;
+  text-align: left;
+  margin-left: 0;
+  margin-right: auto;
+  margin-top: 4.5rem;
   margin-bottom: 180px; /* Increased to push content higher up */
 }
 
 .hero-title-exact {
   font-family: Georgia, Cambria, "Times New Roman", Times, serif;
-  font-size: 4rem;
+  font-size: 3rem;
   font-weight: 700;
   line-height: 1.15;
   margin-bottom: 1.5rem;
@@ -247,7 +254,7 @@
 
 .hero-creative-line {
   font-family: Georgia, Cambria, "Times New Roman", Times, serif;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.95);
   letter-spacing: 1.5px;
   margin-bottom: 2rem;
@@ -320,14 +327,14 @@
 .hero-quick-picks {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 1.25rem;
   margin-top: 2rem;
   width: 100%;
 }
 
 .hero-quick-label-new {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -337,13 +344,12 @@
 
 .hero-visual-cards {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
   width: 100%;
   max-width: 900px;
-  margin: 0 auto;
 }
 
 .hero-visual-card {
