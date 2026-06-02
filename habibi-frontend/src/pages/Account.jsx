@@ -298,6 +298,7 @@ function OrderDetailModal({ order, onClose, onReorder }) {
       <div class="d"></div><p class="c">Thank you for your order!</p>
       </body></html>`;
     const win = window.open('', '_blank', 'width=420,height=600');
+    if (!win) { alert('Please allow popups to print your receipt.'); return; }
     win.document.write(html);
     win.document.close();
     win.print();

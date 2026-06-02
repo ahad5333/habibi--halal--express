@@ -28,7 +28,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
       : '';
 
   const title = isZelle ? 'Pay via Zelle' : isCash ? 'Pay via Cash App' : 'Cash on Delivery';
-  const icon  = isZelle ? '/images/partners/zelle.png' : isCash ? '/images/partners/cashapp.png' : '💵';
+  const icon  = isZelle ? '💙' : isCash ? '💚' : '💵';
 
   return (
     <div className="opm-overlay" onClick={onClose}>

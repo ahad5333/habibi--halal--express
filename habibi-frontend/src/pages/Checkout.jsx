@@ -18,8 +18,8 @@ const ALT_PAYMENTS = [
   { id: 'apple',   label: 'Apple Pay',        img: '/images/partners/apple-pay.png' },
   { id: 'google',  label: 'Google Pay',       img: '/images/partners/google-pay.png' },
   { id: 'paypal',  label: 'PayPal',           img: '/images/partners/paypal.png' },
-  { id: 'zelle',   label: 'Zelle',            img: '/images/partners/zelle.png' },
-  { id: 'cashapp', label: 'Cash App',         img: '/images/partners/cashapp.png' },
+  { id: 'zelle',   label: 'Zelle',            emoji: '💙' },
+  { id: 'cashapp', label: 'Cash App',         emoji: '💚' },
   { id: 'cash',    label: 'Cash on Delivery', emoji: '💵' },
 ];
 
