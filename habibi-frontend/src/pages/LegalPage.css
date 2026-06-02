@@ -17,7 +17,7 @@
 .legal-hero-overlay {
   position: absolute;
   inset: 0;
-  background: url('/images/food/hero-bg.jpg') center/cover no-repeat;
+  background: url('/images/food/kitchen.jpg') center/cover no-repeat;
   opacity: 0.06;
 }
 .legal-hero-content { position: relative; z-index: 1; }
