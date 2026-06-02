@@ -38,8 +38,8 @@
 }
 
 .logo-img {
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   object-fit: contain;
   flex-shrink: 0;
@@ -714,11 +714,11 @@
 
 @media (max-width: 640px) {
   .logo-text { display: none; }
-  .logo-img { width: 50px; height: 50px; }
+  .logo-img { width: 64px; height: 64px; }
   .navbar-top-inner { padding: 0.45rem 1rem; }
 }
 
 @media (max-width: 400px) {
   .navbar-top-inner { padding: 0.4rem 0.75rem; }
-  .logo-img { width: 44px; height: 44px; }
+  .logo-img { width: 54px; height: 54px; }
 }

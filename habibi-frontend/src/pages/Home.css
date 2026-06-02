@@ -77,9 +77,9 @@
   z-index: 2;
   background-image: url('/images/hero/slate_bg.png');
   background-size: cover;
-  background-position: center;
-  padding-top: 8rem;
-  padding-bottom: 8rem; /* Enough padding to contain the content */
+  background-position: right center;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem; /* Reduced more to make hero height smaller */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,8 +196,8 @@
   text-align: left;
   margin-left: 0;
   margin-right: auto;
-  margin-top: 4.5rem;
-  margin-bottom: 180px; /* Increased to push content higher up */
+  margin-top: 5rem;
+  margin-bottom: 40px; /* Reduced more to make background shorter */
 }
 
 .hero-title-exact {
@@ -205,6 +205,7 @@
   font-size: 3rem;
   font-weight: 700;
   line-height: 1.15;
+  margin-top: 1.5rem;
   margin-bottom: 1.5rem;
   color: #fff;
   letter-spacing: -0.5px;
@@ -214,6 +215,10 @@
 .hero-title-line-2 {
   display: inline-block;
   white-space: nowrap;
+}
+
+.hero-title-line-2 {
+  margin-top: 0.6rem;
 }
 
 @media (max-width: 992px) {
@@ -361,8 +366,9 @@
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 215, 0, 0.15);
   border-radius: 16px;
-  padding: 1rem;
-  width: 140px;
+  padding: 1rem 1.25rem;
+  width: auto;
+  min-width: 140px;
   text-decoration: none;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -401,11 +407,12 @@
 }
 
 .card-thumb-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #ffffff;
   text-align: center;
   transition: color 0.3s ease;
+  white-space: nowrap;
 }
 
 .hero-visual-card:hover .card-thumb-label {
@@ -417,8 +424,9 @@
     gap: 0.75rem;
   }
   .hero-visual-card {
-    width: 110px;
-    padding: 0.75rem;
+    width: auto;
+    min-width: 100px;
+    padding: 0.6rem 0.8rem;
     border-radius: 12px;
   }
   .card-thumb-wrapper {
@@ -426,18 +434,19 @@
     height: 60px;
   }
   .card-thumb-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
 }
 
 .hero-food-wrapper {
   position: absolute;
-  bottom: -160px;
+  bottom: -130px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  width: 460px;
-  height: 460px;
+  width: 360px;
+  height: 360px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow:
@@ -1967,8 +1976,8 @@
   .hero-title-exact { font-size: 2.3rem; }
   .hero-creative-line { font-size: 0.82rem; letter-spacing: 1px; }
 
-  .hero-cta-group { justify-content: center; }
-  .hero-quick-picks { justify-content: center; }
+  .hero-cta-group { justify-content: flex-start; }
+  .hero-quick-picks { align-items: flex-start; }
 
   .bowl-builder { margin-top: 2rem; }
 
@@ -1986,8 +1995,8 @@
 
   .info-banner-inner  { flex-direction: column; gap: 1rem; align-items: flex-start; }
 
-  .hero-arched-cards  { gap: 1rem; }
-  .arched-card        { width: 160px; height: 220px; }
+  .hero-arched-cards  { flex-direction: column; align-items: center; gap: 1.5rem; }
+  .arched-card        { width: 200px; height: 260px; }
 }
 
 @media (max-width: 400px) {
