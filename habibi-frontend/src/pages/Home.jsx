@@ -186,11 +186,36 @@ const Home = () => {
             </div>
 
             <div className="hero-quick-picks">
-              <span className="hero-quick-label">Popular:</span>
-              <Link to="/menu" className="hero-chip">🍗 Chicken Over Rice</Link>
-              <Link to="/menu" className="hero-chip">🌯 Gyros</Link>
-              <Link to="/menu" className="hero-chip">🍔 Burgers</Link>
-              <Link to="/menu" className="hero-chip">🥘 Platters</Link>
+              <span className="hero-quick-label-new">🔥 POPULAR CATEGORIES</span>
+              <div className="hero-visual-cards">
+                <Link to="/menu?cat=platter" className="hero-visual-card">
+                  <div className="card-thumb-wrapper">
+                    <img src="/images/chicken_rice_3d.png" alt="Chicken Over Rice" className="card-thumb-img" />
+                  </div>
+                  <span className="card-thumb-label">Chicken Over Rice</span>
+                </Link>
+                
+                <Link to="/menu?cat=gyro" className="hero-visual-card">
+                  <div className="card-thumb-wrapper">
+                    <img src="/images/gyro_wrap_3d.png" alt="Gyros" className="card-thumb-img" />
+                  </div>
+                  <span className="card-thumb-label">Gyros</span>
+                </Link>
+
+                <Link to="/menu?cat=burgers" className="hero-visual-card">
+                  <div className="card-thumb-wrapper">
+                    <img src="/images/burger_3d.png" alt="Burgers" className="card-thumb-img" />
+                  </div>
+                  <span className="card-thumb-label">Burgers</span>
+                </Link>
+
+                <Link to="/menu?cat=byo" className="hero-visual-card">
+                  <div className="card-thumb-wrapper">
+                    <img src="/images/byo_bowl_3d.png" alt="BYO Bowls" className="card-thumb-img" />
+                  </div>
+                  <span className="card-thumb-label">BYO Bowls</span>
+                </Link>
+              </div>
             </div>
           </div>
           

@@ -321,37 +321,109 @@
 /* ── Quick-pick chips ──────────────────────────────────────── */
 .hero-quick-picks {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  width: 100%;
 }
 
-.hero-quick-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.hero-quick-label-new {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #ffb300;
-  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.hero-chip {
-  background: rgba(255,215,0,0.05);
-  border: 1px solid rgba(255,215,0,0.2);
-  color: #ffd700;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.35rem 0.9rem;
-  border-radius: 20px;
+.hero-visual-cards {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero-visual-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(10, 10, 10, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 16px;
+  padding: 1rem;
+  width: 140px;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  white-space: nowrap;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.hero-chip:hover {
-  background: rgba(255,215,0,0.15);
+.hero-visual-card:hover {
+  transform: translateY(-8px);
   border-color: #ffd700;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.15);
+  background: rgba(15, 15, 15, 0.7);
+}
+
+.card-thumb-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  margin-bottom: 0.75rem;
+  transition: border-color 0.3s ease;
+}
+
+.hero-visual-card:hover .card-thumb-wrapper {
+  border-color: #ffd700;
+}
+
+.card-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.hero-visual-card:hover .card-thumb-img {
+  transform: scale(1.15);
+}
+
+.card-thumb-label {
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #ffffff;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.hero-visual-card:hover .card-thumb-label {
+  color: #ffd700;
+}
+
+@media (max-width: 480px) {
+  .hero-visual-cards {
+    gap: 0.75rem;
+  }
+  .hero-visual-card {
+    width: 110px;
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+  .card-thumb-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+  .card-thumb-label {
+    font-size: 0.75rem;
+  }
 }
 
 .hero-food-wrapper {
