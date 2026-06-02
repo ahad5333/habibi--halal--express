@@ -587,7 +587,7 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/manhattan.jpg" alt="Bedford Park" className="location-img" />
+                <img src="/images/locations/bedford-park.jpg" alt="Bedford Park" className="location-img" />
                 <span className="location-badge outline">OPEN 24/7</span>
               </div>
               <div className="location-info">
@@ -601,7 +601,7 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/brooklyn.jpg" alt="Lehman College Area" className="location-img" />
+                <img src="/images/locations/kings-bridge.jpg" alt="Lehman College Area" className="location-img" />
                 <span className="location-badge outline">NOW OPEN</span>
               </div>
               <div className="location-info">
@@ -615,7 +615,7 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/queens.jpg" alt="Bronx Science Area" className="location-img" />
+                <img src="/images/locations/white-plains.jpg" alt="Bronx Science Area" className="location-img" />
                 <span className="location-badge outline">NOW OPEN</span>
               </div>
               <div className="location-info">
