@@ -75,9 +75,7 @@
 .hero-top-dark {
   position: relative;
   z-index: 2;
-  background-image: url('/images/hero/slate_bg.png');
-  background-size: cover;
-  background-position: center;
+  background: linear-gradient(180deg, #090915 0%, #0d0d21 100%);
   padding-top: 8rem;
   padding-bottom: 8rem; /* Enough padding to contain the content */
   display: flex;
