@@ -1,30 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* ── Core palette (matches frontend dark+gold theme) ── */
-  --color-bg:            #0b0d14;
-  --color-sidebar:       #080810;
-  --color-surface:       #111827;
-  --color-surface-2:     #1a2035;
-  --color-surface-hover: #1f2844;
-  --color-border:        rgba(255, 255, 255, 0.08);
-  --color-border-light:  rgba(255, 255, 255, 0.14);
+  /* ── Core palette — white + blue ── */
+  --color-bg:            #f0f4f8;
+  --color-sidebar:       #1e3a5f;
+  --color-surface:       #ffffff;
+  --color-surface-2:     #f1f5f9;
+  --color-surface-hover: #e2eaf4;
+  --color-border:        rgba(0, 0, 0, 0.08);
+  --color-border-light:  rgba(0, 0, 0, 0.12);
 
   /* ── Brand accents ── */
-  --color-primary:       #E5B64E;          /* gold — matches frontend */
-  --color-primary-hover: #ffd700;
-  --color-primary-dim:   rgba(229, 182, 78, 0.12);
-  --color-gold:          #E5B64E;
-  --color-gold-rgb:      229, 182, 78;
-  --color-gold-dim:      rgba(229, 182, 78, 0.12);
-  --color-red:           #dc2626;          /* red — matches frontend */
+  --color-primary:       #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-dim:   rgba(37, 99, 235, 0.10);
+  --color-gold:          #2563eb;
+  --color-gold-rgb:      37, 99, 235;
+  --color-gold-dim:      rgba(37, 99, 235, 0.10);
+  --color-red:           #dc2626;
   --color-red-hover:     #b91c1c;
-  --color-red-dim:       rgba(220, 38, 38, 0.12);
+  --color-red-dim:       rgba(220, 38, 38, 0.10);
 
   /* ── Text ── */
-  --color-text-main:  #f1f5f9;
-  --color-text-muted: #94a3b8;
-  --color-text-dim:   #475569;
+  --color-text-main:  #1e293b;
+  --color-text-muted: #64748b;
+  --color-text-dim:   #94a3b8;
 
   /* ── Status ── */
   --color-success: #22c55e;
@@ -61,7 +61,7 @@ input, select, textarea { font-family: var(--font-sans); }
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
 
 /* ── Utility ── */
 .text-primary  { color: var(--color-primary); }
@@ -81,7 +81,7 @@ input, select, textarea { font-family: var(--font-sans); }
   font-weight: 600; transition: all 0.15s; cursor: pointer; white-space: nowrap;
   font-family: var(--font-sans);
 }
-.btn-primary   { background: var(--color-primary); color: #0a0a0a; border: none; }
+.btn-primary   { background: var(--color-primary); color: #ffffff; border: none; }
 .btn-primary:hover { background: var(--color-primary-hover); }
 .btn-secondary { background: var(--color-surface-2); color: var(--color-text-main); border: 1px solid var(--color-border); }
 .btn-secondary:hover { background: var(--color-surface-hover); border-color: var(--color-border-light); }
@@ -142,12 +142,12 @@ input, select, textarea { font-family: var(--font-sans); }
 .empty svg { opacity: 0.2; }
 
 /* ── Modal overlay ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(6px); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px); }
 .modal {
   background: var(--color-surface); border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg); padding: 1.75rem; width: 100%; max-width: 520px;
   max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,215,0,0.06);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
 }
 .modal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
 .modal-title { font-family: var(--font-serif); font-size: 1.2rem; color: var(--color-text-main); }
