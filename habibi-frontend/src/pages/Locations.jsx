@@ -111,22 +111,6 @@ const FALLBACK_LOCATIONS = [
     delivery_radius_miles: 4, is_active: true, preference_level: 3,
     image_url: '/images/chef-plating.jpg',
   },
-  {
-    id: 4, title: 'Kingsbridge Road & Jerome Ave',
-    brief_address: '3521 Jerome Ave, Bronx, NY 10467',
-    phone_number: '(718) 367-7881',
-    working_days_hours: 'Mon – Sun: 7AM – 12AM',
-    delivery_radius_miles: 4, is_active: true, preference_level: 2,
-    image_url: '/images/locations/kings-bridge.jpg',
-  },
-  {
-    id: 5, title: 'White Plains Road',
-    brief_address: '1892 White Plains Rd, Bronx, NY 10462',
-    phone_number: '(718) 367-7882',
-    working_days_hours: 'Mon – Sun: 8AM – 11PM',
-    delivery_radius_miles: 4, is_active: true, preference_level: 1,
-    image_url: '/images/locations/white-plains.jpg',
-  },
 ];
 
 function LocationCard({ loc, featured, userCoords }) {
