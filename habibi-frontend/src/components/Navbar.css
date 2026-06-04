@@ -713,14 +713,19 @@
 }
 
 @media (max-width: 900px) {
-  .logo-text { display: none; }
-  .logo-img { width: 64px; height: 64px; }
+  /* Keep logo text visible — just scale it down */
+  .logo-img { width: 54px; height: 54px; }
   .navbar-top-inner { padding: 0.45rem 1rem; }
+  .logo-name-habibi { font-size: 1.55rem; letter-spacing: 4px; }
+  .logo-name-express { font-size: 0.42rem; letter-spacing: 3px; }
+  .logo-rule { display: none; }
 }
 
 @media (max-width: 400px) {
   .navbar-top-inner { padding: 0.4rem 0.75rem; }
-  .logo-img { width: 54px; height: 54px; }
+  .logo-img { width: 46px; height: 46px; }
+  .logo-name-habibi { font-size: 1.3rem; letter-spacing: 3px; }
+  .logo-name-express { font-size: 0.38rem; letter-spacing: 2px; }
 }
 
 /* ── Mobile Responsive (added) ─────────────────────────────── */

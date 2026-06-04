@@ -796,51 +796,58 @@
   .menu-search-bar { padding: 0.6rem 1.25rem; }
   .menu-body { padding-top: 1.25rem; padding-bottom: 4rem; gap: 0; }
 
-  /* 3-column grid */
-  .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  /* 2-column grid — cards wide enough to read comfortably */
+  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
 
-  /* Card — same design, scaled down */
+  /* Card */
   .menu-card { border-radius: 10px; }
   .menu-card:hover { transform: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-  .menu-card-img-wrap { height: 120px; padding: 10px; }
+  .menu-card-img-wrap { height: 145px; padding: 10px; }
   .menu-card-img { border-radius: 8px; object-fit: cover; }
-  .menu-card-category { font-size: 0.48rem; padding: 0.1rem 0.3rem; }
+  .menu-card-category { font-size: 0.5rem; padding: 0.1rem 0.3rem; }
 
-  .menu-card-body { padding: 0.55rem 0.65rem 0.6rem; gap: 0.2rem; }
+  .menu-card-body { padding: 0.65rem 0.75rem 0.7rem; gap: 0.25rem; }
   .menu-card-top { gap: 0; align-items: flex-start; }
   .menu-card-name {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     flex: unset;
   }
-  .menu-card-desc { display: none; }
+  /* Show 1-line description — cards are wide enough */
+  .menu-card-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.72rem;
+  }
   .menu-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 0.3rem;
-    padding-top: 0.35rem;
+    margin-top: 0.35rem;
+    padding-top: 0.4rem;
     border-top: 1px solid var(--color-border);
-    gap: 0.2rem;
+    gap: 0.25rem;
   }
   .diet-tags { display: none; }
   .menu-card-price {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     font-weight: 800;
     color: var(--color-primary);
     white-space: nowrap;
     flex-shrink: 0;
   }
 
-  /* Add button — solid navy pill, clearly visible */
+  /* Add button */
   .add-btn {
-    padding: 0.28rem 0.6rem;
-    font-size: 0.72rem;
+    padding: 0.32rem 0.75rem;
+    font-size: 0.76rem;
     font-weight: 700;
     border-radius: 6px;
     background: var(--color-primary);
@@ -848,19 +855,18 @@
     border: none;
     white-space: nowrap;
     flex-shrink: 0;
-    letter-spacing: 0.01em;
   }
   .btn-add-text { display: none; }
   .add-btn:hover { background: var(--color-primary-hover); }
   .add-btn.added { background: #16a34a; }
 
   /* Qty stepper */
-  .qty-stepper { height: 26px; }
-  .qty-stepper-btn { width: 26px; }
-  .qty-stepper-val { font-size: 0.72rem; min-width: 18px; }
+  .qty-stepper { height: 28px; }
+  .qty-stepper-btn { width: 28px; }
+  .qty-stepper-val { font-size: 0.78rem; min-width: 20px; }
 }
 
-/* Smaller phones — tighter sizes */
+/* Smaller phones — tighter 2-column */
 @media (max-width: 600px) {
   .menu-header { height: 145px; }
   .menu-header-title { font-size: 1.75rem; }
@@ -874,28 +880,26 @@
   .cat-emoji { font-size: 0.78rem; }
   .menu-section-title { font-size: 1.1rem; }
   .menu-main-header { margin-bottom: 0.6rem; padding-bottom: 0.5rem; }
-  .menu-grid { gap: 0.5rem; }
-  .menu-card-img-wrap { height: 95px; padding: 8px; }
-  .menu-card-body { padding: 0.4rem 0.5rem 0.45rem; }
-  .menu-card-name { font-size: 0.68rem; }
-  .menu-card-price { font-size: 0.7rem; }
-  .add-btn { padding: 0.22rem 0.48rem; font-size: 0.65rem; }
-  .qty-stepper { height: 23px; }
-  .qty-stepper-btn { width: 23px; }
-  .qty-stepper-val { font-size: 0.65rem; min-width: 16px; }
+  .menu-grid { gap: 0.65rem; }
+  .menu-card-img-wrap { height: 125px; padding: 8px; }
+  .menu-card-body { padding: 0.55rem 0.65rem 0.6rem; }
+  .menu-card-name { font-size: 0.8rem; }
+  .menu-card-price { font-size: 0.82rem; }
+  .add-btn { padding: 0.28rem 0.6rem; font-size: 0.7rem; }
+  .qty-stepper { height: 26px; }
+  .qty-stepper-btn { width: 26px; }
 }
 
-/* Very small phones ≤400px */
+/* Very small phones — 1 column */
 @media (max-width: 400px) {
-  .menu-grid { gap: 0.4rem; }
+  .menu-grid { grid-template-columns: 1fr; gap: 0.55rem; }
   .menu-header-title { font-size: 1.5rem; }
-  .menu-card-img-wrap { height: 82px; padding: 6px; }
-  .menu-card-name { font-size: 0.6rem; }
-  .menu-card-price { font-size: 0.62rem; }
-  .menu-card-body { padding: 0.32rem 0.38rem 0.38rem; }
-  .add-btn { padding: 0.17rem 0.35rem; font-size: 0.6rem; }
-  .qty-stepper-btn { width: 19px; }
-  .qty-stepper-val { min-width: 13px; }
+  .menu-card-img-wrap { height: 160px; padding: 10px; }
+  .menu-card-name { font-size: 0.9rem; }
+  .menu-card-price { font-size: 0.9rem; }
+  .menu-card-body { padding: 0.65rem 0.75rem; }
+  .add-btn { padding: 0.3rem 0.75rem; font-size: 0.75rem; }
+  .menu-card-desc { -webkit-line-clamp: 2; }
 }
 
 /* ── Delivery partners mobile ── */
