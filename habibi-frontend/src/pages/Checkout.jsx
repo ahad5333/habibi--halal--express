@@ -796,7 +796,7 @@ const Checkout = () => {
                     placeholder="Enter tip amount"
                     value={customTip}
                     onChange={e => setCustomTip(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', width: 160 }}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', flex: 1, minWidth: 0 }}
                   />
                 </div>
               )}

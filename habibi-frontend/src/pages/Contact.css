@@ -532,12 +532,14 @@
   .ct-hero { padding: 3rem 1rem; }
   .ct-hero-title { font-size: 2rem; }
   .ct-layout { gap: 1.5rem; }
-  .ct-type-nav { position: static; top: auto; }
+  /* 4-col nav too cramped on phones — switch to 2×2 grid */
+  .ct-type-nav { position: static; top: auto; grid-template-columns: repeat(2, 1fr); }
   .ct-type-btn { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
   .ct-form { padding: 1.25rem 1rem; }
   .ct-submit-btn { width: 100%; }
 }
 @media (max-width: 375px) {
   .ct-hero-title { font-size: 1.75rem; }
-  .ct-type-btn { font-size: 0.75rem; padding: 0.5rem 0.6rem; }
+  .ct-type-nav { grid-template-columns: repeat(2, 1fr); }
+  .ct-type-btn { font-size: 0.72rem; padding: 0.5rem 0.5rem; }
 }

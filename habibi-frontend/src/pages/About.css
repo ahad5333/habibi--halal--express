@@ -658,7 +658,17 @@
   .about-stats-bar { flex-wrap: wrap; gap: 0.5rem; }
   .about-stat { flex: 1 1 45%; padding: 0.6rem 1rem; }
 }
+@media (max-width: 480px) {
+  /* Staff cards too cramped at 2-col on narrow phones */
+  .staff-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  /* Collage always 2-col — reduce gap on small screens */
+  .collage-grid { gap: 0.625rem; }
+  .about-cta-inline { width: 100%; }
+}
+
 @media (max-width: 400px) {
   .about-hero { min-height: 260px; }
   .about-hero-title { font-size: 1.7rem; }
+  /* Single column staff grid on very small phones */
+  .staff-grid { grid-template-columns: 1fr; }
 }

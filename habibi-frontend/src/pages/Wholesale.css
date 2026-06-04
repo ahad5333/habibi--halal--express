@@ -312,3 +312,16 @@
   .form-row.two-col { grid-template-columns: 1fr; }
   .wholesale-title { font-size: 2rem; }
 }
+
+@media (max-width: 480px) {
+  .wholesale-hero { padding: 4rem 0 3rem; }
+  .wholesale-title { font-size: 1.75rem; }
+  .wholesale-form-card { padding: 1.25rem 1rem; }
+  .form-row.two-col { gap: 0.875rem; }
+  .wholesale-success { padding: 2rem 1rem; }
+}
+
+@media (max-width: 375px) {
+  .wholesale-hero { padding: 3rem 0 2rem; }
+  .wholesale-title { font-size: 1.5rem; }
+}
