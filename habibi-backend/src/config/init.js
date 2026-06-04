@@ -276,6 +276,18 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
 
+    // ── Migrate carts.customer_id → user_id if old schema ─────────
+    await client.query(`
+      DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='carts' AND column_name='customer_id'
+        ) THEN
+          ALTER TABLE carts RENAME COLUMN customer_id TO user_id;
+        END IF;
+      END $$;
+    `);
+
     // ── Coupons ───────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS coupons (
