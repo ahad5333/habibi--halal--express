@@ -37,16 +37,12 @@ async function compress(filePath) {
   const webpPath = filePath.replace(/\.(jpe?g|png)$/i, '.webp');
 
   try {
-    const img = sharp(filePath).resize({ width: MAX_WIDTH, withoutEnlargement: true });
+    // Re-compress original
+    if (sizeBefore > 50 * 1024) {
+      const buf = ext === '.png'
+        ? await sharp(filePath).resize({ width: MAX_WIDTH, withoutEnlargement: true }).png({ quality: PNG_QUALITY, compressionLevel: 9 }).toBuffer()
+        : await sharp(filePath).resize({ width: MAX_WIDTH, withoutEnlargement: true }).jpeg({ quality: JPEG_QUALITY, progressive: true }).toBuffer();
 
-    // Re-compress original if not already done
-    if (sizeBefore > 100 * 1024) {
-      let buf;
-      if (ext === '.png') {
-        buf = await img.clone().png({ quality: PNG_QUALITY, compressionLevel: 9 }).toBuffer();
-      } else {
-        buf = await img.clone().jpeg({ quality: JPEG_QUALITY, progressive: true }).toBuffer();
-      }
       if (buf.length < sizeBefore) {
         fs.writeFileSync(filePath, buf);
         totalBefore += sizeBefore;
@@ -58,14 +54,18 @@ async function compress(filePath) {
       }
     }
 
-    // Generate WebP version if it doesn't exist or is outdated
+    // Generate WebP — always fresh sharp() call to avoid pipeline reuse
     if (!fs.existsSync(webpPath)) {
-      const webpBuf = await img.clone().webp({ quality: WEBP_QUALITY }).toBuffer();
+      const currentSize = fs.statSync(filePath).size;
+      const webpBuf = await sharp(filePath)
+        .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+        .webp({ quality: WEBP_QUALITY })
+        .toBuffer();
       fs.writeFileSync(webpPath, webpBuf);
-      const saved = sizeBefore - webpBuf.length;
+      const saved = currentSize - webpBuf.length;
       totalWebpSaved += Math.max(0, saved);
       webpCount++;
-      console.log(`✓ WebP: ${path.relative(IMAGES_DIR, webpPath)} — ${kb(webpBuf.length)} (was ${kb(sizeBefore)})`);
+      console.log(`✓ WebP: ${path.relative(IMAGES_DIR, webpPath)} — ${kb(webpBuf.length)} (was ${kb(currentSize)})`);
     }
   } catch (e) {
     console.error(`✗ ${filePath}: ${e.message}`);
