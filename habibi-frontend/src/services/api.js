@@ -164,6 +164,12 @@ export const contactAPI = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+
+  /** GET /api/contact/unsubscribe?token= */
+  unsubscribe: (token) =>
+    request(`/api/contact/unsubscribe?token=${encodeURIComponent(token)}`, {
+      headers: { Accept: 'application/json' },
+    }),
 };
 
 // ─── Payments ────────────────────────────────────────────────────────────────

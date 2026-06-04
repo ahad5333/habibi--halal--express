@@ -44,40 +44,12 @@ const subscribeNewsletter = async (req, res) => {
 
 const unsubscribeNewsletter = async (req, res) => {
   const { token } = req.query;
-
-  const page = (title, body, isError = false) => `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${title} — Habibi Halal Express</title>
-  <style>
-    *{box-sizing:border-box}
-    body{font-family:Helvetica Neue,Arial,sans-serif;background:#f8fafc;color:#1e293b;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
-    .card{background:#fff;border-radius:14px;padding:2.5rem 2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.06);border:1px solid #e2e8f0}
-    h1{color:${isError ? '#ef4444' : '#1e3a8a'};font-size:1.35rem;margin:0 0 .75rem}
-    p{color:#64748b;line-height:1.65;font-size:.95rem;margin:.5rem 0}
-    a{color:#1e3a8a;text-decoration:none;font-weight:600}
-    a:hover{text-decoration:underline}
-    .logo{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#94a3b8;margin-bottom:1.25rem}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <p class="logo">Habibi Halal Express</p>
-    <h1>${title}</h1>
-    ${body}
-    <p style="margin-top:1.5rem"><a href="${FRONTEND_URL}">← Back to website</a></p>
-  </div>
-</body>
-</html>`;
+  const wantsJson = req.headers.accept?.includes('application/json');
 
   if (!token) {
-    return res.status(400).send(page(
-      'Invalid Link',
-      '<p>This unsubscribe link is missing a required token. Please use the link from your email.</p>',
-      true
-    ));
+    return wantsJson
+      ? res.status(400).json({ error: 'Missing token. Please use the link from your email.' })
+      : res.redirect(`${FRONTEND_URL}/unsubscribe?error=missing_token`);
   }
 
   try {
@@ -86,18 +58,17 @@ const unsubscribeNewsletter = async (req, res) => {
       [token]
     );
     if (!result.rows[0]) {
-      return res.status(404).send(page(
-        'Link Not Found',
-        '<p>This unsubscribe link is invalid or has already been used.</p>',
-        true
-      ));
+      return wantsJson
+        ? res.status(404).json({ error: 'This link is invalid or has already been used.' })
+        : res.redirect(`${FRONTEND_URL}/unsubscribe?error=invalid_token`);
     }
-    res.send(page(
-      'Unsubscribed',
-      `<p>You've been removed from the Habibi Halal Express mailing list.<br>You won't receive any further marketing emails from us.</p>`
-    ));
+    return wantsJson
+      ? res.json({ success: true, email: result.rows[0].email })
+      : res.redirect(`${FRONTEND_URL}/unsubscribe?success=1`);
   } catch (err) {
-    res.status(500).send(page('Error', '<p>Something went wrong. Please try again later.</p>', true));
+    return wantsJson
+      ? res.status(500).json({ error: 'Something went wrong. Please try again later.' })
+      : res.redirect(`${FRONTEND_URL}/unsubscribe?error=server_error`);
   }
 };
 

@@ -156,7 +156,7 @@ const sendNewsletter = async (subscribers, subject, body, template = {}) => {
     const first = subscribers[0];
     const sampleEmail = typeof first === 'string' ? first : first.email;
     const sampleToken = typeof first === 'string' ? null : first.unsubscribeToken;
-    const unsubscribeUrl = sampleToken ? `${frontendUrl}/api/contact/unsubscribe?token=${sampleToken}` : null;
+    const unsubscribeUrl = sampleToken ? `${frontendUrl}/unsubscribe?token=${sampleToken}` : null;
     const html = renderBody('base-light', { content, title: subject, unsubscribeUrl, year: new Date().getFullYear() });
     console.log(`--- SIMULATED NEWSLETTER CAMPAIGN --- RECIPIENTS: ${subscribers.length}`);
     logSimulatedEmail(`${sampleEmail} (+ others)`, subject, html);
@@ -167,7 +167,7 @@ const sendNewsletter = async (subscribers, subject, body, template = {}) => {
   for (const sub of subscribers) {
     const email = typeof sub === 'string' ? sub : sub.email;
     const token = typeof sub === 'string' ? null : sub.unsubscribeToken;
-    const unsubscribeUrl = token ? `${frontendUrl}/api/contact/unsubscribe?token=${token}` : null;
+    const unsubscribeUrl = token ? `${frontendUrl}/unsubscribe?token=${token}` : null;
     try {
       const html = renderBody('base-light', { content, title: subject, unsubscribeUrl, year: new Date().getFullYear() });
       await transporter.sendMail({ from: emailFrom, to: email, subject, html });
