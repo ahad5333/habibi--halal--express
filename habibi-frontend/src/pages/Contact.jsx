@@ -256,6 +256,12 @@ const Contact = () => {
                 </a>
               </div>
               <div className="ct-info-card">
+                <p className="ct-info-badge">URGENT MATTERS</p>
+                <a href="mailto:urgent@habibihe.com" className="ct-info-link">
+                  <Mail size={13} /> urgent@habibihe.com
+                </a>
+              </div>
+              <div className="ct-info-card">
                 <p className="ct-info-badge">ADDRESS</p>
                 <p className="ct-info-text" style={{ fontSize: '0.8rem', lineHeight: 1.5, color: 'inherit' }}>
                   2974 Jerome Ave<br />Bronx, NY 10468
