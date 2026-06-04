@@ -819,25 +819,25 @@
   /* 1-column grid for phones */
   .menu-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
-  /* Card — horizontal (image left, content right) */
+  /* Card — compact horizontal row */
   .menu-card {
     flex-direction: row;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    min-height: 100px;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    min-height: 80px;
   }
-  .menu-card:hover { transform: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .menu-card:hover { transform: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
 
-  /* Image — fixed left thumbnail */
+  /* Image — compact left thumbnail */
   .menu-card-img-wrap {
-    width: 110px;
-    min-width: 110px;
+    width: 88px;
+    min-width: 88px;
     height: auto;
-    min-height: 100px;
-    border-radius: 12px 0 0 12px;
+    min-height: 80px;
+    border-radius: 10px 0 0 10px;
     flex-shrink: 0;
     padding: 0;
   }
@@ -845,16 +845,16 @@
 
   /* Category badge */
   .menu-card-category {
-    font-size: 0.5rem;
-    padding: 0.12rem 0.35rem;
+    font-size: 0.48rem;
+    padding: 0.1rem 0.3rem;
   }
 
   /* Body */
   .menu-card-body {
     flex: 1;
     min-width: 0;
-    padding: 0.7rem 0.85rem;
-    gap: 0.2rem;
+    padding: 0.5rem 0.65rem;
+    gap: 0.15rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -865,13 +865,13 @@
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .menu-card-name {
-    font-size: 0.88rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.2;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -880,28 +880,19 @@
   }
 
   .menu-card-price {
-    font-size: 0.92rem;
+    font-size: 0.82rem;
     font-weight: 800;
     color: var(--color-primary);
     flex-shrink: 0;
   }
 
-  /* Show 1-line description */
-  .menu-card-desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 0.72rem;
-    flex: none;
-    max-width: 100%;
-    word-break: break-word;
-  }
+  /* Hide description — keep card compact */
+  .menu-card-desc { display: none; }
 
   /* Footer */
   .menu-card-footer {
-    margin-top: 0.3rem;
-    padding-top: 0.45rem;
+    margin-top: 0.25rem;
+    padding-top: 0.35rem;
     border-top: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
@@ -912,8 +903,8 @@
 
   /* Add button */
   .add-btn {
-    padding: 0.35rem 0.9rem;
-    font-size: 0.72rem;
+    padding: 0.28rem 0.75rem;
+    font-size: 0.68rem;
     font-weight: 700;
     border-radius: 6px;
     background: var(--color-primary);
@@ -924,21 +915,16 @@
   .add-btn.added { background: #16a34a; border: none; color: #fff; }
 }
 
-/* Very small phones — 1 column, slightly tighter */
+/* Very small phones */
 @media (max-width: 380px) {
-  .menu-grid { gap: 0.6rem; }
-
+  .menu-grid { gap: 0.4rem; }
   .menu-header-title { font-size: 1.5rem; }
-
-  .menu-card-img-wrap { width: 90px; min-width: 90px; }
-
-  .menu-card-name { font-size: 0.82rem; }
-
-  .menu-card-price { font-size: 0.86rem; }
-
-  .menu-card-body { padding: 0.6rem 0.7rem; }
-
-  .add-btn { padding: 0.32rem 0.75rem; font-size: 0.68rem; }
+  .menu-card { min-height: 72px; }
+  .menu-card-img-wrap { width: 76px; min-width: 76px; min-height: 72px; }
+  .menu-card-name { font-size: 0.75rem; }
+  .menu-card-price { font-size: 0.78rem; }
+  .menu-card-body { padding: 0.45rem 0.55rem; }
+  .add-btn { padding: 0.25rem 0.6rem; font-size: 0.64rem; }
 }
 
 /* ── Delivery partners mobile ── */
