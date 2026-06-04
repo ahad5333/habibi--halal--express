@@ -961,16 +961,27 @@
   .qty-stepper-val { font-size: 0.72rem; min-width: 18px; }
 }
 
-/* Very small phones — 1 column */
+/* Sub-400px — tighter 2-column (375px iPhoneSE, 393px iPhone 14/15, etc.) */
 @media (max-width: 400px) {
-  .menu-grid { grid-template-columns: 1fr; gap: 0.55rem; }
   .menu-header-title { font-size: 1.5rem; }
-  .menu-card-img-wrap { height: 160px; }
-  .menu-card-name { font-size: 0.9rem; }
-  .menu-card-price { font-size: 0.9rem; }
+  .menu-grid { gap: 0.42rem; }
+  .menu-card-img-wrap { height: 100px; }
+  .menu-card-name { font-size: 0.73rem; }
+  .menu-card-price { font-size: 0.73rem; }
+  .menu-card-body { padding: 0.45rem 0.5rem 0; }
+  .add-btn { padding: 0.2rem 0.4rem; font-size: 0.63rem; }
+  .qty-stepper { height: 22px; }
+  .qty-stepper-btn { width: 20px; }
+}
+
+/* Only the tiniest phones go 1-column */
+@media (max-width: 320px) {
+  .menu-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+  .menu-card-img-wrap { height: 140px; }
+  .menu-card-name { font-size: 0.88rem; }
+  .menu-card-price { font-size: 0.88rem; }
   .menu-card-body { padding: 0.65rem 0.75rem 0; }
   .add-btn { padding: 0.3rem 0.75rem; font-size: 0.75rem; }
-  .menu-card-desc { -webkit-line-clamp: 2; }
 }
 
 /* ── Delivery partners mobile ── */
