@@ -529,13 +529,13 @@
 }
 
 .add-btn {
-  background: transparent;
-  border: 1px solid var(--color-border);
+  background: var(--color-primary);
+  border: none;
   border-radius: 6px;
-  padding: 0.38rem 0.8rem;
+  padding: 0.38rem 0.85rem;
   font-size: 0.73rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
+  font-weight: 700;
+  color: #ffffff;
   font-family: var(--font-sans);
   cursor: pointer;
   transition: all 0.18s;
@@ -544,9 +544,8 @@
 }
 
 .add-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: rgba(229,182,78,0.07);
+  background: var(--color-primary-hover);
+  color: #ffffff;
 }
 
 .add-btn.added {
@@ -788,50 +787,31 @@
   .menu-main-header { margin-bottom: 1rem; }
 }
 
-/* Tablet — 2-column, same design scaled down */
-@media (max-width: 768px) {
-  .menu-header { height: 180px; }
-  .menu-header-title { font-size: 2.2rem; }
-  .menu-header-sub { font-size: 0.82rem; }
-  .menu-section-title { font-size: 1.45rem; }
-  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-  .menu-card-img-wrap { height: 135px; }
-  .menu-card-name { font-size: 0.88rem; }
-  .menu-card-price { font-size: 0.9rem; }
-  .menu-card-desc { font-size: 0.72rem; -webkit-line-clamp: 1; }
-}
-
-/* Phone — 3-column, everything scaled proportionally */
-@media (max-width: 540px) {
-  .menu-header { height: 145px; }
-  .menu-header-title { font-size: 1.75rem; }
-  .menu-header-sub { font-size: 0.76rem; }
-  .menu-header-halal { width: 38px; height: 38px; }
-  .menu-search-bar { padding: 0.55rem 1rem; }
-  .menu-body { padding-top: 1rem; padding-bottom: 3rem; gap: 0; }
-  .category-btn { padding: 0.35rem 0.65rem; font-size: 0.7rem; gap: 0.3rem; }
-  .cat-icon { width: 14px; height: 14px; }
-  .cat-icon img { width: 12px; height: 12px; }
-  .cat-emoji { font-size: 0.78rem; }
-  .menu-section-title { font-size: 1.1rem; }
-  .menu-main-header { margin-bottom: 0.6rem; padding-bottom: 0.5rem; }
+/* ── Mobile responsive — fires at 900px (sidebar already collapses here) ── */
+@media (max-width: 900px) {
+  .menu-header { height: 160px; }
+  .menu-header-title { font-size: 2rem; }
+  .menu-header-sub { font-size: 0.8rem; }
+  .menu-section-title { font-size: 1.3rem; }
+  .menu-search-bar { padding: 0.6rem 1.25rem; }
+  .menu-body { padding-top: 1.25rem; padding-bottom: 4rem; gap: 0; }
 
   /* 3-column grid */
-  .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 
-  /* Card — same theme, reduced sizes */
-  .menu-card { border-radius: 8px; }
-  .menu-card:hover { transform: none; }
-  .menu-card-img-wrap { height: 88px; padding: 8px; }
-  .menu-card-img { border-radius: 6px; object-fit: cover; }
-  .menu-card-category { font-size: 0.42rem; padding: 0.08rem 0.25rem; }
+  /* Card — same design, scaled down */
+  .menu-card { border-radius: 10px; }
+  .menu-card:hover { transform: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  .menu-card-img-wrap { height: 120px; padding: 10px; }
+  .menu-card-img { border-radius: 8px; object-fit: cover; }
+  .menu-card-category { font-size: 0.48rem; padding: 0.1rem 0.3rem; }
 
-  .menu-card-body { padding: 0.4rem 0.45rem 0.45rem; gap: 0.1rem; }
+  .menu-card-body { padding: 0.55rem 0.65rem 0.6rem; gap: 0.2rem; }
   .menu-card-top { gap: 0; align-items: flex-start; }
   .menu-card-name {
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.25;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -843,41 +823,73 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 0.25rem;
-    padding-top: 0.28rem;
+    margin-top: 0.3rem;
+    padding-top: 0.35rem;
     border-top: 1px solid var(--color-border);
-    gap: 0.15rem;
+    gap: 0.2rem;
   }
   .diet-tags { display: none; }
-  .menu-card-price { font-size: 0.68rem; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
-
-  /* Add button — small pill, shows only "+" */
-  .add-btn {
-    padding: 0.2rem 0.45rem;
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 5px;
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
+  .menu-card-price {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--color-primary);
     white-space: nowrap;
     flex-shrink: 0;
   }
+
+  /* Add button — solid navy pill, clearly visible */
+  .add-btn {
+    padding: 0.28rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    background: var(--color-primary);
+    color: #ffffff;
+    border: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+  }
   .btn-add-text { display: none; }
-  .add-btn:hover { background: var(--color-primary-hover, #1e40af); }
+  .add-btn:hover { background: var(--color-primary-hover); }
   .add-btn.added { background: #16a34a; }
 
   /* Qty stepper */
-  .qty-stepper { height: 22px; }
-  .qty-stepper-btn { width: 22px; }
-  .qty-stepper-val { font-size: 0.62rem; min-width: 15px; }
+  .qty-stepper { height: 26px; }
+  .qty-stepper-btn { width: 26px; }
+  .qty-stepper-val { font-size: 0.72rem; min-width: 18px; }
 }
 
-/* Very small phones ≤380px */
-@media (max-width: 380px) {
+/* Smaller phones — tighter sizes */
+@media (max-width: 600px) {
+  .menu-header { height: 145px; }
+  .menu-header-title { font-size: 1.75rem; }
+  .menu-header-sub { font-size: 0.76rem; }
+  .menu-header-halal { width: 38px; height: 38px; }
+  .menu-search-bar { padding: 0.55rem 1rem; }
+  .menu-body { padding-top: 1rem; padding-bottom: 3rem; }
+  .category-btn { padding: 0.35rem 0.65rem; font-size: 0.7rem; gap: 0.3rem; }
+  .cat-icon { width: 14px; height: 14px; }
+  .cat-icon img { width: 12px; height: 12px; }
+  .cat-emoji { font-size: 0.78rem; }
+  .menu-section-title { font-size: 1.1rem; }
+  .menu-main-header { margin-bottom: 0.6rem; padding-bottom: 0.5rem; }
+  .menu-grid { gap: 0.5rem; }
+  .menu-card-img-wrap { height: 95px; padding: 8px; }
+  .menu-card-body { padding: 0.4rem 0.5rem 0.45rem; }
+  .menu-card-name { font-size: 0.68rem; }
+  .menu-card-price { font-size: 0.7rem; }
+  .add-btn { padding: 0.22rem 0.48rem; font-size: 0.65rem; }
+  .qty-stepper { height: 23px; }
+  .qty-stepper-btn { width: 23px; }
+  .qty-stepper-val { font-size: 0.65rem; min-width: 16px; }
+}
+
+/* Very small phones ≤400px */
+@media (max-width: 400px) {
   .menu-grid { gap: 0.4rem; }
   .menu-header-title { font-size: 1.5rem; }
-  .menu-card-img-wrap { height: 78px; padding: 6px; }
+  .menu-card-img-wrap { height: 82px; padding: 6px; }
   .menu-card-name { font-size: 0.6rem; }
   .menu-card-price { font-size: 0.62rem; }
   .menu-card-body { padding: 0.32rem 0.38rem 0.38rem; }
