@@ -459,17 +459,17 @@ const Menu = () => {
                           <span className="ice-crystal i3">❄</span>
                         </div>
                       )}
-                      <picture style={{display:'contents'}}>
-                        <source srcSet={toWebp(imgSrc)} type="image/webp" />
-                        <img
-                          src={imgSrc}
-                          alt={name}
-                          className="menu-card-img"
-                          loading="lazy"
-                          decoding="async"
-                          onError={e => { e.target.src = getFoodPhoto(item.id, idx + 13); }}
-                        />
-                      </picture>
+                      <img
+                        src={toWebp(imgSrc)}
+                        alt={name}
+                        className="menu-card-img"
+                        loading="lazy"
+                        decoding="async"
+                        onError={e => {
+                          e.target.onerror = () => { e.target.src = getFoodPhoto(item.id, idx + 13); };
+                          e.target.src = imgSrc;
+                        }}
+                      />
                       {item.category && (
                         <span className="menu-card-category">
                           {(item.category || '').toLowerCase().includes('berger')

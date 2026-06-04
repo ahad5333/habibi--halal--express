@@ -115,18 +115,18 @@ export default function RecommendationBand({
         {items.map(item => (
           <div key={item.id} className="rb-card">
             <div className="rb-img-wrap">
-              <picture style={{display:'contents'}}>
-                <source srcSet={toWebp(item.image_url || getFallbackImg(item.id))} type="image/webp" />
-                <img
-                  src={item.image_url || getFallbackImg(item.id)}
-                  alt={item.name}
-                  className="rb-img"
-                  loading="lazy"
-                  decoding="async"
-                  onError={e => { e.target.src = getFallbackImg(item.id); }}
-                  draggable={false}
-                />
-              </picture>
+              <img
+                src={toWebp(item.image_url || getFallbackImg(item.id))}
+                alt={item.name}
+                className="rb-img"
+                loading="lazy"
+                decoding="async"
+                onError={e => {
+                  e.target.onerror = () => { e.target.src = getFallbackImg(item.id); };
+                  e.target.src = item.image_url || getFallbackImg(item.id);
+                }}
+                draggable={false}
+              />
             </div>
             <div className="rb-card-body">
               <p className="rb-item-name">{item.name}</p>
