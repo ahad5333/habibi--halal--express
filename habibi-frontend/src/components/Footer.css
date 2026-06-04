@@ -412,7 +412,7 @@
   .footer-newsletter { max-width: 100%; width: 100%; }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .footer-container { gap: 2rem; }
   .footer-links { gap: 1.25rem; }
   .footer-bottom { font-size: 0.7rem; }

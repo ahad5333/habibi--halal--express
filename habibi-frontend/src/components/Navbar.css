@@ -712,7 +712,7 @@
   .auth-btns { display: none; }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .logo-text { display: none; }
   .logo-img { width: 64px; height: 64px; }
   .navbar-top-inner { padding: 0.45rem 1rem; }
