@@ -936,27 +936,73 @@
   .menu-main-header { margin-bottom: 0.6rem; padding-bottom: 0.5rem; }
 }
 
-/* ≤480px — header shrinks further; cards still fluid */
+/* ≤480px (including Redmi Note 10 at 393px) — 1-column layout for high-quality readability */
 @media (max-width: 480px) {
   .menu-header { height: 130px; }
   .menu-header-title { font-size: 1.6rem; }
+  
+  .menu-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .menu-card-img-wrap {
+    width: calc(100% - 16px);
+    aspect-ratio: 16 / 9;
+    max-height: 200px;
+    margin: 8px 8px 0;
+  }
+  .menu-card-body {
+    padding: 0.75rem 1rem 0;
+  }
+  .menu-card-name {
+    font-size: 1.05rem;
+    min-height: auto;
+    -webkit-line-clamp: unset;
+  }
+  .menu-card-desc {
+    display: -webkit-box;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+  .menu-card-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-border);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0;
+  }
+  .diet-tags {
+    display: flex;
+    gap: 0.3rem;
+  }
+  .menu-card-price {
+    font-size: 1rem;
+  }
+  .add-btn {
+    width: auto;
+    padding: 0.45rem 1.1rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+  }
+  .qty-stepper {
+    height: 30px;
+  }
+  .qty-stepper-btn {
+    width: 30px;
+  }
+  .qty-stepper-val {
+    font-size: 0.85rem;
+  }
 }
 
 /* ≤400px — header title only */
 @media (max-width: 400px) {
   .menu-header-title { font-size: 1.5rem; }
-}
-
-/* Only the tiniest phones (320px and below) go 1-column */
-@media (max-width: 320px) {
-  .menu-grid { grid-template-columns: 1fr; gap: 0.5rem; }
-  .menu-card-img-wrap { max-height: 180px; }
-  .menu-card-name { font-size: 0.88rem; }
-  .menu-card-price { font-size: 0.88rem; }
-  .menu-card-body { padding: 0.65rem 0.75rem 0; }
-  .add-btn { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
-  .qty-stepper { height: 28px; }
-  .qty-stepper-btn { width: 26px; }
 }
 
 /* ── Delivery partners mobile ── */

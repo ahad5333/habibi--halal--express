@@ -721,11 +721,16 @@
   .logo-rule { display: none; }
 }
 
+@media (max-width: 480px) {
+  .logo-name-express { display: none; }
+  .logo-name-habibi { font-size: 1.35rem; letter-spacing: 3px; }
+  .logo-rule { display: none; }
+}
+
 @media (max-width: 400px) {
   .navbar-top-inner { padding: 0.4rem 0.75rem; }
-  .logo-img { width: 46px; height: 46px; }
-  .logo-name-habibi { font-size: 1.3rem; letter-spacing: 3px; }
-  .logo-name-express { font-size: 0.38rem; letter-spacing: 2px; }
+  .logo-img { width: 42px; height: 42px; }
+  .logo-name-habibi { font-size: 1.2rem; letter-spacing: 2px; }
 }
 
 /* ── Mobile Responsive (added) ─────────────────────────────── */
