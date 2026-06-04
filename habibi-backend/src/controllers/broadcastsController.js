@@ -17,7 +17,7 @@ exports.getBroadcasts = async (req, res) => {
 
 exports.sendBroadcast = async (req, res) => {
   try {
-    const { title, message, audience, channels } = req.body;
+    const { title, message, audience, channels, email_template } = req.body;
     if (!title || !message) return res.status(400).json({ error: 'Title and message are required' });
     const adminName = req.user?.name || 'Admin';
     const channelList = channels || ['sms'];
@@ -112,7 +112,8 @@ exports.sendBroadcast = async (req, res) => {
         }
 
         if (subscribers.length > 0) {
-          const resEmail = await emailService.sendNewsletter(subscribers, title, message);
+          const emailSubject = (email_template?.subject || '').trim() || title;
+          const resEmail = await emailService.sendNewsletter(subscribers, emailSubject, message, email_template);
           if (resEmail.success) {
             emailSentCount = resEmail.sent_count || subscribers.length;
           }

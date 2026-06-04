@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+      .wrapper { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+      .header { background-color: #0f172a; padding: 30px 20px; text-align: center; border-bottom: 4px solid #d97706; }
+      .header-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #d97706; margin: 0 0 6px; }
+      .header h1 { color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 2px; margin: 0; text-transform: uppercase; }
+      .content { padding: 35px 25px; line-height: 1.6; font-size: 15px; }
+      .cta-btn { display: inline-block; background-color: #1e3a8a; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 14px; text-align: center; margin: 20px 0; border: none; letter-spacing: 0.5px; }
+      .footer { background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+      .footer a { color: #1e3a8a; text-decoration: none; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="header">
+        <p class="header-eyebrow">Habibi Halal Express</p>
+        <h1>&#x1F956; Fresh &amp; Halal</h1>
+      </div>
+      <div class="content">
+        {{{content}}}
+      </div>
+      <div class="footer">
+        <p>&copy; {{year}} Habibi Halal Express. All rights reserved.</p>
+        <p>204 E Mosholu Pkwy S, Bronx, NY 10458 | <a href="https://habibihalal.com">Visit our website</a></p>
+        {{#if unsubscribeUrl}}
+        <p style="margin-top:10px;font-size:11px;">Don't want these emails? <a href="{{unsubscribeUrl}}">Unsubscribe here</a>.</p>
+        {{/if}}
+      </div>
+    </div>
+  </body>
+</html>

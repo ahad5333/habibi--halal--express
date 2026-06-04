@@ -1,0 +1,54 @@
+# Deploys habibi-backend to the production VPS whenever the backend changes on main.
+#
+# Required GitHub Secrets (Settings → Secrets → Actions):
+#   DEPLOY_HOST      — server IP or hostname (e.g. 123.45.67.89)
+#   DEPLOY_USER      — SSH user (e.g. ubuntu or root)
+#   DEPLOY_SSH_KEY   — private key whose public key is in ~/.ssh/authorized_keys on the server
+#   DEPLOY_PORT      — SSH port (usually 22)
+#   BACKEND_PATH     — absolute path to the backend on the server (e.g. /var/www/habibi/habibi-backend)
+#
+# Assumptions:
+#   - The server has Node.js ≥ 20 and PM2 installed
+#   - PM2 process is named "habibi-backend"  (pm2 start server.js --name habibi-backend)
+#   - The repo is already cloned at BACKEND_PATH on the server
+
+name: Deploy — Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'habibi-backend/**'
+  workflow_dispatch:   # allow manual trigger from the Actions tab
+
+jobs:
+  deploy:
+    name: SSH deploy to production
+    runs-on: ubuntu-latest
+    environment: production   # optional: tie to a GitHub Environment for approval gates
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          port:     ${{ secrets.DEPLOY_PORT }}
+          script: |
+            set -e
+            echo "==> Pulling latest code..."
+            cd ${{ secrets.BACKEND_PATH }}
+            git pull origin main
+
+            echo "==> Installing production dependencies..."
+            npm ci --omit=dev
+
+            echo "==> Reloading PM2 process..."
+            pm2 reload habibi-backend --update-env
+
+            echo "==> Verifying health endpoint..."
+            sleep 3
+            curl -sf http://localhost:3001/health | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('status')=='ok' else 1)" \
+              && echo "Health check passed." \
+              || (echo "Health check FAILED — check PM2 logs" && pm2 logs habibi-backend --lines 30 --nostream && exit 1)

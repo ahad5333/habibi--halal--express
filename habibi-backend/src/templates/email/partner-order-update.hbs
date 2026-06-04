@@ -1,0 +1,45 @@
+<h2>Order {{status_label}}</h2>
+<p>Hello{{#if business_name}}, <strong>{{business_name}}</strong>{{/if}},</p>
+<p>{{status_body}}</p>
+
+<div class="info-box">
+  <table style="width:100%;border-collapse:collapse;">
+    <tr><td>Order #</td><td><strong>{{order_number}}</strong></td></tr>
+    <tr><td>Status</td><td><span class="status-badge">{{status_label}}</span></td></tr>
+    {{#if total}}<tr><td>Order Total</td><td><strong>${{currency total}}</strong></td></tr>{{/if}}
+  </table>
+</div>
+
+{{#if items}}
+<div class="info-box" style="padding:12px 16px;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">
+        <th style="text-align:left;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">Item</th>
+        <th style="text-align:center;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">Qty</th>
+        <th style="text-align:right;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td style="padding:6px 0;border-bottom:1px solid #222;font-size:13px;color:#e5e5e5;">{{name}}</td>
+        <td style="padding:6px 0;border-bottom:1px solid #222;font-size:13px;text-align:center;color:#aaa;">{{qty}} {{unit}}</td>
+        <td style="padding:6px 0;border-bottom:1px solid #222;font-size:13px;text-align:right;color:#E5B64E;font-weight:600;">${{lineTotal}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <div style="text-align:right;font-size:15px;font-weight:700;color:#E5B64E;margin-top:10px;padding-top:8px;border-top:1px solid #2a2a2a;">
+    Order Total: ${{currency total}}
+  </div>
+</div>
+{{/if}}
+
+<div style="text-align:center;margin:28px 0;">
+  <a href="{{portal_url}}" class="cta-btn">View in Partner Portal</a>
+</div>
+
+<p style="font-size:13px;color:#666;">
+  Questions about your order? Reply to this email or contact your Habibi account manager.
+</p>

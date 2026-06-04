@@ -6,11 +6,45 @@ const rateLimit = require("express-rate-limit");
 const pool = require("./config/db");
 const app = express();
 
-// Security headers — allow cross-origin reads so our React apps can call the API
+// Security headers
 app.use(helmet({
+  // Allow cross-origin reads so our React apps and mobile app can call the API
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  frameguard: { action: 'deny' },        // Clickjacking protection
+
+  // Clickjacking: deny all framing (also enforced by CSP frame-ancestors below)
+  frameguard: { action: 'deny' },
+
+  // Only send the origin (no path/query) as Referer on cross-origin requests
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+
+  // Content-Security-Policy — this is a JSON API so scripts are never served;
+  // keep rules tight to block any injected markup if an error page leaks HTML.
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:      ["'self'"],
+      scriptSrc:       ["'none'"],
+      objectSrc:       ["'none'"],
+      baseUri:         ["'self'"],
+      frameAncestors:  ["'none'"],
+      // Allow images/fonts used in emailed HTML (opened in mail clients, not here,
+      // but belt-and-suspenders in case any route ever renders HTML)
+      imgSrc:          ["'self'", 'data:', 'https:'],
+      upgradeInsecureRequests: [],
+    },
+  },
+
+  // Strict-Transport-Security — 1 year, include subdomains, allow preload
+  hsts: {
+    maxAge:            31536000,
+    includeSubDomains: true,
+    preload:           true,
+  },
+
+  // Prevent MIME-type sniffing
+  noSniff: true,
+
+  // Block IE's legacy X-XSS-Protection reflection attack
+  xssFilter: false, // Disabled — modern browsers ignore it; CSP is the right layer
 }));
 
 // HTTP request logging

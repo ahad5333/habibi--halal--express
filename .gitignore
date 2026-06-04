@@ -43,5 +43,5 @@ habibi media docs/
 # Claude AI settings
 .claude/
 
-# GitHub workflows (not needed in repo)
-.github/
+# Claude AI settings are excluded, but GitHub Actions workflows must be tracked
+.github/FUNDING.yml

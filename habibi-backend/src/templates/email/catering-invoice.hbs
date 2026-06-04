@@ -1,0 +1,24 @@
+<h2 style="color:#1e3a8a;margin-top:0;">Your Catering Invoice</h2>
+<p>Hi <strong>{{name}}</strong>, please find your catering quote below. To confirm your booking, reply to this email or call us at <strong>(347) 703-3731</strong>.</p>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin:20px 0;">
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <tr><td style="color:#64748b;padding:5px 0;width:130px;">Invoice #</td><td style="font-weight:700;">{{quote_number}}</td></tr>
+    <tr><td style="color:#64748b;padding:5px 0;">Event Type</td><td>{{event_type}}</td></tr>
+    <tr><td style="color:#64748b;padding:5px 0;">Event Date</td><td style="font-weight:600;">{{event_date}}</td></tr>
+    <tr><td style="color:#64748b;padding:5px 0;">Guest Count</td><td style="font-weight:600;">{{party_size}} guests</td></tr>
+    <tr><td style="color:#64748b;padding:5px 0;">Service Type</td><td style="text-transform:capitalize;">{{service_type}}</td></tr>
+  </table>
+</div>
+
+<div style="background:#1e3a8a;border-radius:8px;padding:16px 24px;margin:20px 0;text-align:center;">
+  <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0 0 4px;">TOTAL QUOTED PRICE</p>
+  <p style="color:#fbbf24;font-size:32px;font-weight:800;margin:0;">${{final_price}}</p>
+</div>
+
+{{#if invoice_notes}}
+<p style="font-size:14px;"><strong>Notes from our team:</strong><br>{{invoice_notes}}</p>
+{{/if}}
+
+<p style="font-size:13px;color:#64748b;">A 25% deposit is required to secure your date. Full payment is due 48 hours before the event. We accept credit card, Zelle, and Cash App.</p>
+<p>— The Habibi Halal Express Catering Team</p>

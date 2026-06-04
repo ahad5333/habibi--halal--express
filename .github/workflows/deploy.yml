@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Backend lint + syntax check ──────────────────────────────────────────────
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: habibi-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: habibi-backend/package-lock.json
+      - run: npm ci
+      - name: Syntax check
+        run: node --check src/app.js src/server.js
+
+  # ── Frontend build (catches broken imports + type errors at Vite build) ──────
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: habibi-frontend
+    env:
+      VITE_API_URL: https://api.habibihalal.com
+      VITE_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      VITE_PAYPAL_CLIENT_ID: placeholder
+      VITE_GA_MEASUREMENT_ID: G-PLACEHOLDER
+      VITE_FB_PIXEL_ID: '0'
+      VITE_GOOGLE_MAPS_KEY: placeholder
+      VITE_SITE_URL: https://habibihalal.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: habibi-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  # ── Admin panel build ─────────────────────────────────────────────────────────
+  admin:
+    name: Admin Panel
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: habibi-admin
+    env:
+      VITE_API_URL: https://api.habibihalal.com
+      VITE_FRONTEND_URL: https://habibihalal.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: habibi-admin/package-lock.json
+      - run: npm ci
+      - run: npm run build
