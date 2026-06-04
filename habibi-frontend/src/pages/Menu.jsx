@@ -485,7 +485,6 @@ const Menu = () => {
                     <div className="menu-card-body">
                       <div className="menu-card-top">
                         <h3 className="menu-card-name">{name}</h3>
-                        <span className="menu-card-price">${price.toFixed(2)}</span>
                       </div>
                       {item.description && (
                         <p className="menu-card-desc">{item.description}</p>
@@ -496,6 +495,7 @@ const Menu = () => {
                             <span key={tag} className="diet-tag">{tag}</span>
                           ))}
                         </div>
+                        <span className="menu-card-price">${price.toFixed(2)}</span>
                         {(() => {
                           const cartItem = cartItems.find(ci => ci.id === item.id);
                           if (cartItem) {

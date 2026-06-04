@@ -505,14 +505,15 @@
 
 .menu-card-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.6rem;
   margin-top: 0.5rem;
   padding-top: 0.65rem;
   border-top: 1px solid var(--color-border);
 }
 
 .diet-tags {
+  flex: 1;
   display: flex;
   gap: 0.3rem;
 }
@@ -797,7 +798,7 @@
   .menu-card-img-wrap { height: 150px; }
 }
 
-/* Mobile — clean 2-column vertical card grid */
+/* Mobile — 2-column app-style card grid */
 @media (max-width: 540px) {
   .menu-header { height: 145px; }
   .menu-header-title { font-size: 1.75rem; }
@@ -816,115 +817,151 @@
   .menu-section-title { font-size: 1.2rem; }
   .menu-main-header { margin-bottom: 0.75rem; padding-bottom: 0.6rem; }
 
-  /* 1-column grid for phones */
+  /* 2-column app grid */
   .menu-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
-  /* Card — compact horizontal row */
+  /* Card — vertical, white bg */
   .menu-card {
-    flex-direction: row;
-    border-radius: 10px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-    min-height: 80px;
+    flex-direction: column;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    min-height: unset;
+    background: #ffffff;
+    overflow: hidden;
   }
-  .menu-card:hover { transform: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  .menu-card:hover { transform: none; box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
 
-  /* Image — compact left thumbnail */
+  /* Image area — tinted bg, centred circular photo */
   .menu-card-img-wrap {
-    width: 88px;
-    min-width: 88px;
-    height: auto;
-    min-height: 80px;
-    border-radius: 10px 0 0 10px;
+    width: 100%;
+    min-width: unset;
+    height: 125px;
+    border-radius: 0;
+    padding: 12px 12px 10px;
+    background: #eef3e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    padding: 0;
+    position: relative;
   }
-  .menu-card-img { object-fit: cover; border-radius: 0; }
+
+  /* Circular food image */
+  .menu-card-img {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
 
   /* Category badge */
   .menu-card-category {
-    font-size: 0.48rem;
-    padding: 0.1rem 0.3rem;
+    font-size: 0.44rem;
+    padding: 0.1rem 0.28rem;
+    top: 6px;
+    left: 6px;
   }
 
-  /* Body */
+  /* Card body */
   .menu-card-body {
     flex: 1;
     min-width: 0;
-    padding: 0.5rem 0.65rem;
-    gap: 0.15rem;
+    padding: 0.55rem 0.7rem 0.6rem;
+    gap: 0.25rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
   }
 
-  /* Name + price row */
-  .menu-card-top {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.4rem;
-  }
-
+  /* Name full width */
+  .menu-card-top { gap: 0; align-items: flex-start; }
   .menu-card-name {
-    font-size: 0.8rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
     font-weight: 700;
-    line-height: 1.2;
+    color: #111111;
+    line-height: 1.25;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    flex: 1;
+    flex: unset;
   }
 
-  .menu-card-price {
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--color-primary);
-    flex-shrink: 0;
-  }
-
-  /* Hide description — keep card compact */
+  /* Hide description */
   .menu-card-desc { display: none; }
 
-  /* Footer */
+  /* Footer — price left, green circle btn right */
   .menu-card-footer {
-    margin-top: 0.25rem;
-    padding-top: 0.35rem;
-    border-top: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-top: 0;
+    border-top: none;
+    margin-top: auto;
+    gap: 0.25rem;
   }
 
   .diet-tags { display: none; }
 
-  /* Add button */
-  .add-btn {
-    padding: 0.28rem 0.75rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    border-radius: 6px;
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
+  .menu-card-price {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #1e3a8a;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
-  .add-btn:hover { background: var(--color-primary-hover); color: #fff; }
-  .add-btn.added { background: #16a34a; border: none; color: #fff; }
+
+  /* Green circle add button */
+  .add-btn {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    background: #6daa2b;
+    border: none;
+    font-size: 0;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(109,170,43,0.4);
+    cursor: pointer;
+  }
+  .add-btn::after {
+    content: '+';
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    display: block;
+  }
+  .add-btn:hover { background: #5d922a; }
+  .add-btn.added { background: #16a34a; }
+  .add-btn.added::after { content: '✓'; font-size: 0.85rem; }
+
+  /* Qty stepper — compact */
+  .qty-stepper { height: 26px; }
+  .qty-stepper-btn { width: 24px; }
+  .qty-stepper-val { font-size: 0.72rem; min-width: 18px; }
 }
 
 /* Very small phones */
 @media (max-width: 380px) {
-  .menu-grid { gap: 0.4rem; }
+  .menu-grid { gap: 0.55rem; }
   .menu-header-title { font-size: 1.5rem; }
-  .menu-card { min-height: 72px; }
-  .menu-card-img-wrap { width: 76px; min-width: 76px; min-height: 72px; }
-  .menu-card-name { font-size: 0.75rem; }
-  .menu-card-price { font-size: 0.78rem; }
-  .menu-card-body { padding: 0.45rem 0.55rem; }
-  .add-btn { padding: 0.25rem 0.6rem; font-size: 0.64rem; }
+  .menu-card-img-wrap { height: 110px; }
+  .menu-card-img { width: 78px; height: 78px; }
+  .menu-card-name { font-size: 0.73rem; }
+  .menu-card-price { font-size: 0.82rem; }
+  .menu-card-body { padding: 0.45rem 0.55rem 0.5rem; }
+  .add-btn { width: 26px; height: 26px; min-width: 26px; }
+  .add-btn::after { font-size: 0.95rem; }
 }
 
 /* ── Delivery partners mobile ── */
