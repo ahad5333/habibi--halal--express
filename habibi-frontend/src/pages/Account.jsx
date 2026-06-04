@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI } from '../services/api';
+import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI } from '../services/api';
 import './Account.css';
 
 const TABS = [
@@ -376,6 +376,116 @@ function OrderDetailModal({ order, onClose, onReorder }) {
   );
 }
 
+// ── Review Modal ──────────────────────────────────────────────────────────────
+function ReviewModal({ order, onClose, onSubmitted }) {
+  const [rating, setRating]     = useState(0);
+  const [hover, setHover]       = useState(0);
+  const [comment, setComment]   = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [done, setDone]         = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (rating === 0) { setError('Please select a star rating.'); return; }
+    setLoading(true); setError('');
+    try {
+      await reviewsAPI.submit({
+        order_number: order.order_number,
+        rating,
+        comment: comment.trim() || undefined,
+      });
+      setDone(true);
+      onSubmitted?.(order.order_number);
+    } catch (err) {
+      setError(err.message || 'Could not submit review. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="acct-modal-overlay" onClick={onClose}>
+      <div className="acct-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+        {done ? (
+          <div style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>⭐</div>
+            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--color-text-main)' }}>Thank you!</h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Your review has been submitted and is pending approval.
+            </p>
+            <button className="btn btn-primary" onClick={onClose}>Done</button>
+          </div>
+        ) : (
+          <form onSubmit={submit}>
+            <div className="acct-modal-header">
+              <h3 className="acct-modal-title">Rate Your Order</h3>
+              <button type="button" className="acct-modal-close" onClick={onClose}><X size={18} /></button>
+            </div>
+
+            <div style={{ padding: '1.25rem 1.5rem' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
+                Order #{order.order_number}
+              </p>
+
+              {/* Star rating */}
+              <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '1.25rem' }}>
+                {[1,2,3,4,5].map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setRating(s)}
+                    onMouseEnter={() => setHover(s)}
+                    onMouseLeave={() => setHover(0)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '2rem', padding: '0.1rem',
+                      color: s <= (hover || rating) ? '#E5B64E' : 'var(--color-border)',
+                      transition: 'color 0.15s',
+                    }}
+                    aria-label={`${s} star${s > 1 ? 's' : ''}`}
+                  >★</button>
+                ))}
+                {rating > 0 && (
+                  <span style={{ alignSelf: 'center', fontSize: '0.85rem', color: '#E5B64E', marginLeft: '0.5rem', fontWeight: 600 }}>
+                    {['','Poor','Fair','Good','Great','Excellent'][rating]}
+                  </span>
+                )}
+              </div>
+
+              {/* Comment */}
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">YOUR REVIEW <span style={{ color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="Tell us about your experience — food quality, delivery speed, packaging…"
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                />
+                <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
+                  {comment.length}/1000
+                </p>
+              </div>
+
+              {error && <p style={{ color: 'var(--color-error)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>⚠ {error}</p>}
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 2 }}>
+                  {loading ? 'Submitting…' : 'Submit Review'}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Orders Tab ────────────────────────────────────────────────────────────────
 function OrdersTab() {
   const navigate = useNavigate();
@@ -383,7 +493,9 @@ function OrdersTab() {
   const [orders, setOrders]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
-  const [expandedOrder, setExpanded] = useState(null);
+  const [expandedOrder, setExpanded]   = useState(null);
+  const [reviewOrder, setReviewOrder]   = useState(null);
+  const [reviewedOrders, setReviewed]   = useState(new Set());
 
   const load = useCallback(() => {
     setLoading(true); setError('');
@@ -448,6 +560,14 @@ function OrdersTab() {
                 <button className="acct-reorder-btn" onClick={() => handleReorder(o)}>
                   <RotateCcw size={12} /> Order Again
                 </button>
+                {o.order_status === 'delivered' && !reviewedOrders.has(o.order_number) && (
+                  <button className="acct-track-btn" style={{ color: '#E5B64E', borderColor: 'rgba(229,182,78,0.3)' }} onClick={() => setReviewOrder(o)}>
+                    <Star size={12} /> Rate
+                  </button>
+                )}
+                {reviewedOrders.has(o.order_number) && (
+                  <span style={{ fontSize: '0.72rem', color: '#22c55e' }}>✓ Reviewed</span>
+                )}
                 <button className="acct-track-btn" onClick={() => setExpanded(o)}>
                   <Eye size={12} /> Details
                 </button>
@@ -459,6 +579,17 @@ function OrdersTab() {
           );
         })}
       </div>
+
+      {reviewOrder && (
+        <ReviewModal
+          order={reviewOrder}
+          onClose={() => setReviewOrder(null)}
+          onSubmitted={(orderNum) => {
+            setReviewed(prev => new Set([...prev, orderNum]));
+            setReviewOrder(null);
+          }}
+        />
+      )}
 
       {expandedOrder && (
         <OrderDetailModal
@@ -716,6 +847,76 @@ function FavoritesTab() {
 }
 
 // ── Notifications Tab ─────────────────────────────────────────────────────────
+// ── Push Notification Permission Toggle ───────────────────────────────────────
+function PushNotificationToggle() {
+  const [status, setStatus] = useState(() => {
+    if (!('Notification' in window)) return 'unsupported';
+    return Notification.permission; // 'default' | 'granted' | 'denied'
+  });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg]         = useState('');
+
+  const handleEnable = async () => {
+    setLoading(true); setMsg('');
+    const { requestPushPermission, isFirebaseConfigured } = await import('../utils/pushNotifications.js');
+    if (!isFirebaseConfigured()) {
+      setMsg('Push notifications are not yet configured on this server.');
+      setLoading(false);
+      return;
+    }
+    const result = await requestPushPermission();
+    setLoading(false);
+    if (result.ok) {
+      setStatus('granted');
+      setMsg('✓ Push notifications enabled! You will receive order updates in real time.');
+    } else if (result.reason === 'denied') {
+      setStatus('denied');
+      setMsg('Notifications were blocked. Please enable them in your browser settings and try again.');
+    } else {
+      setMsg('Could not enable notifications. Please try again later.');
+    }
+  };
+
+  if (status === 'unsupported') return null;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: '1rem', flexWrap: 'wrap',
+      background: 'rgba(229,182,78,0.05)', border: '1px solid rgba(229,182,78,0.15)',
+      borderRadius: 10, padding: '1rem 1.25rem', marginBottom: '1.5rem',
+    }}>
+      <div>
+        <p style={{ fontWeight: 600, fontSize: '0.88rem', margin: '0 0 0.2rem', color: 'var(--color-text-main)' }}>
+          🔔 Order Push Notifications
+        </p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0 }}>
+          {status === 'granted'
+            ? 'Enabled — you will be notified about your orders even when this tab is closed.'
+            : 'Get real-time order status updates directly in your browser.'}
+        </p>
+        {msg && <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: status === 'granted' ? '#22c55e' : 'var(--color-text-muted)' }}>{msg}</p>}
+      </div>
+      {status !== 'granted' && status !== 'denied' && (
+        <button
+          className="btn btn-primary"
+          style={{ fontSize: '0.8rem', padding: '0.6rem 1.25rem', whiteSpace: 'nowrap' }}
+          onClick={handleEnable}
+          disabled={loading}
+        >
+          {loading ? 'Enabling…' : 'Enable Notifications'}
+        </button>
+      )}
+      {status === 'granted' && (
+        <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 600 }}>✓ Active</span>
+      )}
+      {status === 'denied' && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Blocked in browser settings</span>
+      )}
+    </div>
+  );
+}
+
 function NotificationsTab() {
   const [notifs, setNotifs]     = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -753,6 +954,9 @@ function NotificationsTab() {
           <button className="acct-link-btn" onClick={markAll}>Mark all read</button>
         )}
       </div>
+      {/* Push notification permission toggle */}
+      <PushNotificationToggle />
+
       {notifs.length === 0 ? (
         <div className="acct-empty">
           <Bell size={32} />

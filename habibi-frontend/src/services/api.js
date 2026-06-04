@@ -293,6 +293,14 @@ export const notificationsAPI = {
   markAllRead:  () => request('/api/users/me/notifications/read-all', { method: 'PATCH' }),
 };
 
+export const reviewsAPI = {
+  getApproved: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/reviews${q ? '?' + q : ''}`);
+  },
+  submit: (payload) => request('/api/reviews', { method: 'POST', body: JSON.stringify(payload) }),
+};
+
 export const partnersAPI = {
   /**
    * POST /api/partners/apply
