@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ChevronRight, Sparkles, Shield, Eye } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -97,6 +97,39 @@ const restaurantSchema = {
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+// Auto-plays when scrolled into view on mobile; hover-to-play on desktop
+const FeastVideo = ({ src }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) video.play().catch(() => {});
+        else { video.pause(); video.currentTime = 0; }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      className="feast-thumb-video"
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      onMouseEnter={e => e.currentTarget.play().catch(() => {})}
+      onMouseLeave={e => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+    />
+  );
+};
 
 const Home = () => {
   const [liveReviews, setLiveReviews] = useState([]);
@@ -351,16 +384,7 @@ const Home = () => {
           <div className="feast-thumbs mt-5">
             {FEAST_VIDEOS.map((src, i) => (
               <div key={i} className="feast-thumb">
-                <video
-                  src={src}
-                  className="feast-thumb-video"
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  onMouseEnter={e => e.currentTarget.play()}
-                  onMouseLeave={e => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
-                />
+                <FeastVideo src={src} />
               </div>
             ))}
           </div>
