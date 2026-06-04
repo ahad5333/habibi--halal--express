@@ -300,37 +300,67 @@
   max-width: 300px;
 }
 
+.footer-newsletter h4 {
+  font-size: 1rem;
+}
+
 .footer-newsletter p {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .newsletter-form {
   display: flex;
   background-color: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
+  width: 100%;
 }
 
 .newsletter-form input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   color: #ffffff;
+  font-size: 0.9rem;
   outline: none;
+}
+
+.newsletter-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
 }
 
 .btn-subscribe {
   background: transparent;
   color: #ffd700;
-  padding: 0 1rem;
+  padding: 0 1.1rem;
   font-size: 1.25rem;
+  min-height: 48px;
+  min-width: 48px;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  transition: background 0.2s;
 }
 
 .btn-subscribe:hover {
   background-color: rgba(255, 215, 0, 0.1);
+}
+
+.newsletter-success {
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.newsletter-error {
+  color: #f87171;
+  font-size: 0.78rem;
 }
 
 @media (max-width: 900px) {
@@ -378,14 +408,33 @@
 }
 
 /* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 900px) {
+  .footer-newsletter { max-width: 100%; width: 100%; }
+}
+
 @media (max-width: 640px) {
   .footer-container { gap: 2rem; }
   .footer-links { gap: 1.25rem; }
   .footer-bottom { font-size: 0.7rem; }
-  .newsletter-form { flex-direction: column; gap: 0.5rem; }
-  .newsletter-form input, .newsletter-form button { width: 100%; }
+  .footer-newsletter { max-width: 100%; }
+  .newsletter-form {
+    border-radius: 10px;
+  }
+  .newsletter-form input {
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+  }
+  .btn-subscribe {
+    min-height: 52px;
+    min-width: 52px;
+    font-size: 1.35rem;
+  }
 }
+
 @media (max-width: 400px) {
   .footer-container { gap: 1.5rem; padding: 2rem 1rem; }
   .social-icons { gap: 0.5rem; }
+  .footer-newsletter h4 { font-size: 0.95rem; }
+  .footer-newsletter p { font-size: 0.8rem; }
+  .newsletter-form input { padding: 0.85rem 0.875rem; font-size: 0.88rem; }
 }
