@@ -742,6 +742,7 @@
 @media (max-width: 900px) {
   .menu-body {
     flex-direction: column;
+    align-items: stretch;
     gap: 0;
     padding-top: 1.25rem;
     padding-bottom: 4rem;
