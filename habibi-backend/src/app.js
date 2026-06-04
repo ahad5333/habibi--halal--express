@@ -91,8 +91,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '50kb' }))
-app.use(express.static("public"))
-app.use("/uploads", express.static("public/uploads"))
+const staticOpts = { maxAge: '1y', etag: true, lastModified: true }
+app.use(express.static("public", staticOpts))
+app.use("/uploads", express.static("public/uploads", staticOpts))
 app.use("/api/users/me/notifications", notificationsRoutes)  // must be before /api/users
 app.use("/api/users", userRoutes)
 app.use("/api/menus", menuRoutes)

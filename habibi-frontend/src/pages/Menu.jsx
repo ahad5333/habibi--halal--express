@@ -46,6 +46,9 @@ const getFoodPhoto = (itemId, index) => {
   return `/images/menu/${n}.jpg`;
 };
 
+const toWebp = (url) =>
+  url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
+
 import SEO from '../components/SEO';
 
 const Menu = () => {
@@ -456,14 +459,17 @@ const Menu = () => {
                           <span className="ice-crystal i3">❄</span>
                         </div>
                       )}
-                      <img
-                        src={imgSrc}
-                        alt={name}
-                        className="menu-card-img"
-                        loading="lazy"
-                        decoding="async"
-                        onError={e => { e.target.src = getFoodPhoto(item.id, idx + 13); }}
-                      />
+                      <picture style={{display:'contents'}}>
+                        <source srcSet={toWebp(imgSrc)} type="image/webp" />
+                        <img
+                          src={imgSrc}
+                          alt={name}
+                          className="menu-card-img"
+                          loading="lazy"
+                          decoding="async"
+                          onError={e => { e.target.src = getFoodPhoto(item.id, idx + 13); }}
+                        />
+                      </picture>
                       {item.category && (
                         <span className="menu-card-category">
                           {(item.category || '').toLowerCase().includes('berger')

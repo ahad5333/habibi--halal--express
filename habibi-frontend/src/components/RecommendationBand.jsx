@@ -13,6 +13,8 @@ const TYPE_META = {
 };
 
 const getFallbackImg = (id) => `/images/menu/${((id || 1) % 70) + 1}.jpg`;
+const toWebp = (url) =>
+  url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
 export default function RecommendationBand({
   type = 'popular',
@@ -113,15 +115,18 @@ export default function RecommendationBand({
         {items.map(item => (
           <div key={item.id} className="rb-card">
             <div className="rb-img-wrap">
-              <img
-                src={item.image_url || getFallbackImg(item.id)}
-                alt={item.name}
-                className="rb-img"
-                loading="lazy"
-                decoding="async"
-                onError={e => { e.target.src = getFallbackImg(item.id); }}
-                draggable={false}
-              />
+              <picture style={{display:'contents'}}>
+                <source srcSet={toWebp(item.image_url || getFallbackImg(item.id))} type="image/webp" />
+                <img
+                  src={item.image_url || getFallbackImg(item.id)}
+                  alt={item.name}
+                  className="rb-img"
+                  loading="lazy"
+                  decoding="async"
+                  onError={e => { e.target.src = getFallbackImg(item.id); }}
+                  draggable={false}
+                />
+              </picture>
             </div>
             <div className="rb-card-body">
               <p className="rb-item-name">{item.name}</p>
