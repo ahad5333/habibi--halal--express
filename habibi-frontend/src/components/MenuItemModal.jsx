@@ -205,7 +205,11 @@ export default function MenuItemModal({ item, onClose, onAdd }) {
             <img
               src={imgSrc}
               alt={item.name}
-              onError={e => { e.target.closest('.mim-img-wrap').style.display = 'none'; }}
+              onError={e => {
+                const fallback = `/images/menu/${((item.id ?? 1) % 70) + 1}.jpg`;
+                if (!e.target.dataset.fell) { e.target.dataset.fell = '1'; e.target.src = fallback; }
+                else e.target.closest('.mim-img-wrap')?.style.setProperty('display','none');
+              }}
             />
             {item.category && <span className="mim-cat-badge">{item.category}</span>}
           </div>
