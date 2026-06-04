@@ -403,3 +403,23 @@
   color: #9ca3af;
 }
 .cat-trust-item span { font-size: 1.1rem; }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 768px) {
+  .cat-hero { min-height: 320px; padding: 3rem 1rem; }
+  .cat-hero-title { font-size: 2.25rem; }
+  .cat-hero-sub { font-size: 0.9rem; }
+  .cat-section { padding: 2.5rem 0; }
+  .cat-layout { gap: 2rem; }
+}
+@media (max-width: 540px) {
+  .cat-hero { min-height: 260px; padding: 2.5rem 1rem; }
+  .cat-hero-title { font-size: 1.9rem; }
+  .cat-form { padding: 1.25rem 1rem; }
+  .cat-submit-btn { width: 100%; }
+  .cat-trust-inner { gap: 1rem 1.5rem; }
+}
+@media (max-width: 380px) {
+  .cat-hero-title { font-size: 1.6rem; }
+  .cat-trust-item { font-size: 0.75rem; }
+}

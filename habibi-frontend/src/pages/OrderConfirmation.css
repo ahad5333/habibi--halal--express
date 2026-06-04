@@ -289,3 +289,17 @@
   transition: opacity 0.15s;
 }
 .orc-btn-review:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .orc-card { padding: 1.5rem 1rem; margin: 1rem; }
+  .orc-title { font-size: 1.5rem; }
+  .orc-number { font-size: 2rem; }
+  .orc-actions { flex-direction: column; gap: 0.75rem; }
+  .orc-btn-track, .orc-btn-menu, .orc-btn-review { width: 100%; }
+  .orc-items-table th, .orc-items-table td { font-size: 0.78rem; padding: 0.5rem; }
+}
+@media (max-width: 375px) {
+  .orc-card { padding: 1.25rem 0.875rem; }
+  .orc-title { font-size: 1.3rem; }
+}

@@ -374,3 +374,16 @@
     padding: 1rem 1.5rem;
   }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .login-card { padding: 1.5rem 1.25rem; max-width: 100%; }
+  .login-title { font-size: 1.6rem; }
+  .login-header { padding: 1.25rem 1rem; }
+  .login-footer { padding: 1rem; }
+  .login-divider { gap: 0.75rem; }
+}
+@media (max-width: 375px) {
+  .login-card { padding: 1.25rem 1rem; }
+  .login-title { font-size: 1.4rem; }
+}

@@ -643,3 +643,22 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 768px) {
+  .about-hero { min-height: 420px; }
+  .about-hero-title { font-size: 2.5rem; }
+  .about-hero-sub { font-size: 0.9rem; }
+  .about-stat { padding: 0.75rem 1.25rem; }
+  .about-stat-number { font-size: 1.5rem; }
+}
+@media (max-width: 540px) {
+  .about-hero { min-height: 300px; }
+  .about-hero-title { font-size: 2rem; }
+  .about-stats-bar { flex-wrap: wrap; gap: 0.5rem; }
+  .about-stat { flex: 1 1 45%; padding: 0.6rem 1rem; }
+}
+@media (max-width: 400px) {
+  .about-hero { min-height: 260px; }
+  .about-hero-title { font-size: 1.7rem; }
+}

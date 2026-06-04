@@ -1270,3 +1270,18 @@
 .ot-map .leaflet-marker-icon {
   transition: transform 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .ot-hero { padding: 2.5rem 1rem; }
+  .ot-hero-title { font-size: 2rem; }
+  .ot-card { padding: 1.25rem 1rem; }
+  .ot-step-row { gap: 0.75rem; }
+  .ot-step-label { font-size: 0.75rem; }
+  .ot-detail-row { flex-direction: column; gap: 0.25rem; font-size: 0.82rem; }
+  .ot-map { height: 220px; }
+}
+@media (max-width: 375px) {
+  .ot-hero-title { font-size: 1.75rem; }
+  .ot-step-label { font-size: 0.68rem; }
+}

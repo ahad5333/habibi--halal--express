@@ -376,3 +376,16 @@
   color: #ffffff;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 640px) {
+  .footer-container { gap: 2rem; }
+  .footer-links { gap: 1.25rem; }
+  .footer-bottom { font-size: 0.7rem; }
+  .newsletter-form { flex-direction: column; gap: 0.5rem; }
+  .newsletter-form input, .newsletter-form button { width: 100%; }
+}
+@media (max-width: 400px) {
+  .footer-container { gap: 1.5rem; padding: 2rem 1rem; }
+  .social-icons { gap: 0.5rem; }
+}

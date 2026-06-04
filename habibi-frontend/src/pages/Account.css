@@ -1080,3 +1080,21 @@
 .acct-notif-title { font-size: 0.85rem; font-weight: 600; margin: 0 0 0.2rem; }
 .acct-notif-text  { font-size: 0.78rem; color: var(--color-text-muted); margin: 0 0 0.3rem; line-height: 1.45; }
 .acct-notif-time  { font-size: 0.7rem; color: var(--color-text-muted); margin: 0; }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .acct-hero { padding: 2.5rem 1rem; }
+  .acct-hero-name { font-size: 1.5rem; }
+  .acct-tab-bar { gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .acct-tab { font-size: 0.75rem; padding: 0.6rem 0.75rem; white-space: nowrap; }
+  .acct-section { padding: 1.25rem 1rem; }
+  .acct-section-title { font-size: 1.1rem; }
+  .acct-order-card { padding: 0.875rem; }
+  .acct-order-meta { flex-wrap: wrap; gap: 0.5rem; }
+  .acct-address-card { padding: 0.875rem; }
+  .order-detail-items th, .order-detail-items td { font-size: 0.75rem; padding: 0.5rem; }
+}
+@media (max-width: 375px) {
+  .acct-hero-name { font-size: 1.3rem; }
+  .acct-tab { font-size: 0.7rem; padding: 0.5rem 0.6rem; }
+}

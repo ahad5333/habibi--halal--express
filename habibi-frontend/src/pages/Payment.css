@@ -483,3 +483,17 @@
   .pay-hero-title { font-size: 1.85rem; }
   .pay-card { padding: 1.25rem; }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .pay-hero-title { font-size: 1.6rem; }
+  .pay-card { padding: 1rem; }
+  .pay-card-title { font-size: 1.1rem; }
+  .pay-success-btns { flex-direction: column; }
+  .pay-success-btns a, .pay-success-btns button { width: 100%; text-align: center; }
+}
+@media (max-width: 375px) {
+  .pay-hero { padding: 3rem 1rem; }
+  .pay-hero-title { font-size: 1.4rem; }
+  .pay-card { padding: 0.875rem; }
+}

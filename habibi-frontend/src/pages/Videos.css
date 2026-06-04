@@ -356,3 +356,16 @@
   font-size: 0.72rem;
   font-weight: 600;
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .vid-hero { padding: 3rem 1rem; }
+  .vid-hero-title { font-size: 2rem; }
+  .vid-hero-sub { font-size: 0.85rem; }
+  .vid-grid { gap: 1rem; }
+  .vid-card { border-radius: 10px; }
+  .vid-title { font-size: 0.9rem; }
+}
+@media (max-width: 375px) {
+  .vid-hero-title { font-size: 1.7rem; }
+}

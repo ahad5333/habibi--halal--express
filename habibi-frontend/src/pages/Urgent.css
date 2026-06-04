@@ -481,3 +481,18 @@
   .urg-form { padding: 1.25rem; }
   .urg-submit-btn { width: 100%; min-width: unset; }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .urg-hero { padding: 3rem 1rem; }
+  .urg-hero-title { font-size: 1.75rem; }
+  .urg-type-list { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .urg-type-card { padding: 0.875rem 0.75rem; }
+  .urg-type-label { font-size: 0.75rem; }
+  .urg-form { padding: 1rem; }
+  .urg-row { gap: 0.75rem; }
+}
+@media (max-width: 375px) {
+  .urg-hero-title { font-size: 1.5rem; }
+  .urg-type-list { grid-template-columns: 1fr; }
+}

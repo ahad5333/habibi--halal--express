@@ -637,3 +637,17 @@
     padding: 1.5rem;
   }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .signup-panel { width: 100%; max-width: 100%; position: static; border-radius: 0; }
+  .signup-panel-content { padding: 1.25rem 1rem; }
+  .signup-panel-logo { padding: 1rem; }
+  .sp-panel-footer { padding: 0.75rem 1rem; }
+  .signup-form { padding: 1.5rem 1rem; }
+  .signup-title { font-size: 1.6rem; }
+}
+@media (max-width: 375px) {
+  .signup-title { font-size: 1.4rem; }
+  .signup-form { padding: 1.25rem 0.875rem; }
+}

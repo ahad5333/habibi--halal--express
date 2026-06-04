@@ -722,3 +722,10 @@
   .navbar-top-inner { padding: 0.4rem 0.75rem; }
   .logo-img { width: 54px; height: 54px; }
 }
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 360px) {
+  .logo-img { width: 46px; height: 46px; }
+  .navbar-top-inner { padding: 0.35rem 0.6rem; }
+  .mobile-auth-row { padding: 1rem; gap: 0.5rem; }
+}

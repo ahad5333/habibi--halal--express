@@ -593,3 +593,17 @@
   background: rgba(66, 133, 244, 0.08);
 }
 
+
+/* ── Mobile Responsive (added) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .loc-hero { padding: 3rem 1rem; }
+  .loc-hero-title { font-size: 2rem; }
+  .loc-card-body { padding: 1rem; }
+  .loc-card-title { font-size: 1.1rem; }
+  .loc-card-footer { flex-wrap: wrap; gap: 0.5rem; }
+  .loc-order-btn, .loc-google-btn { flex: 1; text-align: center; justify-content: center; font-size: 0.78rem; }
+}
+@media (max-width: 375px) {
+  .loc-hero-title { font-size: 1.75rem; }
+  .loc-meta-row { font-size: 0.78rem; }
+}
