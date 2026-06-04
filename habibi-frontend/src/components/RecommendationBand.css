@@ -1,6 +1,6 @@
 .rb-root {
   margin: 0 0 2rem;
-  overflow-x: hidden;
+  overflow: visible;
   width: 100%;
 }
 
@@ -154,7 +154,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  margin: 0 0.75rem 0.75rem;
+  margin: auto 0.75rem 0.75rem;
   padding: 0.45rem 0.75rem;
   background: var(--color-surface-2, #f1f5f9);
   border: 1px solid var(--color-border, #e2e8f0);
@@ -189,7 +189,7 @@
   }
   .rb-card:hover { transform: none; }
   .rb-img-wrap { height: 95px; }
-  .rb-item-name { font-size: 0.78rem; }
+  .rb-item-name { font-size: 0.78rem; min-height: 2.7em; }
 }
 
 @media (max-width: 360px) {
