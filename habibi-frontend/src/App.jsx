@@ -35,6 +35,8 @@ const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
 const HealthSafety     = lazy(() => import('./pages/HealthSafety'));
 const PrivacyPolicy    = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService   = lazy(() => import('./pages/TermsOfService'));
+const SmsTerms         = lazy(() => import('./pages/SmsTerms'));
+const Accessibility    = lazy(() => import('./pages/Accessibility'));
 const NotFound         = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -98,6 +100,8 @@ function Layout() {
           <Route path="/health-safety"  element={<HealthSafety />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms"          element={<TermsOfService />} />
+          <Route path="/sms-terms"      element={<SmsTerms />} />
+          <Route path="/accessibility"  element={<Accessibility />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

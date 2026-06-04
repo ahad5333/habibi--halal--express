@@ -125,10 +125,13 @@ const Footer = () => {
             <Link to="/contact?type=media">Press Kit</Link>
           </div>
           <div className="footer-column">
-            <h4>Support</h4>
+            <h4>Legal &amp; Support</h4>
+            <Link to="/contact">Contact Us</Link>
             <Link to="/health-safety">Health &amp; Safety</Link>
             <Link to="/privacy-policy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
+            <Link to="/sms-terms">SMS Terms</Link>
+            <Link to="/accessibility">Accessibility</Link>
           </div>
           <div className="footer-newsletter">
             <h4>Newsletter</h4>

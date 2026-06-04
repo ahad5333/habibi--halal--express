@@ -50,6 +50,10 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  /* Consent checkboxes — pre-checked by default */
+  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeSms, setAgreeSms] = useState(true);
+
   const STEPS = [
     { num: 1, label: 'Personal' },
     { num: 2, label: 'Contact' },
@@ -459,12 +463,36 @@ const Signup = () => {
                   <div className="as-row"><span>Order Method</span><span className="capitalize">{deliveryPref}</span></div>
                 </div>
 
-                <p className="terms-text">
-                  By creating an account you agree to our{' '}
-                  <Link to="#" className="terms-link">Terms of Service</Link>{' '}
-                  and{' '}
-                  <Link to="#" className="terms-link">Privacy Policy</Link>.
-                </p>
+                {/* Consent checkboxes */}
+                <div className="consent-checks">
+                  <label className="consent-check-row">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={e => setAgreeTerms(e.target.checked)}
+                      required
+                    />
+                    <span>
+                      I agree to the{' '}
+                      <Link to="/terms" className="terms-link" target="_blank">Terms of Service</Link>,{' '}
+                      <Link to="/privacy-policy" className="terms-link" target="_blank">Privacy Policy</Link>, and{' '}
+                      <Link to="/accessibility" className="terms-link" target="_blank">Accessibility Statement</Link>.
+                    </span>
+                  </label>
+                  <label className="consent-check-row">
+                    <input
+                      type="checkbox"
+                      checked={agreeSms}
+                      onChange={e => setAgreeSms(e.target.checked)}
+                    />
+                    <span>
+                      I consent to receive recurring automated and non-automated SMS messages from Habibi Halal Express.
+                      Consent is not a condition of purchase. Message and data rates may apply.
+                      Reply <strong>STOP</strong> to opt out and <strong>HELP</strong> for assistance.{' '}
+                      <Link to="/sms-terms" className="terms-link" target="_blank">View SMS Terms &amp; Conditions</Link>.
+                    </span>
+                  </label>
+                </div>
               </div>
             )}
 

@@ -126,6 +126,20 @@ const RIGHT_ITEMS = [
       { label: 'Email Us!', path: '/contact?type=email' },
     ],
   },
+  {
+    id: 'legal',
+    label: 'Legal',
+    path: '/terms',
+    panel: { bg: 'linear-gradient(160deg,#0a0a0a 0%,#1a1209 100%)', emoji: '⚖️', caption: 'Policies &amp; Compliance' },
+    sub: [
+      { label: '📋 Terms of Service', path: '/terms' },
+      { label: '🔏 Privacy Policy', path: '/privacy-policy' },
+      { label: '📲 SMS Terms & Conditions', path: '/sms-terms' },
+      { label: '♿ Accessibility Statement', path: '/accessibility' },
+      { label: '🏥 Health & Safety', path: '/health-safety' },
+      { label: '📬 Contact Us', path: '/contact' },
+    ],
+  },
 ];
 
 function DropdownPanel({ item }) {
