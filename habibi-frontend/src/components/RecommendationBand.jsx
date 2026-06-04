@@ -117,6 +117,8 @@ export default function RecommendationBand({
                 src={item.image_url || getFallbackImg(item.id)}
                 alt={item.name}
                 className="rb-img"
+                loading="lazy"
+                decoding="async"
                 onError={e => { e.target.src = getFallbackImg(item.id); }}
                 draggable={false}
               />

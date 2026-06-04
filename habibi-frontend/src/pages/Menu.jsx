@@ -460,6 +460,8 @@ const Menu = () => {
                         src={imgSrc}
                         alt={name}
                         className="menu-card-img"
+                        loading="lazy"
+                        decoding="async"
                         onError={e => { e.target.src = getFoodPhoto(item.id, idx + 13); }}
                       />
                       {item.category && (
