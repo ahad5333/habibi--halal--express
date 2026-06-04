@@ -352,10 +352,15 @@
   justify-content: flex-start;
   align-items: center;
   gap: 1.25rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   max-width: 900px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
 }
+.hero-visual-cards::-webkit-scrollbar { display: none; }
 
 .hero-visual-card {
   display: flex;
@@ -368,7 +373,8 @@
   border-radius: 16px;
   padding: 1rem 1.25rem;
   width: auto;
-  min-width: 140px;
+  min-width: 130px;
+  flex-shrink: 0;
   text-decoration: none;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
