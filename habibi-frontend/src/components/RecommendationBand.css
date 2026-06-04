@@ -173,3 +173,14 @@
   border-color: #22c55e;
   color: #22c55e;
 }
+
+@media (max-width: 480px) {
+  .rb-card { flex: 0 0 150px; }
+  .rb-img-wrap { height: 95px; }
+  .rb-item-name { font-size: 0.78rem; }
+}
+
+@media (max-width: 360px) {
+  .rb-card { flex: 0 0 136px; }
+  .rb-img-wrap { height: 85px; }
+}
