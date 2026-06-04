@@ -2039,22 +2039,58 @@
 
 /* ── Phone override — catches 700px+ viewports ─────────────────── */
 @media (max-width: 900px) {
-  /* BYO strip */
+
+  /* ── Hero section ── */
+  .hero-top-dark { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+
+  /* Smaller halal badge */
+  .hero-halal-badge { width: 54px; height: 54px; top: 1rem; left: 1rem; }
+
+  /* Hide decorative floaters */
+  .floating-item { display: none; }
+
+  /* Hero content tighter */
+  .hero-content { margin-top: 2.5rem; margin-bottom: 20px; max-width: 100%; }
+
+  /* Title */
+  .hero-title-exact { font-size: 2rem; margin-top: 0.75rem; margin-bottom: 1rem; }
+
+  /* Subtitle pill */
+  .hero-creative-line {
+    font-size: 0.72rem;
+    letter-spacing: 0.8px;
+    padding: 0.45rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* CTA buttons — smaller */
+  .hero-cta-group { gap: 0.65rem; margin-bottom: 1.25rem; }
+  .hero-btn-primary,
+  .hero-btn-ghost {
+    font-size: 0.85rem;
+    padding: 0.65rem 1.5rem;
+  }
+
+  /* Popular categories row */
+  .hero-quick-picks { gap: 0.75rem; margin-top: 1.25rem; }
+  .hero-quick-label-new { font-size: 0.62rem; }
+  .hero-visual-card { min-width: 100px; padding: 0.65rem 0.75rem; border-radius: 12px; }
+  .card-thumb-wrapper { width: 58px; height: 58px; margin-bottom: 0.5rem; }
+  .card-thumb-label { font-size: 0.68rem; }
+
+  /* Food circle image — shrink & reposition */
+  .hero-food-wrapper { width: 220px; height: 220px; bottom: -70px; }
+  .hero-bottom-light { padding-top: 90px; }
+
+  /* ── BYO strip ── */
   .byo-strip-inner { flex-direction: column; text-align: center; }
   .byo-strip-left  { flex-direction: column; text-align: center; }
 
-  /* Hero */
-  .hero-title-exact    { font-size: 2.3rem; }
-  .hero-creative-line  { font-size: 0.82rem; letter-spacing: 1px; }
-  .hero-cta-group      { justify-content: flex-start; }
-  .floating-item       { display: none; }
-  .info-banner-inner   { flex-direction: column; gap: 1rem; align-items: flex-start; }
-
-  /* Arched cards */
+  /* ── Arched cards ── */
   .hero-arched-cards { flex-direction: column; align-items: center; gap: 1.5rem; }
   .arched-card       { width: 200px; height: 260px; }
 
-  /* Bowl builder */
+  /* ── Bowl builder ── */
   .bowl-preview-panel { min-height: 260px; padding: 1.5rem 1rem; }
   .bowl-plate         { width: 150px; height: 150px; }
   .bowl-rim           { width: 168px; }
@@ -2063,17 +2099,18 @@
   .step-options       { flex-wrap: wrap; }
   .btn-option         { flex: 1 1 calc(33% - 0.5rem); min-width: 0; }
 
-  /* Curated section */
+  /* ── Curated gallery ── */
   .curated-card.large { height: 220px; }
   .curated-card.small,
   .curated-card.wide  { height: 170px; }
   .curated-title      { font-size: 1.2rem !important; }
 
-  /* Reviews */
+  /* ── Reviews ── */
   .reviews-marquee-content .review-card { width: 290px; padding: 1.75rem 1.25rem; }
   .reviews-marquee-content .review-text { font-size: 0.95rem; min-height: auto; }
 
-  /* Section */
+  /* ── Global section sizing ── */
   .section   { padding: 3rem 0; }
   .heading-2 { font-size: 1.7rem; }
+  .info-banner-inner { flex-direction: column; gap: 1rem; align-items: flex-start; }
 }
