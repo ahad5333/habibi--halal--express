@@ -808,6 +808,8 @@
     min-height: unset;
   }
   .menu-card:hover { transform: none; box-shadow: 0 4px 14px rgba(0,0,0,0.13); }
+  /* Keep centering transform on hover — base CSS overrides it with scale(1.06) */
+  .menu-card:hover .menu-card-img { transform: translate(-50%, -50%); }
 
   /* Image area — green tint, circular photo via absolute centering */
   .menu-card-img-wrap {
@@ -891,27 +893,30 @@
     border-radius: 50%;
     background: #6daa2b;
     border: none;
-    font-size: 0;
     color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 0;
     padding: 0;
+    position: relative;
     box-shadow: 0 2px 8px rgba(109,170,43,0.4);
     cursor: pointer;
     flex-shrink: 0;
+    overflow: hidden;
   }
-  .add-btn::after {
+  /* Use ::before with absolute centering — most reliable across mobile browsers */
+  .add-btn::before {
     content: '+';
-    font-size: 1.15rem;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.25rem;
     font-weight: 900;
-    color: #fff;
+    color: #ffffff;
     line-height: 1;
-    display: block;
   }
   .add-btn:hover { background: #5d922a; }
   .add-btn.added { background: #16a34a; }
-  .add-btn.added::after { content: '✓'; font-size: 0.85rem; }
+  .add-btn.added::before { content: '✓'; font-size: 0.9rem; }
 
   /* Qty stepper — compact */
   .qty-stepper { height: 28px; }
@@ -940,7 +945,7 @@
   .menu-card-price { font-size: 0.86rem; }
   .menu-card-body { padding: 0.5rem 0.65rem 0.55rem; }
   .add-btn { width: 28px; height: 28px; min-width: 28px; }
-  .add-btn::after { font-size: 1.05rem; }
+  .add-btn::before { font-size: 1.1rem; }
   .qty-stepper { height: 26px; }
   .qty-stepper-btn { width: 24px; }
   .qty-stepper-val { font-size: 0.72rem; min-width: 18px; }
@@ -956,7 +961,7 @@
   .menu-card-price { font-size: 0.82rem; }
   .menu-card-body { padding: 0.45rem 0.55rem 0.5rem; }
   .add-btn { width: 26px; height: 26px; min-width: 26px; }
-  .add-btn::after { font-size: 0.95rem; }
+  .add-btn::before { font-size: 0.95rem; }
 }
 
 /* ── Delivery partners mobile ── */
