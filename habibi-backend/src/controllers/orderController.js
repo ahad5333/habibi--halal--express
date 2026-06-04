@@ -131,10 +131,51 @@ const createGuestOrder = async (req, res) => {
       if (price < 0) return res.status(400).json({ message: 'Item prices cannot be negative.' });
     }
 
-    // Sanity check: total must be non-negative
-    const clientTotal = parseFloat(total) || 0;
+    // Server-side total validation
+    const clientTotal    = parseFloat(total)        || 0;
+    const clientSubtotal = parseFloat(sub_total)    || 0;
+    const clientTax      = parseFloat(tax)          || 0;
+    const clientSvcFee   = parseFloat(service_fee)  || 0;
+    const clientDelFee   = parseFloat(delivery_fee) || 0;
+    const clientTip      = parseFloat(tip)          || 0;
+    const clientDiscount = parseFloat(discount)     || 0;
+
     if (clientTotal < 0) {
       return res.status(400).json({ message: 'Order total cannot be negative.' });
+    }
+
+    // 1. Total must equal sum of its components (catches $0.01 tricks)
+    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount;
+    if (Math.abs(expectedTotal - clientTotal) > 0.10) {
+      return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
+    }
+
+    // 2. Verify item prices against the database so clients cannot lower individual prices
+    if (Array.isArray(items) && items.length > 0) {
+      const itemIds = items.map(i => parseInt(i.id || i.menu_id, 10)).filter(Boolean);
+      if (itemIds.length > 0) {
+        const priceRows = await pool.query(
+          `SELECT id, price FROM menus WHERE id = ANY($1) AND is_available = TRUE`,
+          [itemIds]
+        );
+        const priceMap = {};
+        priceRows.rows.forEach(r => { priceMap[r.id] = parseFloat(r.price); });
+
+        let recalcSubtotal = 0;
+        for (const item of items) {
+          const menuId = parseInt(item.id || item.menu_id, 10);
+          if (!menuId) continue;
+          const dbPrice = priceMap[menuId];
+          if (dbPrice === undefined) continue; // item not in DB (addon, custom) — skip
+          const qty = parseInt(item.qty || item.quantity || 1, 10);
+          recalcSubtotal += dbPrice * qty;
+        }
+
+        // Allow $0.50 tolerance for addons/modifiers not individually tracked in menus table
+        if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.50) {
+          return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
+        }
+      }
     }
 
     // Input length caps
@@ -512,6 +553,14 @@ const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     const order = await pool.query("SELECT * FROM orders WHERE id=$1", [id]);
+    if (!order.rows[0]) return res.status(404).json({ message: 'Order not found' });
+
+    // Enforce ownership — non-admin users can only read their own orders
+    const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
+    if (!isAdmin && order.rows[0].user_id && order.rows[0].user_id !== req.user?.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const items = await pool.query(
       "SELECT oi.*, m.name FROM order_items oi JOIN menus m ON oi.menu_id = m.id WHERE oi.order_id=$1",
       [id]

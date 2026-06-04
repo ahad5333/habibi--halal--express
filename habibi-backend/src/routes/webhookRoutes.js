@@ -1,14 +1,27 @@
 const express = require("express");
-const router = express.Router();
+const crypto  = require("crypto");
+const router  = express.Router();
 const { handleDoorDashWebhook, handleUberWebhook, handleOrderIngest } = require("../controllers/webhookController");
 
 const verifyWebhookSecret = (req, res, next) => {
-  if (!process.env.WEBHOOK_SECRET) {
-    return res.status(503).json({ message: 'Webhook secret not configured' });
+  const configured = process.env.WEBHOOK_SECRET;
+  if (!configured) return res.status(503).json({ message: 'Webhook secret not configured' });
+
+  const provided = req.headers['x-webhook-secret'];
+  if (!provided) return res.status(401).json({ message: 'Missing webhook secret' });
+
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(configured);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.status(401).json({ message: 'Invalid webhook secret' });
+    }
+  } catch {
+    return res.status(401).json({ message: 'Invalid webhook secret' });
   }
-  const secret = req.headers['x-webhook-secret'];
-  if (secret === process.env.WEBHOOK_SECRET) return next();
-  return res.status(401).json({ message: 'Invalid webhook secret' });
+
+  next();
 };
 
 router.post("/doordash", verifyWebhookSecret, handleDoorDashWebhook);
