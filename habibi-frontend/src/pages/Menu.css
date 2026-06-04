@@ -893,30 +893,21 @@
     border-radius: 50%;
     background: #6daa2b;
     border: none;
-    color: transparent;
-    font-size: 0;
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 900;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
-    position: relative;
     box-shadow: 0 2px 8px rgba(109,170,43,0.4);
     cursor: pointer;
     flex-shrink: 0;
-    overflow: hidden;
   }
-  /* Use ::before with absolute centering — most reliable across mobile browsers */
-  .add-btn::before {
-    content: '+';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: #ffffff;
-    line-height: 1;
-  }
+  .btn-add-text { display: none; }   /* hide "Add" — show only "+" */
   .add-btn:hover { background: #5d922a; }
-  .add-btn.added { background: #16a34a; }
-  .add-btn.added::before { content: '✓'; font-size: 0.9rem; }
+  .add-btn.added { background: #16a34a; font-size: 0.85rem; }
 
   /* Qty stepper — compact */
   .qty-stepper { height: 28px; }
@@ -952,9 +943,10 @@
   }
   .menu-card-footer { gap: 0.2rem; margin-top: 0.2rem; }
   .menu-card-price { font-size: 0.72rem; }
-  .add-btn { width: 24px; height: 24px; min-width: 24px; }
-  .add-btn::before { font-size: 0.95rem; }
-  .qty-stepper { height: 22px; transform: scale(0.82); transform-origin: right center; }
+  .add-btn { width: 26px; height: 26px; min-width: 26px; font-size: 1rem; }
+  .qty-stepper { height: 24px; transform: none; }
+  .qty-stepper-btn { width: 22px; font-size: 0.65rem; }
+  .qty-stepper-val { font-size: 0.65rem; min-width: 16px; }
 }
 
 /* Very small phones */
@@ -966,8 +958,9 @@
   .menu-card-name { font-size: 0.62rem; }
   .menu-card-price { font-size: 0.68rem; }
   .menu-card-body { padding: 0.3rem 0.35rem 0.35rem; }
-  .add-btn { width: 22px; height: 22px; min-width: 22px; }
-  .add-btn::before { font-size: 0.88rem; }
+  .add-btn { width: 24px; height: 24px; min-width: 24px; font-size: 0.9rem; }
+  .qty-stepper-btn { width: 20px; }
+  .qty-stepper-val { min-width: 14px; }
 }
 
 /* ── Delivery partners mobile ── */

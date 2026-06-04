@@ -516,7 +516,7 @@ const Menu = () => {
                               className={`add-btn${isAdded ? ' added' : ''}`}
                               onClick={e => { e.stopPropagation(); handleCardClick(item); }}
                             >
-                              {isAdded ? '✓' : '+ Add'}
+                              {isAdded ? '✓' : <><span className="btn-plus">+</span><span className="btn-add-text"> Add</span></>}
                             </button>
                           );
                         })()}
