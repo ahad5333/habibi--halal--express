@@ -235,12 +235,9 @@
 }
 
 .animated-hero-words {
-  background: linear-gradient(135deg, #ff0000, #ff5a00, #ffb400, #ff5a00, #ff0000);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ef4444;
+  -webkit-text-fill-color: #ef4444;
   display: inline-block;
-  animation: shineGradient 3s linear infinite;
   position: relative;
   font-size: 1.1em;
 }
