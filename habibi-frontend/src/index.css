@@ -1,23 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --color-bg: #ffffff;
-  --color-surface: #f8fafc;
-  --color-surface-2: #f1f5f9;
-  --color-surface-hover: #f1f5f9;
+  --color-bg: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-2: #1a1a1a;
+  --color-surface-hover: #222222;
   --color-primary: #1e3a8a;
   --color-primary-hover: #1e40af;
-  --color-primary-dim: rgba(30,58,138,0.08);
+  --color-primary-dim: rgba(30,58,138,0.15);
   --color-secondary: #dc2626;
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
-  --color-text-dim: #94a3b8;
-  --color-border: #e2e8f0;
+  --color-text-main: #f0ece4;
+  --color-text-muted: #9a9a9a;
+  --color-text-dim: #555555;
+  --color-border: rgba(255,255,255,0.08);
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-gold: #E5B64E;
-  --color-gold-dim: rgba(229,182,78,0.15);
+  --color-gold-dim: rgba(229,182,78,0.12);
   --radius: 8px;
   --radius-lg: 12px;
 
@@ -38,12 +38,33 @@ html {
 
 body {
   background-color: var(--color-bg);
+  background-image:
+    url('/images/logos/logo-full.jpg');
+  background-size: 70% auto;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
   color: var(--color-text-main);
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-color: rgba(10, 10, 10, 0.92);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 h1, h2, h3, h4, h5, h6 {

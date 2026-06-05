@@ -902,7 +902,7 @@
   transition: background-color 0.4s ease;
   position: relative;
   overflow: hidden;
-  background-color: #ffffff !important; /* Force white so multiply blend is pure */
+  background-color: transparent !important;
 }
 
 .bowl-rim {
@@ -1049,9 +1049,9 @@
 
 /* ── Our Story Section ────────────────────────────────────── */
 .story-section {
-  background-color: #ffffff;
+  background-color: transparent;
   padding: 5rem 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(229,182,78,0.15);
 }
 
 .story-container {
@@ -1198,8 +1198,8 @@
 
 /* ── The Art of the Feast ─────────────────────────────────── */
 .feast-section {
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background-color: transparent;
+  border-top: 1px solid rgba(229,182,78,0.1);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -1380,8 +1380,8 @@
 
 /* ── Wall of Love ─────────────────────────────────────────── */
 .reviews-section {
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background-color: transparent;
+  border-top: 1px solid rgba(229,182,78,0.1);
 }
 
 .reviews-marquee-container {
@@ -1475,8 +1475,8 @@
   height: 50px;
   border-radius: 50%;
   object-fit: contain;
-  background-color: #fff;
-  border: 1px solid var(--color-border);
+  background-color: rgba(255,255,255,0.08);
+  border: 1px solid rgba(229,182,78,0.2);
   padding: 4px;
 }
 
@@ -1496,8 +1496,8 @@
 
 /* ── Live Customer Reviews ────────────────────────────────── */
 .customer-reviews-section {
-  background-color: var(--color-bg);
-  border-top: 1px solid var(--color-border);
+  background-color: transparent;
+  border-top: 1px solid rgba(229,182,78,0.1);
 }
 
 .rev-stats-bar {
@@ -1598,7 +1598,7 @@
 
 /* ── Beyond The Plate ─────────────────────────────────────── */
 .beyond-section {
-  background-color: var(--color-bg);
+  background-color: transparent;
 }
 
 .beyond-container {
@@ -1731,8 +1731,8 @@
 
 /* ── Locations ────────────────────────────────────────────── */
 .locations-section {
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background-color: transparent;
+  border-top: 1px solid rgba(229,182,78,0.1);
 }
 
 .locations-grid {
