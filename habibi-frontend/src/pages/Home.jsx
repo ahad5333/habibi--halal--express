@@ -203,15 +203,20 @@ const Home = () => {
           <div className="floating-ingredients">
           </div>
 
+          {/* ── Giant logo watermark behind hero content ── */}
+          <div className="hero-logo-watermark" aria-hidden="true">
+            <img src="/images/logos/logo-badge.png" alt="" />
+          </div>
+
           <div className="container hero-content">
             <h1 className="hero-title-exact">
-              <span className="hero-title-line-1">Savor the True Taste of</span><br />
-              <span className="hero-title-line-2">Premium Halal</span><br />
+              <span className="hero-title-line-1">Savor the Flavor of</span><br />
+              <span className="hero-title-line-2">Halal Perfection,</span><br />
               <span className="hero-title-line-3"><span className="animated-hero-words">{typedText}<span className="typewriter-cursor">|</span></span></span>
             </h1>
 
             <p className="hero-creative-line">
-              ~ From sizzling gyros to fresh falafel, experience NYC's vibrant Mediterranean heritage ~
+              ~ Where Every Bite is Blessed — fresh, bold &amp; made with love ~
             </p>
             
             <div className="hero-cta-group">

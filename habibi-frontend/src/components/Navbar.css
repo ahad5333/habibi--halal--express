@@ -7,10 +7,11 @@
   position: sticky;
   top: 0;
   z-index: 500;
-  background: #000000;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(255, 215, 0, 0.20);
+  background: linear-gradient(180deg, #000000 0%, rgba(0,0,0,0.97) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 2px solid rgba(229, 182, 78, 0.25);
+  box-shadow: 0 4px 32px rgba(229,182,78,0.08);
 }
 
 /* ── Top bar ─────────────────────────────────────────────── */

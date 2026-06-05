@@ -75,18 +75,44 @@
 .hero-top-dark {
   position: relative;
   z-index: 2;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.75) 45%, rgba(0, 0, 0, 0.3) 100%),
+  background-image:
+    linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(10,5,0,0.82) 50%, rgba(20,8,0,0.70) 100%),
     url('/images/hero/slate_bg.png');
   background-size: cover;
   background-position: right center;
   padding-top: 2.5rem;
-  padding-bottom: 2.5rem; /* Reduced more to make hero height smaller */
+  padding-bottom: 2.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   color: #fff;
+  overflow: hidden;
+}
+
+/* ── Giant logo watermark ── */
+.hero-logo-watermark {
+  position: absolute;
+  right: -4%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 620px;
+  height: 620px;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-logo-watermark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.10;
+  filter: drop-shadow(0 0 60px rgba(229,182,78,0.15));
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+@keyframes watermarkPulse {
+  0%   { opacity: 0.08; transform: scale(1); }
+  50%  { opacity: 0.13; transform: scale(1.03); }
+  100% { opacity: 0.08; transform: scale(1); }
 }
 
 .hero-halal-badge {
@@ -902,7 +928,7 @@
   transition: background-color 0.4s ease;
   position: relative;
   overflow: hidden;
-  background-color: transparent !important;
+  background-color: #ffffff !important; /* Force white so multiply blend is pure */
 }
 
 .bowl-rim {
@@ -1049,9 +1075,9 @@
 
 /* ── Our Story Section ────────────────────────────────────── */
 .story-section {
-  background-color: transparent;
+  background-color: #ffffff;
   padding: 5rem 0;
-  border-top: 1px solid rgba(229,182,78,0.15);
+  border-top: 1px solid var(--color-border);
 }
 
 .story-container {
@@ -1198,8 +1224,8 @@
 
 /* ── The Art of the Feast ─────────────────────────────────── */
 .feast-section {
-  background-color: transparent;
-  border-top: 1px solid rgba(229,182,78,0.1);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -1380,8 +1406,8 @@
 
 /* ── Wall of Love ─────────────────────────────────────────── */
 .reviews-section {
-  background-color: transparent;
-  border-top: 1px solid rgba(229,182,78,0.1);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }
 
 .reviews-marquee-container {
@@ -1475,8 +1501,8 @@
   height: 50px;
   border-radius: 50%;
   object-fit: contain;
-  background-color: rgba(255,255,255,0.08);
-  border: 1px solid rgba(229,182,78,0.2);
+  background-color: #fff;
+  border: 1px solid var(--color-border);
   padding: 4px;
 }
 
@@ -1496,8 +1522,8 @@
 
 /* ── Live Customer Reviews ────────────────────────────────── */
 .customer-reviews-section {
-  background-color: transparent;
-  border-top: 1px solid rgba(229,182,78,0.1);
+  background-color: var(--color-bg);
+  border-top: 1px solid var(--color-border);
 }
 
 .rev-stats-bar {
@@ -1598,7 +1624,7 @@
 
 /* ── Beyond The Plate ─────────────────────────────────────── */
 .beyond-section {
-  background-color: transparent;
+  background-color: var(--color-bg);
 }
 
 .beyond-container {
@@ -1731,8 +1757,8 @@
 
 /* ── Locations ────────────────────────────────────────────── */
 .locations-section {
-  background-color: transparent;
-  border-top: 1px solid rgba(229,182,78,0.1);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }
 
 .locations-grid {
