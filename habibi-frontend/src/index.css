@@ -5,19 +5,19 @@
   --color-surface: #111111;
   --color-surface-2: #181818;
   --color-surface-hover: #222222;
-  --color-primary: #1e3a8a;
-  --color-primary-hover: #1e40af;
-  --color-primary-dim: rgba(30,58,138,0.15);
-  --color-secondary: #dc2626;
+  --color-primary: #F97316;
+  --color-primary-hover: #EA6C00;
+  --color-primary-dim: rgba(249,115,22,0.15);
+  --color-secondary: #F97316;
   --color-text-main: #f0ede8;
   --color-text-muted: #8a8a8a;
   --color-text-dim: #555555;
-  --color-border: rgba(229,182,78,0.14);
+  --color-border: rgba(249,115,22,0.14);
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
-  --color-gold: #E5B64E;
-  --color-gold-dim: rgba(229,182,78,0.15);
+  --color-gold: #F97316;
+  --color-gold-dim: rgba(249,115,22,0.15);
   --radius: 8px;
   --radius-lg: 12px;
 
@@ -189,7 +189,7 @@ button {
 /* ── Dark theme global form elements ──────────────────────── */
 input, textarea, select {
   background: #161616;
-  border: 1px solid rgba(229,182,78,0.18);
+  border: 1px solid rgba(249,115,22,0.18);
   color: #f0ede8;
   border-radius: var(--radius);
 }
@@ -198,8 +198,8 @@ input::placeholder, textarea::placeholder {
 }
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: rgba(229,182,78,0.45);
-  box-shadow: 0 0 0 2px rgba(229,182,78,0.08);
+  border-color: rgba(249,115,22,0.45);
+  box-shadow: 0 0 0 2px rgba(249,115,22,0.08);
 }
 
 /* ── Sitewide logo watermark ───────────────────────────────── */
@@ -230,7 +230,7 @@ input:focus, textarea:focus, select:focus {
   position: relative;
 }
 .section-dark {
-  background: linear-gradient(180deg, #0a0a0a 0%, #0f0a05 100%);
+  background: linear-gradient(180deg, #0a0a0a 0%, #0d0805 100%);
 }
 .section-darker {
   background: #060606;

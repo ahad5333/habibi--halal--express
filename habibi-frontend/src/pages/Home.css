@@ -322,22 +322,22 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #ffd700;
-  color: #111111;
+  background: #F97316;
+  color: #ffffff;
   font-weight: 800;
   font-size: 1rem;
   padding: 0.9rem 2.25rem;
   border-radius: 50px;
   text-decoration: none;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 22px rgba(255,215,0,0.35);
+  box-shadow: 0 4px 22px rgba(249,115,22,0.4);
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 
 .hero-btn-primary:hover {
   transform: translateY(-2px);
-  background: #ffb300;
-  box-shadow: 0 8px 30px rgba(255,215,0,0.5);
+  background: #EA6C00;
+  box-shadow: 0 8px 30px rgba(249,115,22,0.5);
   color: #000000;
 }
 
@@ -345,19 +345,19 @@
   display: inline-flex;
   align-items: center;
   background: transparent;
-  color: #ffd700;
+  color: #F97316;
   font-weight: 700;
   font-size: 1rem;
   padding: 0.9rem 2.25rem;
   border-radius: 50px;
-  border: 1.5px solid rgba(255,215,0,0.4);
+  border: 1.5px solid rgba(249,115,22,0.4);
   text-decoration: none;
   transition: border-color 0.2s, background 0.2s, color 0.2s;
 }
 
 .hero-btn-ghost:hover {
-  border-color: #ffd700;
-  background: rgba(255,215,0,0.1);
+  border-color: #F97316;
+  background: rgba(249,115,22,0.1);
   color: #ffffff;
 }
 
@@ -376,7 +376,7 @@
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #ffb300;
+  color: #EA6C00;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -415,7 +415,7 @@
 
 .hero-visual-card:hover {
   transform: translateY(-6px);
-  border-color: #ffd700;
+  border-color: #F97316;
   box-shadow: 0 10px 25px rgba(255, 215, 0, 0.15);
   background: rgba(15, 15, 15, 0.7);
 }
@@ -435,7 +435,7 @@
 }
 
 .hero-visual-card:hover .card-thumb-wrapper {
-  border-color: #ffd700;
+  border-color: #F97316;
 }
 
 .card-thumb-img {
@@ -459,7 +459,7 @@
 }
 
 .hero-visual-card:hover .card-thumb-label {
-  color: #ffd700;
+  color: #F97316;
 }
 
 
@@ -563,7 +563,7 @@
   transform: translateX(-50%);
   width: 60px;
   height: 4px;
-  background: #ffd700;
+  background: #F97316;
 }
 
 .hero-arched-cards {
@@ -704,7 +704,7 @@
   font-size: 1.7rem;
   font-weight: 400;
   letter-spacing: 3px;
-  color: #ffd700;
+  color: #F97316;
   line-height: 1;
 }
 
@@ -723,7 +723,7 @@
   background: transparent;
   border: 1.5px solid rgba(255, 215, 0, 0.5);
   border-radius: 50px;
-  color: #ffd700;
+  color: #F97316;
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
@@ -735,7 +735,7 @@
 
 .byo-strip-btn:hover {
   background: rgba(255, 215, 0, 0.1);
-  border-color: #ffd700;
+  border-color: #F97316;
   color: #fff;
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
   transform: translateY(-1px);
