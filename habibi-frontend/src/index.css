@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --color-bg: #080808;
-  --color-surface: #111111;
-  --color-surface-2: #181818;
-  --color-surface-hover: #222222;
+  --color-bg: #000000;
+  --color-surface: #0f0f0f;
+  --color-surface-2: #161616;
+  --color-surface-hover: #1f1f1f;
   --color-primary: #F97316;
   --color-primary-hover: #EA6C00;
   --color-primary-dim: rgba(249,115,22,0.15);
@@ -12,7 +12,7 @@
   --color-text-main: #f0ede8;
   --color-text-muted: #8a8a8a;
   --color-text-dim: #555555;
-  --color-border: rgba(249,115,22,0.14);
+  --color-border: rgba(255,255,255,0.08);
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -189,7 +189,7 @@ button {
 /* ── Dark theme global form elements ──────────────────────── */
 input, textarea, select {
   background: #161616;
-  border: 1px solid rgba(249,115,22,0.18);
+  border: 1px solid rgba(255,255,255,0.12);
   color: #f0ede8;
   border-radius: var(--radius);
 }
