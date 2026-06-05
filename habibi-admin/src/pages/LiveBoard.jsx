@@ -4,53 +4,62 @@ import { adminAPI } from '../services/api';
 import './LiveBoard.css';
 
 // ── Bell sound via Web Audio API ─────────────────────────────────────────────
-// audioCtx must be created inside a user gesture (Chrome autoplay policy).
-// We store it in a module-level ref so playBell() reuses the same context.
-let _audioCtx = null;
+let _audioCtx   = null;
+let _ringSource = null; // looping BufferSource — stays alive until stopped
 
 function unlockAudio() {
   try {
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Play a silent buffer to fully unlock the context
-    const buf = _audioCtx.createBuffer(1, 1, 22050);
-    const src = _audioCtx.createBufferSource();
-    src.buffer = buf;
-    src.connect(_audioCtx.destination);
-    src.start(0);
   } catch (_) {}
 }
 
-// "Trin trin" — two quick double-rings like a classic phone
-function playTrinTrin() {
-  if (!_audioCtx) return;
+// Build a 1.4s PCM buffer containing the trin-trin pattern.
+// Using a looping BufferSource keeps the AudioContext alive indefinitely.
+function buildRingBuffer() {
+  const sr = _audioCtx.sampleRate;
+  const duration = 1.4;
+  const buf  = _audioCtx.createBuffer(1, Math.floor(sr * duration), sr);
+  const data = buf.getChannelData(0);
+  // Two pairs of short rings: [start, end] in seconds
+  const rings = [[0.02, 0.18], [0.24, 0.40], [0.70, 0.86], [0.92, 1.08]];
+  for (let i = 0; i < data.length; i++) {
+    const t = i / sr;
+    const inRing = rings.some(([s, e]) => t >= s && t < e);
+    if (inRing) {
+      // Slight fade at edges to avoid clicking
+      const nearest = rings.reduce((d, [s, e]) => {
+        if (t >= s && t < e) return Math.min(d, t - s, e - t);
+        return d;
+      }, Infinity);
+      const fade = Math.min(nearest / 0.008, 1);
+      data[i] = fade * 0.4 * Math.sin(2 * Math.PI * 900 * t);
+    } else {
+      data[i] = 0;
+    }
+  }
+  return buf;
+}
+
+function startContinuousRing() {
+  if (!_audioCtx || _ringSource) return;
   try {
-    const rings = [
-      [0, 0.12],   // trin 1 — first ring
-      [0.18, 0.3], // trin 1 — second ring
-      [0.55, 0.67],// trin 2 — first ring
-      [0.73, 0.85],// trin 2 — second ring
-    ];
-    rings.forEach(([start, end]) => {
-      const osc  = _audioCtx.createOscillator();
-      const gain = _audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(_audioCtx.destination);
-      osc.frequency.value = 900;
-      osc.type = 'square';
-      const t0 = _audioCtx.currentTime + start;
-      const t1 = _audioCtx.currentTime + end;
-      gain.gain.setValueAtTime(0, t0);
-      gain.gain.linearRampToValueAtTime(0.35, t0 + 0.01);
-      gain.gain.setValueAtTime(0.35, t1 - 0.01);
-      gain.gain.linearRampToValueAtTime(0, t1);
-      osc.start(t0);
-      osc.stop(t1 + 0.05);
-    });
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    _ringSource = _audioCtx.createBufferSource();
+    _ringSource.buffer = buildRingBuffer();
+    _ringSource.loop = true;
+    _ringSource.connect(_audioCtx.destination);
+    _ringSource.start();
   } catch (_) {}
 }
 
-// Single bell for test
-function playBell() { playTrinTrin(); }
+function stopContinuousRing() {
+  if (_ringSource) {
+    try { _ringSource.stop(); _ringSource.disconnect(); } catch (_) {}
+    _ringSource = null;
+  }
+}
+
+function playBell() { startContinuousRing(); setTimeout(stopContinuousRing, 1400); }
 
 // ── Browser notification ──────────────────────────────────────────────────────
 function showNotification(count) {
@@ -138,36 +147,22 @@ export default function LiveBoard() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [newAlert, setNewAlert]     = useState(false);
   const [soundOn, setSoundOn]       = useState(false);
-  const timerRef   = useRef(null);
-  const ringRef    = useRef(null);  // interval for continuous ringing
-  const knownIds   = useRef(null);
+  const timerRef = useRef(null);
+  const knownIds = useRef(null);
 
   // Request browser notification permission on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-    return () => {
-      clearInterval(ringRef.current);
-    };
-  }, []);
-
-  // Start/stop continuous ringing based on whether unaccepted orders exist
-  const startRinging = useCallback(() => {
-    if (ringRef.current) return; // already ringing
-    playTrinTrin();
-    ringRef.current = setInterval(playTrinTrin, 1200);
-  }, []);
-
-  const stopRinging = useCallback(() => {
-    clearInterval(ringRef.current);
-    ringRef.current = null;
+    return () => stopContinuousRing(); // cleanup on unmount
   }, []);
 
   const handleEnableSound = () => {
     unlockAudio();
     setSoundOn(true);
-    setTimeout(playTrinTrin, 100);
+    // Play test ring so admin hears it immediately
+    setTimeout(() => { startContinuousRing(); setTimeout(stopContinuousRing, 1400); }, 100);
   };
 
   const load = useCallback(async () => {
@@ -198,9 +193,9 @@ export default function LiveBoard() {
 
       // Ring continuously while unaccepted orders exist, stop when all accepted
       if (unaccepted.length > 0) {
-        startRinging();
+        startContinuousRing();
       } else {
-        stopRinging();
+        stopContinuousRing();
       }
 
       setOrders(live);
