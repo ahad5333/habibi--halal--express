@@ -1698,7 +1698,7 @@
   font-family: var(--font-heading);
   font-size: 1.1rem;
   line-height: 1.5;
-  color: var(--color-text-main);
+  color: #111111;
   margin-bottom: 1rem;
   font-style: italic;
   font-weight: 600;
