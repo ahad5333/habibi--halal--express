@@ -144,7 +144,7 @@ function FeatureCard({ feature: f }) {
 }
 
 const About = () => (
-  <div className="about-page">
+  <div className="about-page page-watermark">
     <SEO
       title="About Our Story | Culinary Heritage & Sourcing"
       description="Learn about Habibi Halal Express' heritage, our uncompromising standards of hygiene, daily fresh local sourcing, and our artisanal Halal culinary craftsmanship."

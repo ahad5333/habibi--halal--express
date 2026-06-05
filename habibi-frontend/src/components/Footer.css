@@ -14,15 +14,36 @@
 }
 
 .footer {
-  background-color: rgba(6, 6, 18, 0.96);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-top: 1px solid rgba(255, 215, 0, 0.12);
-  padding: 4rem 0 2rem;
-  margin-top: 4rem;
+  position: relative;
+  background: linear-gradient(180deg, #060606 0%, #000000 100%);
+  border-top: 2px solid rgba(229,182,78,0.30);
+  box-shadow: 0 -4px 60px rgba(229,182,78,0.06);
+  padding: 5rem 0 2rem;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* Logo watermark inside footer */
+.footer::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  background-image: url('/images/logos/logo-badge.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .footer-container {
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
@@ -46,15 +67,12 @@
 }
 
 .footer-logo-img {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: 200px;
+  height: auto;
   object-fit: contain;
-  background: #fff;
-  padding: 3px;
   flex-shrink: 0;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.15);
-  transition: box-shadow 0.25s, transform 0.25s;
+  filter: drop-shadow(0 4px 20px rgba(229,182,78,0.2));
+  transition: filter 0.25s, transform 0.25s;
 }
 
 .footer-logo:hover .footer-logo-img {
@@ -232,6 +250,8 @@
 
 /* Trust & certification row */
 .footer-trust-row {
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
   margin: 2.5rem auto 0;
   padding: 1.25rem 2rem;
@@ -370,7 +390,9 @@
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgba(229,182,78,0.12);
   margin-top: 3rem;
   padding-top: 1.5rem;
   text-align: center;

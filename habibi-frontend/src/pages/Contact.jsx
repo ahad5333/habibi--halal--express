@@ -194,7 +194,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="contact-page">
+    <div className="contact-page page-watermark">
       <SEO
         title="Contact Us & Feedback | Concierge Support"
         description="Reach out to the Habibi Halal Express support team. Submit suggestions, feedback, order complaints, or partner/media inquiry requests."

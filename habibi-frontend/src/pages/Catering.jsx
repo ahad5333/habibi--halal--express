@@ -93,7 +93,7 @@ export default function Catering() {
   /* ─── Success screen ─── */
   if (step === 3 && done) {
     return (
-      <div className="cat-page">
+      <div className="cat-page page-watermark">
         <SEO title="Catering Request Sent | Habibi Halal Express" description="Your catering quote request has been received." />
         <div className="cat-success">
           <div className="cat-success-icon"><CheckCircle size={56} strokeWidth={1.5} /></div>
@@ -110,7 +110,7 @@ export default function Catering() {
   }
 
   return (
-    <div className="cat-page">
+    <div className="cat-page page-watermark">
       <SEO
         title="Catering | Habibi Halal Express — Events & Group Orders"
         description="Book Habibi Halal Express for your next event. Weddings, corporate events, parties — 20 to 500+ guests. Get a free custom quote."

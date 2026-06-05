@@ -26,11 +26,7 @@ const Footer = () => {
       <div className="footer-container">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="footer-logo-img" />
-            <div className="footer-logo-text">
-              <span className="footer-brand-name">HABIBI HALAL EXPRESS</span>
-              <span className="footer-brand-inc">Habibi Halal Express, INC.</span>
-            </div>
+            <img src="/images/logos/logo-full.jpg" alt="Habibi Halal Express" className="footer-logo-img" />
           </Link>
           <p className="footer-tagline">
             Authentic Halal Dining. Every dish crafted with tradition, precision, and passion — 365 days a year.

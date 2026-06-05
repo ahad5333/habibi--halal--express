@@ -217,7 +217,7 @@ const Menu = () => {
   };
 
   return (
-    <div className="menu-page">
+    <div className="menu-page page-watermark">
       <SEO
         title="Menu | Authentic Halal Platters, Gyros & Burgers"
         description="Explore the Habibi Halal Express menu. Order online: Chicken over Rice, Gyro Platters, Philly Cheesesteaks, Fresh Salads, and Burgers."

@@ -282,7 +282,7 @@ const Locations = () => {
   };
 
   return (
-    <div className="locations-page">
+    <div className="locations-page page-watermark">
       <SEO
         title="Locations | 3 Bronx Outlets & Tri-State Delivery"
         description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Lehman College Area, and Bronx Science Area."

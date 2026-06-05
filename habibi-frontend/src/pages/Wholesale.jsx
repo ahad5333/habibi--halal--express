@@ -45,7 +45,7 @@ const Wholesale = () => {
   };
 
   return (
-    <div className="wholesale-page">
+    <div className="wholesale-page page-watermark">
       {/* Hero */}
       <section className="wholesale-hero text-center">
         <div className="container">
