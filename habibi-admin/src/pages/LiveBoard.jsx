@@ -3,22 +3,38 @@ import { Monitor, RefreshCw, Maximize2, Clock, ChefHat, Truck, CheckCircle2, Bel
 import { adminAPI } from '../services/api';
 import './LiveBoard.css';
 
-// ── Bell sound via Web Audio API (no audio file needed) ──────────────────────
-function playBell() {
+// ── Bell sound via Web Audio API ─────────────────────────────────────────────
+// audioCtx must be created inside a user gesture (Chrome autoplay policy).
+// We store it in a module-level ref so playBell() reuses the same context.
+let _audioCtx = null;
+
+function unlockAudio() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [[880, 0], [660, 0.35], [880, 0.6]].forEach(([freq, delay]) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Play a silent buffer to fully unlock the context
+    const buf = _audioCtx.createBuffer(1, 1, 22050);
+    const src = _audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(_audioCtx.destination);
+    src.start(0);
+  } catch (_) {}
+}
+
+function playBell() {
+  if (!_audioCtx) return;
+  try {
+    [[880, 0], [660, 0.3], [880, 0.55]].forEach(([freq, delay]) => {
+      const osc  = _audioCtx.createOscillator();
+      const gain = _audioCtx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(_audioCtx.destination);
       osc.frequency.value = freq;
       osc.type = 'sine';
-      const t = ctx.currentTime + delay;
-      gain.gain.setValueAtTime(0.45, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      const t = _audioCtx.currentTime + delay;
+      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
       osc.start(t);
-      osc.stop(t + 1.1);
+      osc.stop(t + 1.0);
     });
   } catch (_) {}
 }
@@ -108,8 +124,9 @@ export default function LiveBoard() {
   const [fullscreen, setFullscreen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [newAlert, setNewAlert]     = useState(false);
+  const [soundOn, setSoundOn]       = useState(false);
   const timerRef   = useRef(null);
-  const knownIds   = useRef(null); // null = first load, Set after
+  const knownIds   = useRef(null);
 
   // Request browser notification permission on mount
   useEffect(() => {
@@ -117,6 +134,13 @@ export default function LiveBoard() {
       Notification.requestPermission();
     }
   }, []);
+
+  const handleEnableSound = () => {
+    unlockAudio();
+    setSoundOn(true);
+    // Play a test ring immediately so admin knows it worked
+    setTimeout(playBell, 100);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -181,6 +205,14 @@ export default function LiveBoard() {
           </p>
         </div>
         <div style={{display:'flex',gap:'0.5rem'}}>
+          <button
+            className={`btn btn-sm ${soundOn ? 'btn-success' : 'btn-warning'}`}
+            onClick={soundOn ? playBell : handleEnableSound}
+            title={soundOn ? 'Sound enabled — click to test bell' : 'Click to enable order bell alerts'}
+            style={{gap:'0.4rem'}}
+          >
+            <Bell size={14}/> {soundOn ? 'Sound On' : 'Enable Sound'}
+          </button>
           <button className="btn btn-secondary btn-icon" onClick={load} title="Refresh now"><RefreshCw size={15}/></button>
           <button className="btn btn-secondary btn-icon" onClick={() => setFullscreen(f => !f)} title={fullscreen?'Exit fullscreen':'Fullscreen'}>
             <Maximize2 size={15}/>
