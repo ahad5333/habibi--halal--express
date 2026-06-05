@@ -224,38 +224,6 @@ const Home = () => {
               <Link to="/menu" className="hero-btn-ghost">View Menu</Link>
             </div>
 
-            <div className="hero-quick-picks">
-              <span className="hero-quick-label-new">🔥 EXPLORE OUR MENU</span>
-              <div className="hero-visual-cards">
-                <Link to="/menu?cat=platter" className="hero-visual-card">
-                  <div className="card-thumb-wrapper">
-                    <img src="/images/chicken_rice_3d.png" alt="Platters" className="card-thumb-img" />
-                  </div>
-                  <span className="card-thumb-label">Platters</span>
-                </Link>
-
-                <Link to="/menu?cat=gyro" className="hero-visual-card">
-                  <div className="card-thumb-wrapper">
-                    <img src="/images/gyro_wrap_3d.png" alt="Sandwiches & Wraps" className="card-thumb-img" />
-                  </div>
-                  <span className="card-thumb-label">Sandwiches & Wraps</span>
-                </Link>
-
-                <Link to="/menu?cat=burgers" className="hero-visual-card">
-                  <div className="card-thumb-wrapper">
-                    <img src="/images/burger_3d.png" alt="Burgers" className="card-thumb-img" />
-                  </div>
-                  <span className="card-thumb-label">Burgers</span>
-                </Link>
-
-                <Link to="/menu?cat=byo" className="hero-visual-card">
-                  <div className="card-thumb-wrapper">
-                    <img src="/images/byo_bowl_3d.png" alt="Build Your Own Bowl" className="card-thumb-img" />
-                  </div>
-                  <span className="card-thumb-label">Build Your Bowl</span>
-                </Link>
-              </div>
-            </div>
           </div>
           
           <div className="hero-food-wrapper">
