@@ -382,7 +382,11 @@ const createGuestOrder = async (req, res) => {
 const getAdminOrders = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM guest_orders ORDER BY placed_at DESC"
+      `SELECT *,
+              order_status  AS status,
+              placed_at     AS created_at
+       FROM guest_orders
+       ORDER BY placed_at DESC`
     );
     res.json(result.rows);
   } catch (err) {
