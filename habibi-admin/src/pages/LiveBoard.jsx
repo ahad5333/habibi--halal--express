@@ -156,7 +156,7 @@ export default function LiveBoard() {
   const startRinging = useCallback(() => {
     if (ringRef.current) return; // already ringing
     playTrinTrin();
-    ringRef.current = setInterval(playTrinTrin, 3500);
+    ringRef.current = setInterval(playTrinTrin, 1200);
   }, []);
 
   const stopRinging = useCallback(() => {
