@@ -7,10 +7,10 @@
   position: sticky;
   top: 0;
   z-index: 500;
-  background: rgba(6, 6, 18, 0.90);
+  background: #000000;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(255, 215, 0, 0.12);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.20);
 }
 
 /* ── Top bar ─────────────────────────────────────────────── */
@@ -40,11 +40,10 @@
 .logo-img {
   width: 220px;
   height: auto;
-  border-radius: 8px;
+  border-radius: 0;
   object-fit: contain;
   flex-shrink: 0;
-  transition: transform 0.28s, filter 0.28s;
-  filter: drop-shadow(0 4px 16px rgba(255, 215, 0, 0.3));
+  transition: transform 0.28s;
 }
 
 .navbar-logo:hover .logo-img {
