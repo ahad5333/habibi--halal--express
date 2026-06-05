@@ -87,6 +87,10 @@
   align-items: center;
   justify-content: flex-start;
   color: #fff;
+}
+
+/* Clip watermark inside hero without clipping the overflowing food plate */
+.hero-logo-watermark {
   overflow: hidden;
 }
 
