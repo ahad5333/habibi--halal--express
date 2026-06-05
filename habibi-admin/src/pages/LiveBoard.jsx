@@ -1,7 +1,37 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Monitor, RefreshCw, Maximize2, Clock, ChefHat, Truck, CheckCircle2 } from 'lucide-react';
+import { Monitor, RefreshCw, Maximize2, Clock, ChefHat, Truck, CheckCircle2, Bell } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './LiveBoard.css';
+
+// ── Bell sound via Web Audio API (no audio file needed) ──────────────────────
+function playBell() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0], [660, 0.35], [880, 0.6]].forEach(([freq, delay]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const t = ctx.currentTime + delay;
+      gain.gain.setValueAtTime(0.45, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      osc.start(t);
+      osc.stop(t + 1.1);
+    });
+  } catch (_) {}
+}
+
+// ── Browser notification ──────────────────────────────────────────────────────
+function showNotification(count) {
+  if (Notification.permission !== 'granted') return;
+  new Notification(`🔔 ${count} New Order${count > 1 ? 's' : ''}!`, {
+    body: 'New order received — open Live Board to accept.',
+    icon: '/images/logos/logo.png',
+    tag:  'habibi-new-order',
+  });
+}
 
 const BOARD_STATUSES = ['received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered'];
 const STATUS_LABEL  = { received: 'New', pending: 'New', confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On The Way', delivered: 'Delivered' };
@@ -72,12 +102,21 @@ function OrderCard({ order, onAdvance, advancing }) {
 }
 
 export default function LiveBoard() {
-  const [orders, setOrders]       = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [advancing, setAdvancing] = useState(null);
+  const [orders, setOrders]         = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [advancing, setAdvancing]   = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const timerRef = useRef(null);
+  const [newAlert, setNewAlert]     = useState(false);
+  const timerRef   = useRef(null);
+  const knownIds   = useRef(null); // null = first load, Set after
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +126,22 @@ export default function LiveBoard() {
       const otherOrders     = all_live.filter(o => o.status !== 'delivered');
       const live            = [...otherOrders, ...deliveredOrders];
       live.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+      // Detect new orders (skip first load to avoid alerting on page open)
+      if (knownIds.current !== null) {
+        const incoming = live.filter(o =>
+          (o.status === 'received' || o.status === 'pending') &&
+          !knownIds.current.has(o.id)
+        );
+        if (incoming.length > 0) {
+          playBell();
+          showNotification(incoming.length);
+          setNewAlert(true);
+          setTimeout(() => setNewAlert(false), 4000);
+        }
+      }
+      knownIds.current = new Set(live.map(o => o.id));
+
       setOrders(live);
       setLastUpdate(new Date());
     } catch (_) {}
@@ -132,6 +187,17 @@ export default function LiveBoard() {
           </button>
         </div>
       </div>
+
+      {newAlert && (
+        <div style={{
+          background: '#16a34a', color: '#fff', padding: '0.75rem 1.25rem',
+          borderRadius: 8, marginBottom: '1rem', display: 'flex',
+          alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.95rem',
+          animation: 'pulse 0.5s ease-in-out',
+        }}>
+          <Bell size={18} /> New order received!
+        </div>
+      )}
 
       {loading ? (
         <div style={{display:'flex',justifyContent:'center',padding:'4rem'}}><div className="spinner"/></div>
