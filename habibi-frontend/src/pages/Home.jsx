@@ -220,20 +220,20 @@ const Home = () => {
             </div>
 
             <div className="hero-quick-picks">
-              <span className="hero-quick-label-new">🔥 POPULAR CATEGORIES</span>
+              <span className="hero-quick-label-new">🔥 EXPLORE OUR MENU</span>
               <div className="hero-visual-cards">
                 <Link to="/menu?cat=platter" className="hero-visual-card">
                   <div className="card-thumb-wrapper">
-                    <img src="/images/chicken_rice_3d.png" alt="Chicken Over Rice" className="card-thumb-img" />
+                    <img src="/images/chicken_rice_3d.png" alt="Platters" className="card-thumb-img" />
                   </div>
-                  <span className="card-thumb-label">Chicken Over Rice</span>
+                  <span className="card-thumb-label">Platters</span>
                 </Link>
-                
+
                 <Link to="/menu?cat=gyro" className="hero-visual-card">
                   <div className="card-thumb-wrapper">
-                    <img src="/images/gyro_wrap_3d.png" alt="Gyros" className="card-thumb-img" />
+                    <img src="/images/gyro_wrap_3d.png" alt="Sandwiches & Wraps" className="card-thumb-img" />
                   </div>
-                  <span className="card-thumb-label">Gyros</span>
+                  <span className="card-thumb-label">Sandwiches & Wraps</span>
                 </Link>
 
                 <Link to="/menu?cat=burgers" className="hero-visual-card">
@@ -245,9 +245,9 @@ const Home = () => {
 
                 <Link to="/menu?cat=byo" className="hero-visual-card">
                   <div className="card-thumb-wrapper">
-                    <img src="/images/byo_bowl_3d.png" alt="BYO Bowls" className="card-thumb-img" />
+                    <img src="/images/byo_bowl_3d.png" alt="Build Your Own Bowl" className="card-thumb-img" />
                   </div>
-                  <span className="card-thumb-label">BYO Bowls</span>
+                  <span className="card-thumb-label">Build Your Bowl</span>
                 </Link>
               </div>
             </div>
@@ -262,8 +262,8 @@ const Home = () => {
         <div className="hero-bottom-light">
           <div className="container text-center">
             <h2 className="hero-bottom-title-exact">
-              Order healthy and<br />
-              fresh food home
+              Fresh, Healthy &amp; Delivered<br />
+              Right To Your Door
             </h2>
             
             <p className="hero-bottom-desc-exact">
@@ -559,7 +559,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Master Craftsmanship</h4>
                 <p className="feature-desc">
-                  We believe that a well-crafted dish is cooked with love and passion to the art, an unwavering dedication to quality.
+                  We believe great food is born from love, passion, and an unwavering dedication to quality — never cut corners, never compromised.
                 </p>
               </div>
             </div>
@@ -571,7 +571,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Uncompromised Excellence</h4>
                 <p className="feature-desc">
-                  From the kitchen to your table, the culinary concepts showcase true craftsmanship with highest quality ingredients in the market.
+                  From our kitchen to your table, every plate is a showcase of true craftsmanship — built with the finest halal ingredients available.
                 </p>
               </div>
             </div>
@@ -583,7 +583,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Seamless Presentation</h4>
                 <p className="feature-desc">
-                  Aesthetics around food are just as important as the taste. We put special attention to your every single bite.
+                  Great food is more than taste — it's a full experience. We obsess over every detail, from the first look to the very last bite.
                 </p>
               </div>
             </div>
@@ -615,7 +615,7 @@ const Home = () => {
                 <span className="marquee-item">Authentic Spices <Sparkles size={28} className="marquee-icon"/></span>
                 <span className="marquee-item">Master Chefs <Sparkles size={28} className="marquee-icon"/></span>
                 <span className="marquee-item">NYC's Finest <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">Artisanal Crafted <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">Handcrafted With Love <Sparkles size={28} className="marquee-icon"/></span>
               </React.Fragment>
             ))}
           </div>
