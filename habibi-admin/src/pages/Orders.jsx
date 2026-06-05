@@ -3,8 +3,9 @@ import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package } from 'lucide-re
 import { adminAPI } from '../services/api';
 import './Orders.css';
 
-const STATUSES = ['all', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
+const STATUSES = ['all', 'received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
 const STATUS_BADGE = {
+  received:   'badge-warning',
   pending:    'badge-warning',
   confirmed:  'badge-info',
   preparing:  'badge-warning',
@@ -14,6 +15,7 @@ const STATUS_BADGE = {
   cancelled:  'badge-error',
 };
 const NEXT_STEPS = {
+  received:   ['confirmed', 'cancelled'],
   pending:    ['confirmed', 'cancelled'],
   confirmed:  ['preparing', 'cancelled'],
   preparing:  ['on_the_way', 'cancelled'],

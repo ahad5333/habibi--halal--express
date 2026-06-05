@@ -3,9 +3,9 @@ import { Monitor, RefreshCw, Maximize2, Clock, ChefHat, Truck, CheckCircle2 } fr
 import { adminAPI } from '../services/api';
 import './LiveBoard.css';
 
-const BOARD_STATUSES = ['pending', 'confirmed', 'preparing', 'on_the_way', 'delivered'];
-const STATUS_LABEL  = { pending: 'New', confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On The Way', delivered: 'Delivered' };
-const STATUS_COLOR  = { pending: 'lv-pending', confirmed: 'lv-confirmed', preparing: 'lv-preparing', on_the_way: 'lv-on-the-way', delivered: 'lv-delivered' };
+const BOARD_STATUSES = ['received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered'];
+const STATUS_LABEL  = { received: 'New', pending: 'New', confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On The Way', delivered: 'Delivered' };
+const STATUS_COLOR  = { received: 'lv-pending', pending: 'lv-pending', confirmed: 'lv-confirmed', preparing: 'lv-preparing', on_the_way: 'lv-on-the-way', delivered: 'lv-delivered' };
 const STATUS_ICON   = { on_the_way: <Truck size={13}/>, delivered: <CheckCircle2 size={13}/> };
 
 function elapsed(dateStr) {
@@ -17,8 +17,8 @@ function elapsed(dateStr) {
 }
 
 function OrderCard({ order, onAdvance, advancing }) {
-  const nexts      = { pending: 'confirmed', confirmed: 'preparing', preparing: 'on_the_way', on_the_way: 'delivered' };
-  const nextLabel  = { pending: 'Accept', confirmed: 'Start Cooking', preparing: 'Out for Delivery', on_the_way: 'Mark Delivered' };
+  const nexts      = { received: 'confirmed', pending: 'confirmed', confirmed: 'preparing', preparing: 'on_the_way', on_the_way: 'delivered' };
+  const nextLabel  = { received: 'Accept', pending: 'Accept', confirmed: 'Start Cooking', preparing: 'Out for Delivery', on_the_way: 'Mark Delivered' };
   const next = nexts[order.status];
   const age = Math.floor((Date.now() - new Date(order.created_at)) / 60000);
   const isUrgent = age > 20 && order.status !== 'preparing';
