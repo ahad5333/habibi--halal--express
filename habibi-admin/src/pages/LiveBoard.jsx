@@ -20,24 +20,37 @@ function unlockAudio() {
   } catch (_) {}
 }
 
-function playBell() {
+// "Trin trin" — two quick double-rings like a classic phone
+function playTrinTrin() {
   if (!_audioCtx) return;
   try {
-    [[880, 0], [660, 0.3], [880, 0.55]].forEach(([freq, delay]) => {
+    const rings = [
+      [0, 0.12],   // trin 1 — first ring
+      [0.18, 0.3], // trin 1 — second ring
+      [0.55, 0.67],// trin 2 — first ring
+      [0.73, 0.85],// trin 2 — second ring
+    ];
+    rings.forEach(([start, end]) => {
       const osc  = _audioCtx.createOscillator();
       const gain = _audioCtx.createGain();
       osc.connect(gain);
       gain.connect(_audioCtx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      const t = _audioCtx.currentTime + delay;
-      gain.gain.setValueAtTime(0.5, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
-      osc.start(t);
-      osc.stop(t + 1.0);
+      osc.frequency.value = 900;
+      osc.type = 'square';
+      const t0 = _audioCtx.currentTime + start;
+      const t1 = _audioCtx.currentTime + end;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.35, t0 + 0.01);
+      gain.gain.setValueAtTime(0.35, t1 - 0.01);
+      gain.gain.linearRampToValueAtTime(0, t1);
+      osc.start(t0);
+      osc.stop(t1 + 0.05);
     });
   } catch (_) {}
 }
+
+// Single bell for test
+function playBell() { playTrinTrin(); }
 
 // ── Browser notification ──────────────────────────────────────────────────────
 function showNotification(count) {
@@ -126,6 +139,7 @@ export default function LiveBoard() {
   const [newAlert, setNewAlert]     = useState(false);
   const [soundOn, setSoundOn]       = useState(false);
   const timerRef   = useRef(null);
+  const ringRef    = useRef(null);  // interval for continuous ringing
   const knownIds   = useRef(null);
 
   // Request browser notification permission on mount
@@ -133,13 +147,27 @@ export default function LiveBoard() {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+    return () => {
+      clearInterval(ringRef.current);
+    };
+  }, []);
+
+  // Start/stop continuous ringing based on whether unaccepted orders exist
+  const startRinging = useCallback(() => {
+    if (ringRef.current) return; // already ringing
+    playTrinTrin();
+    ringRef.current = setInterval(playTrinTrin, 3500);
+  }, []);
+
+  const stopRinging = useCallback(() => {
+    clearInterval(ringRef.current);
+    ringRef.current = null;
   }, []);
 
   const handleEnableSound = () => {
     unlockAudio();
     setSoundOn(true);
-    // Play a test ring immediately so admin knows it worked
-    setTimeout(playBell, 100);
+    setTimeout(playTrinTrin, 100);
   };
 
   const load = useCallback(async () => {
@@ -151,20 +179,29 @@ export default function LiveBoard() {
       const live            = [...otherOrders, ...deliveredOrders];
       live.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
 
-      // Detect new orders (skip first load to avoid alerting on page open)
+      // Count unaccepted orders
+      const unaccepted = live.filter(o => o.status === 'received' || o.status === 'pending');
+
+      // Detect brand-new orders (skip first load)
       if (knownIds.current !== null) {
         const incoming = live.filter(o =>
           (o.status === 'received' || o.status === 'pending') &&
           !knownIds.current.has(o.id)
         );
         if (incoming.length > 0) {
-          playBell();
           showNotification(incoming.length);
           setNewAlert(true);
           setTimeout(() => setNewAlert(false), 4000);
         }
       }
       knownIds.current = new Set(live.map(o => o.id));
+
+      // Ring continuously while unaccepted orders exist, stop when all accepted
+      if (unaccepted.length > 0) {
+        startRinging();
+      } else {
+        stopRinging();
+      }
 
       setOrders(live);
       setLastUpdate(new Date());
