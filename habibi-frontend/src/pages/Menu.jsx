@@ -147,18 +147,20 @@ const Menu = () => {
     return catMatch && searchMatch;
   });
 
-  // Top 6 items for Featured section (sorted by sort_order if available)
-  const featuredItems = useMemo(() =>
-    [...items]
-      .filter(i => i.is_available !== false && i.is_active !== false)
-      .sort((a, b) => {
-        const sa = a.sort_order ?? 9999;
-        const sb = b.sort_order ?? 9999;
-        return sa !== sb ? sa - sb : a.id - b.id;
-      })
-      .slice(0, 8),
-    [items]
-  );
+  // Featured section — breakfast items first, then by sort_order
+  const featuredItems = useMemo(() => {
+    const available = items.filter(i => i.is_available !== false && i.is_active !== false);
+    const breakfast = available.filter(i =>
+      (i.category || '').toLowerCase().includes('breakfast')
+    );
+    // If we have enough breakfast items use those, otherwise fall back to sort_order
+    const pool = breakfast.length >= 4 ? breakfast : available.sort((a, b) => {
+      const sa = a.sort_order ?? 9999;
+      const sb = b.sort_order ?? 9999;
+      return sa !== sb ? sa - sb : a.id - b.id;
+    });
+    return pool.slice(0, 8);
+  }, [items]);
 
   // Group items by category for "All" view
   const categoryGroups = useMemo(() => {
