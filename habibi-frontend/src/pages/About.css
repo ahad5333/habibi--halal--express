@@ -6,7 +6,7 @@
 .about-hero {
   position: relative;
   min-height: 620px;
-  background: url('/images/title/about-hero.png') center/cover no-repeat;
+  background: url('/images/title/about-hero.webp') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
