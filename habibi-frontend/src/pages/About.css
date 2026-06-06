@@ -651,31 +651,58 @@
   }
 }
 
-/* ── Mobile Responsive (added) ─────────────────────────────── */
+/* ── Mobile Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
-  .about-hero { min-height: 420px; }
-  .about-hero-title { font-size: 2.5rem; }
-  .about-hero-sub { font-size: 0.9rem; }
-  .about-stat { padding: 0.75rem 1.25rem; }
-  .about-stat-number { font-size: 1.5rem; }
+  .about-hero {
+    min-height: 520px;
+    background-position: center top;
+  }
+  .about-hero-content {
+    padding: 2rem 1.25rem 2.5rem;
+  }
+  .about-hero-title { font-size: 2.2rem; }
+  .about-hero-sub { font-size: 0.88rem; }
+  .about-hero-halal { width: 48px; height: 48px; }
+  .about-stat { padding: 0.75rem 1.1rem; }
 }
+
 @media (max-width: 540px) {
-  .about-hero { min-height: 300px; }
-  .about-hero-title { font-size: 2rem; }
-  .about-stats-bar { flex-wrap: wrap; gap: 0.5rem; }
-  .about-stat { flex: 1 1 45%; padding: 0.6rem 1rem; }
+  .about-hero {
+    min-height: 480px;
+  }
+  .about-hero-content {
+    padding: 1.5rem 1rem 2rem;
+    gap: 0.75rem;
+  }
+  .about-hero-title { font-size: 1.9rem; }
+  .about-hero-sub { font-size: 0.85rem; }
+  .about-hero-halal { width: 42px; height: 42px; }
+  .about-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .about-stat {
+    padding: 0.75rem 0.5rem;
+    border-right: 1px solid rgba(229,182,78,0.15);
+    border-bottom: 1px solid rgba(229,182,78,0.15);
+  }
+  .about-stat:nth-child(2),
+  .about-stat:nth-child(4) { border-right: none; }
+  .about-stat:nth-child(3),
+  .about-stat:nth-child(4) { border-bottom: none; }
+  .about-stat-num { font-size: 1.4rem; }
 }
+
 @media (max-width: 480px) {
-  /* Staff cards too cramped at 2-col on narrow phones */
   .staff-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
-  /* Collage always 2-col — reduce gap on small screens */
   .collage-grid { gap: 0.625rem; }
   .about-cta-inline { width: 100%; }
 }
 
 @media (max-width: 400px) {
-  .about-hero { min-height: 260px; }
-  .about-hero-title { font-size: 1.7rem; }
-  /* Single column staff grid on very small phones */
+  .about-hero { min-height: 440px; }
+  .about-hero-title { font-size: 1.65rem; }
+  .about-hero-sub { display: none; }
   .staff-grid { grid-template-columns: 1fr; }
 }
