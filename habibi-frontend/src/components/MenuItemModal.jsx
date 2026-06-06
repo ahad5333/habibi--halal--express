@@ -228,10 +228,13 @@ export default function MenuItemModal({ itemId, onClose }) {
                 {(modifiers.choice_groups || []).map(cg => (
                   <div key={cg.id} className="mim-section">
                     <div className="mim-section-hd">
-                      <span className="mim-section-title">{cg.title}</span>
+                      <div>
+                        <span className="mim-section-title">{cg.title}</span>
+                        <p className="mim-section-sub">Select one option</p>
+                      </div>
                       <span className="mim-badge mim-badge--req">Required</span>
                     </div>
-                    <div className="mim-options-grid">
+                    <div className="mim-options-list">
                       {(cg.options || []).map(opt => {
                         const sel   = choiceSel[cg.id] === opt.id;
                         const extra = parseFloat(opt.extra_price || 0);
@@ -245,7 +248,9 @@ export default function MenuItemModal({ itemId, onClose }) {
                           >
                             <div className={`mim-radio${sel ? ' on' : ''}`} />
                             <span className="mim-opt-name">{opt.title}</span>
-                            {extra > 0 && <span className="mim-opt-price">+${extra.toFixed(2)}</span>}
+                            <span className="mim-opt-price">
+                              {extra > 0 ? `+$${extra.toFixed(2)}` : 'Free'}
+                            </span>
                           </div>
                         );
                       })}
@@ -257,12 +262,15 @@ export default function MenuItemModal({ itemId, onClose }) {
                 {(modifiers.addon_groups || []).map(ag => (
                   <div key={ag.id} className="mim-section">
                     <div className="mim-section-hd">
-                      <span className="mim-section-title">{ag.title}</span>
-                      <span className="mim-badge mim-badge--opt">
-                        {ag.max_selections ? `Optional · Up to ${ag.max_selections}` : 'Optional'}
-                      </span>
+                      <div>
+                        <span className="mim-section-title">{ag.title}</span>
+                        <p className="mim-section-sub">
+                          {ag.max_selections ? `Choose up to ${ag.max_selections}` : 'Add as many as you like'}
+                        </p>
+                      </div>
+                      <span className="mim-badge mim-badge--opt">Optional</span>
                     </div>
-                    <div className="mim-options-grid">
+                    <div className="mim-options-list">
                       {(ag.options || []).map(opt => {
                         const checked = !!addonSel[opt.id];
                         const aqty   = addonSel[opt.id] || 0;
@@ -271,26 +279,22 @@ export default function MenuItemModal({ itemId, onClose }) {
                           <div
                             key={opt.id}
                             className={`mim-addon-row${checked ? ' sel' : ''}`}
+                            onClick={() => toggleAddon(opt.id)}
+                            role="checkbox"
+                            aria-checked={checked}
                           >
-                            <div
-                              className="mim-addon-left"
-                              onClick={() => toggleAddon(opt.id)}
-                              role="checkbox"
-                              aria-checked={checked}
-                            >
-                              <div className={`mim-checkbox${checked ? ' on' : ''}`}>
-                                {checked && '✓'}
-                              </div>
-                              <span className="mim-opt-name">{opt.title}</span>
+                            <div className={`mim-checkbox${checked ? ' on' : ''}`}>
+                              {checked && '✓'}
                             </div>
-                            <div className="mim-addon-right">
+                            <span className="mim-opt-name">{opt.title}</span>
+                            <div className="mim-addon-right" onClick={e => e.stopPropagation()}>
                               {checked ? (
                                 <div className="mim-stepper">
-                                  <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, -1); }}>
+                                  <button onClick={() => adjustAddonQty(opt.id, -1)}>
                                     <Minus size={10} />
                                   </button>
                                   <span>{aqty}</span>
-                                  <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, 1); }}>
+                                  <button onClick={() => adjustAddonQty(opt.id, 1)}>
                                     <Plus size={10} />
                                   </button>
                                 </div>
