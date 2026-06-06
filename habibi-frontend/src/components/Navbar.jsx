@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { notificationsAPI } from '../services/api';
@@ -316,7 +316,8 @@ const Navbar = () => {
             onMouseLeave={() => setOpenId(null)}
           >
             <Link to={CENTER_ITEM.path} className="nav-order-label">
-              🍽️ ORDER EXPRESS
+              ORDER EXPRESS
+              <span className="nav-order-arrow"><ArrowUpRight size={14} /></span>
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
           </div>
