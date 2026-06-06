@@ -33,7 +33,7 @@ router.get("/:id/modifiers", async (req, res) => {
         GROUP BY cg.id ORDER BY cg.preference
       `, [id]),
       pool.query(`
-        SELECT ag.id, ag.title, ag.preference,
+        SELECT ag.id, ag.title, ag.preference, ag.max_selections,
                COALESCE(json_agg(
                  json_build_object('id', ao.id, 'title', ao.title, 'price', ao.price)
                  ORDER BY ao.preference
