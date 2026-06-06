@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { Star, ChevronRight, ChevronLeft, Sparkles, Shield, Eye, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { menuAPI } from '../services/api';
 import './Home.css';
+
+const featFallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
+const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const FEAST_VIDEOS = [
@@ -183,10 +187,9 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/menus?limit=14`)
-      .then(r => r.json())
+    menuAPI.getAll()
       .then(data => {
-        const items = Array.isArray(data) ? data : (data.items || data.menus || []);
+        const items = Array.isArray(data) ? data : (data.menus || data.items || []);
         if (items.length > 0) setFeatItems(items.slice(0, 14));
       })
       .catch(() => {});
@@ -312,10 +315,10 @@ const Home = () => {
             </button>
 
             <div className="feat-track" ref={carouselRef}>
-              {featItems.map(item => {
-                const imgSrc = item.image_url
-                  ? (item.image_url.startsWith('http') ? item.image_url : `/images/${item.image_url.replace(/^\/images\//, '')}`)
-                  : '/images/mixed-platter.jpg';
+              {featItems.map((item, idx) => {
+                const rawImg = item.image || item.image_url || featFallbackImg(item.id, idx);
+                const imgSrc = toWebp(rawImg);
+                const fallback = featFallbackImg(item.id, idx);
                 const price = parseFloat(item.price || item.base_price || 0).toFixed(2);
                 const sub = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
                 return (
@@ -331,7 +334,10 @@ const Home = () => {
                       <img
                         src={imgSrc}
                         alt={item.name}
-                        onError={e => { e.target.src = '/images/mixed-platter.jpg'; }}
+                        onError={e => {
+                          e.target.onerror = () => { e.target.src = '/images/mixed-platter.jpg'; };
+                          e.target.src = fallback;
+                        }}
                       />
                     </div>
                     <div className="feat-card-body">
