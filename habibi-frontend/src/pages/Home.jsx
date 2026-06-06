@@ -226,10 +226,6 @@ const Home = () => {
 
           </div>
           
-          <div className="hero-food-wrapper">
-            <img src="/images/hero/round_food.png" alt="Delicious Food" className="hero-food-img" />
-          </div>
-
         </div>
 
         <div className="hero-bottom-light">
@@ -238,6 +234,10 @@ const Home = () => {
               Fresh, Healthy &amp; Delivered<br />
               Right To Your Door
             </h2>
+
+            <div className="hero-food-wrapper">
+              <img src="/images/hero/round_food.png" alt="Delicious Food" className="hero-food-img" />
+            </div>
             
             <p className="hero-bottom-desc-exact">
               100% certified halal, cooked fresh to order — never frozen, never rushed.<br />

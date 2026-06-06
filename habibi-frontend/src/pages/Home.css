@@ -474,18 +474,17 @@
 
 
 .hero-food-wrapper {
-  position: absolute;
-  bottom: -170px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  display: block;
+  margin: 1.75rem auto 2.5rem;
   z-index: 10;
-  width: clamp(240px, 25vw, 360px); /* Dynamically scales with viewport width */
-  height: clamp(240px, 25vw, 360px);
+  width: clamp(160px, 16vw, 220px);
+  height: clamp(160px, 16vw, 220px);
   border-radius: 50%;
   overflow: hidden;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.7),
-    0 0 0 3px rgba(255, 215, 0, 0.15);
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 3px rgba(249, 115, 22, 0.2);
   pointer-events: none;
 }
 
@@ -532,7 +531,7 @@
 
 .hero-bottom-light {
   background-color: #090914;
-  padding-top: 140px;
+  padding-top: 4rem;
   padding-bottom: 5rem;
   color: #fff;
   position: relative;
@@ -2076,12 +2075,6 @@
   .hero-title-exact {
     font-size: 2.4rem;
   }
-  .hero-food-wrapper {
-    bottom: -85px;
-  }
-  .hero-bottom-light {
-    padding-top: 110px;
-  }
 }
 
 @media (max-width: 1100px) and (min-width: 901px) {
@@ -2104,12 +2097,6 @@
   .hero-btn-ghost {
     font-size: 0.82rem;
     padding: 0.6rem 1.4rem;
-  }
-  .hero-food-wrapper {
-    bottom: -60px;
-  }
-  .hero-bottom-light {
-    padding-top: 90px;
   }
   .hero-visual-card {
     min-width: 85px;
@@ -2201,19 +2188,11 @@
     line-height: 1.1;
   }
 
-  /* Food circle image — flow naturally below categories with relative positioning */
   .hero-food-wrapper {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    transform: none;
-    width: 280px;
-    height: 280px;
-    margin: 2.5rem auto -120px;
-    display: block;
+    width: 160px;
+    height: 160px;
+    margin: 1.25rem auto 1.75rem;
   }
-  .hero-bottom-light { padding-top: 150px; }
 
   /* ── BYO strip ── */
   .byo-strip-inner { flex-direction: column; text-align: center; }
@@ -2250,17 +2229,9 @@
 
 @media (max-width: 650px) {
   .hero-food-wrapper {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    transform: none;
-    width: 230px;
-    height: 230px;
-    margin: 2rem auto -95px;
-  }
-  .hero-bottom-light {
-    padding-top: 125px;
+    width: 140px;
+    height: 140px;
+    margin: 1rem auto 1.5rem;
   }
 }
 
