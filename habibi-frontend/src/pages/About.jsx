@@ -154,7 +154,6 @@ const About = () => (
 
     {/* ── Hero ── */}
     <section className="about-hero">
-      <div className="about-hero-overlay" />
       <div className="about-hero-content">
         <img src="/images/logos/halal.png" alt="Halal Certified" className="about-hero-halal" />
         <h1 className="about-hero-title">
