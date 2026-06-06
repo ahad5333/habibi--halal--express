@@ -1,35 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Phone, ChevronRight } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import './Locations.css';
 
+/* ── Helpers ──────────────────────────────────────────────── */
+const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SHORT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                      return '/images/locations/bedford-park.jpg';
-  if (t.includes('kingsbridge') || t.includes('king')) return '/images/locations/kings-bridge.jpg';
+  if (t.includes('bedford'))                              return '/images/locations/bedford-park.jpg';
+  if (t.includes('kingsbridge') || t.includes('king'))   return '/images/locations/kings-bridge.jpg';
   if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.jpg';
-  if (t.includes('lehman'))                       return '/images/hero_dining_ambiance.jpg';
-  if (t.includes('bronx') || t.includes('science')) return '/images/chef-plating.jpg';
+  if (t.includes('lehman'))                              return '/images/hero_dining_ambiance.jpg';
+  if (t.includes('bronx') || t.includes('science'))     return '/images/chef-plating.jpg';
   return '/images/mixed-platter.jpg';
 };
 
-/**
- * Parse working_days_hours strings like:
- *   "Mon–Sun: 7AM – 11PM"
- *   "Open 24 Hours · 365 Days a Year"
- *   "Mon–Fri: 6AM – 10PM"
- * Returns true if the location is currently open.
- */
+const getShortTitle = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('bedford'))                            return 'BEDFORD PARK';
+  if (t.includes('lehman'))                             return 'LEHMAN';
+  if (t.includes('bronx') || t.includes('science'))    return 'BRONX SCIENCE';
+  if (t.includes('kingsbridge'))                        return 'KINGSBRIDGE';
+  if (t.includes('white plains'))                       return 'WHITE PLAINS';
+  return (title || '').toUpperCase().split(/\s+/).slice(0, 3).join(' ');
+};
+
 const isOpenNow = (hoursStr) => {
-  if (!hoursStr) return null; // unknown
+  if (!hoursStr) return null;
   const h = hoursStr.toLowerCase();
   if (h.includes('24 hour') || h.includes('24hours') || h.includes('always')) return true;
 
-  const now   = new Date();
-  const day   = now.getDay(); // 0=Sun … 6=Sat
-  const hhmm  = now.getHours() * 60 + now.getMinutes();
+  const now  = new Date();
+  const day  = now.getDay();
+  const hhmm = now.getHours() * 60 + now.getMinutes();
 
   const DAY_MAP = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
 
@@ -56,7 +63,6 @@ const isOpenNow = (hoursStr) => {
     return days;
   };
 
-  // Try to match "Day(s): HH – HH" segments
   const segments = hoursStr.split(/[·,;]+/);
   for (const seg of segments) {
     const colon = seg.indexOf(':');
@@ -70,19 +76,56 @@ const isOpenNow = (hoursStr) => {
     const open  = parseTime(times[0]);
     const close = parseTime(times[1]);
     if (open == null || close == null) continue;
-    if (close > open)   return hhmm >= open && hhmm < close;
-    if (close < open)   return hhmm >= open || hhmm < close; // crosses midnight
+    if (close > open) return hhmm >= open && hhmm < close;
+    if (close < open) return hhmm >= open || hhmm < close;
   }
-  return null; // couldn't parse
+  return null;
+};
+
+const parseHoursTable = (hoursStr) => {
+  const today = new Date().getDay();
+
+  if (!hoursStr) {
+    return DAYS.map((day, i) => ({ day, hours: 'Hours Vary', isToday: i === today }));
+  }
+
+  const h = hoursStr.toLowerCase();
+  if (h.includes('24 hour') || h.includes('always')) {
+    return DAYS.map((day, i) => ({ day, hours: '24 Hours', isToday: i === today }));
+  }
+
+  const DAY_MAP  = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
+  const result   = DAYS.map((day, i) => ({ day, hours: 'Closed', isToday: i === today }));
+
+  const segments = hoursStr.split(/[·,;]+/);
+  for (const seg of segments) {
+    const colon = seg.indexOf(':');
+    if (colon === -1) continue;
+    const dayPart  = seg.slice(0, colon).trim();
+    const timePart = seg.slice(colon + 1).trim();
+    const parts    = dayPart.split(/[–\-]/);
+    const startDay = DAY_MAP[parts[0]?.trim().slice(0,3).toLowerCase()];
+    const endDay   = parts[1] ? DAY_MAP[parts[1]?.trim().slice(0,3).toLowerCase()] : startDay;
+    if (startDay == null) continue;
+    const indices = [];
+    if (endDay == null || endDay >= startDay) {
+      for (let i = startDay; i <= (endDay ?? startDay); i++) indices.push(i);
+    } else {
+      for (let i = startDay; i <= 6; i++) indices.push(i);
+      for (let i = 0; i <= endDay; i++) indices.push(i);
+    }
+    for (const di of indices) result[di].hours = timePart;
+  }
+  return result;
 };
 
 const getAnchorId = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford')) return 'bedford';
-  if (t.includes('lehman')) return 'lehman';
-  if (t.includes('bronx') || t.includes('science')) return 'bronx-science';
-  if (t.includes('kingsbridge')) return 'kingsbridge';
-  if (t.includes('white plains')) return 'white-plains';
+  if (t.includes('bedford'))                          return 'bedford';
+  if (t.includes('lehman'))                           return 'lehman';
+  if (t.includes('bronx') || t.includes('science'))  return 'bronx-science';
+  if (t.includes('kingsbridge'))                      return 'kingsbridge';
+  if (t.includes('white plains'))                     return 'white-plains';
   return t.replace(/\W+/g, '-');
 };
 
@@ -113,119 +156,129 @@ const FALLBACK_LOCATIONS = [
   },
 ];
 
-function LocationCard({ loc, featured, userCoords }) {
-  // Prefer image_url stored in DB; fall back to keyword-based mapping
-  const img    = loc.image_url || getLocationImage(loc.title);
-  const open   = isOpenNow(loc.working_days_hours);
-  const openLabel = open === true ? 'Open Now' : open === false ? 'Closed' : loc.is_active ? 'Active' : null;
-  const anchorId = getAnchorId(loc.title);
-
-  const distKm = (userCoords && loc.latitude && loc.longitude)
-    ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(loc.latitude), parseFloat(loc.longitude))
-    : null;
-  const distMiles = distKm !== null ? distKm * 0.621371 : null;
-  const tier = getDeliveryTier(distMiles);
-
-  return (
-    <div id={anchorId} className={`loc-card${featured ? ' loc-card-featured' : ''}`}>
-      <div className="loc-card-img-wrap">
-        <img
-          src={img}
-          alt={loc.title}
-          className="loc-card-img"
-          onError={e => { e.target.src = '/images/food/background.png'; }}
-        />
-        <div className="loc-card-img-overlay" />
-        {openLabel && (
-          <span className={`loc-open-badge${open === false ? ' loc-closed-badge' : ''}`}>
-            {openLabel}
-          </span>
-        )}
-      </div>
-      <div className="loc-card-body">
-        <h3 className="loc-card-title">{loc.title}</h3>
-        <div className="loc-card-meta">
-          {loc.brief_address && (
-            <p className="loc-meta-row">
-              <MapPin size={13} />
-              <span>{loc.brief_address}</span>
-            </p>
-          )}
-          {loc.working_days_hours && (
-            <p className="loc-meta-row">
-              <Clock size={13} />
-              <span>{loc.working_days_hours}</span>
-            </p>
-          )}
-          {loc.phone_number && (
-            <p className="loc-meta-row">
-              <Phone size={13} />
-              <a href={`tel:${loc.phone_number}`} className="loc-phone">{loc.phone_number}</a>
-            </p>
-          )}
-        </div>
-        <div className="loc-card-footer">
-          {tier && (
-            <span className="loc-tier-badge" style={{ backgroundColor: tier.color + '20', color: tier.color, border: `1px solid ${tier.color}50` }}
-              title={tier.desc}>
-              {tier.label}
-            </span>
-          )}
-          {distMiles !== null && (
-            <span className="loc-distance-badge">
-              {distMiles < 0.5 ? 'Nearby' : `${distMiles.toFixed(1)} mi away`}
-            </span>
-          )}
-          {!distMiles && loc.delivery_radius_miles && (
-            <span className="loc-radius-badge">{loc.delivery_radius_miles} mi delivery</span>
-          )}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="loc-google-btn"
-              title="View on Google Maps"
-            >
-              GBP Profile
-            </a>
-            <Link to="/menu" className="loc-order-btn">
-              Order Here <ChevronRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
+  const R    = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  const a    = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
 function getDeliveryTier(miles) {
   if (miles === undefined || miles === null) return null;
-  if (miles <= 3)   return { label: 'In-House Delivery', color: '#22c55e',  desc: 'Our own drivers · Fastest' };
-  if (miles <= 10)  return { label: 'Express Delivery',   color: '#3b82f6',  desc: 'DoorDash Drive area' };
-  if (miles <= 350) return { label: 'Long Distance',       color: '#f59e0b',  desc: 'Available via Roadie' };
-  return                   { label: 'Pickup Only',          color: '#6b7280',  desc: 'Over 350 miles' };
+  if (miles <= 3)   return { label: 'In-House Delivery', color: '#22c55e' };
+  if (miles <= 10)  return { label: 'Express Delivery',   color: '#3b82f6' };
+  if (miles <= 350) return { label: 'Long Distance',       color: '#f59e0b' };
+  return                   { label: 'Pickup Only',          color: '#6b7280' };
 }
 
+/* ── Location Card ─────────────────────────────────────────── */
+function LocationCard({ loc, userCoords }) {
+  const img        = loc.image_url || getLocationImage(loc.title);
+  const open       = isOpenNow(loc.working_days_hours);
+  const anchorId   = getAnchorId(loc.title);
+  const hoursTable = parseHoursTable(loc.working_days_hours);
+
+  const distKm    = (userCoords && loc.latitude && loc.longitude)
+    ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(loc.latitude), parseFloat(loc.longitude))
+    : null;
+  const distMiles = distKm !== null ? distKm * 0.621371 : null;
+  const tier      = getDeliveryTier(distMiles);
+
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`;
+
+  return (
+    <div id={anchorId} className="lcn-card">
+      {/* ── Photo ── */}
+      <div className="lcn-img-wrap">
+        <img
+          src={img}
+          alt={loc.title}
+          className="lcn-img"
+          onError={e => { e.target.src = '/images/food/background.png'; }}
+        />
+        <div className="lcn-img-overlay" />
+        <div className="lcn-location-label">
+          <MapPin size={20} className="lcn-pin-icon" />
+          <div>
+            <p className="lcn-city">{getShortTitle(loc.title)}</p>
+            <p className="lcn-state">Bronx, New York</p>
+          </div>
+        </div>
+        {open !== null && (
+          <span className={`lcn-status-pill ${open ? 'lcn-pill-open' : 'lcn-pill-closed'}`}>
+            {open ? 'Open Now' : 'Closed'}
+          </span>
+        )}
+      </div>
+
+      {/* ── Body ── */}
+      <div className="lcn-body">
+        <div className="lcn-two-col">
+          {/* Left: Address + Phone */}
+          <div className="lcn-col-left">
+            <p className="lcn-col-label">Address</p>
+            <p className="lcn-address">{loc.brief_address}</p>
+
+            {loc.phone_number && (
+              <>
+                <p className="lcn-col-label lcn-label-mt">Phone</p>
+                <a href={`tel:${loc.phone_number}`} className="lcn-phone">{loc.phone_number}</a>
+              </>
+            )}
+
+            {tier && distMiles !== null && (
+              <span
+                className="lcn-tier-badge"
+                style={{ color: tier.color, borderColor: tier.color + '55', background: tier.color + '18' }}
+              >
+                {distMiles < 0.5 ? 'Nearby' : `${distMiles.toFixed(1)} mi`} · {tier.label}
+              </span>
+            )}
+            {!distMiles && loc.delivery_radius_miles && (
+              <span className="lcn-radius-info">{loc.delivery_radius_miles} mi delivery zone</span>
+            )}
+          </div>
+
+          {/* Right: Store Hours */}
+          <div className="lcn-col-right">
+            <p className="lcn-col-label">Store Hours</p>
+            <div className="lcn-hours">
+              {hoursTable.map(({ day, hours, isToday }) => (
+                <div key={day} className={`lcn-hr${isToday ? ' lcn-hr-today' : ''}`}>
+                  <span className="lcn-hr-day">{day.slice(0, 3)}</span>
+                  <span className="lcn-hr-time">{hours}</span>
+                  {isToday && (
+                    <span className={`lcn-hr-badge ${open ? 'lcn-badge-open' : 'lcn-badge-closed'}`}>
+                      {open ? 'OPEN' : 'CLOSED'}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Directions button */}
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="lcn-directions-btn">
+          Get Directions
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* ── Page ──────────────────────────────────────────────────── */
 const Locations = () => {
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,   setLoading]   = useState(true);
   const [userCoords, setUserCoords] = useState(null);
 
   useEffect(() => {
-    // Request user location for distance-based sorting
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {} // silent fail — just won't sort by distance
+        () => {}
       );
     }
   }, []);
@@ -240,20 +293,13 @@ const Locations = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Sort by distance to user when coords are available
   const sortedLocations = userCoords
     ? [...locations].sort((a, b) => {
-        const distA = (a.latitude && a.longitude)
-          ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(a.latitude), parseFloat(a.longitude))
-          : 9999;
-        const distB = (b.latitude && b.longitude)
-          ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(b.latitude), parseFloat(b.longitude))
-          : 9999;
-        return distA - distB;
+        const dA = (a.latitude && a.longitude) ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(a.latitude), parseFloat(a.longitude)) : 9999;
+        const dB = (b.latitude && b.longitude) ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(b.latitude), parseFloat(b.longitude)) : 9999;
+        return dA - dB;
       })
     : locations;
-
-  const [featured, ...rest] = sortedLocations;
 
   const locationsSchema = {
     "@context": "https://schema.org",
@@ -276,7 +322,7 @@ const Locations = () => {
         "longitude": parseFloat(loc.longitude) || -73.890060
       },
       "openingHours": loc.working_days_hours || "Mo-Su 11:00-23:00",
-      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros"],
+      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern"],
       "priceRange": "$$"
     }))
   };
@@ -289,7 +335,8 @@ const Locations = () => {
         keywords="halal food nyc, locations habibi halal, bedford park restaurant, lehman college food, bronx halal"
         schema={locations.length > 0 ? locationsSchema : null}
       />
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="loc-header">
         <div className="loc-header-overlay" />
         <div className="loc-header-content">
@@ -330,15 +377,10 @@ const Locations = () => {
             <p>Loading locations...</p>
           </div>
         ) : (
-          <div className="loc-grid-wrapper">
-            {featured && <LocationCard loc={featured} featured userCoords={userCoords} />}
-            {rest.length > 0 && (
-              <div className="loc-grid">
-                {rest.map(loc => (
-                  <LocationCard key={loc.id} loc={loc} userCoords={userCoords} />
-                ))}
-              </div>
-            )}
+          <div className="lcn-grid">
+            {sortedLocations.map(loc => (
+              <LocationCard key={loc.id} loc={loc} userCoords={userCoords} />
+            ))}
           </div>
         )}
 
