@@ -69,7 +69,8 @@ export default function MenuItemModal({ itemId, onClose }) {
   }, [handleKey]);
 
   /* ── Price calculation ── */
-  const basePrice = parseFloat(item?.price || 0);
+  const basePrice  = parseFloat(item?.price || 0);
+  const cleanName  = (item?.name || item?.title || '').replace(/\s*\(.*$/, '').trim();
   let choiceExtra = 0;
   (modifiers.choice_groups || []).forEach(cg => {
     const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
@@ -129,7 +130,7 @@ export default function MenuItemModal({ itemId, onClose }) {
     const fullNote = [choiceNote, addonNote, note].filter(Boolean).join('\n');
     addItem({
       id:    item.id,
-      name:  item.name || item.title,
+      name:  cleanName,
       price: unitPrice,
       img:   item.image || item.image_url || fallbackImg(item.id),
       tag:   item.category || 'Item',
@@ -161,7 +162,7 @@ export default function MenuItemModal({ itemId, onClose }) {
               <>
                 <img
                   src={toWebp(item?.image || item?.image_url || fallbackImg(item?.id))}
-                  alt={item?.name || item?.title}
+                  alt={cleanName}
                   className="mim-img"
                   onError={e => { e.target.src = fallbackImg(item?.id); }}
                 />
@@ -212,7 +213,7 @@ export default function MenuItemModal({ itemId, onClose }) {
                     {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
                   </div>
                   <div className="mim-name-row">
-                    <h2 className="mim-name">{item.name || item.title}</h2>
+                    <h2 className="mim-name">{cleanName}</h2>
                     <span className="mim-price">${basePrice.toFixed(2)}</span>
                   </div>
                   {item.description && <p className="mim-desc">{item.description}</p>}
