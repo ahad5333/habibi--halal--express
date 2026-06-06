@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 // Critical path — eagerly loaded
 import Home from './pages/Home';
 import Menu from './pages/Menu';
+import MenuItemPage from './pages/MenuItemPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Checkout from './pages/Checkout';
@@ -69,6 +70,7 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
+          <Route path="/menu/:id" element={<MenuItemPage />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/order-tracking" element={<OrderTracking />} />
           <Route path="/about" element={<About />} />

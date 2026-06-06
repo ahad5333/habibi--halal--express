@@ -81,6 +81,9 @@ export const menuAPI = {
 
   /** GET /api/menus/:id */
   getById: (id) => request(`/api/menus/${id}`),
+
+  /** GET /api/menus/:id/modifiers — choice_groups + addon_groups */
+  getModifiers: (id) => request(`/api/menus/${id}/modifiers`),
 };
 
 // ─── Locations ───────────────────────────────────────────────────────────────
