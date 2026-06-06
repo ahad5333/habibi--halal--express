@@ -2561,24 +2561,25 @@
 /* ── Hero section — comprehensive mobile fix ─────────────────── */
 @media (max-width: 768px) {
   .hero-top-dark {
-    min-height: 100svh;
-    padding: 1.25rem 0.75rem 2rem;
+    min-height: auto;
+    padding: 4.5rem 0.875rem 2rem;
     align-items: center;
+    justify-content: center;
   }
   .hero-halal-badge {
-    width: 46px;
-    height: 46px;
-    top: 0.875rem;
-    left: 0.875rem;
+    width: 42px;
+    height: 42px;
+    top: 0.75rem;
+    left: 0.75rem;
   }
   .hero-logo-watermark { display: none; }
   .floating-item { display: none; }
 
   .hero-content {
-    width: calc(100% - 1.5rem);
+    width: 100%;
     max-width: 100%;
-    margin: 1.5rem auto 1rem;
-    padding: 1.5rem 1.25rem 1.25rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 1.5rem;
     border-radius: 16px;
     text-align: center;
   }
@@ -2605,28 +2606,31 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0.65rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0;
   }
   .hero-btn-primary,
   .hero-btn-ghost {
     width: 100%;
     text-align: center;
     justify-content: center;
-    font-size: 0.88rem;
-    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    padding: 0.8rem 1.25rem;
   }
+  .hero-quick-picks { display: none; }
+  .hero-food-wrapper { display: none; }
 }
 
 @media (max-width: 480px) {
+  .hero-top-dark { padding: 4rem 0.75rem 1.75rem; }
   .hero-title-exact { font-size: 1.5rem; }
-  .hero-content { padding: 1.25rem 1rem 1rem; }
-  .hero-quick-picks { display: none; }
+  .hero-content { padding: 1.25rem 1rem; }
 }
 
 @media (max-width: 400px) {
+  .hero-top-dark { padding: 3.75rem 0.625rem 1.5rem; }
   .hero-title-exact { font-size: 1.3rem; }
-  .hero-halal-badge { width: 38px; height: 38px; }
-  .hero-creative-line { font-size: 0.66rem; padding: 0.35rem 0.75rem; }
+  .hero-halal-badge { width: 36px; height: 36px; }
+  .hero-creative-line { font-size: 0.65rem; padding: 0.35rem 0.75rem; }
   .hero-content { padding: 1rem 0.875rem; }
 }
 
