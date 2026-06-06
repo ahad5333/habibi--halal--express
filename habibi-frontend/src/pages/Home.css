@@ -798,19 +798,20 @@
   overflow: hidden;
   box-shadow: 0 8px 28px rgba(0,0,0,0.55);
   border: 3px solid rgba(255,255,255,0.07);
-  background: #1a1a1a;
+  background: #111111;
 }
 
 .feat-card-img-wrap img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 6px;
   display: block;
   transition: transform 0.4s ease;
 }
 
 .feat-card:hover .feat-card-img-wrap img {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 /* Card text body */
@@ -901,8 +902,8 @@
   .feat-title { font-size: 1.75rem; }
   .feat-nav-btn { width: 38px; height: 38px; }
   .feat-card { width: 170px; }
-  .feat-card-img-wrap { width: 130px; height: 130px; top: -60px; }
-  .feat-track { padding-top: 75px; gap: 1rem; }
+  .feat-card-img-wrap { width: 126px; height: 126px; top: -58px; }
+  .feat-track { padding-top: 72px; gap: 1rem; }
 }
 
 @media (max-width: 480px) {
