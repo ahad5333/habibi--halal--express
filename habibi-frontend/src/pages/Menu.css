@@ -1112,7 +1112,7 @@
   .menu-header-halal        { width: 50px; height: 50px; }
   .menu-header-title        { font-size: 3rem; letter-spacing: 0.1em; }
   .menu-header-sub          { font-size: 0.78rem; }
-  .menu-main-wrap           { padding: 1.25rem 1rem 5rem; }
+  .menu-main-wrap           { padding: 1.25rem 1.25rem 5rem; }
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
   .menu-card-img-wrap       { height: 150px; }
   .menu-search-bar          { padding: 0.6rem 1rem; }
@@ -1132,7 +1132,7 @@
   .menu-header-title      { font-size: 2.4rem; letter-spacing: 0.08em; }
   .menu-header-sub        { font-size: 0.72rem; padding: 0 1rem; }
   .menu-grid-title        { font-size: 1.5rem; }
-  .menu-item-row-img-wrap { width: 86px; height: 86px; min-width: 86px; }
+  .menu-item-row-img-wrap { width: 78px; height: 78px; min-width: 78px; }
   .menu-item-row-name     { font-size: 0.88rem; }
   .menu-item-row-desc     { -webkit-line-clamp: 1; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
@@ -1165,7 +1165,7 @@
   .menu-header-sub        { font-size: 0.68rem; }
   .menu-header-content    { gap: 0.4rem; }
   .menu-item-row          { padding: 0.65rem 0.25rem; margin: 0; gap: 0.75rem; }
-  .menu-item-row-img-wrap { width: 80px; height: 80px; min-width: 80px; }
+  .menu-item-row-img-wrap { width: 72px; height: 72px; min-width: 72px; }
   .menu-item-add-btn      { width: 26px; height: 26px; font-size: 1.1rem; }
 
   /* Featured cards — very small phone */
