@@ -280,21 +280,15 @@ const Menu = () => {
         <div className="menu-item-row-right">
           <div className="menu-item-row-img-wrap">
             <img
-              src={toWebp(imgSrc)}
+              src={imgSrc}
               alt={name}
               className="menu-item-row-img"
               loading="lazy"
               decoding="async"
               onError={e => {
                 const t = e.target;
-                const jpg = fallbackImg(item.id, idx);
-                if (t.src.includes('.webp') || t.src !== jpg) {
-                  t.onerror = () => { t.onerror = null; t.style.display = 'none'; };
-                  t.src = jpg;
-                } else {
-                  t.onerror = null;
-                  t.style.display = 'none';
-                }
+                t.onerror = null;
+                t.src = fallbackImg(item.id, idx);
               }}
             />
             {isLoggedIn && (
