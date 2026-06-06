@@ -191,7 +191,7 @@ const About = () => (
         </div>
         <div className="about-story-img-wrap">
           <img
-            src="/images/our_story_kitchen.png"
+            src="/images/our_story_kitchen.jpg"
             alt="Our Kitchen"
             className="about-story-img"
             onError={e => { e.target.src = '/images/food/food-8.png'; }}
