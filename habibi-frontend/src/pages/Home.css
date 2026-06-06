@@ -475,7 +475,7 @@
 
 .hero-food-wrapper {
   position: absolute;
-  bottom: -130px;
+  bottom: -170px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
