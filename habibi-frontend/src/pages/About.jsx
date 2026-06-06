@@ -153,27 +153,7 @@ const About = () => (
     />
 
     {/* ── Hero ── */}
-    <section className="about-hero">
-      <div className="about-hero-overlay" />
-      <div className="about-hero-content">
-        <img src="/images/logos/halal.png" alt="Halal Certified" className="about-hero-halal" />
-        <h1 className="about-hero-title" style={{ color: '#ffffff' }}>
-          Crafting the Gold Standard<br />of <span style={{ color: '#FF3B30' }}>Halal Dining</span>
-        </h1>
-        <p className="about-hero-sub" style={{ color: '#dddddd' }}>
-          Where traditional heritage meets contemporary culinary artistry. We redefine
-          the Halal experience through meticulous sourcing and artisanal execution.
-        </p>
-        <div className="about-stats">
-          {STATS.map(s => (
-            <div key={s.label} className="about-stat">
-              <span className="about-stat-num" style={{ color: '#ffffff' }}>{s.num}</span>
-              <span className="about-stat-label" style={{ color: '#ffb300' }}>{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <section className="about-hero" />
 
     {/* ── Why Choose Us ── */}
     <section className="about-section">
