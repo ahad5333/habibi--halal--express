@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, Minus, Plus, AlertCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, AlertCircle, ChevronRight, Star, Flame } from 'lucide-react';
 import { menuAPI, favoritesAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO';
 import './MenuItemPage.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 const fallbackImg = (id, idx = 0) =>
   `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
@@ -18,23 +16,25 @@ const MenuItemPage = () => {
   const { addItem } = useCart();
   const { isLoggedIn } = useAuth();
 
-  const [item,       setItem]       = useState(null);
-  const [modifiers,  setModifiers]  = useState({ choice_groups: [], addon_groups: [] });
+  const [item,        setItem]        = useState(null);
+  const [modifiers,   setModifiers]   = useState({ popular_combos: [], choice_groups: [], addon_groups: [] });
   const [suggestions, setSuggestions] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState(null);
 
   /* selections */
-  const [choiceSel, setChoiceSel]   = useState({});   // { groupId: optionId }
-  const [addonSel,  setAddonSel]    = useState({});   // { optionId: qty }
-  const [note,      setNote]        = useState('');
-  const [qty,       setQty]         = useState(1);
-  const [isFav,     setIsFav]       = useState(false);
-  const [added,     setAdded]       = useState(false);
+  const [choiceSel,   setChoiceSel]   = useState({});  // { groupId: optionId }
+  const [addonSel,    setAddonSel]    = useState({});  // { optionId: qty }
+  const [activeCombо, setActiveCombo] = useState(null); // popular combo index
+  const [note,        setNote]        = useState('');
+  const [qty,         setQty]         = useState(1);
+  const [isFav,       setIsFav]       = useState(false);
+  const [added,       setAdded]       = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setActiveCombo(null);
 
     Promise.all([
       menuAPI.getById(id),
@@ -47,9 +47,9 @@ const MenuItemPage = () => {
           : (allItems?.menus || allItems?.items || []);
 
         setItem(itemData);
-        setModifiers(mods || { choice_groups: [], addon_groups: [] });
+        setModifiers(mods || { popular_combos: [], choice_groups: [], addon_groups: [] });
 
-        /* auto-select defaults */
+        /* auto-select default choice */
         const defaults = {};
         (mods?.choice_groups || []).forEach(cg => {
           const def = cg.options?.find(o => o.is_default);
@@ -57,7 +57,7 @@ const MenuItemPage = () => {
         });
         setChoiceSel(defaults);
 
-        /* suggestions: same category first, then popular, exclude self */
+        /* suggestions */
         const itemId = itemData?.id ?? parseInt(id);
         const cat    = (itemData?.category || '').toLowerCase();
         const same   = arr.filter(i => i.id !== itemId && (i.category || '').toLowerCase() === cat);
@@ -89,6 +89,26 @@ const MenuItemPage = () => {
   const unitPrice = basePrice + choiceExtra + addonExtra;
   const total     = unitPrice * qty;
 
+  /* ── popular combo apply ── */
+  const applyCombo = (combo, idx) => {
+    if (activeCombо === idx) {
+      // deselect — clear only the combo's options
+      setAddonSel(prev => {
+        const next = { ...prev };
+        (combo.addon_option_ids || []).forEach(oid => delete next[oid]);
+        return next;
+      });
+      setActiveCombo(null);
+    } else {
+      setAddonSel(prev => {
+        const next = { ...prev };
+        (combo.addon_option_ids || []).forEach(oid => { next[oid] = 1; });
+        return next;
+      });
+      setActiveCombo(idx);
+    }
+  };
+
   /* ── add to cart ── */
   const handleAdd = () => {
     const choiceNote = (modifiers.choice_groups || [])
@@ -96,8 +116,7 @@ const MenuItemPage = () => {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
         return opt ? `${cg.title}: ${opt.title}` : null;
       })
-      .filter(Boolean)
-      .join(' | ');
+      .filter(Boolean).join(' | ');
 
     const addonNote = Object.entries(addonSel)
       .filter(([, q]) => q > 0)
@@ -109,8 +128,7 @@ const MenuItemPage = () => {
         });
         return label;
       })
-      .filter(Boolean)
-      .join(', ');
+      .filter(Boolean).join(', ');
 
     const fullNote = [choiceNote, addonNote, note].filter(Boolean).join('\n');
 
@@ -133,6 +151,7 @@ const MenuItemPage = () => {
       if (prev[optId]) { const n = { ...prev }; delete n[optId]; return n; }
       return { ...prev, [optId]: 1 };
     });
+    setActiveCombo(null);
   };
 
   const adjustAddonQty = (optId, delta) => {
@@ -144,11 +163,9 @@ const MenuItemPage = () => {
   };
 
   /* ── required check ── */
-  const missingRequired = (modifiers.choice_groups || []).some(
-    cg => !choiceSel[cg.id]
-  );
+  const missingRequired = (modifiers.choice_groups || []).some(cg => !choiceSel[cg.id]);
 
-  /* ── loading / error screens ── */
+  /* ── loading / error ── */
   if (loading) return (
     <div className="mip-loading">
       <div className="mip-spinner" />
@@ -164,7 +181,11 @@ const MenuItemPage = () => {
     </div>
   );
 
-  const imgSrc = item.image || item.image_url || fallbackImg(item.id);
+  const imgSrc       = item.image || item.image_url || fallbackImg(item.id);
+  const popularCombos = modifiers.popular_combos || [];
+  const rating        = parseFloat(item.rating || item.avg_rating || 0);
+  const reviewCount   = item.review_count || item.reviews_count || 0;
+  const isTopItem     = item.is_popular || item.is_featured || false;
 
   return (
     <div className="mip-page">
@@ -211,16 +232,59 @@ const MenuItemPage = () => {
         {/* ── Item header ── */}
         <div className="mip-item-header">
           <div className="mip-item-header-left">
-            {item.category && (
-              <span className="mip-cat-pill">{item.category}</span>
-            )}
+            <div className="mip-item-badges">
+              {item.category && (
+                <span className="mip-cat-pill">{item.category}</span>
+              )}
+              <span className="mip-halal-pill">Halal</span>
+              {isTopItem && (
+                <span className="mip-popular-pill">
+                  <Flame size={11} /> #1 Most Liked
+                </span>
+              )}
+            </div>
             <h1 className="mip-item-name">{item.name || item.title}</h1>
             {item.description && (
               <p className="mip-item-desc">{item.description}</p>
             )}
+
+            {/* Rating row */}
+            {rating > 0 && (
+              <div className="mip-rating-row">
+                <div className="mip-stars">
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} size={13} fill={s <= Math.round(rating) ? '#F97316' : 'none'} stroke="#F97316" />
+                  ))}
+                </div>
+                <span className="mip-rating-val">{(rating * 20).toFixed(0)}%</span>
+                {reviewCount > 0 && <span className="mip-rating-count">({reviewCount} reviews)</span>}
+              </div>
+            )}
           </div>
           <div className="mip-item-price">${basePrice.toFixed(2)}</div>
         </div>
+
+        {/* ── Popular Combos (quick-pick) ── */}
+        {popularCombos.length > 0 && (
+          <div className="mip-section mip-section--combos">
+            <div className="mip-section-hd">
+              <h2 className="mip-section-title">Popular Combinations</h2>
+              <span className="mip-pill mip-pill--pop">Trending</span>
+            </div>
+            <div className="mip-combo-row">
+              {popularCombos.map((combo, idx) => (
+                <button
+                  key={idx}
+                  className={`mip-combo-chip${activeCombо === idx ? ' mip-combo-chip--active' : ''}`}
+                  onClick={() => applyCombo(combo, idx)}
+                >
+                  <span className="mip-combo-rank">#{idx + 1}</span>
+                  <span className="mip-combo-label">{combo.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Choice Groups (radio — required) ── */}
         {(modifiers.choice_groups || []).map(cg => (
@@ -231,9 +295,9 @@ const MenuItemPage = () => {
             </div>
             <div className="mip-option-list">
               {(cg.options || []).map(opt => {
-                const sel    = choiceSel[cg.id] === opt.id;
-                const extra  = parseFloat(opt.extra_price || 0);
-                const price  = basePrice + extra;
+                const sel   = choiceSel[cg.id] === opt.id;
+                const extra = parseFloat(opt.extra_price || 0);
+                const price = basePrice + extra;
                 return (
                   <div
                     key={opt.id}
@@ -253,57 +317,63 @@ const MenuItemPage = () => {
         ))}
 
         {/* ── Addon Groups (checkbox + qty — optional) ── */}
-        {(modifiers.addon_groups || []).map(ag => (
-          <div key={ag.id} className="mip-section">
-            <div className="mip-section-hd">
-              <h2 className="mip-section-title">{ag.title}</h2>
-              <span className="mip-pill mip-pill--opt">Optional</span>
-            </div>
-            <div className="mip-option-list">
-              {(ag.options || []).map(opt => {
-                const checked = !!addonSel[opt.id];
-                const aqty   = addonSel[opt.id] || 0;
-                return (
-                  <div
-                    key={opt.id}
-                    className={`mip-addon-row${checked ? ' mip-addon-row--sel' : ''}`}
-                  >
+        {(modifiers.addon_groups || []).map(ag => {
+          const maxSel = ag.max_selections;
+          return (
+            <div key={ag.id} className="mip-section">
+              <div className="mip-section-hd">
+                <h2 className="mip-section-title">{ag.title}</h2>
+                <span className="mip-pill mip-pill--opt">
+                  {maxSel ? `Optional · Up to ${maxSel}` : 'Optional'}
+                </span>
+              </div>
+              <div className="mip-option-list">
+                {(ag.options || []).map(opt => {
+                  const checked = !!addonSel[opt.id];
+                  const aqty   = addonSel[opt.id] || 0;
+                  const price  = parseFloat(opt.price || 0);
+                  return (
                     <div
-                      className="mip-addon-left"
-                      onClick={() => toggleAddon(opt.id)}
-                      role="checkbox"
-                      aria-checked={checked}
+                      key={opt.id}
+                      className={`mip-addon-row${checked ? ' mip-addon-row--sel' : ''}`}
                     >
-                      <div className={`mip-checkbox${checked ? ' mip-checkbox--on' : ''}`}>
-                        {checked && '✓'}
-                      </div>
-                      <span className="mip-opt-name">{opt.title}</span>
-                    </div>
-                    <div className="mip-addon-right">
-                      {checked ? (
-                        <div className="mip-addon-stepper">
-                          <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, -1); }}>
-                            <Minus size={10} />
-                          </button>
-                          <span>{aqty}</span>
-                          <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, 1); }}>
-                            <Plus size={10} />
-                          </button>
+                      <div
+                        className="mip-addon-left"
+                        onClick={() => toggleAddon(opt.id)}
+                        role="checkbox"
+                        aria-checked={checked}
+                      >
+                        <div className={`mip-checkbox${checked ? ' mip-checkbox--on' : ''}`}>
+                          {checked && '✓'}
                         </div>
-                      ) : (
-                        <span className="mip-addon-price">
-                          +${parseFloat(opt.price || 0).toFixed(2)}
-                        </span>
-                      )}
+                        <span className="mip-opt-name">{opt.title}</span>
+                      </div>
+                      <div className="mip-addon-right">
+                        {checked ? (
+                          <div className="mip-addon-stepper">
+                            <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, -1); }}>
+                              <Minus size={10} />
+                            </button>
+                            <span>{aqty}</span>
+                            <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, 1); }}>
+                              <Plus size={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="mip-addon-price">
+                            {price === 0 ? 'Free' : `+$${price.toFixed(2)}`}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
-        {/* ── Special Notes ── */}
+        {/* ── Special Instructions ── */}
         <div className="mip-section">
           <div className="mip-section-hd">
             <h2 className="mip-section-title">Special Instructions</h2>
@@ -331,11 +401,7 @@ const MenuItemPage = () => {
             </div>
             <div className="mip-sugg-track">
               {suggestions.map((s, idx) => (
-                <Link
-                  key={s.id}
-                  to={`/menu/${s.id}`}
-                  className="mip-sugg-card"
-                >
+                <Link key={s.id} to={`/menu/${s.id}`} className="mip-sugg-card">
                   <img
                     src={s.image || s.image_url || fallbackImg(s.id, idx)}
                     alt={s.name}
@@ -358,10 +424,7 @@ const MenuItemPage = () => {
       {/* ══════════ STICKY FOOTER ══════════ */}
       <div className="mip-sticky">
         <div className="mip-qty-row">
-          <button
-            className="mip-qty-btn"
-            onClick={() => setQty(q => Math.max(1, q - 1))}
-          >
+          <button className="mip-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>
             <Minus size={15} />
           </button>
           <span className="mip-qty-val">{qty}</span>
@@ -374,9 +437,7 @@ const MenuItemPage = () => {
           onClick={handleAdd}
           disabled={missingRequired}
         >
-          {added
-            ? '✓ Added to Cart!'
-            : `Add to Cart — $${total.toFixed(2)}`}
+          {added ? '✓ Added to Cart!' : `Add to Cart — $${total.toFixed(2)}`}
         </button>
       </div>
     </div>
