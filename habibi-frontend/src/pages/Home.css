@@ -2558,6 +2558,78 @@
   .hero-btn-primary, .hero-btn-ghost { font-size: 0.78rem; padding: 0.6rem 1.25rem; }
 }
 
+/* ── Hero section — comprehensive mobile fix ─────────────────── */
+@media (max-width: 768px) {
+  .hero-top-dark {
+    min-height: 100svh;
+    padding: 1.25rem 0.75rem 2rem;
+    align-items: center;
+  }
+  .hero-halal-badge {
+    width: 46px;
+    height: 46px;
+    top: 0.875rem;
+    left: 0.875rem;
+  }
+  .hero-logo-watermark { display: none; }
+  .floating-item { display: none; }
+
+  .hero-content {
+    width: calc(100% - 1.5rem);
+    max-width: 100%;
+    margin: 1.5rem auto 1rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .hero-title-exact {
+    font-size: 1.75rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+  .hero-title-line-1,
+  .hero-title-line-2,
+  .hero-title-line-3 {
+    white-space: normal;
+    display: block;
+  }
+  .hero-creative-line {
+    font-size: 0.72rem;
+    padding: 0.45rem 1rem;
+    letter-spacing: 0.6px;
+    max-width: 100%;
+    white-space: normal;
+    margin-bottom: 1rem;
+  }
+  .hero-cta-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+  .hero-btn-primary,
+  .hero-btn-ghost {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title-exact { font-size: 1.5rem; }
+  .hero-content { padding: 1.25rem 1rem 1rem; }
+  .hero-quick-picks { display: none; }
+}
+
+@media (max-width: 400px) {
+  .hero-title-exact { font-size: 1.3rem; }
+  .hero-halal-badge { width: 38px; height: 38px; }
+  .hero-creative-line { font-size: 0.66rem; padding: 0.35rem 0.75rem; }
+  .hero-content { padding: 1rem 0.875rem; }
+}
+
 /* ── Story section ── */
 @media (max-width: 768px) {
   .story-section { padding: 3rem 0; }
