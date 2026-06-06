@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Search, Heart, ShoppingBag, Check, Star } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { menuAPI, favoritesAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -67,6 +67,13 @@ const Menu = () => {
   const [bowlSauce,   setBowlSauce]   = useState('');
   const [byoItem,     setByoItem]     = useState(null);
   const [modalItemId, setModalItemId] = useState(null);
+  const featCarouselRef = useRef(null);
+
+  const scrollFeatCarousel = dir => {
+    const el = featCarouselRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 260, behavior: 'smooth' });
+  };
 
   const menuSchema = {
     "@context": "https://schema.org",
@@ -403,47 +410,62 @@ const Menu = () => {
 
       {/* ── Featured / Popular section (All + no search) ──── */}
       {activeCategory === 'all' && !search && featuredItems.length > 0 && (
-        <div className="menu-featured-wrap">
-          <div className="menu-featured-hd">
-            <span className="menu-featured-eyebrow">Popular Picks</span>
-            <h2 className="menu-featured-title">Most Liked Items</h2>
+        <div className="mf-section">
+          <div className="mf-header">
+            <p className="mf-eyebrow">POPULAR PICKS</p>
+            <h2 className="mf-title">Order Your Favourites</h2>
           </div>
-          <div className="menu-featured-scroll">
-            {featuredItems.map((item, idx) => {
-              const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
-              const name   = item.name || item.title || 'Menu Item';
-              const price  = parseFloat(item.price || 0);
-              return (
-                <div key={item.id} className="menu-feat-card" onClick={() => handleCardClick(item)}>
-                  <div className="menu-feat-img-wrap">
-                    <img
-                      src={toWebp(imgSrc)}
-                      alt={name}
-                      className="menu-feat-img"
-                      loading="lazy"
-                      onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
-                    />
-                    <div className="menu-feat-img-overlay" />
-                    {idx < 3 && (
-                      <span className="menu-feat-rank">
-                        🔥 #{idx + 1} Most Liked
-                      </span>
-                    )}
-                    <button
-                      className="menu-feat-add-btn"
-                      onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
-                      aria-label={`Add ${name}`}
-                    >
-                      +
-                    </button>
+          <div className="mf-carousel-wrap">
+            <button className="mf-nav-btn mf-nav-prev" onClick={() => scrollFeatCarousel(-1)} aria-label="Previous">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="mf-track" ref={featCarouselRef}>
+              {featuredItems.map((item, idx) => {
+                const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
+                const name   = item.name || item.title || 'Menu Item';
+                const price  = parseFloat(item.price || 0);
+                const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
+                return (
+                  <div
+                    key={item.id}
+                    className="mf-card"
+                    onClick={() => handleCardClick(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && handleCardClick(item)}
+                  >
+                    <div className="mf-img-wrap">
+                      <img
+                        src={toWebp(imgSrc)}
+                        alt={name}
+                        loading="lazy"
+                        onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
+                      />
+                      {idx < 3 && (
+                        <span className="mf-rank">🔥 #{idx + 1} Most Liked</span>
+                      )}
+                    </div>
+                    <div className="mf-body">
+                      <h3 className="mf-name">{name}</h3>
+                      <p className="mf-sub">{sub}</p>
+                      <div className="mf-footer">
+                        <span className="mf-price">${price.toFixed(2)}</span>
+                        <button
+                          className="mf-cart-btn"
+                          onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+                          aria-label={`Add ${name}`}
+                        >
+                          <ShoppingCart size={15} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="menu-feat-body">
-                    <h3 className="menu-feat-name">{name}</h3>
-                    <span className="menu-feat-price">${price.toFixed(2)}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+            <button className="mf-nav-btn mf-nav-next" onClick={() => scrollFeatCarousel(1)} aria-label="Next">
+              <ChevronRight size={20} />
+            </button>
           </div>
         </div>
       )}

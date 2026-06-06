@@ -147,157 +147,200 @@
 }
 
 /* ══════════════════════════════════════════════
-   FEATURED / POPULAR SECTION
+   FEATURED / POPULAR SECTION  (homepage style)
    ══════════════════════════════════════════════ */
-.menu-featured-wrap {
-  padding: 2rem 1.5rem 0.5rem;
+.mf-section {
+  background: #080808;
+  padding: 3rem 0 4rem;
+  overflow: hidden;
 }
 
-.menu-featured-hd {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 1.1rem;
+.mf-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding: 0 1.5rem;
 }
 
-.menu-featured-eyebrow {
-  font-size: 0.6rem;
+.mf-eyebrow {
+  font-size: 0.62rem;
   font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
   color: #F97316;
+  margin-bottom: 0.5rem;
 }
 
-.menu-featured-title {
-  font-family: 'Bebas Neue', var(--font-heading);
-  font-size: 1.9rem;
-  font-weight: 400;
+.mf-title {
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.05em;
+  line-height: 1.2;
   margin: 0;
 }
 
-.menu-featured-scroll {
+/* Wrapper with nav arrows */
+.mf-carousel-wrap {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 0;
+  padding: 0 1.25rem;
+}
+
+/* Scrollable track */
+.mf-track {
+  display: flex;
+  gap: 1.25rem;
   overflow-x: auto;
-  padding-bottom: 1.25rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  -ms-overflow-style: none;
+  padding: 90px 1rem 1.5rem;
+  flex: 1;
 }
+.mf-track::-webkit-scrollbar { display: none; }
 
-.menu-featured-scroll::-webkit-scrollbar { display: none; }
-
-/* Featured card — UberEats style */
-.menu-feat-card {
-  flex-shrink: 0;
-  width: 190px;
-  background: #141414;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
-  transition: transform 0.22s, box-shadow 0.22s;
-}
-
-.menu-feat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 14px 36px rgba(0,0,0,0.65);
-}
-
-.menu-feat-img-wrap {
+/* ── Card ── */
+.mf-card {
   position: relative;
-  height: 168px;
-  overflow: hidden;
+  flex-shrink: 0;
+  width: 195px;
+  background: #161616;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding-top: 80px;
+  padding-bottom: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
-.menu-feat-img {
+.mf-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(249,115,22,0.35);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+}
+
+/* Floating circular image — same as homepage */
+.mf-img-wrap {
+  position: absolute;
+  top: -72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  border: 3px solid rgba(255,255,255,0.07);
+  background: #1a1a1a;
+}
+
+.mf-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 30%;
   display: block;
-  transition: transform 0.38s;
+  transition: transform 0.4s ease;
 }
 
-.menu-feat-card:hover .menu-feat-img { transform: scale(1.07); }
+.mf-card:hover .mf-img-wrap img { transform: scale(1.08); }
 
-.menu-feat-img-overlay {
+/* Rank badge on circle */
+.mf-rank {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.6) 100%);
-  pointer-events: none;
-}
-
-/* Rank badge — top left, like UberEats */
-.menu-feat-rank {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(249,115,22,0.95);
-  backdrop-filter: blur(6px);
   color: #fff;
-  font-size: 0.58rem;
+  font-size: 0.5rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.22rem 0.6rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(249,115,22,0.5);
 }
 
-/* "+" add button overlaid bottom-right of image */
-.menu-feat-add-btn {
-  position: absolute;
-  bottom: 0.6rem;
-  right: 0.6rem;
-  width: 34px;
-  height: 34px;
+/* Card body */
+.mf-body { padding: 0 1rem; }
+
+.mf-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mf-sub {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.42);
+  margin-bottom: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mf-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mf-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #F97316;
+  letter-spacing: -0.01em;
+}
+
+.mf-cart-btn {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #F97316;
-  border: 2px solid rgba(255,255,255,0.25);
   color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 300;
-  line-height: 1;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(249,115,22,0.55);
-  transition: background 0.15s, transform 0.15s;
-  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(249,115,22,0.4);
 }
 
-.menu-feat-add-btn:hover { background: #ea6c00; transform: scale(1.12); }
+.mf-cart-btn:hover { background: #ea6c00; transform: scale(1.1); }
 
-.menu-feat-body {
-  padding: 0.75rem 0.9rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.28rem;
-}
-
-.menu-feat-name {
-  font-size: 0.87rem;
-  font-weight: 700;
+/* Arrow nav buttons */
+.mf-nav-btn {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #222222;
+  border: 1px solid rgba(255,255,255,0.1);
   color: #ffffff;
-  margin: 0;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  z-index: 2;
 }
 
-.menu-feat-price {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.55);
-}
+.mf-nav-prev { margin-right: 0.5rem; }
+.mf-nav-next { margin-left: 0.5rem; background: #F97316; border-color: #F97316; }
+.mf-nav-btn:hover  { transform: scale(1.08); }
+.mf-nav-prev:hover { background: #333333; }
+.mf-nav-next:hover { background: #ea6c00; border-color: #ea6c00; }
 
 /* ══════════════════════════════════════════════
    CATEGORY SECTION HEADERS (All view)
@@ -1041,10 +1084,10 @@
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
   .menu-card-img-wrap       { height: 150px; }
   .menu-search-bar          { padding: 0.6rem 1rem; }
-  .menu-featured-wrap       { padding: 1.5rem 1rem 0.5rem; }
   .menu-item-row-img-wrap   { width: 96px; height: 96px; }
-  .menu-feat-card           { width: 165px; }
-  .menu-feat-img-wrap       { height: 142px; }
+  .mf-card                  { width: 170px; }
+  .mf-img-wrap              { width: 130px; height: 130px; top: -60px; }
+  .mf-track                 { padding-top: 75px; gap: 1rem; }
 }
 
 @media (max-width: 540px) {
@@ -1056,8 +1099,11 @@
   .menu-item-row-img-wrap { width: 86px; height: 86px; }
   .menu-item-row-name     { font-size: 0.88rem; }
   .menu-item-row-desc     { -webkit-line-clamp: 1; }
-  .menu-feat-card         { width: 148px; }
-  .menu-feat-img-wrap     { height: 120px; }
+  .mf-card                { width: 155px; }
+  .mf-img-wrap            { width: 118px; height: 118px; top: -54px; }
+  .mf-track               { padding-top: 68px; padding-left: 0.5rem; }
+  .mf-title               { font-size: 1.75rem; }
+  .mf-nav-btn             { width: 38px; height: 38px; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
 }
 
