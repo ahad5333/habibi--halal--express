@@ -331,8 +331,9 @@
    UBEREATS-STYLE HORIZONTAL LIST ROWS
    ══════════════════════════════════════════════ */
 .menu-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.75rem;
 }
 
 .menu-item-row {
@@ -1025,6 +1026,7 @@
   .menu-sidebar  { display: none; }
   .menu-cats-wrap { display: block; }
   .menu-layout   { display: block; }
+  .menu-list     { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
