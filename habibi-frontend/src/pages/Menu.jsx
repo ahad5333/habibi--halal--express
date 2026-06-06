@@ -359,7 +359,7 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* ── Category tabs ─────────────────────────────────── */}
+      {/* ── Category tabs — mobile only (hidden on desktop via CSS) ── */}
       <div className="menu-cats-wrap">
         <div className="menu-cats-track" ref={tabsRef}>
           {CATEGORIES.map(cat => (
@@ -378,23 +378,22 @@ const Menu = () => {
       {/* ── Two-column layout: sidebar + content ─────────── */}
       <div className="menu-layout">
 
-      {/* Sticky left sidebar — only when viewing All with no search */}
-      {activeCategory === 'all' && !search && categoryGroups.length > 0 && (
-        <aside className="menu-sidebar">
-          <div className="menu-sidebar-inner">
-            <p className="menu-sidebar-heading">Menu</p>
-            {categoryGroups.map(([cat]) => (
-              <button
-                key={cat}
-                className={`menu-sidebar-item${activeSidebarCat === cat ? ' active' : ''}`}
-                onClick={() => scrollToSection(cat)}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </aside>
-      )}
+      {/* Sticky left sidebar — always visible on desktop */}
+      <aside className="menu-sidebar">
+        <div className="menu-sidebar-inner">
+          <p className="menu-sidebar-heading">Categories</p>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.value}
+              className={`menu-sidebar-item${activeCategory === cat.value ? ' active' : ''}`}
+              onClick={() => handleCatClick(cat.value)}
+            >
+              <span className="menu-sidebar-emoji">{cat.emoji}</span>
+              <span className="menu-sidebar-label">{cat.label}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
 
       <div className="menu-content">
 
