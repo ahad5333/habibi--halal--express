@@ -210,7 +210,8 @@ const Home = () => {
 
           <div className="container hero-content">
             <h1 className="hero-title-exact">
-              <span className="hero-title-line-1">Savor the Flavor of Halal Perfection,</span><br />
+              <span className="hero-title-line-1">Savor the Flavor of</span><br />
+              <span className="hero-title-line-2">Halal Perfection</span><br />
               <span className="hero-title-line-3"><span className="animated-hero-words">{typedText}<span className="typewriter-cursor">|</span></span></span>
             </h1>
 
