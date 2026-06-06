@@ -258,10 +258,11 @@ const Menu = () => {
       >
         {/* Left — text */}
         <div className="menu-item-row-content">
-          <div className="menu-item-row-badges">
-            <span className="menu-item-halal-pill">Halal</span>
-            {item.is_spicy && <span className="menu-item-spicy-pill">Spicy</span>}
-          </div>
+          {item.is_spicy && (
+            <div className="menu-item-row-badges">
+              <span className="menu-item-spicy-pill">Spicy</span>
+            </div>
+          )}
           <h3 className="menu-item-row-name">{name}</h3>
           {item.description && (
             <p className="menu-item-row-desc">{item.description}</p>
