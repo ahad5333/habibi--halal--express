@@ -426,7 +426,7 @@ const Home = () => {
               <img src="/images/mixed-platter.jpg" alt="The Mixed Platter" className="curated-img" />
               <div className="curated-overlay">
                 <p className="text-sm font-bold" style={{ color: '#F97316', letterSpacing: '2px' }}>★ CHEF'S PICK</p>
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem' }}>The Mixed Platter</h3>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif" }}>The Mixed Platter</h3>
                 <div className="curated-actions mt-2">
                   <Link to="/menu?cat=platter" className="btn btn-outline-light btn-sm" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
                   <button className="btn btn-primary btn-sm" style={{ backgroundColor: '#F97316', border: 'none' }}>$16.99</button>
@@ -438,8 +438,8 @@ const Home = () => {
             <div className="curated-card small">
               <img src="/images/habibi-burger.jpg" alt="Habibi Burger" className="curated-img" />
               <div className="curated-overlay">
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem' }}>Habibi Burger</h3>
-                <p className="text-sm font-bold" style={{ color: '#F97316', fontSize: '1.2rem' }}>$10.99</p>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif" }}>Habibi Burger</h3>
+                <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$10.99</p>
                 <div className="curated-actions mt-2">
                   <Link to="/menu?cat=burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
                 </div>

@@ -2666,6 +2666,9 @@
 /* ── Curated Selections — mobile ── */
 @media (max-width: 768px) {
   .curated-section { padding: 3rem 0; }
+  .curated-title { font-size: 1.3rem; }
+  .curated-price { font-size: 0.95rem !important; }
+  .curated-actions .btn-sm { font-size: 0.75rem; padding: 0.4rem 0.75rem; }
 
   .curated-section .section-header.space-between {
     flex-direction: column;
@@ -2714,7 +2717,10 @@
   .curated-card.small,
   .curated-card.wide  { height: 160px; }
   .curated-card.info-card { height: 160px; padding: 1rem 0.875rem; }
-  .curated-title { font-size: 1.1rem !important; }
+  .curated-title { font-size: 1rem; }
+  .curated-overlay { padding: 1rem; }
+  .curated-actions { gap: 0.4rem; }
+  .curated-actions .btn-sm { font-size: 0.7rem; padding: 0.35rem 0.6rem; }
 }
 
 @media (max-width: 380px) {
