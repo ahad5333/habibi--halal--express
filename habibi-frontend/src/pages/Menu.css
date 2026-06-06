@@ -1096,6 +1096,13 @@
   .menu-cats-wrap { display: block; }
   .menu-layout   { display: block; }
   .menu-list     { grid-template-columns: 1fr; }
+
+  /* Remove bleed-margin trick — causes image to overflow grid track on mobile */
+  .menu-item-row {
+    margin: 0;
+    padding: 0.875rem 0.25rem;
+    border-radius: 8px;
+  }
 }
 
 @media (max-width: 768px) {
