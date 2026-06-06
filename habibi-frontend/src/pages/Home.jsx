@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, ChevronRight, Sparkles, Shield, Eye } from 'lucide-react';
+import { Star, ChevronRight, ChevronLeft, Sparkles, Shield, Eye, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import './Home.css';
 
@@ -132,8 +133,11 @@ const FeastVideo = ({ src }) => {
 };
 
 const Home = () => {
+  const navigate = useNavigate();
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
+  const [featItems, setFeatItems] = useState([]);
+  const carouselRef = useRef(null);
 
   const [typedText, setTypedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
@@ -177,6 +181,22 @@ const Home = () => {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/menus?limit=14`)
+      .then(r => r.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : (data.items || data.menus || []);
+        if (items.length > 0) setFeatItems(items.slice(0, 14));
+      })
+      .catch(() => {});
+  }, []);
+
+  const scrollCarousel = (dir) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 260, behavior: 'smooth' });
+  };
 
 
   return (
@@ -275,6 +295,70 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          FEATURED ITEMS CAROUSEL
+      ═══════════════════════════════════════════════════════ */}
+      {featItems.length > 0 && (
+        <section className="feat-section">
+          <div className="feat-header">
+            <p className="feat-eyebrow">POPULAR PICKS</p>
+            <h2 className="feat-title">Order Your Favourites</h2>
+          </div>
+
+          <div className="feat-carousel-wrap">
+            <button className="feat-nav-btn feat-nav-prev" onClick={() => scrollCarousel(-1)} aria-label="Previous">
+              <ChevronLeft size={20} />
+            </button>
+
+            <div className="feat-track" ref={carouselRef}>
+              {featItems.map(item => {
+                const imgSrc = item.image_url
+                  ? (item.image_url.startsWith('http') ? item.image_url : `/images/${item.image_url.replace(/^\/images\//, '')}`)
+                  : '/images/mixed-platter.jpg';
+                const price = parseFloat(item.price || item.base_price || 0).toFixed(2);
+                const sub = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
+                return (
+                  <div
+                    key={item.id}
+                    className="feat-card"
+                    onClick={() => navigate(`/menu/${item.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && navigate(`/menu/${item.id}`)}
+                  >
+                    <div className="feat-card-img-wrap">
+                      <img
+                        src={imgSrc}
+                        alt={item.name}
+                        onError={e => { e.target.src = '/images/mixed-platter.jpg'; }}
+                      />
+                    </div>
+                    <div className="feat-card-body">
+                      <h3 className="feat-card-name">{item.name}</h3>
+                      <p className="feat-card-sub">{sub}</p>
+                      <div className="feat-card-footer">
+                        <span className="feat-card-price">${price}</span>
+                        <button
+                          className="feat-card-cart"
+                          onClick={e => { e.stopPropagation(); navigate(`/menu/${item.id}`); }}
+                          aria-label={`Add ${item.name} to cart`}
+                        >
+                          <ShoppingCart size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button className="feat-nav-btn feat-nav-next" onClick={() => scrollCarousel(1)} aria-label="Next">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════
           INFO BANNER — real location only

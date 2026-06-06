@@ -711,6 +711,209 @@
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   FEATURED ITEMS CAROUSEL
+   ═══════════════════════════════════════════════════════════ */
+
+.feat-section {
+  background: #080808;
+  padding: 3.5rem 0 4.5rem;
+  overflow: hidden;
+}
+
+.feat-header {
+  text-align: center;
+  margin-bottom: 2.75rem;
+  padding: 0 1.5rem;
+}
+
+.feat-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #F97316;
+  margin-bottom: 0.5rem;
+}
+
+.feat-title {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+/* Wrapper holds the nav buttons + scrollable track */
+.feat-carousel-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 1.25rem;
+}
+
+/* Scrollable track — hides scrollbar */
+.feat-track {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 90px 1rem 1.5rem;
+  flex: 1;
+}
+.feat-track::-webkit-scrollbar { display: none; }
+
+/* ── Card ── */
+.feat-card {
+  position: relative;
+  flex-shrink: 0;
+  width: 195px;
+  background: #161616;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding-top: 80px;
+  padding-bottom: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.feat-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(249,115,22,0.35);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+}
+
+/* Floating food image above card top */
+.feat-card-img-wrap {
+  position: absolute;
+  top: -72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  border: 3px solid rgba(255,255,255,0.07);
+  background: #1a1a1a;
+}
+
+.feat-card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.feat-card:hover .feat-card-img-wrap img {
+  transform: scale(1.08);
+}
+
+/* Card text body */
+.feat-card-body {
+  padding: 0 1rem;
+}
+
+.feat-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feat-card-sub {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.42);
+  margin-bottom: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feat-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.feat-card-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #F97316;
+  letter-spacing: -0.01em;
+}
+
+.feat-card-cart {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F97316;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(249,115,22,0.4);
+}
+
+.feat-card-cart:hover {
+  background: #ea6c00;
+  transform: scale(1.1);
+}
+
+/* ── Arrow nav buttons ── */
+.feat-nav-btn {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #222222;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  z-index: 2;
+}
+
+.feat-nav-prev { margin-right: 0.5rem; }
+.feat-nav-next { margin-left: 0.5rem; background: #F97316; border-color: #F97316; }
+
+.feat-nav-btn:hover { transform: scale(1.08); }
+.feat-nav-prev:hover { background: #333333; }
+.feat-nav-next:hover { background: #ea6c00; border-color: #ea6c00; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .feat-title { font-size: 1.75rem; }
+  .feat-nav-btn { width: 38px; height: 38px; }
+  .feat-card { width: 170px; }
+  .feat-card-img-wrap { width: 130px; height: 130px; top: -60px; }
+  .feat-track { padding-top: 75px; gap: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .feat-section { padding: 2.5rem 0 3.5rem; }
+  .feat-title { font-size: 1.5rem; }
+  .feat-carousel-wrap { padding: 0 0.5rem; }
+  .feat-card { width: 155px; }
+  .feat-card-img-wrap { width: 118px; height: 118px; top: -54px; }
+  .feat-track { padding-top: 68px; padding-left: 0.5rem; }
+}
+
 /* ── Build Your Own — CTA Strip ──────────────────────────── */
 .byo-strip {
   background: linear-gradient(100deg, #0f0f22, #1a1228, #0f0f22);
