@@ -441,10 +441,10 @@ const Menu = () => {
                         loading="lazy"
                         onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
                       />
-                      {idx < 3 && (
-                        <span className="mf-rank">🔥 #{idx + 1} Most Liked</span>
-                      )}
                     </div>
+                    {idx < 3 && (
+                      <span className="mf-rank">🔥 #{idx + 1} Most Liked</span>
+                    )}
                     <div className="mf-body">
                       <h3 className="mf-name">{name}</h3>
                       <p className="mf-sub">{sub}</p>
