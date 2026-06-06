@@ -606,6 +606,7 @@
   width: 60px;
   height: 60px;
   object-fit: contain;
+  border-radius: 50%;
   filter: drop-shadow(0 4px 14px rgba(249, 115, 22, 0.45));
 }
 
