@@ -251,15 +251,26 @@ const Home = () => {
             </div>
 
             <div className="hero-arched-cards">
-              <div className="arched-card">
-                <img src="/images/mixed-platter.jpg" alt="Bowl 1" />
-              </div>
-              <div className="arched-card">
-                <img src="/images/art-of-the-feast.jpg" alt="Bowl 2" />
-              </div>
-              <div className="arched-card">
-                <img src="/images/personalized-bowls.jpg" alt="Bowl 3" />
-              </div>
+              {[
+                { src: '/images/mixed-platter.jpg',      alt: 'Bowl 1' },
+                { src: '/images/art-of-the-feast.jpg',   alt: 'Bowl 2' },
+                { src: '/images/personalized-bowls.jpg', alt: 'Bowl 3' },
+              ].map(({ src, alt }) => (
+                <div key={alt} className="arched-card">
+                  <div className="arched-card-inner">
+                    <img src={src} alt={alt} />
+                  </div>
+                  <svg
+                    className="arched-card-border"
+                    viewBox="0 0 220 280"
+                    preserveAspectRatio="none"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M 1,279 L 1,111 A 110,110 0 0,1 219,111 L 219,279" />
+                  </svg>
+                </div>
+              ))}
             </div>
           </div>
         </div>
