@@ -6,7 +6,7 @@
 .menu-header {
   position: relative;
   height: 300px;
-  background: url('/images/title/menu-title.png') center/cover no-repeat;
+  background: url('/images/title/menu-title.webp') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
