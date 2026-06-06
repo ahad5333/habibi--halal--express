@@ -2663,15 +2663,65 @@
   .feast-desc { font-size: 0.9rem; padding: 0 1rem; }
 }
 
-/* ── Curated Selections ── */
+/* ── Curated Selections — mobile ── */
+@media (max-width: 768px) {
+  .curated-section { padding: 3rem 0; }
+
+  .curated-section .section-header.space-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .curated-section .browse-link { font-size: 0.85rem; }
+
+  .curated-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 0.875rem;
+  }
+  .curated-card.large {
+    grid-column: 1 / 3;
+    grid-row: auto;
+    height: 240px;
+  }
+  .curated-card.small {
+    grid-column: span 1;
+    grid-row: auto;
+    height: 180px;
+  }
+  .curated-card.info-card {
+    grid-column: span 1;
+    grid-row: auto;
+    height: 180px;
+    padding: 1.25rem 1rem;
+  }
+  .curated-card.wide {
+    grid-column: 1 / 3;
+    grid-row: auto;
+    height: 180px;
+  }
+  .curated-overlay { padding: 1.25rem; }
+  .curated-title { font-size: 1.3rem !important; margin-bottom: 0.4rem; }
+  .curated-actions { flex-wrap: wrap; gap: 0.5rem; }
+  .curated-actions .btn-sm { font-size: 0.75rem; padding: 0.4rem 0.8rem; }
+  .info-card-title { font-size: 1rem; }
+  .info-card-desc { font-size: 0.78rem; }
+}
+
 @media (max-width: 480px) {
-  .curated-grid { grid-template-columns: 1fr; }
-  .curated-card.large { grid-column: span 1; height: 240px; }
-  .curated-card.small { grid-column: span 1; height: 200px; }
-  .curated-card.wide  { grid-column: span 1; height: 180px; }
-  .curated-card.info-card { padding: 1.5rem 1.25rem; }
-  .section-header.space-between { flex-direction: column; gap: 0.75rem; }
-  .browse-link { font-size: 0.85rem; }
+  .curated-grid { gap: 0.75rem; }
+  .curated-card.large { height: 210px; }
+  .curated-card.small,
+  .curated-card.wide  { height: 160px; }
+  .curated-card.info-card { height: 160px; padding: 1rem 0.875rem; }
+  .curated-title { font-size: 1.1rem !important; }
+}
+
+@media (max-width: 380px) {
+  .curated-card.large { height: 185px; }
+  .curated-card.small,
+  .curated-card.wide  { height: 145px; }
+  .curated-card.info-card { height: 145px; }
 }
 
 /* ── Reviews / Wall of Love ── */
