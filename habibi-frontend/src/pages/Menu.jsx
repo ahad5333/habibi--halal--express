@@ -56,7 +56,9 @@ const Menu = () => {
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const { addItem, items: cartItems, subtotal } = useCart();
   const { isLoggedIn } = useAuth();
-  const tabsRef = useRef(null);
+  const tabsRef    = useRef(null);
+  const sectionRefs = useRef({});
+  const [activeSidebarCat, setActiveSidebarCat] = useState('');
 
   const [bowlBase,    setBowlBase]    = useState('');
   const [bowlProtein, setBowlProtein] = useState('');
@@ -171,6 +173,28 @@ const Menu = () => {
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   }, [filtered, activeCategory]);
+
+  // Scroll spy — highlight sidebar item matching the section in view
+  useEffect(() => {
+    if (activeCategory !== 'all' || search) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActiveSidebarCat(entry.target.dataset.category || '');
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+    );
+    Object.values(sectionRefs.current).forEach(el => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, [categoryGroups, activeCategory, search]);
+
+  const scrollToSection = cat => {
+    const el = sectionRefs.current[cat];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const isBYO = item => (item.category || '').toLowerCase().includes('build your own');
 
@@ -351,6 +375,29 @@ const Menu = () => {
         </div>
       </div>
 
+      {/* ── Two-column layout: sidebar + content ─────────── */}
+      <div className="menu-layout">
+
+      {/* Sticky left sidebar — only when viewing All with no search */}
+      {activeCategory === 'all' && !search && categoryGroups.length > 0 && (
+        <aside className="menu-sidebar">
+          <div className="menu-sidebar-inner">
+            <p className="menu-sidebar-heading">Menu</p>
+            {categoryGroups.map(([cat]) => (
+              <button
+                key={cat}
+                className={`menu-sidebar-item${activeSidebarCat === cat ? ' active' : ''}`}
+                onClick={() => scrollToSection(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </aside>
+      )}
+
+      <div className="menu-content">
+
       {/* ── Featured / Popular section (All + no search) ──── */}
       {activeCategory === 'all' && !search && featuredItems.length > 0 && (
         <div className="menu-featured-wrap">
@@ -525,7 +572,12 @@ const Menu = () => {
             </div>
           ) : (
             categoryGroups.map(([category, catItems]) => (
-              <div key={category} className="menu-cat-section">
+              <div
+                key={category}
+                className="menu-cat-section"
+                data-category={category}
+                ref={el => { sectionRefs.current[category] = el; }}
+              >
                 <div className="menu-cat-section-hd">
                   <h3 className="menu-cat-section-title">{category}</h3>
                   <span className="menu-cat-section-count">{catItems.length} items</span>
@@ -549,6 +601,9 @@ const Menu = () => {
           </div>
         ) : null}
       </div>
+
+      </div>{/* /menu-content */}
+      </div>{/* /menu-layout */}
 
       {/* ── BYO modal ─────────────────────────────────────── */}
       {byoItem && (
