@@ -2823,3 +2823,17 @@
   .arched-card-inner { border-radius: 44px 44px 0 0; }
   .hero-bottom-desc-exact { font-size: 0.78rem; }
 }
+
+/* ── Curated overlay text — definitive mobile override ── */
+@media (max-width: 768px) {
+  .curated-overlay .curated-title { font-size: 1.1rem !important; margin-bottom: 0.25rem; }
+  .curated-overlay .text-sm { font-size: 0.65rem !important; letter-spacing: 1px; }
+  .curated-price { font-size: 0.85rem !important; margin-bottom: 0.25rem; }
+  .curated-actions .btn-sm { font-size: 0.7rem !important; padding: 0.35rem 0.65rem; }
+}
+@media (max-width: 480px) {
+  .curated-overlay .curated-title { font-size: 0.95rem !important; }
+  .curated-overlay .text-sm { font-size: 0.6rem !important; }
+  .curated-price { font-size: 0.78rem !important; }
+  .curated-actions .btn-sm { font-size: 0.65rem !important; padding: 0.3rem 0.5rem; }
+}
