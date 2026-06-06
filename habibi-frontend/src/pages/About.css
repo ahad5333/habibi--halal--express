@@ -555,14 +555,15 @@
 .about-cta-title {
   font-family: var(--font-serif);
   font-size: 2.5rem;
-  color: #fff;
+  color: #E5B64E;
   font-weight: 700;
-  text-shadow: 0 2px 16px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.7);
 }
 
 .about-cta-sub {
-  color: rgba(255,255,255,0.7);
+  color: #ffffff;
   font-size: 0.9rem;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
 }
 
 .about-cta-btns {
