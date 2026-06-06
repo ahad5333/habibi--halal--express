@@ -294,6 +294,7 @@ const About = () => (
 
     {/* ── CTA ── */}
     <section className="about-cta">
+      <div className="about-cta-overlay" />
       <div className="about-cta-content">
         <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="about-cta-logo" />
         <h2 className="about-cta-title">Ready to taste the excellence?</h2>

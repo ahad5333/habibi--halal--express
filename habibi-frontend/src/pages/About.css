@@ -528,7 +528,7 @@
 .about-cta-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.82) 100%);
+  background: rgba(0, 0, 0, 0.38);
 }
 
 .about-cta-content {
