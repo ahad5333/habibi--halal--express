@@ -1,288 +1,349 @@
-import React, { useState, useEffect } from 'react';
-import { X, Minus, Plus, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Minus, Plus, Heart, Star, Flame } from 'lucide-react';
+import { menuAPI, favoritesAPI } from '../services/api';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
 
-const BYO_STEPS = [
-  {
-    id: 'base',
-    label: 'Choose Your Base',
-    required: true,
-    type: 'radio',
-    options: ['Rice', 'Salad', 'Rice & Salad', 'Pita Bread', 'Wrap'],
-  },
-  {
-    id: 'protein',
-    label: 'Choose Your Protein',
-    required: true,
-    type: 'radio',
-    options: ['Chicken', 'Lamb', 'Beef', 'Shrimp (+$2)', 'Falafel', 'Mixed Grill (+$3)'],
-  },
-  {
-    id: 'toppings',
-    label: 'Choose Toppings',
-    required: false,
-    type: 'checkbox',
-    options: ['Lettuce', 'Tomato', 'Cucumber', 'Red Onion', 'Pickles', 'Jalapeños', 'Olives', 'Feta Cheese (+$1)'],
-  },
-  {
-    id: 'sauce',
-    label: 'Choose Your Sauce',
-    required: true,
-    type: 'checkbox',
-    options: ['White Sauce', 'Hot Sauce', 'Tahini', 'Garlic Paste', 'Tzatziki', 'Harissa (+$0.50)'],
-  },
-];
+const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
+const toWebp = url =>
+  url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
-function isBYO(item) {
-  return (item.category || '').toLowerCase().includes('build your own');
-}
+export default function MenuItemModal({ itemId, onClose }) {
+  const { addItem } = useCart();
+  const { isLoggedIn } = useAuth();
 
-/* ── Build Your Own Step-by-Step Modal ── */
-function BYOModal({ item, onClose, onAdd }) {
-  const [step, setStep]     = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [qty, setQty]       = useState(1);
-  const [note, setNote]     = useState('');
-  const imgSrc = item.image || item.image_url;
+  const [item,      setItem]      = useState(null);
+  const [modifiers, setModifiers] = useState({ choice_groups: [], addon_groups: [] });
+  const [loading,   setLoading]   = useState(true);
 
-  const current = BYO_STEPS[step];
-  const isLast  = step === BYO_STEPS.length - 1;
-  const canNext = !current.required || (
-    current.type === 'radio'    ? !!answers[current.id] :
-    current.type === 'checkbox' ? (answers[current.id] || []).length > 0 : true
-  );
+  const [choiceSel, setChoiceSel] = useState({});
+  const [addonSel,  setAddonSel]  = useState({});
+  const [note,      setNote]      = useState('');
+  const [qty,       setQty]       = useState(1);
+  const [isFav,     setIsFav]     = useState(false);
+  const [added,     setAdded]     = useState(false);
 
-  const toggleCheckbox = (opt) => {
-    setAnswers(prev => {
-      const arr = prev[current.id] || [];
-      return { ...prev, [current.id]: arr.includes(opt) ? arr.filter(x => x !== opt) : [...arr, opt] };
+  /* ── Load item + modifiers ── */
+  useEffect(() => {
+    if (!itemId) return;
+    setLoading(true);
+    setChoiceSel({}); setAddonSel({}); setNote(''); setQty(1); setAdded(false);
+
+    Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId)])
+      .then(([itemData, mods]) => {
+        setItem(itemData);
+        const safeMods = mods || { choice_groups: [], addon_groups: [] };
+        setModifiers(safeMods);
+        const defaults = {};
+        (safeMods.choice_groups || []).forEach(cg => {
+          const def = cg.options?.find(o => o.is_default);
+          defaults[cg.id] = def?.id ?? cg.options?.[0]?.id ?? null;
+        });
+        setChoiceSel(defaults);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    if (isLoggedIn) {
+      favoritesAPI.getAll()
+        .then(data => {
+          const ids = Array.isArray(data) ? data.map(f => f.menu_item_id) : [];
+          setIsFav(ids.includes(parseInt(itemId)));
+        })
+        .catch(() => {});
+    }
+  }, [itemId, isLoggedIn]);
+
+  /* ── Lock body scroll ── */
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  /* ── Escape to close ── */
+  const handleKey = useCallback(e => { if (e.key === 'Escape') onClose(); }, [onClose]);
+  useEffect(() => {
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [handleKey]);
+
+  /* ── Price calculation ── */
+  const basePrice = parseFloat(item?.price || 0);
+  let choiceExtra = 0;
+  (modifiers.choice_groups || []).forEach(cg => {
+    const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
+    if (opt) choiceExtra += parseFloat(opt.extra_price || 0);
+  });
+  const addonExtra = Object.entries(addonSel).reduce((sum, [optId, q]) => {
+    let price = 0;
+    (modifiers.addon_groups || []).forEach(ag => {
+      const opt = ag.options?.find(o => o.id === parseInt(optId));
+      if (opt) price = parseFloat(opt.price || 0);
+    });
+    return sum + price * q;
+  }, 0);
+  const unitPrice = basePrice + choiceExtra + addonExtra;
+  const total     = unitPrice * qty;
+
+  /* ── Addon helpers ── */
+  const toggleAddon = optId => {
+    setAddonSel(prev => {
+      if (prev[optId]) { const n = { ...prev }; delete n[optId]; return n; }
+      return { ...prev, [optId]: 1 };
+    });
+  };
+  const adjustAddonQty = (optId, delta) => {
+    setAddonSel(prev => {
+      const next = (prev[optId] || 0) + delta;
+      if (next <= 0) { const n = { ...prev }; delete n[optId]; return n; }
+      return { ...prev, [optId]: next };
     });
   };
 
-  const basePrice = parseFloat(item.price || 0);
-  const extraCharge = (answers.protein?.includes('+$2)') ? 2 : answers.protein?.includes('+$3)') ? 3 : 0)
-    + (answers.toppings || []).filter(t => t.includes('+$')).reduce((a, t) => a + parseFloat(t.match(/\+\$(\d+\.?\d*)/)?.[1] || 0), 0)
-    + (answers.sauce || []).filter(s => s.includes('+$')).reduce((a, s) => a + parseFloat(s.match(/\+\$(\d+\.?\d*)/)?.[1] || 0), 0);
-  const total = (basePrice + extraCharge) * qty;
-
-  const handleAdd = () => {
-    const mods = Object.entries(answers).map(([k, v]) =>
-      `${k.charAt(0).toUpperCase() + k.slice(1)}: ${Array.isArray(v) ? v.join(', ') : v}`
-    ).join(' | ');
-    onAdd({ ...item, note: [mods, note].filter(Boolean).join('\n'), price: basePrice + extraCharge }, qty);
-    onClose();
+  const toggleFav = async () => {
+    if (!isLoggedIn) return;
+    const next = !isFav;
+    setIsFav(next);
+    try { next ? await favoritesAPI.add(item.id) : await favoritesAPI.remove(item.id); }
+    catch { setIsFav(!next); }
   };
 
+  /* ── Add to cart ── */
+  const handleAdd = () => {
+    const choiceNote = (modifiers.choice_groups || [])
+      .map(cg => {
+        const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
+        return opt ? `${cg.title}: ${opt.title}` : null;
+      }).filter(Boolean).join(' | ');
+    const addonNote = Object.entries(addonSel)
+      .filter(([, q]) => q > 0)
+      .map(([optId, q]) => {
+        let label = '';
+        (modifiers.addon_groups || []).forEach(ag => {
+          const opt = ag.options?.find(o => o.id === parseInt(optId));
+          if (opt) label = q > 1 ? `${opt.title} ×${q}` : opt.title;
+        });
+        return label;
+      }).filter(Boolean).join(', ');
+    const fullNote = [choiceNote, addonNote, note].filter(Boolean).join('\n');
+    addItem({
+      id:    item.id,
+      name:  item.name || item.title,
+      price: unitPrice,
+      img:   item.image || item.image_url || fallbackImg(item.id),
+      tag:   item.category || 'Item',
+      note:  fullNote,
+      qty,
+    });
+    setAdded(true);
+    setTimeout(() => { setAdded(false); onClose(); }, 1400);
+  };
+
+  const missingRequired = (modifiers.choice_groups || []).some(cg => !choiceSel[cg.id]);
+
   return (
-    <div className="mim-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="mim-modal mim-byo">
-        <button className="mim-close" onClick={onClose}><X size={18} /></button>
+    <div className="mim-overlay" onClick={onClose}>
+      <div className="mim-modal" onClick={e => e.stopPropagation()}>
 
-        {/* Progress bar */}
-        <div className="mim-byo-progress">
-          {BYO_STEPS.map((s, i) => (
-            <div key={s.id} className={`mim-byo-step ${i === step ? 'active' : ''} ${i < step ? 'done' : ''}`}>
-              <span className="mim-byo-step-dot">{i < step ? '✓' : i + 1}</span>
-              <span className="mim-byo-step-label">{s.label.split(' ')[1]}</span>
-            </div>
-          ))}
-        </div>
+        <button className="mim-close" onClick={onClose} aria-label="Close">
+          <X size={18} />
+        </button>
 
-        <div className="mim-byo-content">
-          {imgSrc && step === 0 && (
-            <div className="mim-byo-hero">
-              <img src={imgSrc} alt={item.name} />
-              <div className="mim-byo-hero-overlay">
-                <h2>{item.name}</h2>
-                <p className="mim-price">${basePrice.toFixed(2)}</p>
-              </div>
-            </div>
-          )}
+        {/* ════════ TWO-COLUMN LAYOUT ════════ */}
+        <div className="mim-cols">
 
-          <div className="mim-section">
-            <p className="mim-section-title">
-              {current.label}
-              {current.required && <span className="mim-required">Required</span>}
-            </p>
-            <div className="mim-chips">
-              {current.options.map(opt => {
-                const isSelected = current.type === 'radio'
-                  ? answers[current.id] === opt
-                  : (answers[current.id] || []).includes(opt);
-                return (
-                  <button
-                    key={opt}
-                    className={`mim-chip${isSelected ? ' selected' : ''}`}
-                    onClick={() => current.type === 'radio'
-                      ? setAnswers(p => ({ ...p, [current.id]: opt }))
-                      : toggleCheckbox(opt)
-                    }
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {isLast && (
-            <>
-              <div className="mim-section">
-                <h3 className="mim-section-title">Special Instructions <span className="mim-optional">Optional</span></h3>
-                <textarea
-                  className="mim-instructions"
-                  placeholder="Any special requests? Allergies? Let us know…"
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  rows={3}
+          {/* LEFT — large item image */}
+          <div className="mim-col-left">
+            {loading ? (
+              <div className="mim-img-skeleton" />
+            ) : (
+              <>
+                <img
+                  src={toWebp(item?.image || item?.image_url || fallbackImg(item?.id))}
+                  alt={item?.name || item?.title}
+                  className="mim-img"
+                  onError={e => { e.target.src = fallbackImg(item?.id); }}
                 />
-              </div>
+                <div className="mim-img-grad" />
 
-              <div className="mim-qty-row">
-                <button className="mim-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}><Minus size={14} /></button>
-                <span className="mim-qty-val">{qty}</span>
-                <button className="mim-qty-btn" onClick={() => setQty(q => q + 1)}><Plus size={14} /></button>
-              </div>
-            </>
-          )}
-        </div>
+                <div className="mim-img-top">
+                  <img
+                    src="/images/hero/halal-certified.png"
+                    alt="Halal"
+                    className="mim-halal-stamp"
+                  />
+                  {(item?.is_popular || item?.is_featured) && (
+                    <span className="mim-top-badge">
+                      <Flame size={11} /> #1 Most Liked
+                    </span>
+                  )}
+                </div>
 
-        <div className="mim-footer">
-          {step > 0 && (
-            <button className="mim-btn-back" onClick={() => setStep(s => s - 1)}>← Back</button>
-          )}
-          {!isLast ? (
-            <button className="mim-btn-next" onClick={() => setStep(s => s + 1)} disabled={!canNext}>
-              Next <ChevronRight size={15} />
-            </button>
-          ) : (
-            <button className="mim-btn-add" onClick={handleAdd} disabled={!canNext}>
-              Add to Cart — ${total.toFixed(2)}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Regular Item Detail Modal ── */
-export default function MenuItemModal({ item, onClose, onAdd }) {
-  const [qty, setQty]               = useState(1);
-  const [selectedChoice, setChoice] = useState('');
-  const [selectedAddons, setAddons] = useState([]);
-
-  const imgSrc    = item.image || item.image_url;
-  const choices   = Array.isArray(item.choices) ? item.choices : [];
-  const addons    = Array.isArray(item.addons)  ? item.addons  : [];
-  const basePrice = parseFloat(item.price || 0);
-
-  if (isBYO(item)) return <BYOModal item={item} onClose={onClose} onAdd={onAdd} />;
-
-  const addonTotal = selectedAddons.reduce((sum, name) => {
-    const a = addons.find(a => (a.name || a) === name);
-    return sum + parseFloat(a?.price || a?.extra_price || 0);
-  }, 0);
-  const total = (basePrice + addonTotal) * qty;
-
-  const handleAdd = () => {
-    onAdd({
-      ...item,
-      note: [selectedChoice, selectedAddons.join(', ')].filter(Boolean).join(' | '),
-      price: basePrice + addonTotal,
-    }, qty);
-    onClose();
-  };
-
-  return (
-    <div className="mim-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="mim-modal">
-        <button className="mim-close" onClick={onClose}><X size={15} /></button>
-
-        {/* Full-width image — fixed aspect ratio so always fully visible */}
-        {imgSrc && (
-          <div className="mim-img-wrap">
-            <img
-              src={imgSrc}
-              alt={item.name}
-              onError={e => {
-                const fallback = `/images/menu/${((item.id ?? 1) % 70) + 1}.jpg`;
-                if (!e.target.dataset.fell) { e.target.dataset.fell = '1'; e.target.src = fallback; }
-                else e.target.closest('.mim-img-wrap')?.style.setProperty('display','none');
-              }}
-            />
-            {item.category && <span className="mim-cat-badge">{item.category}</span>}
-          </div>
-        )}
-
-        <div className="mim-body">
-          <div className="mim-header">
-            <h2 className="mim-title">{item.name}</h2>
-            <span className="mim-price">${basePrice.toFixed(2)}</span>
+                {isLoggedIn && (
+                  <button
+                    className={`mim-fav-btn${isFav ? ' active' : ''}`}
+                    onClick={toggleFav}
+                    aria-label="Save to favourites"
+                  >
+                    <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
-          {choices.length > 0 && (
-            <div className="mim-section">
-              <p className="mim-section-title">
-                Choose One <span className="mim-required">Required</span>
-              </p>
-              <div className="mim-chips">
-                {choices.map((c, i) => {
-                  const name  = typeof c === 'string' ? c : c.name;
-                  const extra = parseFloat(c.price || c.extra_price || 0);
-                  return (
-                    <button
-                      key={i}
-                      className={`mim-chip${selectedChoice === name ? ' selected' : ''}`}
-                      onClick={() => setChoice(name)}
-                    >
-                      {name}{extra > 0 && <em>+${extra.toFixed(2)}</em>}
-                    </button>
-                  );
-                })}
+          {/* RIGHT — scrollable details + addons */}
+          <div className="mim-col-right">
+            {loading ? (
+              <div className="mim-skel-wrap">
+                <div className="mim-skel mim-skel--h1" />
+                <div className="mim-skel mim-skel--line" />
+                <div className="mim-skel mim-skel--line short" />
+                <div className="mim-skel mim-skel--block" />
               </div>
-            </div>
-          )}
+            ) : (
+              <>
+                {/* ── Item header ── */}
+                <div className="mim-item-hd">
+                  <div className="mim-item-pills">
+                    {item.category && <span className="mim-cat-pill">{item.category}</span>}
+                    <span className="mim-halal-pill">Halal</span>
+                    {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
+                  </div>
+                  <div className="mim-name-row">
+                    <h2 className="mim-name">{item.name || item.title}</h2>
+                    <span className="mim-price">${basePrice.toFixed(2)}</span>
+                  </div>
+                  {item.description && <p className="mim-desc">{item.description}</p>}
+                  <div className="mim-stars-row">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={12} fill="#F97316" stroke="#F97316" />
+                    ))}
+                    <span className="mim-rating-label">4.8 · 170+ ratings</span>
+                  </div>
+                </div>
 
-          {addons.length > 0 && (
-            <div className="mim-section">
-              <p className="mim-section-title">
-                Add-ons <span className="mim-optional">Optional</span>
-              </p>
-              <div className="mim-chips">
-                {addons.map((a, i) => {
-                  const name  = typeof a === 'string' ? a : a.name;
-                  const extra = parseFloat(a.price || a.extra_price || 0);
-                  const checked = selectedAddons.includes(name);
-                  return (
-                    <button
-                      key={i}
-                      className={`mim-chip${checked ? ' selected' : ''}`}
-                      onClick={() => setAddons(prev =>
-                        checked ? prev.filter(x => x !== name) : [...prev, name]
-                      )}
-                    >
-                      {name}{extra > 0 && <em>+${extra.toFixed(2)}</em>}
+                {/* ── Choice groups (radio — required) ── */}
+                {(modifiers.choice_groups || []).map(cg => (
+                  <div key={cg.id} className="mim-section">
+                    <div className="mim-section-hd">
+                      <span className="mim-section-title">{cg.title}</span>
+                      <span className="mim-badge mim-badge--req">Required</span>
+                    </div>
+                    <div className="mim-options-grid">
+                      {(cg.options || []).map(opt => {
+                        const sel   = choiceSel[cg.id] === opt.id;
+                        const extra = parseFloat(opt.extra_price || 0);
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`mim-opt-row${sel ? ' sel' : ''}`}
+                            onClick={() => setChoiceSel(p => ({ ...p, [cg.id]: opt.id }))}
+                            role="radio"
+                            aria-checked={sel}
+                          >
+                            <div className={`mim-radio${sel ? ' on' : ''}`} />
+                            <span className="mim-opt-name">{opt.title}</span>
+                            {extra > 0 && <span className="mim-opt-price">+${extra.toFixed(2)}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* ── Addon groups (checkbox — optional) ── */}
+                {(modifiers.addon_groups || []).map(ag => (
+                  <div key={ag.id} className="mim-section">
+                    <div className="mim-section-hd">
+                      <span className="mim-section-title">{ag.title}</span>
+                      <span className="mim-badge mim-badge--opt">
+                        {ag.max_selections ? `Optional · Up to ${ag.max_selections}` : 'Optional'}
+                      </span>
+                    </div>
+                    <div className="mim-options-grid">
+                      {(ag.options || []).map(opt => {
+                        const checked = !!addonSel[opt.id];
+                        const aqty   = addonSel[opt.id] || 0;
+                        const price  = parseFloat(opt.price || 0);
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`mim-addon-row${checked ? ' sel' : ''}`}
+                          >
+                            <div
+                              className="mim-addon-left"
+                              onClick={() => toggleAddon(opt.id)}
+                              role="checkbox"
+                              aria-checked={checked}
+                            >
+                              <div className={`mim-checkbox${checked ? ' on' : ''}`}>
+                                {checked && '✓'}
+                              </div>
+                              <span className="mim-opt-name">{opt.title}</span>
+                            </div>
+                            <div className="mim-addon-right">
+                              {checked ? (
+                                <div className="mim-stepper">
+                                  <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, -1); }}>
+                                    <Minus size={10} />
+                                  </button>
+                                  <span>{aqty}</span>
+                                  <button onClick={e => { e.stopPropagation(); adjustAddonQty(opt.id, 1); }}>
+                                    <Plus size={10} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="mim-addon-price">
+                                  {price === 0 ? 'Free' : `+$${price.toFixed(2)}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* ── Special Instructions ── */}
+                <div className="mim-section">
+                  <div className="mim-section-hd">
+                    <span className="mim-section-title">Special Instructions</span>
+                    <span className="mim-badge mim-badge--opt">Optional</span>
+                  </div>
+                  <textarea
+                    className="mim-notes"
+                    placeholder="No onions, extra sauce, well done..."
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    rows={2}
+                    maxLength={300}
+                  />
+                </div>
+
+                {/* ── Footer: qty + add to cart ── */}
+                <div className="mim-footer">
+                  <div className="mim-qty-ctrl">
+                    <button className="mim-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>
+                      <Minus size={14} />
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="mim-footer">
-            <div className="mim-qty-row">
-              <button className="mim-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}><Minus size={13} /></button>
-              <span className="mim-qty-val">{qty}</span>
-              <button className="mim-qty-btn" onClick={() => setQty(q => q + 1)}><Plus size={13} /></button>
-            </div>
-            <button
-              className="mim-btn-add"
-              onClick={handleAdd}
-              disabled={choices.length > 0 && !selectedChoice}
-            >
-              Add to Cart — ${total.toFixed(2)}
-            </button>
+                    <span className="mim-qty-num">{qty}</span>
+                    <button className="mim-qty-btn" onClick={() => setQty(q => q + 1)}>
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  <button
+                    className={`mim-add-btn${added ? ' done' : ''}${missingRequired ? ' off' : ''}`}
+                    onClick={handleAdd}
+                    disabled={missingRequired || added}
+                  >
+                    {added ? '✓ Added to Cart!' : `Add to Cart — $${total.toFixed(2)}`}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
