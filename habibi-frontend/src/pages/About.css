@@ -713,6 +713,6 @@
 @media (max-width: 400px) {
   .about-hero { min-height: 440px; }
   .about-hero-title { font-size: 1.65rem; }
-  .about-hero-sub { display: none; }
+  .about-hero-sub { font-size: 0.8rem; color: rgba(255,255,255,0.9); }
   .staff-grid { grid-template-columns: 1fr; }
 }
