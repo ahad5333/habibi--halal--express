@@ -655,10 +655,20 @@
 @media (max-width: 768px) {
   .about-hero {
     min-height: 520px;
-    background-position: center top;
+    background-position: center center;
+    align-items: flex-start;
+  }
+  .about-hero-ribbon {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.88) 0%,
+      rgba(0, 0, 0, 0.55) 40%,
+      rgba(0, 0, 0, 0.1) 70%,
+      transparent 100%
+    );
   }
   .about-hero-content {
-    padding: 2rem 1.25rem 2.5rem;
+    padding: 2.5rem 1.25rem 2rem;
   }
   .about-hero-title { font-size: 2.2rem; }
   .about-hero-sub { font-size: 0.88rem; }
