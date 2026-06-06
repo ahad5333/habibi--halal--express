@@ -540,10 +540,10 @@
 }
 
 .hero-bottom-title-exact {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 4rem;
-  font-weight: 400;
-  line-height: 1.1;
+  font-family: var(--font-sans);
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.2;
   color: #fff;
   margin-top: 3rem;
   margin-bottom: 1.5rem;
