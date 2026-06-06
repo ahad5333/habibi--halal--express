@@ -243,7 +243,7 @@ const Menu = () => {
   // ── Item row (UberEats-style horizontal) ───────────────────────
   const renderItemRow = (item, idx) => {
     const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
-    const name   = item.name || item.title || 'Menu Item';
+    const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
     const price  = parseFloat(item.price || 0);
     const isFav  = favoriteIds.has(item.id);
 
@@ -422,7 +422,7 @@ const Menu = () => {
             <div className="mf-track" ref={featCarouselRef}>
               {featuredItems.map((item, idx) => {
                 const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
-                const name   = item.name || item.title || 'Menu Item';
+                const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
                 const price  = parseFloat(item.price || 0);
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
                 return (
