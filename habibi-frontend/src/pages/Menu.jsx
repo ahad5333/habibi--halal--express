@@ -249,11 +249,6 @@ const Menu = () => {
                       }}
                     />
 
-                    {/* Category badge */}
-                    {catLabel && (
-                      <span className="menu-card-cat">{catLabel}</span>
-                    )}
-
                     {/* Favourite */}
                     {isLoggedIn && (
                       <button
