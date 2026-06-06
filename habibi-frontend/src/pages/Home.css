@@ -2719,12 +2719,51 @@
 
 /* ── Hero bottom light ── */
 @media (max-width: 768px) {
-  .hero-bottom-title-exact { font-size: 2rem; }
-  .hero-bottom-desc-exact { font-size: 0.88rem; line-height: 1.6; }
-  .hero-arched-cards { gap: 1rem; }
+  .hero-bottom-light {
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
+  }
+  .hero-bottom-title-exact {
+    font-size: 1.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .hero-food-wrapper {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 1.25rem;
+  }
+  .hero-bottom-desc-exact {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    padding: 0 0.5rem;
+  }
+  .hero-bottom-desc-exact br { display: none; }
+  .hero-divider-exact { margin-bottom: 2rem; }
+  .hero-arched-cards {
+    gap: 0.75rem;
+    margin-bottom: -30px;
+  }
+  .arched-card {
+    width: 110px;
+    height: 145px;
+    border-radius: 55px 55px 0 0;
+  }
+  .arched-card-inner {
+    border-radius: 55px 55px 0 0;
+  }
 }
+
 @media (max-width: 480px) {
-  .hero-bottom-title-exact { font-size: 1.6rem; }
-  .hero-bottom-desc-exact { font-size: 0.82rem; }
-  .arched-card { width: 130px; height: 170px; }
+  .hero-bottom-title-exact { font-size: 1.5rem; }
+  .hero-arched-cards { gap: 0.625rem; }
+  .arched-card { width: 100px; height: 132px; border-radius: 50px 50px 0 0; }
+  .arched-card-inner { border-radius: 50px 50px 0 0; }
+}
+
+@media (max-width: 380px) {
+  .hero-bottom-title-exact { font-size: 1.35rem; }
+  .arched-card { width: 88px; height: 116px; border-radius: 44px 44px 0 0; }
+  .arched-card-inner { border-radius: 44px 44px 0 0; }
+  .hero-bottom-desc-exact { font-size: 0.78rem; }
 }
