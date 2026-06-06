@@ -195,6 +195,7 @@ export default function MenuItemModal({ itemId, onClose }) {
           </div>
 
           {/* RIGHT — scrollable details + addons */}
+          <div className="mim-col-right-wrap">
           <div className="mim-col-right">
             {loading ? (
               <div className="mim-skel-wrap">
@@ -350,6 +351,7 @@ export default function MenuItemModal({ itemId, onClose }) {
               </>
             )}
           </div>
+          </div>{/* /mim-col-right-wrap */}
         </div>
       </div>
     </div>

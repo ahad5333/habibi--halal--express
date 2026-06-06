@@ -66,6 +66,7 @@
   grid-template-columns: 42% 58%;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* ── LEFT COLUMN — image ── */
@@ -155,6 +156,29 @@
 @keyframes mim-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* ── RIGHT COLUMN — scrollable details ── */
+.mim-col-right-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Scroll-hint fade at the bottom */
+.mim-col-right-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 60px; /* above sticky footer */
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, rgba(17,17,17,0.92));
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 0 0 0 0;
+  transition: opacity 0.3s;
+}
+
 .mim-col-right {
   display: flex;
   flex-direction: column;
@@ -163,6 +187,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(249,115,22,0.3) transparent;
+  flex: 1;
 }
 
 .mim-col-right::-webkit-scrollbar { width: 4px; }
