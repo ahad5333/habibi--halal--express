@@ -267,7 +267,7 @@ const Home = () => {
                     fill="none"
                     aria-hidden="true"
                   >
-                    <path d="M 1,279 L 1,111 A 110,110 0 0,1 219,111 L 219,279" />
+                    <path d="M 0,280 L 0,110 A 110,110 0 0,1 220,110 L 220,280" />
                   </svg>
                 </div>
               ))}

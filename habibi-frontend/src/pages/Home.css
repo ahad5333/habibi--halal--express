@@ -608,12 +608,10 @@
 
 .arched-card:hover img { transform: scale(1.05); }
 
-/* SVG border overlay — draws itself around the arch on hover */
+/* SVG border — positioned 3px outside the card so stroke lands fully outside image */
 .arched-card-border {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -3px;
   pointer-events: none;
   z-index: 4;
   overflow: visible;
@@ -622,12 +620,13 @@
 .arched-card-border path {
   fill: none;
   stroke: #F97316;
-  stroke-width: 3.5;
+  stroke-width: 2.5;
   stroke-linecap: round;
+  stroke-linejoin: round;
   stroke-dasharray: 690;
   stroke-dashoffset: 690;
-  transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 0 4px rgba(249,115,22,0.65));
+  transition: stroke-dashoffset 1.1s ease-in-out;
+  filter: drop-shadow(0 0 6px rgba(249,115,22,0.7));
 }
 
 .arched-card:hover .arched-card-border path {
