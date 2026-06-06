@@ -492,7 +492,21 @@
   height: 112px;
   border-radius: 10px;
   overflow: hidden;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2218 100%);
+  flex-shrink: 0;
+}
+
+/* Placeholder shown when image fails to load */
+.menu-item-row-img-wrap::before {
+  content: '🍽️';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  opacity: 0.25;
+  z-index: 0;
 }
 
 .menu-item-row-img {
@@ -501,6 +515,8 @@
   object-fit: cover;
   display: block;
   transition: transform 0.3s;
+  position: relative;
+  z-index: 1;
 }
 
 .menu-item-row:hover .menu-item-row-img { transform: scale(1.05); }
@@ -1101,13 +1117,23 @@
   .menu-item-row-img-wrap { width: 86px; height: 86px; }
   .menu-item-row-name     { font-size: 0.88rem; }
   .menu-item-row-desc     { -webkit-line-clamp: 1; }
-  .mf-card                { width: 138px; }
-  .mf-img-wrap            { width: 100px; height: 100px; top: -44px; }
-  .mf-rank                { top: 47px; font-size: 0.45rem; }
-  .mf-track               { padding-top: 58px; padding-left: 0.5rem; }
-  .mf-title               { font-size: 1.6rem; }
-  .mf-nav-btn             { width: 36px; height: 36px; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
+
+  /* Featured cards — phone */
+  .mf-section         { padding: 1.75rem 0 2rem; }
+  .mf-title           { font-size: 1.4rem; }
+  .mf-header          { margin-bottom: 1.5rem; }
+  .mf-carousel-wrap   { padding: 0 0.25rem; }
+  .mf-nav-btn         { width: 30px; height: 30px; }
+  .mf-track           { padding: 50px 0.5rem 1rem; gap: 0.6rem; }
+  .mf-card            { width: 120px; padding-top: 52px; padding-bottom: 0.75rem; border-radius: 14px; }
+  .mf-img-wrap        { width: 90px; height: 90px; top: -38px; }
+  .mf-rank            { top: 40px; font-size: 0.4rem; padding: 0.12rem 0.4rem; }
+  .mf-body            { padding: 0.35rem 0.65rem 0; }
+  .mf-name            { font-size: 0.72rem; }
+  .mf-sub             { font-size: 0.55rem; margin-bottom: 0.5rem; }
+  .mf-price           { font-size: 0.78rem; }
+  .mf-cart-btn        { width: 24px; height: 24px; }
 }
 
 @media (max-width: 400px) {
@@ -1120,6 +1146,15 @@
   .menu-item-row          { padding: 0.65rem; margin: 0 -0.65rem; gap: 0.75rem; }
   .menu-item-row-img-wrap { width: 80px; height: 80px; }
   .menu-item-add-btn      { width: 26px; height: 26px; font-size: 1.1rem; }
+
+  /* Featured cards — very small phone */
+  .mf-card     { width: 108px; padding-top: 46px; }
+  .mf-img-wrap { width: 82px; height: 82px; top: -34px; }
+  .mf-rank     { top: 35px; }
+  .mf-track    { padding: 44px 0.4rem 0.75rem; gap: 0.5rem; }
+  .mf-name     { font-size: 0.68rem; }
+  .mf-price    { font-size: 0.72rem; }
+  .mf-cart-btn { width: 22px; height: 22px; }
 }
 
 @media (max-width: 360px) {
