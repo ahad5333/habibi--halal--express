@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Search, Heart, ShoppingBag, ChevronRight, Check } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Check, Star } from 'lucide-react';
 import { menuAPI, favoritesAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,8 @@ const CATEGORIES = [
   { label: 'Specials',       value: 'specials',  match: 'Habibi Specials',            emoji: '⭐' },
   { label: 'Build Your Own', value: 'byo',       match: 'Build Your Own',             emoji: '🏗️' },
 ];
+
+const CAT_ORDER = CATEGORIES.map(c => c.match).filter(Boolean);
 
 const BOWL_BASE_OPTIONS = [
   { id: 'rice',   label: 'Rice',   image: '/images/builder/base_rice.png' },
@@ -41,27 +43,21 @@ const BOWL_SAUCE_OPTIONS = [
 ];
 const BYO_ITEM = { id: 'byo-menu', name: 'Build Your Own Bowl', price: '12.99', category: 'Build Your Own', img: '/images/personalized-bowls.jpg' };
 
-const fallbackImg = (id, idx = 0) =>
-  `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
-
-const toWebp = url =>
-  url && /\.(jpe?g|png)$/i.test(url)
-    ? url.replace(/\.(jpe?g|png)$/i, '.webp')
-    : url;
+const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
+const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState(searchParams.get('cat') || 'all');
-  const [items,    setItems]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
+  const [items,       setItems]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [search,      setSearch]      = useState('');
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const { addItem, items: cartItems, subtotal } = useCart();
-  const { user, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const tabsRef = useRef(null);
 
-  // Bowl builder state
   const [bowlBase,    setBowlBase]    = useState('');
   const [bowlProtein, setBowlProtein] = useState('');
   const [bowlTopping, setBowlTopping] = useState('');
@@ -140,19 +136,43 @@ const Menu = () => {
       catMatch = item.category === activeCatObj?.match;
     }
     const words = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    const searchMatch = words.length === 0 || words.every(w => {
-      const searchable = [
-        item.name || item.title || '',
-        item.description || '',
-        item.category || '',
-      ].join(' ').toLowerCase();
-      return searchable.includes(w);
-    });
+    const searchMatch = words.length === 0 || words.every(w =>
+      [item.name || item.title || '', item.description || '', item.category || '']
+        .join(' ').toLowerCase().includes(w)
+    );
     return catMatch && searchMatch;
   });
 
-  const isBYO = item =>
-    (item.category || '').toLowerCase().includes('build your own');
+  // Top 6 items for Featured section (sorted by sort_order if available)
+  const featuredItems = useMemo(() =>
+    [...items]
+      .filter(i => i.is_available !== false && i.is_active !== false)
+      .sort((a, b) => {
+        const sa = a.sort_order ?? 9999;
+        const sb = b.sort_order ?? 9999;
+        return sa !== sb ? sa - sb : a.id - b.id;
+      })
+      .slice(0, 8),
+    [items]
+  );
+
+  // Group items by category for "All" view
+  const categoryGroups = useMemo(() => {
+    if (activeCategory !== 'all') return [];
+    const groups = {};
+    filtered.forEach(item => {
+      const cat = item.category || 'Other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    return Object.entries(groups).sort(([a], [b]) => {
+      const ia = CAT_ORDER.indexOf(a);
+      const ib = CAT_ORDER.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+  }, [filtered, activeCategory]);
+
+  const isBYO = item => (item.category || '').toLowerCase().includes('build your own');
 
   const handleCardClick = item => {
     if (isBYO(item)) { setByoItem(item); return; }
@@ -185,6 +205,77 @@ const Menu = () => {
     setBowlBase(''); setBowlProtein(''); setBowlTopping(''); setBowlSauce('');
   };
 
+  // ── Item row (UberEats-style horizontal) ───────────────────────
+  const renderItemRow = (item, idx) => {
+    const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
+    const name   = item.name || item.title || 'Menu Item';
+    const price  = parseFloat(item.price || 0);
+    const isFav  = favoriteIds.has(item.id);
+
+    return (
+      <div
+        key={item.id}
+        className="menu-item-row"
+        onClick={() => handleCardClick(item)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && handleCardClick(item)}
+      >
+        {/* Left — text */}
+        <div className="menu-item-row-content">
+          <div className="menu-item-row-badges">
+            <span className="menu-item-halal-pill">Halal</span>
+            {item.is_spicy && <span className="menu-item-spicy-pill">Spicy</span>}
+          </div>
+          <h3 className="menu-item-row-name">{name}</h3>
+          {item.description && (
+            <p className="menu-item-row-desc">{item.description}</p>
+          )}
+          <div className="menu-item-row-footer">
+            <span className="menu-item-row-price">${price.toFixed(2)}</span>
+            <span className="menu-item-row-rating">
+              <Star size={11} fill="#F97316" color="#F97316" />
+              4.8
+            </span>
+          </div>
+        </div>
+
+        {/* Right — image + buttons */}
+        <div className="menu-item-row-right">
+          <div className="menu-item-row-img-wrap">
+            <img
+              src={toWebp(imgSrc)}
+              alt={name}
+              className="menu-item-row-img"
+              loading="lazy"
+              decoding="async"
+              onError={e => {
+                e.target.onerror = () => { e.target.src = fallbackImg(item.id, idx + 7); };
+                e.target.src = imgSrc;
+              }}
+            />
+            {isLoggedIn && (
+              <button
+                className={`menu-item-fav-btn${isFav ? ' active' : ''}`}
+                onClick={e => toggleFavorite(e, item.id)}
+                aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
+              >
+                <Heart size={11} fill={isFav ? 'currentColor' : 'none'} />
+              </button>
+            )}
+            <button
+              className="menu-item-add-btn"
+              onClick={e => { e.stopPropagation(); navigate(`/menu/${item.id}`); }}
+              aria-label={`Add ${name}`}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="menu-page">
       <SEO
@@ -194,23 +285,40 @@ const Menu = () => {
         schema={items.length > 0 ? menuSchema : null}
       />
 
-      {/* ══════════ HEADER BANNER ══════════ */}
+      {/* ── Header banner ──────────────────────────────────── */}
       <div className="menu-header">
         <div className="menu-header-overlay" />
         <div className="menu-header-content">
-          <img
-            src="/images/hero/halal-certified.png"
-            alt="Halal Certified"
-            className="menu-header-halal"
-          />
+          <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="menu-header-halal" />
           <h1 className="menu-header-title">Menu</h1>
-          <p className="menu-header-sub">
-            Every dish crafted with tradition, precision &amp; passion
-          </p>
+          <p className="menu-header-sub">Every dish crafted with tradition, precision &amp; passion</p>
         </div>
       </div>
 
-      {/* ══════════ SEARCH BAR ══════════ */}
+      {/* ── Restaurant info strip ──────────────────────────── */}
+      <div className="menu-info-strip">
+        <div className="menu-info-strip-inner">
+          <div className="menu-info-item">
+            <Star size={13} fill="#F97316" color="#F97316" />
+            <span><strong>4.8</strong> (170+ ratings)</span>
+          </div>
+          <span className="menu-info-dot" />
+          <div className="menu-info-item">
+            <span>100% Zabiha Halal</span>
+          </div>
+          <span className="menu-info-dot" />
+          <div className="menu-info-item">
+            <span>Bronx, NY</span>
+          </div>
+          <span className="menu-info-dot" />
+          <div className="menu-info-item menu-info-open">
+            <span className="menu-open-dot" />
+            <span>Open Now</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Search bar ────────────────────────────────────── */}
       <div className="menu-search-bar">
         <div className="menu-search-inner">
           <Search size={16} className="search-icon" />
@@ -227,7 +335,7 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* ══════════ HORIZONTAL CATEGORY TABS ══════════ */}
+      {/* ── Category tabs ─────────────────────────────────── */}
       <div className="menu-cats-wrap">
         <div className="menu-cats-track" ref={tabsRef}>
           {CATEGORIES.map(cat => (
@@ -243,7 +351,51 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* ══════════ MAIN GRID ══════════ */}
+      {/* ── Featured / Popular section (All + no search) ──── */}
+      {activeCategory === 'all' && !search && featuredItems.length > 0 && (
+        <div className="menu-featured-wrap">
+          <div className="menu-featured-hd">
+            <span className="menu-featured-eyebrow">Popular Picks</span>
+            <h2 className="menu-featured-title">Most Liked Items</h2>
+          </div>
+          <div className="menu-featured-scroll">
+            {featuredItems.map((item, idx) => {
+              const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
+              const name   = item.name || item.title || 'Menu Item';
+              const price  = parseFloat(item.price || 0);
+              return (
+                <div key={item.id} className="menu-feat-card" onClick={() => handleCardClick(item)}>
+                  <div className="menu-feat-img-wrap">
+                    <img
+                      src={toWebp(imgSrc)}
+                      alt={name}
+                      className="menu-feat-img"
+                      loading="lazy"
+                      onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
+                    />
+                    {idx < 3 && (
+                      <span className="menu-feat-rank">#{idx + 1} Most Liked</span>
+                    )}
+                    <div className="menu-feat-img-overlay" />
+                  </div>
+                  <div className="menu-feat-body">
+                    <div className="menu-feat-badges-row">
+                      <span className="menu-feat-halal-pill">Halal</span>
+                      <span className="menu-feat-rating">
+                        <Star size={10} fill="#F97316" color="#F97316" /> 4.8
+                      </span>
+                    </div>
+                    <h3 className="menu-feat-name">{name}</h3>
+                    <span className="menu-feat-price">${price.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Main content ──────────────────────────────────── */}
       <div className="menu-main-wrap">
 
         {/* Section heading */}
@@ -259,7 +411,7 @@ const Menu = () => {
           <span className="menu-grid-count">{filtered.length} items</span>
         </div>
 
-        {/* ══════════ BUILD YOUR OWN BUILDER ══════════ */}
+        {/* ── BYO Builder ───────────────────────────────── */}
         {activeCategory === 'byo' && (
           <div className="byo-builder-wrap">
             <div className="bowls-container">
@@ -267,7 +419,6 @@ const Menu = () => {
                 <p className="section-eyebrow text-gold">PERSONALIZED BOWLS</p>
                 <h2 className="heading-2">Build Your Own Bowl</h2>
                 <p className="section-desc">Create your perfect bowl step by step. Fresh, authentic and made entirely how you like it.</p>
-
                 <div className="bowl-builder">
                   <div className="builder-step">
                     <p className="step-title">1. CHOOSE YOUR BASE</p>
@@ -327,8 +478,6 @@ const Menu = () => {
                   {bowlReady && <p className="bowl-hint">Perfect! Your bowl is ready to be ordered.</p>}
                 </div>
               </div>
-
-              {/* Live preview panel */}
               <div className="bowl-preview-panel">
                 <div className="bowl-plate-wrap">
                   <div className="bowl-plate" style={{ backgroundColor: selectedBase ? '#fef9ef' : '#f5f0e8' }}>
@@ -363,11 +512,30 @@ const Menu = () => {
           </div>
         )}
 
+        {/* ── Items ─────────────────────────────────────── */}
         {loading ? (
           <div className="menu-loading">
             <div className="menu-spinner" />
             <p>Loading menu...</p>
           </div>
+        ) : activeCategory === 'all' && !search ? (
+          categoryGroups.length === 0 ? (
+            <div className="menu-empty">
+              <p>No items available.</p>
+            </div>
+          ) : (
+            categoryGroups.map(([category, catItems]) => (
+              <div key={category} className="menu-cat-section">
+                <div className="menu-cat-section-hd">
+                  <h3 className="menu-cat-section-title">{category}</h3>
+                  <span className="menu-cat-section-count">{catItems.length} items</span>
+                </div>
+                <div className="menu-list">
+                  {catItems.map((item, idx) => renderItemRow(item, idx))}
+                </div>
+              </div>
+            ))
+          )
         ) : filtered.length === 0 && activeCategory !== 'byo' ? (
           <div className="menu-empty">
             <p>No items found{search ? ` for "${search}"` : ' in this category'}.</p>
@@ -375,84 +543,14 @@ const Menu = () => {
               Show all items
             </button>
           </div>
-        ) : (
-          <div className="menu-grid">
-            {filtered.map((item, idx) => {
-              const imgSrc  = item.image || item.image_url || fallbackImg(item.id, idx);
-              const name    = item.name || item.title || 'Menu Item';
-              const price   = parseFloat(item.price || 0);
-              const isFav   = favoriteIds.has(item.id);
-              const catLabel = (item.category || '').toLowerCase().includes('berger')
-                ? 'Burgers'
-                : (item.category || '').toLowerCase().includes('breakfast')
-                ? 'Breakfast'
-                : item.category;
-
-              return (
-                <div
-                  key={item.id}
-                  className="menu-card"
-                  onClick={() => handleCardClick(item)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => e.key === 'Enter' && handleCardClick(item)}
-                >
-                  {/* Image */}
-                  <div className="menu-card-img-wrap">
-                    <img
-                      src={toWebp(imgSrc)}
-                      alt={name}
-                      className="menu-card-img"
-                      loading="lazy"
-                      decoding="async"
-                      onError={e => {
-                        e.target.onerror = () => { e.target.src = fallbackImg(item.id, idx + 7); };
-                        e.target.src = imgSrc;
-                      }}
-                    />
-
-                    {/* Favourite */}
-                    {isLoggedIn && (
-                      <button
-                        className={`menu-fav-btn${isFav ? ' active' : ''}`}
-                        onClick={e => toggleFavorite(e, item.id)}
-                        aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
-                      >
-                        <Heart size={14} fill={isFav ? 'currentColor' : 'none'} />
-                      </button>
-                    )}
-
-                    {/* "See more" arrow overlay */}
-                    <div className="menu-card-hover-overlay">
-                      <span className="menu-card-view">View Item <ChevronRight size={14} /></span>
-                    </div>
-                  </div>
-
-                  {/* Body */}
-                  <div className="menu-card-body">
-                    <h3 className="menu-card-name">{name}</h3>
-                    {item.description && (
-                      <p className="menu-card-desc">{item.description}</p>
-                    )}
-                    <div className="menu-card-footer">
-                      <span className="menu-card-price">${price.toFixed(2)}</span>
-                      <button
-                        className="menu-card-add"
-                        onClick={e => { e.stopPropagation(); navigate(`/menu/${item.id}`); }}
-                        aria-label={`Add ${name} to cart`}
-                      >
-                        <span>+</span> Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        ) : activeCategory !== 'byo' ? (
+          <div className="menu-list">
+            {filtered.map((item, idx) => renderItemRow(item, idx))}
           </div>
-        )}
+        ) : null}
       </div>
 
-      {/* ══════════ BYO MODAL ══════════ */}
+      {/* ── BYO modal ─────────────────────────────────────── */}
       {byoItem && (
         <BuildYourOwn
           item={byoItem}
@@ -464,7 +562,7 @@ const Menu = () => {
         />
       )}
 
-      {/* ══════════ STICKY CART STRIP ══════════ */}
+      {/* ── Sticky cart strip ─────────────────────────────── */}
       {cartItems.length > 0 && (
         <div className="menu-cart-strip">
           <div className="menu-cart-strip-left">
