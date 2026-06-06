@@ -154,10 +154,11 @@ const About = () => (
 
     {/* ── Hero ── */}
     <section className="about-hero">
+      <div className="about-hero-ribbon" />
       <div className="about-hero-content">
         <img src="/images/logos/halal.png" alt="Halal Certified" className="about-hero-halal" />
         <h1 className="about-hero-title">
-          Crafting the Gold Standard<br />of <span style={{ color: '#FF3B30' }}>Halal Dining</span>
+          Crafting the Gold Standard<br />of <span style={{ color: '#E5B64E' }}>Halal Dining</span>
         </h1>
         <p className="about-hero-sub">
           Where traditional heritage meets contemporary culinary artistry. We redefine

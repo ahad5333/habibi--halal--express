@@ -8,14 +8,20 @@
   min-height: 620px;
   background: url('/images/title/about-hero.jpg') center/cover no-repeat;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 }
 
-.about-hero-overlay {
+.about-hero-ribbon {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.78) 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.65) 35%,
+    rgba(0, 0, 0, 0.15) 65%,
+    transparent 100%
+  );
 }
 
 .about-hero-content {
@@ -26,14 +32,9 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 3rem 2.5rem;
-  max-width: 760px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 2rem 1rem;
+  padding: 2.5rem 2rem 3rem;
+  max-width: 820px;
+  width: 100%;
 }
 
 .about-hero-halal {
