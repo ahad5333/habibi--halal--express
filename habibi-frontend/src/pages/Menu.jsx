@@ -286,8 +286,15 @@ const Menu = () => {
               loading="lazy"
               decoding="async"
               onError={e => {
-                e.target.onerror = () => { e.target.src = fallbackImg(item.id, idx + 7); };
-                e.target.src = imgSrc;
+                const t = e.target;
+                const jpg = fallbackImg(item.id, idx);
+                if (t.src.includes('.webp') || t.src !== jpg) {
+                  t.onerror = () => { t.onerror = null; t.style.display = 'none'; };
+                  t.src = jpg;
+                } else {
+                  t.onerror = null;
+                  t.style.display = 'none';
+                }
               }}
             />
             {isLoggedIn && (

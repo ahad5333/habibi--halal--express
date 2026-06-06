@@ -493,9 +493,11 @@
   position: relative;
   width: 112px;
   height: 112px;
+  min-width: 112px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(135deg, #1e1e1e 0%, #2a2218 100%);
+  background: linear-gradient(135deg, #2c2416 0%, #1e1a10 100%);
+  border: 1px solid rgba(249,115,22,0.18);
   flex-shrink: 0;
 }
 
@@ -503,13 +505,13 @@
 .menu-item-row-img-wrap::before {
   content: '🍽️';
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  opacity: 0.25;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  opacity: 0.55;
   z-index: 0;
+  pointer-events: none;
 }
 
 .menu-item-row-img {
@@ -1114,7 +1116,7 @@
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
   .menu-card-img-wrap       { height: 150px; }
   .menu-search-bar          { padding: 0.6rem 1rem; }
-  .menu-item-row-img-wrap   { width: 96px; height: 96px; }
+  .menu-item-row-img-wrap   { width: 96px; height: 96px; min-width: 96px; }
   .mf-card                  { width: 148px; }
   .mf-img-wrap              { width: 104px; height: 104px; top: -46px; }
   .mf-rank                  { top: 50px; }
@@ -1130,7 +1132,7 @@
   .menu-header-title      { font-size: 2.4rem; letter-spacing: 0.08em; }
   .menu-header-sub        { font-size: 0.72rem; padding: 0 1rem; }
   .menu-grid-title        { font-size: 1.5rem; }
-  .menu-item-row-img-wrap { width: 86px; height: 86px; }
+  .menu-item-row-img-wrap { width: 86px; height: 86px; min-width: 86px; }
   .menu-item-row-name     { font-size: 0.88rem; }
   .menu-item-row-desc     { -webkit-line-clamp: 1; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
@@ -1163,7 +1165,7 @@
   .menu-header-sub        { font-size: 0.68rem; }
   .menu-header-content    { gap: 0.4rem; }
   .menu-item-row          { padding: 0.65rem; margin: 0 -0.65rem; gap: 0.75rem; }
-  .menu-item-row-img-wrap { width: 80px; height: 80px; }
+  .menu-item-row-img-wrap { width: 80px; height: 80px; min-width: 80px; }
   .menu-item-add-btn      { width: 26px; height: 26px; font-size: 1.1rem; }
 
   /* Featured cards — very small phone */
