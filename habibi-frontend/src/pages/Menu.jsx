@@ -423,18 +423,21 @@ const Menu = () => {
                       loading="lazy"
                       onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
                     />
-                    {idx < 3 && (
-                      <span className="menu-feat-rank">#{idx + 1} Most Liked</span>
-                    )}
                     <div className="menu-feat-img-overlay" />
+                    {idx < 3 && (
+                      <span className="menu-feat-rank">
+                        🔥 #{idx + 1} Most Liked
+                      </span>
+                    )}
+                    <button
+                      className="menu-feat-add-btn"
+                      onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+                      aria-label={`Add ${name}`}
+                    >
+                      +
+                    </button>
                   </div>
                   <div className="menu-feat-body">
-                    <div className="menu-feat-badges-row">
-                      <span className="menu-feat-halal-pill">Halal</span>
-                      <span className="menu-feat-rating">
-                        <Star size={10} fill="#F97316" color="#F97316" /> 4.8
-                      </span>
-                    </div>
                     <h3 className="menu-feat-name">{name}</h3>
                     <span className="menu-feat-price">${price.toFixed(2)}</span>
                   </div>

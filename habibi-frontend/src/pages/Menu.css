@@ -188,27 +188,26 @@
 
 .menu-featured-scroll::-webkit-scrollbar { display: none; }
 
-/* Featured card */
+/* Featured card — UberEats style */
 .menu-feat-card {
   flex-shrink: 0;
-  width: 175px;
-  background: #111111;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
+  width: 190px;
+  background: #141414;
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+  transition: transform 0.22s, box-shadow 0.22s;
 }
 
 .menu-feat-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(249,115,22,0.45);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  transform: translateY(-5px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.65);
 }
 
 .menu-feat-img-wrap {
   position: relative;
-  height: 148px;
+  height: 168px;
   overflow: hidden;
 }
 
@@ -217,67 +216,73 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.35s;
+  transition: transform 0.38s;
 }
 
-.menu-feat-card:hover .menu-feat-img { transform: scale(1.06); }
+.menu-feat-card:hover .menu-feat-img { transform: scale(1.07); }
 
 .menu-feat-img-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.6) 100%);
   pointer-events: none;
 }
 
+/* Rank badge — top left, like UberEats */
 .menu-feat-rank {
   position: absolute;
-  bottom: 0.55rem;
-  left: 0.55rem;
-  background: rgba(249,115,22,0.9);
+  top: 0.6rem;
+  left: 0.6rem;
+  background: rgba(249,115,22,0.95);
+  backdrop-filter: blur(6px);
   color: #fff;
-  font-size: 0.55rem;
+  font-size: 0.58rem;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.2rem 0.55rem;
-  border-radius: 4px;
-}
-
-.menu-feat-body {
-  padding: 0.75rem 0.875rem 0.875rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.menu-feat-badges-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.menu-feat-halal-pill {
-  font-size: 0.52rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #4ade80;
-  background: rgba(34,197,94,0.12);
-  border: 1px solid rgba(34,197,94,0.28);
-  padding: 0.13rem 0.45rem;
-  border-radius: 4px;
-}
-
-.menu-feat-rating {
+  letter-spacing: 0.05em;
+  padding: 0.22rem 0.6rem;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.5);
+}
+
+/* "+" add button overlaid bottom-right of image */
+.menu-feat-add-btn {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #F97316;
+  border: 2px solid rgba(255,255,255,0.25);
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(249,115,22,0.55);
+  transition: background 0.15s, transform 0.15s;
+  padding: 0;
+}
+
+.menu-feat-add-btn:hover { background: #ea6c00; transform: scale(1.12); }
+
+.menu-feat-body {
+  padding: 0.75rem 0.9rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
 }
 
 .menu-feat-name {
-  font-size: 0.84rem;
+  font-size: 0.87rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
@@ -289,9 +294,9 @@
 }
 
 .menu-feat-price {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: #F97316;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
 }
 
 /* ══════════════════════════════════════════════
@@ -1038,8 +1043,8 @@
   .menu-search-bar          { padding: 0.6rem 1rem; }
   .menu-featured-wrap       { padding: 1.5rem 1rem 0.5rem; }
   .menu-item-row-img-wrap   { width: 96px; height: 96px; }
-  .menu-feat-card           { width: 155px; }
-  .menu-feat-img-wrap       { height: 128px; }
+  .menu-feat-card           { width: 165px; }
+  .menu-feat-img-wrap       { height: 142px; }
 }
 
 @media (max-width: 540px) {
@@ -1051,8 +1056,8 @@
   .menu-item-row-img-wrap { width: 86px; height: 86px; }
   .menu-item-row-name     { font-size: 0.88rem; }
   .menu-item-row-desc     { -webkit-line-clamp: 1; }
-  .menu-feat-card         { width: 140px; }
-  .menu-feat-img-wrap     { height: 112px; }
+  .menu-feat-card         { width: 148px; }
+  .menu-feat-img-wrap     { height: 120px; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
 }
 
