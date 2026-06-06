@@ -26,8 +26,14 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 3rem 1.5rem;
+  padding: 3rem 2.5rem;
   max-width: 760px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 2rem 1rem;
 }
 
 .about-hero-halal {
