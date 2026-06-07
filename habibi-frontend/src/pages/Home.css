@@ -1920,9 +1920,9 @@
 }
 
 .beyond-img {
-  width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  width: 117%;
+  border-radius: 0px;
+  box-shadow: 0 10px 30px #0000000d;
 }
 
 .beyond-quote-box {
@@ -2647,7 +2647,7 @@
 /* ── Beyond the Plate ── */
 @media (max-width: 768px) {
   .beyond-image-wrapper { max-width: 100%; }
-  .beyond-quote-box { padding: 1.25rem; }
+  .beyond-quote-box { padding: 2.25rem; }
   .quote-text { font-size: 0.95rem; }
   .feature-item { gap: 0.75rem; }
   .feature-title { font-size: 1rem; }
