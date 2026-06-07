@@ -5,7 +5,7 @@
 /* ── Header ─────────────────────────────────────────────────── */
 .loc-header {
   position: relative;
-  height: 320px;
+  height: 440px;
   background: url('/images/title/locations-hero.jpg') center/cover no-repeat;
   display: flex;
   align-items: center;
