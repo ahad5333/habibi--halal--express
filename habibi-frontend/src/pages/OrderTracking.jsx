@@ -454,27 +454,38 @@ export default function OrderTracking() {
             </div>
           </div>
 
-          {/* ── Timeline ── */}
+          {/* ── Pill tracker (Domino's-style) ── */}
           <div className="ot-timeline-bar">
             <div className="container">
-              <div className="ot-timeline">
-                {STEPS.map((step, i) => {
+              <div className="ot-pill-labels">
+                {STEPS.map(step => (
+                  <div
+                    key={step.id}
+                    className={`ot-pill-label ${currentStep > step.id ? 'lbl-done' : ''} ${currentStep === step.id ? 'lbl-active' : ''}`}
+                  >
+                    {step.label}
+                  </div>
+                ))}
+              </div>
+              <div className="ot-pill-bar">
+                {STEPS.map(step => {
                   const done   = currentStep > step.id;
                   const active = currentStep === step.id;
                   return (
-                    <React.Fragment key={step.id}>
-                      <div className={`ot-step ${done ? 'done' : ''} ${active ? 'active' : ''}`}>
-                        <div className="ot-step-circle">
-                          {done ? <Check size={14} /> : <span className="ot-step-emoji">{step.icon}</span>}
-                        </div>
-                        <span className="ot-step-label">{step.label}</span>
-                      </div>
-                      {i < STEPS.length - 1 && (
-                        <div className={`ot-connector ${currentStep > step.id ? 'done' : ''}`} />
-                      )}
-                    </React.Fragment>
+                    <div
+                      key={step.id}
+                      className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
+                    >
+                      {done
+                        ? <Check size={20} strokeWidth={3} className="ot-pill-check" />
+                        : <span className="ot-pill-num">{step.id}</span>}
+                    </div>
                   );
                 })}
+              </div>
+              <div className="ot-pill-status-row">
+                <span className="ot-pill-status-main">{status.title}</span>
+                <span className="ot-pill-status-sub">{status.sub}</span>
               </div>
             </div>
           </div>
