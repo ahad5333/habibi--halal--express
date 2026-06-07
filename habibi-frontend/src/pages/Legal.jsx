@@ -73,6 +73,9 @@ export default function Legal() {
 
           <div className="lh-sidebar-footer">
             <p className="lh-footer-label">Questions?</p>
+            <a href="mailto:habibi@habibihe.com" className="lh-footer-link">
+              <Mail size={13} /> habibi@habibihe.com
+            </a>
             <a href="mailto:admin@habibihe.com" className="lh-footer-link">
               <Mail size={13} /> admin@habibihe.com
             </a>
@@ -135,10 +138,14 @@ export default function Legal() {
               <p className="lh-contact-label">Contact Information</p>
               <p className="lh-contact-body">
                 <strong>Habibi Halal Express, Inc.</strong><br />
-                2974 Jerome Ave, Bronx, NY 10468<br />
+                2974 Jerome Ave, Bronx, NY 10468<br /><br />
                 Customer Service: <a href="mailto:habibi@habibihe.com">habibi@habibihe.com</a><br />
+                Urgent Matters: <a href="mailto:urgent@habibihe.com">urgent@habibihe.com</a><br />
                 Legal &amp; Compliance: <a href="mailto:admin@habibihe.com">admin@habibihe.com</a><br />
-                Phone: <a href="tel:7184000443">(718) 400-0443</a>
+                Wholesale Accounts: <a href="mailto:merchant@habibihe.com">merchant@habibihe.com</a><br />
+                Media Inquiries: <a href="mailto:media@habibihe.com">media@habibihe.com</a><br /><br />
+                Phone: <a href="tel:7184000443">(718) 400-0443</a><br />
+                Fax: (718) 400-0442
               </p>
             </div>
 
