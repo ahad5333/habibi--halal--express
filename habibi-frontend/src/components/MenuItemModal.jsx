@@ -194,8 +194,30 @@ export default function MenuItemModal({ itemId, onClose }) {
             )}
           </div>
 
-          {/* RIGHT — scrollable details + addons */}
+          {/* RIGHT — fixed header + scrollable addons */}
           <div className="mim-col-right-wrap">
+
+            {/* ── Item header — fixed, does not scroll ── */}
+            {!loading && item && (
+              <div className="mim-item-hd">
+                <div className="mim-item-pills">
+                  <span className="mim-halal-pill">Halal</span>
+                  {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
+                </div>
+                <div className="mim-name-row">
+                  <h2 className="mim-name">{cleanName}</h2>
+                  <span className="mim-price">${basePrice.toFixed(2)}</span>
+                </div>
+                {item.description && <p className="mim-desc">{item.description}</p>}
+                <div className="mim-stars-row">
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} size={12} fill="#F97316" stroke="#F97316" />
+                  ))}
+                  <span className="mim-rating-label">4.8 · 170+ ratings</span>
+                </div>
+              </div>
+            )}
+
           <div className="mim-col-right">
             {loading ? (
               <div className="mim-skel-wrap">
@@ -206,25 +228,6 @@ export default function MenuItemModal({ itemId, onClose }) {
               </div>
             ) : (
               <>
-                {/* ── Item header ── */}
-                <div className="mim-item-hd">
-                  <div className="mim-item-pills">
-                    <span className="mim-halal-pill">Halal</span>
-                    {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
-                  </div>
-                  <div className="mim-name-row">
-                    <h2 className="mim-name">{cleanName}</h2>
-                    <span className="mim-price">${basePrice.toFixed(2)}</span>
-                  </div>
-                  {item.description && <p className="mim-desc">{item.description}</p>}
-                  <div className="mim-stars-row">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} size={12} fill="#F97316" stroke="#F97316" />
-                    ))}
-                    <span className="mim-rating-label">4.8 · 170+ ratings</span>
-                  </div>
-                </div>
-
                 {/* ── Choice groups (radio — required) ── */}
                 {(modifiers.choice_groups || []).map(cg => (
                   <div key={cg.id} className="mim-section">
