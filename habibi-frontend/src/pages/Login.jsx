@@ -11,6 +11,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeSms, setAgreeSms] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -39,6 +41,10 @@ const Login = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    if (!agreeTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy to create an account.');
+      return;
+    }
     setLoading(true);
     try {
       await register(name, email, password);
@@ -81,7 +87,7 @@ const Login = () => {
             <button className={`tab-btn ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); }}>
               LOGIN
             </button>
-            <button className={`tab-btn ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); }}>
+            <button className={`tab-btn ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setAgreeTerms(false); setAgreeSms(false); }}>
               SIGN UP
             </button>
           </div>
@@ -190,7 +196,35 @@ const Login = () => {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary login-btn mt-8" disabled={loading}>
+              {/* Consent checkboxes */}
+              <div className="login-consent-checks">
+                <label className="login-consent-row">
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={e => setAgreeTerms(e.target.checked)}
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <Link to="/terms" className="login-terms-link" target="_blank">Terms of Service</Link>,{' '}
+                    <Link to="/privacy-policy" className="login-terms-link" target="_blank">Privacy Policy</Link>, and{' '}
+                    <Link to="/accessibility" className="login-terms-link" target="_blank">Accessibility Statement</Link>. <span className="login-req">*</span>
+                  </span>
+                </label>
+                <label className="login-consent-row">
+                  <input
+                    type="checkbox"
+                    checked={agreeSms}
+                    onChange={e => setAgreeSms(e.target.checked)}
+                  />
+                  <span>
+                    I consent to receive recurring SMS order updates from Habibi Halal Express. Reply <strong>STOP</strong> to opt out.{' '}
+                    <Link to="/sms-terms" className="login-terms-link" target="_blank">SMS Terms</Link>.
+                  </span>
+                </label>
+              </div>
+
+              <button type="submit" className="btn btn-primary login-btn" disabled={loading || !agreeTerms}>
                 {loading ? 'Creating Account...' : 'Create Account'}
               </button>
 
