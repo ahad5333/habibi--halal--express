@@ -2358,7 +2358,7 @@
 
   /* ── Hero section ── */
   .hero-top-dark {
-    min-height: auto;
+    min-height: 70vh;
     padding: 1.5rem 1rem 2.5rem;
     background-image: url('/images/hero/slate_bg.webp');
   }
@@ -2559,7 +2559,7 @@
 /* ── Hero section — comprehensive mobile fix ─────────────────── */
 @media (max-width: 768px) {
   .hero-top-dark {
-    min-height: auto;
+    min-height: 60vh;
     padding: 4.5rem 0.875rem 2rem;
     align-items: center;
     justify-content: center;
