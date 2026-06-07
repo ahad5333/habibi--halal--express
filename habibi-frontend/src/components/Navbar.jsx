@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -194,17 +194,59 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef(null);
 
   useEffect(() => {
     if (!isLoggedIn) { setUnreadCount(0); return; }
-    const fetch = () =>
+    const load = () =>
       notificationsAPI.getAll()
-        .then(ns => setUnreadCount(Array.isArray(ns) ? ns.filter(n => !n.read).length : 0))
+        .then(ns => { if (Array.isArray(ns)) setUnreadCount(ns.filter(n => !n.read).length); })
         .catch(() => {});
-    fetch();
-    const interval = setInterval(fetch, 30000);
+    load();
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!bellOpen) return;
+    const handler = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [bellOpen]);
+
+  const openBell = async () => {
+    const next = !bellOpen;
+    setBellOpen(next);
+    if (next) {
+      try {
+        const ns = await notificationsAPI.getAll();
+        if (Array.isArray(ns)) {
+          setNotifications(ns.slice(0, 8));
+          setUnreadCount(ns.filter(n => !n.read).length);
+        }
+      } catch (_) {}
+    }
+  };
+
+  const markAllRead = async () => {
+    await notificationsAPI.markAllRead().catch(() => {});
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+  };
+
+  const formatTime = (ts) => {
+    if (!ts) return '';
+    const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
 
   const handleLogout = () => {
     logout();
@@ -229,12 +271,54 @@ const Navbar = () => {
 
           <div className="navbar-top-right">
             {isLoggedIn && (
-              <Link to="/account?tab=notifications" className="cart-btn-wrap" title="Notifications" aria-label="Notifications">
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="cart-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              <div className="notif-wrap" ref={bellRef}>
+                <button className="cart-btn-wrap notif-bell-btn" onClick={openBell} aria-label="Notifications">
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="cart-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
+                </button>
+
+                {bellOpen && (
+                  <div className="notif-dropdown">
+                    <div className="notif-dropdown-hd">
+                      <span className="notif-dropdown-title">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button className="notif-mark-all" onClick={markAllRead}>Mark all read</button>
+                      )}
+                    </div>
+
+                    {notifications.length === 0 ? (
+                      <p className="notif-empty">No notifications yet</p>
+                    ) : (
+                      <div className="notif-list">
+                        {notifications.map(n => (
+                          <div
+                            key={n.id}
+                            className={`notif-item${n.read ? '' : ' unread'}`}
+                            onClick={() => {
+                              notificationsAPI.markRead(n.id).catch(() => {});
+                              setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+                              setUnreadCount(c => Math.max(0, c - (n.read ? 0 : 1)));
+                            }}
+                          >
+                            {!n.read && <span className="notif-dot" />}
+                            <div className="notif-item-body">
+                              <p className="notif-item-title">{n.title}</p>
+                              <p className="notif-item-text">{n.body}</p>
+                              <p className="notif-item-time">{formatTime(n.created_at)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Link to="/account?tab=notifications" className="notif-footer" onClick={() => setBellOpen(false)}>
+                      View all notifications
+                    </Link>
+                  </div>
                 )}
-              </Link>
+              </div>
             )}
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
               <ShoppingBag size={20} />
