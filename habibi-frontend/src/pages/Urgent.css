@@ -31,8 +31,8 @@
 /* ── Hero ── */
 .urg-hero {
   position: relative;
-  min-height: 440px;
-  background: url('/images/title/urgent-hero.jpg') center top/cover no-repeat;
+  min-height: 500px;
+  background: url('/images/title/urgent-hero.jpg') center 20%/cover no-repeat;
   display: flex;
   align-items: center;
 }
