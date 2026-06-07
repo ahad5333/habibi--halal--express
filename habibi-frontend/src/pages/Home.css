@@ -2581,7 +2581,7 @@
     margin: 0 auto;
     padding: 0.75rem 0.875rem;
     border-radius: 12px;
-    text-align: left;
+    text-align: center;
   }
   .hero-title-exact {
     font-size: 1.15rem;
@@ -2609,7 +2609,7 @@
   }
   .hero-cta-group {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.4rem;
     margin-bottom: 0;
   }
