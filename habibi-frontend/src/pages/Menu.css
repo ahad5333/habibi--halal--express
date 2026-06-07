@@ -144,6 +144,7 @@
 .menu-content {
   flex: 1;
   min-width: 0;
+  overflow-x: hidden;
 }
 
 /* ══════════════════════════════════════════════
@@ -398,6 +399,7 @@
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.15s;
+  overflow: hidden;
 }
 
 .menu-item-row:hover { background: rgba(255,255,255,0.03); }
@@ -1130,7 +1132,7 @@
   .menu-header-halal        { width: 50px; height: 50px; }
   .menu-header-title        { font-size: 3rem; letter-spacing: 0.1em; }
   .menu-header-sub          { font-size: 0.78rem; }
-  .menu-main-wrap           { padding: 1.25rem 1.25rem 5rem; }
+  .menu-main-wrap           { padding: 1.25rem 1.25rem 5rem; overflow-x: hidden; }
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
   .menu-card-img-wrap       { height: 150px; }
   .menu-search-bar          { padding: 0.6rem 1rem; }
@@ -1203,4 +1205,7 @@
   .menu-header-halal      { width: 34px; height: 34px; }
   .menu-header-title      { font-size: 1.75rem; }
   .menu-header-sub        { font-size: 0.62rem; }
+  .menu-item-row          { gap: 0.5rem; padding: 0.5rem 0.25rem; }
+  .menu-item-row-img-wrap { width: 60px; height: 60px; min-width: 60px; }
+  .menu-item-add-btn      { width: 22px; height: 22px; font-size: 1rem; }
 }
