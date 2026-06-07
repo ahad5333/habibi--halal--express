@@ -19,6 +19,12 @@
   background: none;
 }
 
+.careers-hero > .container {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .careers-hero-content {
   position: relative;
   z-index: 2;
