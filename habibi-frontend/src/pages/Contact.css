@@ -468,6 +468,25 @@
   line-height: 1.6;
 }
 
+@media (max-width: 768px) {
+  .ct-hero {
+    height: 260px;
+    min-height: 0;
+    overflow: visible;
+    margin-bottom: 200px;
+  }
+  .ct-hero-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .ct-collab-grid {
@@ -518,10 +537,6 @@
 
   .ct-hero-title {
     font-size: 2rem;
-  }
-
-  .ct-hero-content {
-    padding: 3rem 0;
   }
 
   .ct-collab-grid {

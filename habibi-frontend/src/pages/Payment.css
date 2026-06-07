@@ -490,6 +490,25 @@
   .pay-card { padding: 1.25rem; }
 }
 
+@media (max-width: 768px) {
+  .pay-hero {
+    height: 260px;
+    min-height: 0;
+    overflow: visible;
+    margin-bottom: 200px;
+  }
+  .pay-hero-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+}
+
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 480px) {
   .pay-hero-title { font-size: 1.6rem; }
