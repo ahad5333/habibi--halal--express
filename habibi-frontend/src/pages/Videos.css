@@ -19,8 +19,14 @@
 .vid-hero-content {
   position: relative;
   z-index: 2;
-  padding: 4rem 0;
-  max-width: 600px;
+  padding: 1.75rem 2.25rem;
+  max-width: 560px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(249,115,22,0.07);
+  margin: 2.5rem 0;
 }
 
 .vid-eyebrow {
@@ -37,7 +43,6 @@
   font-family: var(--font-serif);
   font-size: 3rem;
   font-weight: 700;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.85), 0 1px 4px rgba(0,0,0,0.9);
   color: #fff;
   line-height: 1.15;
   margin-bottom: 0.875rem;
@@ -47,7 +52,6 @@
   color: rgba(255,255,255,0.9);
   font-size: 0.9rem;
   line-height: 1.65;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
   margin-bottom: 1.25rem;
 }
 
