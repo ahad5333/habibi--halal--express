@@ -5,7 +5,7 @@
 .pay-hero {
   position: relative;
   min-height: 300px;
-  background: url('/images/title/main-title.jpg') center/cover no-repeat;
+  background: url('/images/title/payment-hero.jpg') center/cover no-repeat;
   display: flex;
   align-items: center;
 }
@@ -13,14 +13,20 @@
 .pay-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,0.92) 45%, rgba(0,0,0,0.6) 100%);
+  background: none;
 }
 
 .pay-hero-content {
   position: relative;
   z-index: 2;
-  padding: 4rem 0;
+  padding: 1.75rem 2.25rem;
   max-width: 600px;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(249,115,22,0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(249,115,22,0.07);
+  margin: 2.5rem 0;
 }
 
 .pay-eyebrow {
