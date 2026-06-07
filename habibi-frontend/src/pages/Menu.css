@@ -1118,8 +1118,8 @@
   }
   .menu-header-content {
     position: absolute;
-    top: 270px;
-    left: 50%;
+    top: 122px;
+    left: 52%;
     transform: translateX(-50%);
     width: calc(100% - 2rem);
     max-width: 100%;

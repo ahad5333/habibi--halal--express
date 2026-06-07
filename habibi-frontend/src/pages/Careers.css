@@ -614,7 +614,7 @@
   .careers-hero > .container { position: static; }
   .careers-hero-content {
     position: absolute;
-    top: 270px;
+    top: 171px;
     left: 50%;
     transform: translateX(-50%);
     width: calc(100% - 2rem);

@@ -543,7 +543,7 @@
   }
   .loc-header-content {
     position: absolute;
-    top: 270px;
+    top: 196px;
     left: 50%;
     transform: translateX(-50%);
     width: calc(100% - 2rem);
