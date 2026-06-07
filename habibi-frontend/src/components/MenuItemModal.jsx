@@ -209,7 +209,6 @@ export default function MenuItemModal({ itemId, onClose }) {
                 {/* ── Item header ── */}
                 <div className="mim-item-hd">
                   <div className="mim-item-pills">
-                    {item.category && <span className="mim-cat-pill">{item.category}</span>}
                     <span className="mim-halal-pill">Halal</span>
                     {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
                   </div>

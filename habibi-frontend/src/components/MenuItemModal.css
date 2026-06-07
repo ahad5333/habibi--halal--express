@@ -209,18 +209,6 @@
   margin-bottom: 0.6rem;
 }
 
-.mim-cat-pill {
-  font-size: 0.55rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #F97316;
-  background: rgba(249,115,22,0.1);
-  border: 1px solid rgba(249,115,22,0.3);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-}
-
 .mim-halal-pill {
   font-size: 0.55rem;
   font-weight: 800;
