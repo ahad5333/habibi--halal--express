@@ -5,7 +5,7 @@
 .vid-hero {
   position: relative;
   min-height: 340px;
-  background: url('/images/title/main-title.jpg') center/cover no-repeat;
+  background: url('/images/title/videos-hero.jpg') center top/cover no-repeat;
   display: flex;
   align-items: center;
 }
