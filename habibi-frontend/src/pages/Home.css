@@ -96,14 +96,7 @@
 
 /* ── Giant logo watermark ── */
 .hero-logo-watermark {
-  position: absolute;
-  right: -4%;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 620px;
-  height: 620px;
-  z-index: 0;
-  pointer-events: none;
+  display: none;
 }
 .hero-logo-watermark img {
   width: 100%;
