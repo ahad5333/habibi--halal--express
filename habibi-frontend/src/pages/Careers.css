@@ -604,11 +604,28 @@
   .form-row { grid-template-columns: 1fr; }
   .careers-modal { padding: 1.75rem 1.25rem; }
   .section-title { font-size: 2rem; }
+  /* Image shows, box drops below */
+  .careers-hero {
+    height: 260px;
+    min-height: 0;
+    overflow: visible;
+    margin-bottom: 200px;
+  }
+  .careers-hero > .container { position: static; }
+  .careers-hero-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+  }
 }
 
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 480px) {
-  .careers-hero-content { margin: 18.5rem 0; }
   .careers-hero-title { font-size: 2rem; }
   .section-title { font-size: 1.75rem; }
   .careers-modal { padding: 1.25rem 1rem; }

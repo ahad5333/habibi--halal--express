@@ -488,9 +488,27 @@
   .urg-submit-btn { width: 100%; min-width: unset; }
 }
 
+@media (max-width: 768px) {
+  .urg-hero {
+    height: 260px;
+    min-height: 0;
+    overflow: visible;
+    margin-bottom: 220px;
+  }
+  .urg-hero-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+}
+
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 480px) {
-  .urg-hero { padding: 3rem 1rem; }
   .urg-hero-title { font-size: 1.75rem; }
   .urg-type-list { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .urg-type-card { padding: 0.875rem 0.75rem; }

@@ -536,8 +536,23 @@
   .lcn-img-wrap { height: 190px; }
   .lcn-city { font-size: 1.3rem; }
 
-  .loc-header { height: 180px; }
-  .loc-header-title { font-size: 2.25rem; }
+  .loc-header {
+    height: 260px;
+    overflow: visible;
+    margin-bottom: 180px;
+  }
+  .loc-header-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    padding: 1.5rem;
+    border-radius: 14px;
+    margin: 0;
+  }
+  .loc-header-title { font-size: 2rem; }
 
   .coverage-rings-wrap { width: 200px; height: 200px; }
   .r2 { width: 150px; height: 150px; }

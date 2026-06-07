@@ -317,6 +317,25 @@
   .vid-grid { grid-template-columns: repeat(2, 1fr); }
   .vid-browse-hdr { flex-direction: column; align-items: flex-start; }
   .vid-hero-title { font-size: 2.25rem; }
+  /* Image shows, box drops below */
+  .vid-hero {
+    min-height: 260px;
+    height: 260px;
+    overflow: visible;
+    margin-bottom: 220px;
+    align-items: flex-start;
+  }
+  .vid-hero-content {
+    position: absolute;
+    top: 270px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+    padding: 1.5rem 1.5rem;
+  }
 }
 
 @media (max-width: 600px) {
