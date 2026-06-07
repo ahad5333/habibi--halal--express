@@ -2555,7 +2555,7 @@
     min-height: 60vh;
     padding: 4.5rem 0.875rem 2rem;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
   }
   .hero-halal-badge {
     width: 42px;
