@@ -197,8 +197,8 @@
 }
 
 .form-input {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 0.8rem 1rem;
   color: #111827;
@@ -211,8 +211,8 @@
 
 .form-input:focus {
   border-color: var(--color-primary);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(30,58,138,0.08);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(229,182,78,0.12);
 }
 
 .form-input::placeholder {
