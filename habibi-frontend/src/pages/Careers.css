@@ -609,6 +609,7 @@
 
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 480px) {
+  .careers-hero-content { margin: 18.5rem 0; }
   .careers-hero-title { font-size: 2rem; }
   .section-title { font-size: 1.75rem; }
   .careers-modal { padding: 1.25rem 1rem; }
