@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LegalModal from '../components/LegalModal';
 import './Login.css';
 
 const Login = () => {
@@ -13,6 +14,7 @@ const Login = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreeSms, setAgreeSms] = useState(false);
+  const [legalModal, setLegalModal] = useState(null);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -206,9 +208,9 @@ const Login = () => {
                   />
                   <span>
                     I agree to the{' '}
-                    <Link to="/terms" className="login-terms-link" target="_blank">Terms of Service</Link>,{' '}
-                    <Link to="/privacy-policy" className="login-terms-link" target="_blank">Privacy Policy</Link>, and{' '}
-                    <Link to="/accessibility" className="login-terms-link" target="_blank">Accessibility Statement</Link>. <span className="login-req">*</span>
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('terms')}>Terms of Service</button>,{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('privacy')}>Privacy Policy</button>, and{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('accessibility')}>Accessibility Statement</button>. <span className="login-req">*</span>
                   </span>
                 </label>
                 <label className="login-consent-row">
@@ -219,7 +221,7 @@ const Login = () => {
                   />
                   <span>
                     I consent to receive recurring SMS order updates from Habibi Halal Express. Reply <strong>STOP</strong> to opt out.{' '}
-                    <Link to="/sms-terms" className="login-terms-link" target="_blank">SMS Terms</Link>.
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('sms')}>SMS Terms</button>.
                   </span>
                 </label>
               </div>
@@ -253,6 +255,8 @@ const Login = () => {
           <Link to="/terms">TERMS OF SERVICE</Link>
         </div>
       </div>
+
+      {legalModal && <LegalModal docId={legalModal} onClose={() => setLegalModal(null)} />}
     </div>
   );
 };

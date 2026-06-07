@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Phone, MapPin, Calendar, Building2, Lock, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
+import LegalModal from '../components/LegalModal';
 import './Signup.css';
 
 const US_STATES = ['NY','NJ','CT','PA','MA','FL','CA','TX','IL','OH','GA','NC','VA','WA','AZ','CO','MD','TN','MN','WI'];
@@ -53,6 +54,7 @@ const Signup = () => {
   /* Consent checkboxes — pre-checked by default */
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [agreeSms, setAgreeSms] = useState(true);
+  const [legalModal, setLegalModal] = useState(null);
 
   const STEPS = [
     { num: 1, label: 'Personal' },
@@ -474,9 +476,9 @@ const Signup = () => {
                     />
                     <span>
                       I agree to the{' '}
-                      <Link to="/terms" className="terms-link" target="_blank">Terms of Service</Link>,{' '}
-                      <Link to="/privacy-policy" className="terms-link" target="_blank">Privacy Policy</Link>, and{' '}
-                      <Link to="/accessibility" className="terms-link" target="_blank">Accessibility Statement</Link>.
+                      <button type="button" className="terms-link" onClick={() => setLegalModal('terms')}>Terms of Service</button>,{' '}
+                      <button type="button" className="terms-link" onClick={() => setLegalModal('privacy')}>Privacy Policy</button>, and{' '}
+                      <button type="button" className="terms-link" onClick={() => setLegalModal('accessibility')}>Accessibility Statement</button>.
                     </span>
                   </label>
                   <label className="consent-check-row">
@@ -489,7 +491,7 @@ const Signup = () => {
                       I consent to receive recurring automated and non-automated SMS messages from Habibi Halal Express.
                       Consent is not a condition of purchase. Message and data rates may apply.
                       Reply <strong>STOP</strong> to opt out and <strong>HELP</strong> for assistance.{' '}
-                      <Link to="/sms-terms" className="terms-link" target="_blank">View SMS Terms &amp; Conditions</Link>.
+                      <button type="button" className="terms-link" onClick={() => setLegalModal('sms')}>View SMS Terms &amp; Conditions</button>.
                     </span>
                   </label>
                 </div>
@@ -520,6 +522,8 @@ const Signup = () => {
           </form>
         </div>
       </div>
+
+      {legalModal && <LegalModal docId={legalModal} onClose={() => setLegalModal(null)} />}
     </div>
   );
 };
