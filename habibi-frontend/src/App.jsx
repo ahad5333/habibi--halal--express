@@ -38,6 +38,7 @@ const PrivacyPolicy    = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService   = lazy(() => import('./pages/TermsOfService'));
 const SmsTerms         = lazy(() => import('./pages/SmsTerms'));
 const Accessibility    = lazy(() => import('./pages/Accessibility'));
+const Legal            = lazy(() => import('./pages/Legal'));
 const Unsubscribe      = lazy(() => import('./pages/Unsubscribe'));
 const NotFound         = lazy(() => import('./pages/NotFound'));
 
@@ -99,7 +100,9 @@ function Layout() {
           <Route path="/catering" element={<Catering />} />
           <Route path="/admin/broadcasts" element={<InternalGuard requireAdmin><Broadcasts /></InternalGuard>} />
 
-          {/* Legal pages */}
+          {/* Legal hub */}
+          <Route path="/legal"          element={<Legal />} />
+          {/* Legacy standalone routes — kept for direct links */}
           <Route path="/health-safety"  element={<HealthSafety />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms"          element={<TermsOfService />} />
