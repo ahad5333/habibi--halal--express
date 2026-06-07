@@ -17,7 +17,7 @@ const departments = [
     label: 'The Artists',
     title: 'Kitchen',
     description: 'Masters of Halal gastronomy and flavor architecture.',
-    img: '/images/staff/kitchen.png',
+    img: '/images/staff/kitchen.jpg',
     size: 'large',
   },
   {

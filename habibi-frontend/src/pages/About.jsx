@@ -29,7 +29,7 @@ const WHY_US = [
   },
   {
     type: 'img-top',
-    topImg: '/images/food/food-1.png',
+    topImg: '/images/food/food-1.jpg',
     icon: <Leaf size={20} />,
     title: 'Daily Fresh Sourcing',
     desc: "We don't believe in leftovers. Our ingredients arrive with the morning sun, sourced from local artisans who share our passion for peak season perfection.",
@@ -52,7 +52,7 @@ const WHY_US = [
 
 const STAFF_ROLES = [
   { label: 'Management', img: '/images/staff/management.png' },
-  { label: 'Kitchen', img: '/images/staff/kitchen.png' },
+  { label: 'Kitchen', img: '/images/staff/kitchen.jpg' },
   { label: 'Serving', img: '/images/staff/serving.png' },
   { label: 'Delivery', img: '/images/staff/delivery.png' },
 ];
@@ -96,10 +96,10 @@ const getSocialIcon = (label) => {
 };
 
 const COLLAGE = [
-  '/images/food/food-3.png',
-  '/images/food/food-4.png',
-  '/images/food/food-5.png',
-  '/images/food/food-6.png',
+  '/images/food/food-3.jpg',
+  '/images/food/food-4.jpg',
+  '/images/food/food-5.jpg',
+  '/images/food/food-6.jpg',
 ];
 
 const STATS = [
@@ -214,7 +214,7 @@ const About = () => (
             src="/images/our_story_kitchen.jpg"
             alt="Our Kitchen"
             className="about-story-img"
-            onError={e => { e.target.src = '/images/food/food-8.png'; }}
+            onError={e => { e.target.src = '/images/food/food-8.jpg'; }}
           />
           <div className="about-story-badge">
             <img src="/images/logos/halal.png" alt="Halal Certified" className="story-badge-halal" />
@@ -245,7 +245,7 @@ const About = () => (
           ))}
         </div>
         <div className="hiring-banner">
-          <img src="/images/staff/hiring.png" alt="We're Hiring" className="hiring-img" />
+          <img src="/images/staff/hiring.jpg" alt="We're Hiring" className="hiring-img" loading="lazy" />
           <div className="hiring-text">
             <h3 className="hiring-title">We're Hiring! <span className="text-primary">🌟</span></h3>
             <p className="hiring-sub">Join the Habibi family. We're always looking for passionate people who love great food and great service.</p>
