@@ -74,7 +74,10 @@ const Footer = () => {
 
           <div className="footer-badges-row mt-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <div className="footer-halal-badge" style={{ marginTop: 0 }}>
-              <img src="/images/logos/halal.png" alt="Halal Certified" className="footer-halal-img" />
+              <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-halal-img" />
+            </div>
+            <div className="footer-grade-badge">
+              <img src="/images/logos/grade-a.jpg" alt="NYC Sanitary Inspection Grade A" className="footer-grade-img" />
             </div>
             <a 
               href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx" 

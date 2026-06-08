@@ -116,6 +116,19 @@
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
+.footer-grade-badge {
+  margin-top: 0;
+}
+
+.footer-grade-img {
+  width: 72px;
+  height: auto;
+  border-radius: 6px;
+  object-fit: contain;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 .footer-tagline {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;
