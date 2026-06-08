@@ -1112,14 +1112,16 @@
   .menu-sidebar  { display: none; }
   .menu-cats-wrap { display: block; }
   .menu-layout   { display: block; }
-  .menu-list     { grid-template-columns: 1fr; }
+  .menu-list     { grid-template-columns: 1fr; overflow-x: hidden; }
 
-  /* Remove bleed-margin trick — causes image to overflow grid track on mobile */
   .menu-item-row {
     margin: 0;
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
+    overflow: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
