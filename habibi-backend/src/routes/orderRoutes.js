@@ -4,6 +4,7 @@ const pool = require("../config/db");
 const protect = require("../middleware/authMiddleware");
 const { admin, optionalAuth } = require("../middleware/authMiddleware");
 const { handleValidation, rules, body } = require('../middleware/validate');
+const safeError = require('../utils/safeError');
 const {
   createGuestOrder,
   getAdminOrders,
@@ -63,7 +64,7 @@ router.get("/queue/:orderNumber", async (req, res) => {
 
     res.json({ position: result.rows[0].ahead, status: order_status });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -76,7 +77,7 @@ router.get("/track/:orderNumber", async (req, res) => {
       pool.query(
         `SELECT order_number, customer_name,
                 delivery_method, delivery_city,
-                payment_method, sub_total, tax, service_fee,
+                sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
                 order_status, items, placed_at, expected_time,
                 table_number
@@ -128,10 +129,11 @@ router.get("/track/:orderNumber", async (req, res) => {
     const inHouse  = inHouseRes.rows[0];
 
     if (roadie?.agent_name) {
+      const rawPhone = roadie.agent_phone || '';
       driver = {
         source:       'roadie',
         name:         roadie.agent_name,
-        phone:        roadie.agent_phone || null,
+        phone:        rawPhone.length > 4 ? `***-***-${rawPhone.slice(-4)}` : null,
         eta:          roadie.estimated_dropoff_time || null,
         tracking_url: null,
         state:        roadie.state,
@@ -146,10 +148,11 @@ router.get("/track/:orderNumber", async (req, res) => {
         state:        dd.status,
       };
     } else if (inHouse?.driver_name && inHouse.driver_name !== 'Unassigned') {
+      const rawPhone = inHouse.driver_phone || '';
       driver = {
         source:    'in_house',
         name:      inHouse.driver_name,
-        phone:     inHouse.driver_phone || null,
+        phone:     rawPhone.length > 4 ? `***-***-${rawPhone.slice(-4)}` : null,
         eta:       null,
         lat:       inHouse.current_lat  || null,
         lng:       inHouse.current_lng  || null,
@@ -159,7 +162,7 @@ router.get("/track/:orderNumber", async (req, res) => {
 
     res.json({ ...o, items, driver });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -176,7 +179,7 @@ router.get("/chat/:orderNumber", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -190,26 +193,35 @@ router.delete("/admin/:id", protect, admin, deleteGuestOrder);
 router.use(protect);
 
 router.post("/:orderNumber/redeem-points", async (req, res) => {
+  const { points } = req.body;
+  const pts = parseInt(points) || 0;
+  if (pts <= 0 || pts % 500 !== 0) {
+    return res.status(400).json({ error: 'Points must be a multiple of 500' });
+  }
+  const client = await pool.connect();
   try {
-    const { points } = req.body;
-    const pts = parseInt(points) || 0;
-    if (pts <= 0 || pts % 500 !== 0) {
-      return res.status(400).json({ error: 'Points must be a multiple of 500' });
-    }
-    const userRes = await pool.query(
-      'SELECT loyalty_points FROM users WHERE id=$1', [req.user.id]
+    await client.query('BEGIN');
+    // FOR UPDATE locks the row — prevents double-spend race condition
+    const userRes = await client.query(
+      'SELECT loyalty_points FROM users WHERE id=$1 FOR UPDATE',
+      [req.user.id]
     );
     const current = userRes.rows[0]?.loyalty_points || 0;
     if (current < pts) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Insufficient points' });
     }
-    await pool.query(
+    await client.query(
       'UPDATE users SET loyalty_points = loyalty_points - $1 WHERE id=$2',
       [pts, req.user.id]
     );
+    await client.query('COMMIT');
     res.json({ ok: true, remaining: current - pts });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: 'Could not redeem points. Please try again.' });
+  } finally {
+    client.release();
   }
 });
 

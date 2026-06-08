@@ -73,6 +73,20 @@ const orderLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const couponLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 100 : 8,
+  message: { error: "Too many coupon attempts. Please wait." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const gpsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 500 : 60,
+  message: { error: "GPS update rate exceeded." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const userRoutes = require("./routes/userRoutes")
 const menuRoutes = require("./routes/menuRoutes")
 const authRoutes = require("./routes/authRoutes")
@@ -140,7 +154,7 @@ app.use("/api/reservations", reservationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/locations", locationRoutes);
-app.use("/api/coupons", couponRoutes);
+app.use("/api/coupons", couponLimiter, couponRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/urgent-requests", urgentRequestRoutes);

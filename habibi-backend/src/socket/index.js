@@ -1,6 +1,22 @@
 const pool = require("../config/db");
 const jwt  = require("jsonwebtoken");
 
+// Per-socket message rate limiting: max 30 chat messages per minute
+const MSG_WINDOW_MS = 60 * 1000;
+const MSG_MAX = 30;
+const msgCounters = new Map(); // socket.id → { count, resetAt }
+
+function allowMessage(socketId) {
+  const now = Date.now();
+  let entry = msgCounters.get(socketId);
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + MSG_WINDOW_MS };
+    msgCounters.set(socketId, entry);
+  }
+  entry.count++;
+  return entry.count <= MSG_MAX;
+}
+
 
 async function saveMessage(order_number, sender, text) {
   try {
@@ -86,6 +102,10 @@ module.exports = (io) => {
     // Sender identity comes from the verified JWT, not the client payload.
     // Unauthenticated sockets are labelled "customer" (guest order tracking).
     socket.on("send_message", async (data) => {
+      if (!allowMessage(socket.id)) {
+        socket.emit("error", { message: "Message rate limit exceeded. Please slow down." });
+        return;
+      }
       const { order_id, text, timestamp } = data;
       if (!order_id || !text || typeof text !== "string" || text.length > 2000) return;
 
@@ -101,6 +121,7 @@ module.exports = (io) => {
 
     socket.on("disconnect", () => {
       console.log("[SOCKET] User disconnected:", socket.id);
+      msgCounters.delete(socket.id);
     });
   });
 };

@@ -1,6 +1,19 @@
+const crypto = require('crypto');
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { ddRequest, isConfigured } = require('../utils/doordash');
+
+function verifyDoorDashSignature(rawBody, signature) {
+  const secret = process.env.DOORDASH_WEBHOOK_SECRET;
+  if (!secret) return true; // not configured — allow but log
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature || ''),
+      Buffer.from(expected)
+    );
+  } catch { return false; }
+}
 
 const RESTAURANT_ADDRESS  = process.env.RESTAURANT_ADDRESS  || '204 E Mosholu Pkwy S, Bronx, NY 10458';
 const RESTAURANT_NAME     = process.env.RESTAURANT_NAME     || 'Habibi Halal Express';
@@ -106,6 +119,13 @@ const listDeliveries = async (req, res) => {
 
 // ── DoorDash webhook — receives status updates ──────────────────────
 const handleWebhook = async (req, res) => {
+  const sig = req.headers['x-doordash-signature'] || req.headers['x-dd-signature'] || '';
+  const rawBody = req.rawBody || JSON.stringify(req.body);
+  if (!verifyDoorDashSignature(rawBody, sig)) {
+    console.warn('[DoorDash webhook] Invalid signature — rejected');
+    return res.sendStatus(401);
+  }
+
   try {
     const { event_name, delivery_id, external_delivery_id, data } = req.body;
 

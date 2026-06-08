@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const protect = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
+const { handleValidation, body } = require('../middleware/validate');
 const {
   getDashboardStats,
   getAllOrders,
@@ -148,9 +149,17 @@ router.patch("/locations/:id/toggle", toggleLocation);
 
 // Staff
 const { getStaff, createStaff, updateStaff, deleteStaff } = require("../controllers/staffController");
+const staffValidation = [
+  body('name').notEmpty().withMessage('Name is required.').isLength({ max: 100 }).withMessage('Name too long.').trim(),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Invalid email.').normalizeEmail(),
+  body('phone').optional({ checkFalsy: true }).isLength({ max: 30 }).withMessage('Phone too long.').trim(),
+  body('role').optional({ checkFalsy: true }).isLength({ max: 50 }).withMessage('Role too long.').trim(),
+  body('notes').optional({ checkFalsy: true }).isLength({ max: 1000 }).withMessage('Notes too long.').trim(),
+  handleValidation,
+];
 router.get("/staff", getStaff);
-router.post("/staff", createStaff);
-router.put("/staff/:id", updateStaff);
+router.post("/staff", staffValidation, createStaff);
+router.put("/staff/:id", staffValidation, updateStaff);
 router.delete("/staff/:id", deleteStaff);
 
 // Inventory
