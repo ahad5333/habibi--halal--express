@@ -1,4 +1,4 @@
-const safeError = require('../utils/safeError');
+﻿const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const crypto = require('crypto');
 const { roadieRequest, isConfigured } = require('../utils/roadie');
@@ -97,7 +97,7 @@ const createShipment = async (req, res) => {
     res.json({ success: true, shipment: data });
   } catch (err) {
     console.error('roadie createShipment error:', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -108,7 +108,7 @@ const getShipment = async (req, res) => {
     const data = await roadieRequest(`/shipments/${shipment_id}`);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -123,7 +123,7 @@ const cancelShipment = async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -139,7 +139,7 @@ const listShipments = async (req, res) => {
     );
     res.json({ shipments: result.rows, configured: isConfigured() });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -219,8 +219,9 @@ const getEstimate = async (req, res) => {
     const data = await roadieRequest('/estimates', 'POST', payload);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
 module.exports = { createShipment, getShipment, cancelShipment, listShipments, handleWebhook, getEstimate };
+

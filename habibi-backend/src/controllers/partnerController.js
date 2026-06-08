@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const multer = require("multer");
@@ -12,7 +13,10 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, `partner-${Date.now()}${path.extname(file.originalname)}`)
+  filename: (req, file, cb) => {
+    const rand = crypto.randomBytes(16).toString('hex');
+    cb(null, `partner-${rand}${path.extname(file.originalname).toLowerCase()}`);
+  }
 });
 
 const upload = multer({

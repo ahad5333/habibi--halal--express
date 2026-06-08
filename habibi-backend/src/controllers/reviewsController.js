@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+﻿const pool = require('../config/db');
 
 // Public: GET /api/reviews
 const getReviews = async (req, res) => {
@@ -16,7 +16,8 @@ const getReviews = async (req, res) => {
       conditions.push('is_featured = TRUE');
     }
 
-    const orderBy = sort === 'rating' ? 'rating DESC, created_at DESC' : 'created_at DESC';
+    const sortMap = { rating: 'rating DESC, created_at DESC', newest: 'created_at DESC' };
+    const orderBy = sortMap[sort] || 'created_at DESC';
     params.push(Math.min(parseInt(limit, 10) || 20, 100));
 
     const [rows, stats] = await Promise.all([
@@ -43,7 +44,7 @@ const getReviews = async (req, res) => {
 
     res.json({ reviews: rows.rows, stats: stats.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -94,7 +95,7 @@ const submitReview = async (req, res) => {
       message: 'Thank you! Your review will appear after moderation.',
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -111,7 +112,7 @@ const getAdminReviews = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -136,7 +137,7 @@ const updateReview = async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Review not found.' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -150,8 +151,9 @@ const deleteReview = async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Review not found.' });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
 module.exports = { getReviews, submitReview, getAdminReviews, updateReview, deleteReview };
+

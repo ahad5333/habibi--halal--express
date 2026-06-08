@@ -1,4 +1,4 @@
-const safeError = require('../utils/safeError');
+﻿const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const crypto = require('crypto');
 const { notifyPlatform } = require('../services/orderCallbackService');
@@ -8,7 +8,9 @@ function verifyUberSignature(rawBody, signature) {
   const secret = process.env.UBEREATS_WEBHOOK_SECRET;
   if (!secret) return true;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  return signature === expected;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
+  } catch { return false; }
 }
 
 function verifyGrubHubSignature(rawBody, signature) {
@@ -174,7 +176,7 @@ const getMarketplaceOrders = async (req, res) => {
     const result = await pool.query(q, vals);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -197,7 +199,7 @@ const updateMarketplaceOrder = async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -214,7 +216,7 @@ const getMarketplaceStats = async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -226,3 +228,4 @@ module.exports = {
   updateMarketplaceOrder,
   getMarketplaceStats,
 };
+

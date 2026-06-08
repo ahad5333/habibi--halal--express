@@ -1,4 +1,4 @@
-const safeError = require('../utils/safeError');
+﻿const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { getDistance, feeFromMiles } = require('../utils/googleMaps');
 
@@ -16,7 +16,7 @@ const getAssignments = async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -44,7 +44,7 @@ const assignDriver = async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -61,7 +61,7 @@ const getDriverAssignment = async (req, res) => {
     );
     res.json(result.rows[0] || null);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -92,7 +92,7 @@ const updateDriverGPS = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -113,7 +113,7 @@ const updateAssignmentStatus = async (req, res) => {
     if (io) io.emit('assignment_status_update', { id: parseInt(id), status });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -131,7 +131,7 @@ const getDeliveryDrivers = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -158,7 +158,7 @@ const getAssignmentForOrder = async (req, res) => {
       driver_phone: row.driver_phone || null,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -192,7 +192,7 @@ const calculateDeliveryFee = async (req, res) => {
       out_of_range:   fee === null,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -206,3 +206,4 @@ module.exports = {
   getDeliveryDrivers,
   calculateDeliveryFee,
 };
+

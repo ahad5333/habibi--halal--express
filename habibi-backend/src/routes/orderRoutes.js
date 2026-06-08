@@ -194,9 +194,9 @@ router.use(protect);
 
 router.post("/:orderNumber/redeem-points", async (req, res) => {
   const { points } = req.body;
-  const pts = parseInt(points) || 0;
-  if (pts <= 0 || pts % 500 !== 0) {
-    return res.status(400).json({ error: 'Points must be a multiple of 500' });
+  const pts = Number(points);
+  if (!Number.isInteger(pts) || pts <= 0 || pts % 500 !== 0) {
+    return res.status(400).json({ error: 'Points must be a positive integer multiple of 500' });
   }
   const client = await pool.connect();
   try {

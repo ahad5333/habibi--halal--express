@@ -1,3 +1,4 @@
+﻿const safeError = require('../utils/safeError');
 const express = require("express");
 const router  = express.Router();
 const pool    = require("../config/db");
@@ -38,8 +39,9 @@ router.get("/", async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
 module.exports = router;
+

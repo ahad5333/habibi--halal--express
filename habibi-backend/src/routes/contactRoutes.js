@@ -1,3 +1,4 @@
+﻿const safeError = require('../utils/safeError');
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
@@ -24,7 +25,7 @@ router.post('/', async (req, res) => {
     }
     res.status(201).json({ success: true, id: result.rows[0].id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -34,3 +35,4 @@ router.post('/sms-optout', smsTwilioStop);
 router.post('/feedback', submitFeedback);
 
 module.exports = router;
+

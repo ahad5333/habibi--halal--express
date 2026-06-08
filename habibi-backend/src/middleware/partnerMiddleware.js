@@ -1,3 +1,4 @@
+﻿const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 
 // Checks that the authenticated user is an approved partner.
@@ -21,8 +22,9 @@ const partnerOnly = async (req, res, next) => {
 
     return res.status(403).json({ message: 'Partner access required. Apply at /wholesale.' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json(safeError(err));
   }
 };
 
 module.exports = partnerOnly;
+

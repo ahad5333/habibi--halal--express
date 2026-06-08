@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+﻿const crypto = require('crypto');
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { ddRequest, isConfigured } = require('../utils/doordash');
@@ -71,7 +71,7 @@ const createDelivery = async (req, res) => {
     res.json({ success: true, delivery: ddData });
   } catch (err) {
     console.error('createDelivery error:', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -82,7 +82,7 @@ const getDelivery = async (req, res) => {
     const ddData = await ddRequest(`/drive/v2/deliveries/${delivery_id}`);
     res.json(ddData);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -97,7 +97,7 @@ const cancelDelivery = async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -113,7 +113,7 @@ const listDeliveries = async (req, res) => {
     );
     res.json({ deliveries: result.rows, configured: isConfigured() });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -185,8 +185,9 @@ const getQuote = async (req, res) => {
     const data = await ddRequest('/drive/v2/quotes', 'POST', payload);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
 module.exports = { createDelivery, getDelivery, cancelDelivery, listDeliveries, handleWebhook, getQuote };
+

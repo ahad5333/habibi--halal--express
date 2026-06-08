@@ -1,3 +1,4 @@
+﻿const safeError = require('../utils/safeError');
 const express = require('express');
 const router = express.Router();
 const protect = require('../middleware/authMiddleware');
@@ -36,7 +37,7 @@ router.get('/summary', async (req, res) => {
     `, [req.user.id]);
     res.json(result.rows[0] || { total_orders: 0, total_spent: 0, unpaid_count: 0, unpaid_total: 0 });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -53,7 +54,7 @@ router.patch('/orders/:id/cancel', async (req, res) => {
     if (!result.rows.length) return res.status(400).json({ message: 'Order cannot be cancelled (not in Created status or not found).' });
     res.json({ message: 'Order cancelled.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -69,7 +70,7 @@ router.patch('/orders/:id/payment-method', async (req, res) => {
     );
     res.json({ message: 'Payment method updated.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -85,8 +86,9 @@ router.post('/orders/:id/pay', async (req, res) => {
     );
     res.json({ message: 'Payment recorded.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
 module.exports = router;
+

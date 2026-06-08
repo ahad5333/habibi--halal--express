@@ -1,4 +1,4 @@
-const express   = require('express');
+﻿const express   = require('express');
 const router    = express.Router();
 const rateLimit = require('express-rate-limit');
 const protect   = require('../middleware/authMiddleware');
@@ -86,8 +86,9 @@ router.get('/scheduled', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: process.env.NODE_ENV === 'production' ? 'Internal server error.' : err.message });
   }
 });
 
 module.exports = router;
+

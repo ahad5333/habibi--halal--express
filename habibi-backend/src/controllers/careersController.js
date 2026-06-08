@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+﻿const pool = require('../config/db');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -39,7 +39,7 @@ const getVacancies = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -67,7 +67,7 @@ const submitApplication = (req, res) => {
       );
       res.status(201).json({ success: true, id: result.rows[0].id });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json(safeError(err));
     }
   });
 };
@@ -80,7 +80,7 @@ const getAdminVacancies = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -97,7 +97,7 @@ const createVacancy = async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -116,7 +116,7 @@ const updateVacancy = async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Vacancy not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -130,7 +130,7 @@ const deleteVacancy = async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Vacancy not found' });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -154,7 +154,7 @@ const getApplications = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -176,7 +176,7 @@ const updateApplicationStatus = async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Application not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -190,3 +190,4 @@ module.exports = {
   getApplications,
   updateApplicationStatus,
 };
+

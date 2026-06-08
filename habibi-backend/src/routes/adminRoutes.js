@@ -1,9 +1,10 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const protect = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 const { handleValidation, body } = require('../middleware/validate');
+const safeError = require('../utils/safeError');
 const {
   getDashboardStats,
   getAllOrders,
@@ -125,7 +126,7 @@ router.get("/payments", async (req, res) => {
       by_method:    byMethod.rows,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json(safeError(error));
   }
 });
 
@@ -193,7 +194,7 @@ router.get("/partner-orders", async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -238,7 +239,7 @@ router.patch("/partner-orders/:id/status", async (req, res) => {
 
     res.json(order);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
@@ -303,3 +304,4 @@ router.get("/reports/orders",       getOrderReport);
 router.get("/reports/coupon-usage", getCouponUsageReport);
 
 module.exports = router;
+

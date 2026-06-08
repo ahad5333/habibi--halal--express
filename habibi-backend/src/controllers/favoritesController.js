@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+﻿const pool = require('../config/db');
 
 // GET /api/favorites — returns user's favorited menu items
 const getFavorites = async (req, res) => {
@@ -14,7 +14,7 @@ const getFavorites = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -29,7 +29,7 @@ const addFavorite = async (req, res) => {
     );
     res.status(201).json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
@@ -42,8 +42,9 @@ const removeFavorite = async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 };
 
 module.exports = { getFavorites, addFavorite, removeFavorite };
+

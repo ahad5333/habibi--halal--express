@@ -1,6 +1,9 @@
 const express = require("express");
 
 const router = express.Router();
+const safeError = require('../utils/safeError');
+const protect = require('../middleware/authMiddleware');
+const { admin } = require('../middleware/authMiddleware');
 
 const {
   getMenus,
@@ -14,7 +17,7 @@ const pool = require("../config/db");
 router.get("/recommendations", getRecommendations);
 router.get("/", getMenus);
 
-router.post("/", createMenu);
+router.post("/", protect, admin, createMenu);
 
 // Public: fetch choice groups (sizes) + addon groups for a menu item
 router.get("/:id/modifiers", async (req, res) => {
@@ -46,12 +49,12 @@ router.get("/:id/modifiers", async (req, res) => {
     ]);
     res.json({ choice_groups: cg.rows, addon_groups: ag.rows });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
 router.get("/:id", getMenuById);
 
-router.delete("/:id", deleteMenu);
+router.delete("/:id", protect, admin, deleteMenu);
 
 module.exports = router;

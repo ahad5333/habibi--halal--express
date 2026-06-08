@@ -1,10 +1,20 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
+const safeError = require('../utils/safeError');
 
-// ── Public: get table info by slug (QR scan landing page) ─────────────────────
+// Kitchen tablets authenticate with X-Kitchen-Token header.
+// If KITCHEN_TOKEN env var is not set, the check is skipped (backwards-compatible).
+function kitchenAuth(req, res, next) {
+  const token = process.env.KITCHEN_TOKEN;
+  if (!token) return next();
+  if (req.headers['x-kitchen-token'] === token) return next();
+  return res.status(401).json({ message: 'Kitchen token required' });
+}
+
+// â”€â”€ Public: get table info by slug (QR scan landing page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/tables/by-slug/:slug', async (req, res) => {
   try {
     const result = await pool.query(
@@ -14,12 +24,12 @@ router.get('/tables/by-slug/:slug', async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ message: 'Table not found or inactive' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
-// ── Kitchen display: active dine-in orders (no auth — for kitchen tablet) ─────
-router.get('/kitchen', async (req, res) => {
+// â”€â”€ Kitchen display: active dine-in orders (protected by KITCHEN_TOKEN if set) â”€
+router.get('/kitchen', kitchenAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, order_number, customer_name, table_number, items,
@@ -36,21 +46,21 @@ router.get('/kitchen', async (req, res) => {
     });
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
-// ── Admin: list all tables ─────────────────────────────────────────────────────
+// â”€â”€ Admin: list all tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/tables', protect, admin, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM dine_in_tables ORDER BY table_name ASC`);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
-// ── Admin: create table ────────────────────────────────────────────────────────
+// â”€â”€ Admin: create table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/tables', protect, admin, async (req, res) => {
   try {
     const { table_name } = req.body;
@@ -63,11 +73,11 @@ router.post('/tables', protect, admin, async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
-// ── Admin: rename / toggle active ─────────────────────────────────────────────
+// â”€â”€ Admin: rename / toggle active â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.put('/tables/:id', protect, admin, async (req, res) => {
   try {
     const { table_name, is_active } = req.body;
@@ -81,18 +91,19 @@ router.put('/tables/:id', protect, admin, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ message: 'Table not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
-// ── Admin: delete table ────────────────────────────────────────────────────────
+// â”€â”€ Admin: delete table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.delete('/tables/:id', protect, admin, async (req, res) => {
   try {
     await pool.query(`DELETE FROM dine_in_tables WHERE id = $1`, [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json(safeError(err));
   }
 });
 
 module.exports = router;
+
