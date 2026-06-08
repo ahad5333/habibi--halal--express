@@ -136,6 +136,65 @@ const FeastVideo = ({ src }) => {
   );
 };
 
+const STATS = [
+  { value: 500,  suffix: '+', label: 'Menu Items',      icon: '🍽️' },
+  { value: 10,   suffix: 'K+', label: 'Happy Customers', icon: '❤️' },
+  { value: 3,    suffix: '',   label: 'Bronx Locations', icon: '📍' },
+  { value: 100,  suffix: '%',  label: 'Halal Certified', icon: '✅' },
+];
+
+function useCountUp(target, duration = 1800, start = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    let startTime = null;
+    const step = (ts) => {
+      if (!startTime) startTime = ts;
+      const progress = Math.min((ts - startTime) / duration, 1);
+      setCount(Math.floor(progress * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [start, target, duration]);
+  return count;
+}
+
+function StatCard({ icon, value, suffix, label, animate }) {
+  const count = useCountUp(value, 1600, animate);
+  return (
+    <div className="stat-card">
+      <span className="stat-icon">{icon}</span>
+      <div className="stat-value">
+        {count}{suffix}
+      </div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function StatsRow() {
+  const ref = useRef(null);
+  const [fired, setFired] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setFired(true); obs.disconnect(); }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div className="stats-row" ref={ref}>
+      <div className="stats-row-inner">
+        {STATS.map((s, i) => (
+          <StatCard key={i} {...s} animate={fired} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const [liveReviews, setLiveReviews] = useState([]);
@@ -301,27 +360,9 @@ const Home = () => {
 
 
       {/* ═══════════════════════════════════════════════════════
-          INFO BANNER — real location only
+          STATS COUNTER ROW
       ═══════════════════════════════════════════════════════ */}
-      <div className="info-banner">
-        <div className="container info-banner-inner">
-          <div className="info-left">
-            <span className="info-icon">
-              <Sparkles size={18} color="#ffffff" />
-            </span>
-            <div className="info-text-group">
-              <p className="info-eyebrow">OUR LOCATION</p>
-              <h4 className="info-title">
-                Bedford Park Blvd &amp; Jerome Ave, <span className="info-status">Bronx, NY 10458</span>
-              </h4>
-            </div>
-          </div>
-          <div className="info-right">
-            <Link to="/menu" className="btn btn-outline btn-sm">View Menu</Link>
-            <Link to="/menu" className="btn btn-primary btn-sm">Order Now</Link>
-          </div>
-        </div>
-      </div>
+      <StatsRow />
 
       {/* ═══════════════════════════════════════════════════════
           BUILD YOUR OWN — CTA STRIP
