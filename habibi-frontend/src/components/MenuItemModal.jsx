@@ -5,6 +5,30 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
 
+const CATEGORY_FALLBACKS = {
+  platter:       '/images/food/food-4.jpg',
+  burger:        '/images/habibi-burger.jpg',
+  sandwich:      '/images/food/food-3.jpg',
+  breakfast:     '/images/food/food-1.jpg',
+  taco:          '/images/food/food-2.jpg',
+  drink:         '/images/food/food-6.jpg',
+  beverage:      '/images/food/food-6.jpg',
+  extra:         '/images/halal-salad.jpg',
+  salad:         '/images/halal-salad.jpg',
+  'build your':  '/images/personalized-bowls.jpg',
+  special:       '/images/art-of-the-feast.jpg',
+};
+
+const categoryFallback = (item) => {
+  const cat  = (item?.category || '').toLowerCase();
+  const name = (item?.name || item?.title || '').toLowerCase();
+  const hay  = `${cat} ${name}`;
+  for (const [key, img] of Object.entries(CATEGORY_FALLBACKS)) {
+    if (hay.includes(key)) return img;
+  }
+  return '/images/food/food-7.jpg';
+};
+
 const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
 const toWebp = url =>
   url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
@@ -132,7 +156,7 @@ export default function MenuItemModal({ itemId, onClose }) {
       id:    item.id,
       name:  cleanName,
       price: unitPrice,
-      img:   item.image || item.image_url || fallbackImg(item.id),
+      img:   item.image || item.image_url || categoryFallback(item),
       tag:   item.category || 'Item',
       note:  fullNote,
       qty,
@@ -161,10 +185,10 @@ export default function MenuItemModal({ itemId, onClose }) {
             ) : (
               <>
                 <img
-                  src={toWebp(item?.image || item?.image_url || fallbackImg(item?.id))}
+                  src={item?.image || item?.image_url || categoryFallback(item)}
                   alt={cleanName}
                   className="mim-img"
-                  onError={e => { e.target.src = fallbackImg(item?.id); }}
+                  onError={e => { e.target.onerror = null; e.target.src = categoryFallback(item); }}
                 />
                 <div className="mim-img-grad" />
 

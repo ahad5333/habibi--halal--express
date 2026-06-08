@@ -48,7 +48,7 @@ const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg
 const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
 const CATEGORY_FALLBACKS = {
-  platter:       '/images/mixed-platter.jpg',
+  platter:       '/images/food/food-4.jpg',
   burger:        '/images/habibi-burger.jpg',
   sandwich:      '/images/food/food-3.jpg',
   breakfast:     '/images/food/food-1.jpg',
@@ -68,7 +68,7 @@ const categoryFallback = (item) => {
   for (const [key, img] of Object.entries(CATEGORY_FALLBACKS)) {
     if (hay.includes(key)) return img;
   }
-  return '/images/mixed-platter.jpg';
+  return '/images/food/food-7.jpg';
 };
 
 const Menu = () => {
@@ -504,7 +504,7 @@ const Menu = () => {
                         src={toWebp(imgSrc)}
                         alt={name}
                         loading="lazy"
-                        onError={e => { e.target.src = categoryFallback(item); }}
+                        onError={e => { e.target.onerror = null; e.target.src = categoryFallback(item); }}
                       />
                       {fxClass && (
                         <div className={fxClass} aria-hidden="true">
