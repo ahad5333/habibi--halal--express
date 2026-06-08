@@ -47,6 +47,30 @@ const BYO_ITEM = { id: 'byo-menu', name: 'Build Your Own Bowl', price: '12.99', 
 const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
 const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
+const CATEGORY_FALLBACKS = {
+  platter:       '/images/mixed-platter.jpg',
+  burger:        '/images/habibi-burger.jpg',
+  sandwich:      '/images/food/food-3.jpg',
+  breakfast:     '/images/food/food-1.jpg',
+  taco:          '/images/food/food-2.jpg',
+  drink:         '/images/food/food-6.jpg',
+  beverage:      '/images/food/food-6.jpg',
+  extra:         '/images/halal-salad.jpg',
+  salad:         '/images/halal-salad.jpg',
+  'build your':  '/images/personalized-bowls.jpg',
+  special:       '/images/art-of-the-feast.jpg',
+};
+
+const categoryFallback = (item) => {
+  const cat  = (item?.category || '').toLowerCase();
+  const name = (item?.name || item?.title || '').toLowerCase();
+  const hay  = `${cat} ${name}`;
+  for (const [key, img] of Object.entries(CATEGORY_FALLBACKS)) {
+    if (hay.includes(key)) return img;
+  }
+  return '/images/mixed-platter.jpg';
+};
+
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -219,7 +243,7 @@ const Menu = () => {
       id:    item.id,
       name:  item.name || item.title,
       price: parseFloat(item.price || 0),
-      img:   item.img || item.image || item.image_url || fallbackImg(item.id),
+      img:   item.img || item.image || item.image_url || categoryFallback(item),
       tag:   item.category || 'Item',
       note:  item.note || '',
       qty,
@@ -242,13 +266,14 @@ const Menu = () => {
 
   // ── Item row (UberEats-style horizontal) ───────────────────────
   const renderItemRow = (item, idx) => {
-    const imgSrc  = item.image || item.image_url || fallbackImg(item.id, idx);
+    const imgSrc  = item.image || item.image_url || categoryFallback(item);
     const name    = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
     const price   = parseFloat(item.price || 0);
     const isFav   = favoriteIds.has(item.id);
     const isDrink = (item.category || '').toLowerCase().includes('drink');
     const isTuna  = name.toLowerCase().includes('tuna');
-    const fxClass = isDrink ? 'item-fx item-fx-frost' : (!isTuna ? 'item-fx item-fx-steam' : '');
+    const isSpicy = !!item.is_spicy;
+    const fxClass = isDrink ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : (!isTuna ? 'item-fx item-fx-steam' : ''));
 
     return (
       <div
@@ -282,7 +307,6 @@ const Menu = () => {
         {/* Right — image + buttons */}
         <div className="menu-item-row-right">
           <div className="menu-item-row-img-wrap">
-            {fxClass && <span className={fxClass} aria-hidden="true" />}
             <img
               src={imgSrc}
               alt={name}
@@ -290,7 +314,7 @@ const Menu = () => {
               onError={e => {
                 const t = e.target;
                 t.onerror = null;
-                t.src = fallbackImg(item.id, idx);
+                t.src = categoryFallback(item);
               }}
             />
             {isLoggedIn && (
@@ -309,6 +333,39 @@ const Menu = () => {
             >
               +
             </button>
+            {/* Full Card Visual FX Overlay */}
+            {fxClass && (
+              <div className={fxClass} aria-hidden="true">
+                {fxClass.includes('item-fx-fire') ? (
+                  <>
+                    <span className="flame f1" />
+                    <span className="flame f2" />
+                    <span className="flame f3" />
+                    <span className="spark sp1" />
+                    <span className="spark sp2" />
+                    <span className="spark sp3" />
+                    <span className="spark sp4" />
+                    <span className="spark sp5" />
+                  </>
+                ) : fxClass.includes('item-fx-steam') ? (
+                  <>
+                    <span className="smoke s1" />
+                    <span className="smoke s2" />
+                    <span className="smoke s3" />
+                    <span className="smoke s4" />
+                    <span className="smoke s5" />
+                  </>
+                ) : (
+                  <>
+                    <span className="frost-particle fp1" />
+                    <span className="frost-particle fp2" />
+                    <span className="frost-particle fp3" />
+                    <span className="frost-particle fp4" />
+                    <span className="frost-particle fp5" />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -425,10 +482,14 @@ const Menu = () => {
             </button>
             <div className="mf-track" ref={featCarouselRef}>
               {featuredItems.map((item, idx) => {
-                const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
+                const imgSrc = item.image || item.image_url || categoryFallback(item);
                 const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
                 const price  = parseFloat(item.price || 0);
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
+                const isDrink = (item.category || '').toLowerCase().includes('drink');
+                const isTuna  = name.toLowerCase().includes('tuna');
+                const isSpicy = !!item.is_spicy;
+                const fxClass = isDrink ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : (!isTuna ? 'item-fx item-fx-steam' : ''));
                 return (
                   <div
                     key={item.id}
@@ -443,8 +504,40 @@ const Menu = () => {
                         src={toWebp(imgSrc)}
                         alt={name}
                         loading="lazy"
-                        onError={e => { e.target.src = fallbackImg(item.id, idx + 3); }}
+                        onError={e => { e.target.src = categoryFallback(item); }}
                       />
+                      {fxClass && (
+                        <div className={fxClass} aria-hidden="true">
+                          {fxClass.includes('item-fx-fire') ? (
+                            <>
+                              <span className="flame f1" />
+                              <span className="flame f2" />
+                              <span className="flame f3" />
+                              <span className="spark sp1" />
+                              <span className="spark sp2" />
+                              <span className="spark sp3" />
+                              <span className="spark sp4" />
+                              <span className="spark sp5" />
+                            </>
+                          ) : fxClass.includes('item-fx-steam') ? (
+                            <>
+                              <span className="smoke s1" />
+                              <span className="smoke s2" />
+                              <span className="smoke s3" />
+                              <span className="smoke s4" />
+                              <span className="smoke s5" />
+                            </>
+                          ) : (
+                            <>
+                              <span className="frost-particle fp1" />
+                              <span className="frost-particle fp2" />
+                              <span className="frost-particle fp3" />
+                              <span className="frost-particle fp4" />
+                              <span className="frost-particle fp5" />
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {idx < 3 && (
                       <span className="mf-rank">🔥 #{idx + 1} Most Liked</span>
@@ -673,6 +766,16 @@ const Menu = () => {
           </Link>
         </div>
       )}
+
+      {/* Hidden SVG Filter for Realistic Wave Smoke */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
+        <defs>
+          <filter id="smoke-filter" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.015 0.008" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 };
