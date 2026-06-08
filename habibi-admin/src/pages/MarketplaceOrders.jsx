@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ShoppingBag, RefreshCw, CheckCircle, XCircle,
-  AlertCircle, ExternalLink, Clock, User, MapPin, Utensils
+  AlertCircle, ExternalLink, Clock, User, MapPin, Utensils, Bell
 } from 'lucide-react';
+import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
 import './MarketplaceOrders.css';
 
@@ -119,6 +120,22 @@ export default function MarketplaceOrders() {
   const [stats, setStats]         = useState([]);
   const [platSettings, setPlatSettings] = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [newOrderAlert, setNewOrderAlert] = useState(null); // { platform, platform_order_id }
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const socket = io(SOCKET_URL, { transports: ['websocket'], reconnectionAttempts: 5 });
+    socketRef.current = socket;
+    socket.on('marketplace_order', (data) => {
+      setNewOrderAlert({ platform: data.platform, platform_order_id: data.platform_order_id });
+      setOrders(prev => {
+        const exists = prev.some(o => o.platform_order_id === data.platform_order_id);
+        return exists ? prev : [{ ...data, status: 'new' }, ...prev];
+      });
+    });
+    return () => socket.disconnect();
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -162,6 +179,14 @@ export default function MarketplaceOrders() {
         </div>
         <button className="mp-btn-outline" onClick={load}><RefreshCw size={14}/> Refresh</button>
       </div>
+
+      {newOrderAlert && (
+        <div className="mp-alert-banner">
+          <Bell size={16}/>
+          <span>New <strong>{newOrderAlert.platform}</strong> order <strong>#{newOrderAlert.platform_order_id}</strong> received.</span>
+          <button className="mp-alert-dismiss" onClick={() => setNewOrderAlert(null)}>✕</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="mp-stats-row">

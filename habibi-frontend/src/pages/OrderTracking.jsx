@@ -171,7 +171,20 @@ export default function OrderTracking() {
       }
       if (step >= 4) setDriverProgress(step === 4 ? 40 : step === 5 ? 80 : 100);
 
-      // Fetch delivery assignment for this order
+      // Populate driver info from the track API response (Roadie / DoorDash / in-house)
+      if (data.driver) {
+        const d = data.driver;
+        setDriverInfo({
+          name:         d.name         || 'Your Driver',
+          phone:        d.phone        || '',
+          rating:       null,
+          eta:          d.eta          || null,
+          tracking_url: d.tracking_url || null,
+          source:       d.source       || null,
+        });
+      }
+
+      // Also fetch in-house assignment for live GPS (supplements the above)
       if (data.delivery_method !== 'pickup') {
         fetch(`${API_BASE}/api/dispatch/order/${data.order_number || num}`)
           .then(r => r.json())
@@ -181,12 +194,13 @@ export default function OrderTracking() {
             if (assignment.current_lat && assignment.current_lng) {
               setDriverLatLng({ lat: parseFloat(assignment.current_lat), lng: parseFloat(assignment.current_lng) });
             }
-            // Set real driver info if available from assignment
-            if (assignment.driver_name || assignment.driver_phone) {
-              setDriverInfo({
+            // In-house assignment overrides driver name/phone only if no partner driver set
+            if ((assignment.driver_name || assignment.driver_phone) && assignment.driver_name !== 'Unassigned') {
+              setDriverInfo(prev => prev?.source && prev.source !== 'in_house' ? prev : {
                 name:   assignment.driver_name  || 'Your Driver',
                 phone:  assignment.driver_phone || '',
                 rating: assignment.driver_rating || null,
+                source: 'in_house',
               });
             }
           })
@@ -641,15 +655,37 @@ export default function OrderTracking() {
                     <div className="ot-driver-info">
                       <p className="ot-driver-name">{driverInfo?.name || DRIVER.name}</p>
                       <p className="ot-driver-meta">
-                        {(driverInfo?.rating || DRIVER.rating) && (
+                        {driverInfo?.rating && (
                           <><Star size={11} fill="var(--color-primary)" stroke="none" />
-                          {driverInfo?.rating || DRIVER.rating}</>
+                          {driverInfo.rating} · </>
                         )}
-                        {driverLatLng && <span className="ot-gps-live"> · GPS live</span>}
+                        {driverInfo?.eta && (
+                          <span>ETA: {new Date(driverInfo.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · </span>
+                        )}
+                        {driverLatLng
+                          ? <span className="ot-gps-live">GPS live</span>
+                          : driverInfo?.source === 'doordash'
+                            ? <span>DoorDash Drive</span>
+                            : driverInfo?.source === 'roadie'
+                              ? <span>Roadie Courier</span>
+                              : null
+                        }
                       </p>
+                      {driverInfo?.tracking_url && (
+                        <a
+                          href={driverInfo.tracking_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ot-tracking-link"
+                        >
+                          Track on DoorDash →
+                        </a>
+                      )}
                     </div>
                     <div className="ot-driver-actions">
-                      <a href={`tel:${driverInfo?.phone || order.customer_phone || '+17185550000'}`} className="ot-driver-btn"><Phone size={16} /></a>
+                      {driverInfo?.phone && (
+                        <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn"><Phone size={16} /></a>
+                      )}
                       <button className="ot-driver-btn"><MessageSquare size={16} /></button>
                     </div>
                   </div>

@@ -786,6 +786,17 @@
   color: var(--color-primary);
 }
 
+.ot-tracking-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.ot-tracking-link:hover { text-decoration: underline; }
+
 /* ── Receipt ─────────────────────────────────────────────────── */
 .ot-receipt {
   background: var(--color-surface);

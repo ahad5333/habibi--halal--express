@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Truck, User, MapPin, Clock, CheckCircle, XCircle,
   RefreshCw, Navigation, ExternalLink, Phone, AlertCircle,
-  Package, ChevronDown
+  Package, ChevronDown, Bell
 } from 'lucide-react';
+import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
 import './DeliveryDispatch.css';
 
@@ -261,6 +262,8 @@ export default function DeliveryDispatch() {
   const [showAssign, setShowAssign] = useState(false);
   const [loading, setLoading]     = useState(true);
   const [ddConfigured, setDDConf] = useState(false);
+  const [newAlert, setNewAlert]   = useState(null); // { order_number, miles }
+  const audioRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -283,6 +286,32 @@ export default function DeliveryDispatch() {
   useEffect(() => {
     const t = setInterval(load, 15000);
     return () => clearInterval(t);
+  }, [load]);
+
+  // Real-time socket — fires when an in-house order needs a driver assigned
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5001', {
+      transports: ['websocket'],
+    });
+    socket.on('inhouse_dispatch_needed', ({ order_number, miles }) => {
+      setNewAlert({ order_number, miles: parseFloat(miles).toFixed(1) });
+      load(); // refresh assignments list immediately
+      // Browser notification
+      if (Notification.permission === 'granted') {
+        new Notification('🚗 Driver Needed', {
+          body: `Order #${order_number} (${parseFloat(miles).toFixed(1)} mi) needs an in-house driver.`,
+        });
+      }
+    });
+    socket.on('assignment_status_update', ({ id, status }) => {
+      setAssign(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    });
+    socket.on('driver_location_update', ({ assignment_id, lat, lng }) => {
+      setAssign(prev => prev.map(a =>
+        a.id === assignment_id ? { ...a, current_lat: lat, current_lng: lng } : a
+      ));
+    });
+    return () => socket.disconnect();
   }, [load]);
 
   const handleAssign = async (body) => {
@@ -324,6 +353,20 @@ export default function DeliveryDispatch() {
           </button>
         </div>
       </div>
+
+      {/* Real-time alert banner */}
+      {newAlert && (
+        <div className="dd-alert-banner">
+          <Bell size={16} />
+          <span>
+            Order <strong>#{newAlert.order_number}</strong> ({newAlert.miles} mi) needs an in-house driver.
+          </span>
+          <button className="dd-alert-assign" onClick={() => { setShowAssign(true); setNewAlert(null); }}>
+            Assign Now
+          </button>
+          <button className="dd-alert-dismiss" onClick={() => setNewAlert(null)}>✕</button>
+        </div>
+      )}
 
       <FeeCalculator />
 

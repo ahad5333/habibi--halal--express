@@ -1,5 +1,30 @@
 .mp-page { padding: 1.5rem 2rem; }
 
+/* Real-time new order alert */
+.mp-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #065f46;
+}
+.mp-alert-banner svg { flex-shrink: 0; color: #10b981; }
+.mp-alert-banner span { flex: 1; }
+.mp-alert-dismiss {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #065f46;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
 .mp-topbar {
   display: flex;
   justify-content: space-between;

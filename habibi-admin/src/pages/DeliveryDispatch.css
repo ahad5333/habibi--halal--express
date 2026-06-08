@@ -1,5 +1,42 @@
 .dd-page { padding: 1.5rem 2rem; }
 
+/* Real-time alert banner */
+.dd-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #92400e;
+}
+.dd-alert-banner svg { flex-shrink: 0; color: #d97706; }
+.dd-alert-banner span { flex: 1; }
+.dd-alert-assign {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dd-alert-assign:hover { background: #b45309; }
+.dd-alert-dismiss {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #92400e;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
 .dd-topbar {
   display: flex;
   justify-content: space-between;
