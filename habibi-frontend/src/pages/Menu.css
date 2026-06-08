@@ -1093,7 +1093,7 @@
   flex-shrink: 0;
 }
 
-.menu-cart-strip-btn:hover { background: #EA6C00; }
+.menu-cart-strip-btn:hover { background: #EA6C00; color: #000000; }
 
 /* ══════════════════════════════════════════════
    RESPONSIVE
