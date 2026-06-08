@@ -148,6 +148,7 @@ const getMyOrders = async (req, res) => {
 
     res.json(orders);
   } catch (err) {
+    console.error('[getMyOrders ERROR]', err.message, err.stack);
     res.status(500).json(safeError(err));
   }
 };
