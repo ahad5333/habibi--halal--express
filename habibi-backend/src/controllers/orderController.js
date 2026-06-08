@@ -277,8 +277,9 @@ const createGuestOrder = async (req, res) => {
       client.release();
     }
 
-    // Auto-dispatch: calculate distance → look up delivery_tiers table → route to correct provider
-    if ((delivery_method || '').toLowerCase() === 'delivery') {
+    // Auto-dispatch: skip for scheduled orders — the cron job handles those
+    const isScheduled = expected_time && expected_time.trim().toUpperCase() !== 'ASAP';
+    if ((delivery_method || '').toLowerCase() === 'delivery' && !isScheduled) {
       const dispatchPayload = {
         order_number, customer_name, customer_phone, delivery_method,
         delivery_address, delivery_city, delivery_zip, delivery_state,
@@ -331,9 +332,17 @@ const createGuestOrder = async (req, res) => {
             // pickup_only or unknown — just log
             console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);
           }
+
+          // Mark as fired so the scheduler skips this order
+          await pool.query(
+            `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
+          ).catch(() => {});
         } catch (err) {
           console.error('[Dispatch] Routing error:', err.message);
           autoDispatchDoorDash(db_id, dispatchPayload); // safe fallback
+          await pool.query(
+            `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
+          ).catch(() => {});
         }
       })();
     }

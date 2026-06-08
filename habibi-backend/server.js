@@ -18,6 +18,7 @@ const app = require("./src/app");
 const pool = require("./src/config/db");
 const createTables = require("./src/config/init");
 const { Server } = require("socket.io");
+const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
 
 const PORT = process.env.PORT || 5001;
 const initSocket = require("./src/socket");
@@ -46,6 +47,7 @@ pool.connect()
 
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      startScheduledDispatch(io);
     });
   })
   .catch((err) => {

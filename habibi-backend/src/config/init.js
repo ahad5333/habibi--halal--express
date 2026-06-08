@@ -254,11 +254,14 @@ const createTables = async () => {
         total                 NUMERIC(10,2) DEFAULT 0,
         coupon_code           VARCHAR(50),
         expected_time         VARCHAR(100),
+        dispatch_fired        BOOLEAN      DEFAULT FALSE,
         order_status          VARCHAR(50)  DEFAULT 'pending',
         items                 JSONB        DEFAULT '[]',
         placed_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      -- Add column to existing tables (idempotent)
+      ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS dispatch_fired BOOLEAN DEFAULT FALSE;
     `);
 
     // ── Dine-In Tables ────────────────────────────────────────────
