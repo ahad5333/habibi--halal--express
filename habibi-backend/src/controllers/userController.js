@@ -123,7 +123,7 @@ const getMyOrders = async (req, res) => {
     const rawOrders = result.rows.map(o => {
       let items = [];
       try { items = typeof o.items === "string" ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
-      items.forEach(it => { if (it.menu_item_id) allMenuItemIds.add(it.menu_item_id); });
+      items.forEach(it => { const id = parseInt(it.menu_item_id); if (!isNaN(id)) allMenuItemIds.add(id); });
       return { ...o, items };
     });
 
@@ -148,7 +148,6 @@ const getMyOrders = async (req, res) => {
 
     res.json(orders);
   } catch (err) {
-    console.error('[getMyOrders ERROR]', err.message, err.stack);
     res.status(500).json(safeError(err));
   }
 };
