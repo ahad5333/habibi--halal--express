@@ -501,7 +501,7 @@ const Menu = () => {
                   >
                     <div className="mf-img-wrap">
                       <img
-                        src={toWebp(imgSrc)}
+                        src={imgSrc}
                         alt={name}
                         loading="lazy"
                         onError={e => { e.target.onerror = null; e.target.src = categoryFallback(item); }}
