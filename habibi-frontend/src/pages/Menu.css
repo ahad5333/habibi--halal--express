@@ -1220,16 +1220,20 @@
   .menu-item-add-btn      { width: 22px; height: 22px; font-size: 1rem; }
 }
 
-/* ── Overrides to allow visual effects to float outside image wrappers ── */
-.menu-item-row-img-wrap,
+/* Featured carousel: allow effects to float outside the circle */
 .mf-img-wrap {
   overflow: visible !important;
 }
 
-/* On mobile, clip the wrap so smoke animation doesn't overflow the screen */
+/* Menu list image wrap: always clipped so image is visible and effects stay inside */
+.menu-item-row-img-wrap {
+  overflow: hidden !important;
+}
+
+/* Hide visual effects on mobile — too small to look good and causes overflow */
 @media (max-width: 768px) {
-  .menu-item-row-img-wrap {
-    overflow: hidden !important;
+  .menu-item-row-img-wrap .item-fx {
+    display: none !important;
   }
 }
 
