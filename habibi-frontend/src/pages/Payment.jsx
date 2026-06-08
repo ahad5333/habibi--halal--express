@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { CreditCard, Search, Lock, CheckCircle, DollarSign, Receipt, Zap } from 'lucide-react';
-import { ordersAPI, paymentsAPI } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { CreditCard, Search, Lock, CheckCircle, DollarSign, Receipt, Zap, Trash2, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ordersAPI, paymentsAPI, userAPI, savedPaymentsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import StripeCardForm from '../components/StripeCardForm';
 import './Payment.css';
 
@@ -14,6 +16,68 @@ const PAYMENT_REASONS = [
 ];
 
 const Payment = () => {
+  const { isLoggedIn } = useAuth();
+  const [activeTab, setActiveTab] = useState('quickpay'); // 'quickpay' | 'balance' | 'methods'
+
+  /* ── Pay My Balance tab ── */
+  const [balanceOrders, setBalanceOrders]   = useState([]);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError]     = useState('');
+
+  /* ── Manage Payment Methods tab ── */
+  const [methods, setMethods]               = useState([]);
+  const [methodsLoading, setMethodsLoading] = useState(false);
+  const [methodsError, setMethodsError]     = useState('');
+  const [removingId, setRemovingId]         = useState(null);
+  const [settingDefault, setSettingDefault] = useState(null);
+
+  useEffect(() => {
+    if (activeTab === 'balance' && isLoggedIn && balanceOrders.length === 0 && !balanceLoading) {
+      setBalanceLoading(true);
+      setBalanceError('');
+      userAPI.getOrders()
+        .then(data => {
+          const orders = Array.isArray(data) ? data : (data.orders || []);
+          // Show only orders with an outstanding balance or unpaid status
+          const unpaid = orders.filter(o =>
+            ['pending', 'received', 'accepted'].includes((o.order_status || o.status || '').toLowerCase())
+          );
+          setBalanceOrders(unpaid);
+        })
+        .catch(() => setBalanceError('Could not load orders. Please try again.'))
+        .finally(() => setBalanceLoading(false));
+    }
+  }, [activeTab, isLoggedIn]);
+
+  useEffect(() => {
+    if (activeTab === 'methods' && isLoggedIn && methods.length === 0 && !methodsLoading) {
+      setMethodsLoading(true);
+      setMethodsError('');
+      savedPaymentsAPI.getAll()
+        .then(data => setMethods(Array.isArray(data) ? data : []))
+        .catch(() => setMethodsError('Could not load payment methods.'))
+        .finally(() => setMethodsLoading(false));
+    }
+  }, [activeTab, isLoggedIn]);
+
+  const handleSetDefault = async (id) => {
+    setSettingDefault(id);
+    try {
+      await savedPaymentsAPI.setDefault(id);
+      setMethods(prev => prev.map(m => ({ ...m, is_default: m.id === id })));
+    } catch { /* silent */ }
+    finally { setSettingDefault(null); }
+  };
+
+  const handleRemoveMethod = async (id) => {
+    setRemovingId(id);
+    try {
+      await savedPaymentsAPI.remove(id);
+      setMethods(prev => prev.filter(m => m.id !== id));
+    } catch { /* silent */ }
+    finally { setRemovingId(null); }
+  };
+
   const [step, setStep] = useState(1); // 1: lookup, 2: pay, 3: done
 
   /* Step 1 — Order lookup */
@@ -109,6 +173,150 @@ const Payment = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Tab switcher ── */}
+      <div className="pay-tabs-bar">
+        <div className="container pay-tabs">
+          {[
+            { id: 'quickpay', label: 'Quick Pay' },
+            { id: 'balance',  label: 'Pay My Balance' },
+            { id: 'methods',  label: 'Manage Payment Methods' },
+          ].map(t => (
+            <button
+              key={t.id}
+              className={`pay-tab-btn${activeTab === t.id ? ' active' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════
+          PAY MY BALANCE TAB
+      ══════════════════════════════════ */}
+      {activeTab === 'balance' && (
+        <section className="section">
+          <div className="container pay-container">
+            {!isLoggedIn ? (
+              <div className="pay-signin-prompt">
+                <CreditCard size={36} className="pay-prompt-icon" />
+                <h3>Sign In to View Your Balance</h3>
+                <p>Please sign in to see outstanding orders and pay any balances due.</p>
+                <Link to="/login?redirect=/payment" className="btn btn-primary">Sign In</Link>
+              </div>
+            ) : balanceLoading ? (
+              <div className="pay-loading">Loading your orders…</div>
+            ) : balanceError ? (
+              <div className="pay-error">⚠ {balanceError}</div>
+            ) : balanceOrders.length === 0 ? (
+              <div className="pay-signin-prompt">
+                <CheckCircle size={36} className="pay-prompt-icon" style={{ color: '#22c55e' }} />
+                <h3>You're All Clear!</h3>
+                <p>No outstanding balances on your account.</p>
+                <Link to="/menu" className="btn btn-primary">Order Now</Link>
+              </div>
+            ) : (
+              <div className="pay-balance-list">
+                <h3 className="pay-balance-title">Outstanding Orders</h3>
+                {balanceOrders.map(order => (
+                  <div key={order.id || order.order_number} className="pay-balance-row">
+                    <div className="pay-balance-info">
+                      <span className="pay-balance-ref">#{order.order_number || order.id}</span>
+                      <span className="pay-balance-status">{order.order_status || order.status}</span>
+                      <span className="pay-balance-date">
+                        {order.placed_at ? new Date(order.placed_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                    <div className="pay-balance-right">
+                      <span className="pay-balance-amount">${parseFloat(order.total || order.total_amount || 0).toFixed(2)}</span>
+                      <button
+                        className="btn btn-primary pay-now-btn"
+                        onClick={() => {
+                          setStep(2);
+                          setFoundOrder({ ref: order.order_number || String(order.id), customer: order.customer_name || '', balance: parseFloat(order.total || 0) });
+                          setAmount(String(parseFloat(order.total || 0).toFixed(2)));
+                          setActiveTab('quickpay');
+                        }}
+                      >
+                        Pay Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════
+          MANAGE PAYMENT METHODS TAB
+      ══════════════════════════════════ */}
+      {activeTab === 'methods' && (
+        <section className="section">
+          <div className="container pay-container">
+            {!isLoggedIn ? (
+              <div className="pay-signin-prompt">
+                <CreditCard size={36} className="pay-prompt-icon" />
+                <h3>Sign In to Manage Payment Methods</h3>
+                <p>Please sign in to view, edit, and remove your saved cards.</p>
+                <Link to="/login?redirect=/payment" className="btn btn-primary">Sign In</Link>
+              </div>
+            ) : methodsLoading ? (
+              <div className="pay-loading">Loading payment methods…</div>
+            ) : methodsError ? (
+              <div className="pay-error">⚠ {methodsError}</div>
+            ) : methods.length === 0 ? (
+              <div className="pay-signin-prompt">
+                <CreditCard size={36} className="pay-prompt-icon" />
+                <h3>No Saved Payment Methods</h3>
+                <p>Payment methods are saved automatically when you complete a card payment.</p>
+                <button className="btn btn-primary" onClick={() => setActiveTab('quickpay')}>Make a Payment</button>
+              </div>
+            ) : (
+              <div className="pay-methods-list">
+                <h3 className="pay-balance-title">Saved Payment Methods</h3>
+                {methods.map(m => (
+                  <div key={m.id} className={`pay-method-card${m.is_default ? ' default' : ''}`}>
+                    <div className="pay-method-left">
+                      <span className="pay-method-brand">{(m.brand || m.card_brand || 'Card').toUpperCase()}</span>
+                      <span className="pay-method-num">•••• {m.last4 || m.last_four || '****'}</span>
+                      <span className="pay-method-exp">Exp {m.exp_month}/{m.exp_year}</span>
+                      {m.is_default && <span className="pay-method-default-badge">Default</span>}
+                    </div>
+                    <div className="pay-method-actions">
+                      {!m.is_default && (
+                        <button
+                          className="pay-method-btn"
+                          onClick={() => handleSetDefault(m.id)}
+                          disabled={settingDefault === m.id}
+                        >
+                          {settingDefault === m.id ? '…' : <><Star size={13} /> Set Default</>}
+                        </button>
+                      )}
+                      <button
+                        className="pay-method-btn remove"
+                        onClick={() => handleRemoveMethod(m.id)}
+                        disabled={removingId === m.id}
+                      >
+                        {removingId === m.id ? '…' : <><Trash2 size={13} /> Remove</>}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════
+          QUICK PAY TAB (original flow)
+      ══════════════════════════════════ */}
+      {activeTab === 'quickpay' && (
+      <>
 
       {/* ── Steps indicator ── */}
       <div className="pay-steps-bar">
@@ -325,6 +533,9 @@ const Payment = () => {
 
         </div>
       </section>
+
+      </> /* end Quick Pay tab */
+      )}
 
     </div>
   );

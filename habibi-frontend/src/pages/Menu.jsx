@@ -242,10 +242,13 @@ const Menu = () => {
 
   // ── Item row (UberEats-style horizontal) ───────────────────────
   const renderItemRow = (item, idx) => {
-    const imgSrc = item.image || item.image_url || fallbackImg(item.id, idx);
-    const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
-    const price  = parseFloat(item.price || 0);
-    const isFav  = favoriteIds.has(item.id);
+    const imgSrc  = item.image || item.image_url || fallbackImg(item.id, idx);
+    const name    = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
+    const price   = parseFloat(item.price || 0);
+    const isFav   = favoriteIds.has(item.id);
+    const isDrink = (item.category || '').toLowerCase().includes('drink');
+    const isTuna  = name.toLowerCase().includes('tuna');
+    const fxClass = isDrink ? 'item-fx item-fx-frost' : (!isTuna ? 'item-fx item-fx-steam' : '');
 
     return (
       <div
@@ -279,6 +282,7 @@ const Menu = () => {
         {/* Right — image + buttons */}
         <div className="menu-item-row-right">
           <div className="menu-item-row-img-wrap">
+            {fxClass && <span className={fxClass} aria-hidden="true" />}
             <img
               src={imgSrc}
               alt={name}

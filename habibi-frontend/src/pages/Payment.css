@@ -522,3 +522,208 @@
   .pay-hero-title { font-size: 1.4rem; }
   .pay-card { padding: 0.875rem; }
 }
+
+/* ═══════════════════════════════════════════
+   PAGE TABS — Quick Pay / Pay Balance / Methods
+═══════════════════════════════════════════ */
+
+.pay-tabs-bar {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 72px;
+  z-index: 10;
+}
+
+.pay-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pay-tabs::-webkit-scrollbar { display: none; }
+
+.pay-tab-btn {
+  flex-shrink: 0;
+  padding: 1rem 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.pay-tab-btn:hover { color: var(--color-text); }
+.pay-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* ─── Sign-in prompt ─── */
+.pay-signin-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 1rem;
+  gap: 0.75rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.pay-prompt-icon { color: var(--color-primary); margin-bottom: 0.5rem; }
+
+.pay-signin-prompt h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.pay-signin-prompt p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.pay-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* ─── Pay My Balance ─── */
+.pay-balance-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--color-text);
+}
+
+.pay-balance-list {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.pay-balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.pay-balance-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pay-balance-ref { font-weight: 700; font-size: 0.9rem; color: var(--color-primary); }
+.pay-balance-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(249,115,22,0.12);
+  color: var(--color-primary);
+  text-transform: capitalize;
+}
+.pay-balance-date { font-size: 0.8rem; color: var(--color-text-muted); }
+
+.pay-balance-right { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.pay-balance-amount { font-size: 1rem; font-weight: 700; color: var(--color-text); }
+
+.pay-now-btn { font-size: 0.82rem; padding: 0.45rem 1rem; }
+
+/* ─── Manage Payment Methods ─── */
+.pay-methods-list {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.pay-method-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.pay-method-card.default {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.2);
+}
+
+.pay-method-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pay-method-brand {
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text);
+  background: rgba(255,255,255,0.07);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.pay-method-num { font-size: 0.88rem; color: var(--color-text); letter-spacing: 0.05em; }
+.pay-method-exp { font-size: 0.8rem; color: var(--color-text-muted); }
+
+.pay-method-default-badge {
+  font-size: 0.72rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(249,115,22,0.15);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pay-method-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+.pay-method-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pay-method-btn:hover { background: rgba(255,255,255,0.06); color: var(--color-text); }
+.pay-method-btn.remove:hover { border-color: #ef4444; color: #ef4444; }
+.pay-method-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 600px) {
+  .pay-tab-btn { padding: 0.85rem 1rem; font-size: 0.75rem; }
+  .pay-balance-row { flex-direction: column; align-items: flex-start; }
+  .pay-balance-right { width: 100%; justify-content: space-between; }
+  .pay-method-card { flex-direction: column; align-items: flex-start; }
+  .pay-method-actions { width: 100%; justify-content: flex-end; }
+}
