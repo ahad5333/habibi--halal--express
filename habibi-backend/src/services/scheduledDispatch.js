@@ -185,6 +185,7 @@ function startScheduledDispatch(io) {
             AND expected_time IS NOT NULL
             AND expected_time   != ''
             AND expected_time   != 'ASAP'
+            AND placed_at       >= NOW() - INTERVAL '24 hours'
           ORDER BY placed_at ASC`
       );
 
