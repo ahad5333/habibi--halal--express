@@ -1167,7 +1167,7 @@
   .menu-grid-title        { font-size: 1.5rem; }
   .menu-item-row-img-wrap { width: 68px; height: 68px; min-width: 68px; }
   .menu-item-row-name     { font-size: 0.88rem; }
-  .menu-item-row-desc     { -webkit-line-clamp: 1; }
+  .menu-item-row-desc     { -webkit-line-clamp: 3; }
   .menu-info-strip        { padding: 0.5rem 1rem; }
 
   /* Featured cards — phone: hide arrows, use swipe */
