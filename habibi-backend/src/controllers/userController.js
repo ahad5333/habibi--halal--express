@@ -131,7 +131,7 @@ const getMyOrders = async (req, res) => {
     if (allMenuItemIds.size > 0) {
       const ids = Array.from(allMenuItemIds);
       const menuResult = await pool.query(
-        `SELECT id, title AS name, image_url FROM menu_items WHERE id = ANY($1)`,
+        `SELECT id, name, image_url FROM menus WHERE id = ANY($1)`,
         [ids]
       );
       menuResult.rows.forEach(row => { nameMap[row.id] = { name: row.name, image_url: row.image_url }; });
