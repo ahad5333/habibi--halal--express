@@ -869,10 +869,11 @@ const seedDefaults = async () => {
   if (parseInt(tierCount.rows[0].count) === 0) {
     await pool.query(`
       INSERT INTO delivery_tiers (label, min_distance, max_distance, provider_type, is_active) VALUES
-        ('In-House Delivery',   0,   3,   'in_house',  TRUE),
-        ('Express Delivery',    3,   10,  'doordash',  TRUE),
-        ('Long Distance',       10,  50,  'roadie',    TRUE),
-        ('Super Long Distance', 50,  500, 'roadie',    FALSE)
+        ('In-House Delivery',    0,    5,   'in_house',    TRUE),
+        ('DoorDash Drive',       5,    30,  'doordash',    TRUE),
+        ('Roadie Express',       30,   150, 'roadie',      TRUE),
+        ('Roadie Long Distance', 150,  350, 'roadie',      TRUE),
+        ('Pickup Only',          350,  9999,'pickup_only', TRUE)
     `);
     console.log("✅ Default delivery tiers seeded");
   }

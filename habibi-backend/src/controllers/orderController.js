@@ -277,8 +277,7 @@ const createGuestOrder = async (req, res) => {
       client.release();
     }
 
-    // Auto-dispatch: calculate distance first, then route to correct provider
-    // 0–3 mi → in-house | 3–10 mi → DoorDash Drive | 10+ mi → Roadie
+    // Auto-dispatch: calculate distance → look up delivery_tiers table → route to correct provider
     if ((delivery_method || '').toLowerCase() === 'delivery') {
       const dispatchPayload = {
         order_number, customer_name, customer_phone, delivery_method,
@@ -290,23 +289,51 @@ const createGuestOrder = async (req, res) => {
           const origin      = RESTAURANT_ADDRESS;
           const destination = [delivery_address, delivery_city, delivery_state, delivery_zip]
             .filter(Boolean).join(', ');
-          const dist = await getDistance(origin, destination);
-          const miles = dist?.miles ?? 5; // default to DoorDash range if Maps unavailable
+          const dist  = await getDistance(origin, destination);
+          const miles = dist?.miles ?? 7; // default to DoorDash range if Maps unavailable
 
-          if (miles <= 3) {
-            // In-house delivery range — admin assigns driver manually
-            console.log(`[Dispatch] ${order_number}: ${miles} mi → in-house`);
-          } else if (miles <= 10) {
-            console.log(`[Dispatch] ${order_number}: ${miles} mi → DoorDash Drive`);
+          // Load tiers from DB (ordered by min_distance ASC)
+          const tiersRes = await pool.query(
+            `SELECT provider_type, min_distance, max_distance
+               FROM delivery_tiers
+              WHERE is_active = TRUE
+              ORDER BY min_distance ASC`
+          );
+          const tiers = tiersRes.rows;
+
+          // Find the matching tier for this distance
+          const tier = tiers.find(t =>
+            miles >= parseFloat(t.min_distance) && miles < parseFloat(t.max_distance)
+          );
+          const provider = tier?.provider_type || 'doordash'; // safe fallback
+
+          console.log(`[Dispatch] ${order_number}: ${miles} mi → ${provider}`);
+
+          if (provider === 'in_house') {
+            // Create an unassigned delivery_assignment so admin can pick a driver
+            await pool.query(
+              `INSERT INTO delivery_assignments
+                 (order_id, order_number, driver_id, driver_name, status,
+                  delivery_address, customer_name, customer_phone)
+               VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5)
+               ON CONFLICT DO NOTHING`,
+              [db_id, order_number,
+               [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
+               customer_name || 'Guest', customer_phone || '']
+            ).catch(e => console.error('[Dispatch] delivery_assignment insert failed:', e.message));
+            const io = req.app.get('io');
+            if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+          } else if (provider === 'doordash') {
             autoDispatchDoorDash(db_id, dispatchPayload);
-          } else {
-            console.log(`[Dispatch] ${order_number}: ${miles} mi → Roadie`);
+          } else if (provider === 'roadie') {
             autoDispatchRoadie(db_id, dispatchPayload);
+          } else {
+            // pickup_only or unknown — just log
+            console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);
           }
         } catch (err) {
           console.error('[Dispatch] Routing error:', err.message);
-          // Fallback: try DoorDash Drive
-          autoDispatchDoorDash(db_id, dispatchPayload);
+          autoDispatchDoorDash(db_id, dispatchPayload); // safe fallback
         }
       })();
     }

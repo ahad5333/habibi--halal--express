@@ -71,24 +71,93 @@ router.get("/queue/:orderNumber", async (req, res) => {
 router.get("/track/:orderNumber", async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const result = await pool.query(
-      `SELECT order_number, customer_name,
-              delivery_method, delivery_city,
-              payment_method, sub_total, tax, service_fee,
-              delivery_fee, tip, discount, total,
-              order_status, items, placed_at, expected_time,
-              table_number
-       FROM guest_orders
-       WHERE order_number = $1`,
-      [orderNumber]
-    );
-    if (result.rows.length === 0) {
+
+    const [orderRes, roadieRes, ddRes, inHouseRes] = await Promise.all([
+      pool.query(
+        `SELECT order_number, customer_name,
+                delivery_method, delivery_city,
+                payment_method, sub_total, tax, service_fee,
+                delivery_fee, tip, discount, total,
+                order_status, items, placed_at, expected_time,
+                table_number
+           FROM guest_orders
+          WHERE order_number = $1`,
+        [orderNumber]
+      ),
+      // Roadie: agent name, phone, ETA from webhook updates
+      pool.query(
+        `SELECT state, agent_name, agent_phone,
+                estimated_pickup_time, estimated_dropoff_time, tracking_number
+           FROM roadie_deliveries
+          WHERE order_number = $1
+          ORDER BY created_at DESC LIMIT 1`,
+        [orderNumber]
+      ),
+      // DoorDash Drive: tracking URL + status
+      pool.query(
+        `SELECT status, tracking_url, doordash_delivery_id
+           FROM doordash_deliveries
+          WHERE order_number = $1
+          ORDER BY created_at DESC LIMIT 1`,
+        [orderNumber]
+      ),
+      // In-house driver assignment
+      pool.query(
+        `SELECT da.status, da.driver_name, sm.phone AS driver_phone,
+                da.current_lat, da.current_lng, da.last_location_update, da.delivered_at
+           FROM delivery_assignments da
+           LEFT JOIN staff_members sm ON sm.id = da.driver_id
+          WHERE da.order_number = $1
+          ORDER BY da.assigned_at DESC LIMIT 1`,
+        [orderNumber]
+      ),
+    ]);
+
+    if (orderRes.rows.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
-    const o = result.rows[0];
+
+    const o = orderRes.rows[0];
     let items = [];
     try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
-    res.json({ ...o, items });
+
+    // Build driver info from whichever dispatch method was used
+    let driver = null;
+    const roadie   = roadieRes.rows[0];
+    const dd       = ddRes.rows[0];
+    const inHouse  = inHouseRes.rows[0];
+
+    if (roadie?.agent_name) {
+      driver = {
+        source:       'roadie',
+        name:         roadie.agent_name,
+        phone:        roadie.agent_phone || null,
+        eta:          roadie.estimated_dropoff_time || null,
+        tracking_url: null,
+        state:        roadie.state,
+      };
+    } else if (dd?.tracking_url) {
+      driver = {
+        source:       'doordash',
+        name:         null,
+        phone:        null,
+        eta:          null,
+        tracking_url: dd.tracking_url,
+        state:        dd.status,
+      };
+    } else if (inHouse?.driver_name && inHouse.driver_name !== 'Unassigned') {
+      driver = {
+        source:    'in_house',
+        name:      inHouse.driver_name,
+        phone:     inHouse.driver_phone || null,
+        eta:       null,
+        lat:       inHouse.current_lat  || null,
+        lng:       inHouse.current_lng  || null,
+        state:     inHouse.status,
+      };
+    }
+
+    res.json({ ...o, items, driver });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
