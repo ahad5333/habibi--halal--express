@@ -263,10 +263,19 @@ const Navbar = () => {
         <div className="navbar-top-inner">
           <Link to="/" className="navbar-logo">
             <img
-              src="/images/logos/logo-full.jpg"
+              src="/images/logos/logo.png"
               alt="Habibi Halal Express"
               className="logo-img"
             />
+            <div className="logo-text">
+              <span className="logo-name-habibi">HABIBI</span>
+              <span className="logo-rule">
+                <span className="logo-rule-line" />
+                <span className="logo-rule-gem">✦</span>
+                <span className="logo-rule-line" />
+              </span>
+              <span className="logo-name-express">HALAL EXPRESS</span>
+            </div>
           </Link>
 
           <div className="navbar-top-right">
