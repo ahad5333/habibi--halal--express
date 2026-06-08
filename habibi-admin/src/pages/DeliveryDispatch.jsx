@@ -259,6 +259,7 @@ export default function DeliveryDispatch() {
   const [assignments, setAssign]  = useState([]);
   const [ddDeliveries, setDD]     = useState([]);
   const [drivers, setDrivers]     = useState([]);
+  const [scheduled, setScheduled] = useState([]);
   const [showAssign, setShowAssign] = useState(false);
   const [loading, setLoading]     = useState(true);
   const [ddConfigured, setDDConf] = useState(false);
@@ -267,15 +268,17 @@ export default function DeliveryDispatch() {
 
   const load = useCallback(async () => {
     try {
-      const [a, d, dr] = await Promise.all([
+      const [a, d, dr, sc] = await Promise.all([
         adminAPI.getAssignments(),
         adminAPI.getDoorDashDeliveries(),
         adminAPI.getDeliveryDrivers(),
+        adminAPI.getScheduledOrders(),
       ]);
       setAssign(a);
       setDD(d.deliveries || d);
       setDDConf(d.configured !== false);
       setDrivers(dr);
+      setScheduled(Array.isArray(sc) ? sc : []);
     } catch (_) {}
     setLoading(false);
   }, []);
@@ -295,11 +298,18 @@ export default function DeliveryDispatch() {
     });
     socket.on('inhouse_dispatch_needed', ({ order_number, miles }) => {
       setNewAlert({ order_number, miles: parseFloat(miles).toFixed(1) });
-      load(); // refresh assignments list immediately
-      // Browser notification
+      load();
       if (Notification.permission === 'granted') {
-        new Notification('🚗 Driver Needed', {
+        new Notification('Driver Needed', {
           body: `Order #${order_number} (${parseFloat(miles).toFixed(1)} mi) needs an in-house driver.`,
+        });
+      }
+    });
+    socket.on('scheduled_dispatch_fired', ({ order_number, expected_time, mins_until }) => {
+      load();
+      if (Notification.permission === 'granted') {
+        new Notification('Scheduled Order Dispatched', {
+          body: `Order #${order_number} scheduled for ${expected_time} has been dispatched (${mins_until} min away).`,
         });
       }
     });
@@ -375,6 +385,7 @@ export default function DeliveryDispatch() {
         {[
           { label: 'Active In-House', val: activeAssign.length, icon: <Truck size={16}/> },
           { label: 'Active DoorDash', val: activeDDs.length,   icon: <Navigation size={16}/> },
+          { label: 'Scheduled', val: scheduled.length,          icon: <Clock size={16}/> },
           { label: 'Available Drivers', val: drivers.filter(d => parseInt(d.active_assignments) === 0).length, icon: <User size={16}/> },
           { label: 'Delivered Today', val: assignments.filter(a => a.status === 'delivered' && new Date(a.delivered_at) > new Date(new Date().setHours(0,0,0,0))).length, icon: <CheckCircle size={16}/> },
         ].map(s => (
@@ -397,6 +408,10 @@ export default function DeliveryDispatch() {
         <button className={`dd-tab ${tab==='doordash'?'active':''}`} onClick={() => setTab('doordash')}>
           <Navigation size={14}/> DoorDash Drive
           {activeDDs.length > 0 && <span className="dd-tab-badge">{activeDDs.length}</span>}
+        </button>
+        <button className={`dd-tab ${tab==='scheduled'?'active':''}`} onClick={() => setTab('scheduled')}>
+          <Clock size={14}/> Scheduled
+          {scheduled.length > 0 && <span className="dd-tab-badge">{scheduled.length}</span>}
         </button>
       </div>
 
@@ -430,6 +445,40 @@ export default function DeliveryDispatch() {
                     {doneAssign.map(a => <AssignCard key={a.id} assignment={a} onStatusChange={handleStatusChange} />)}
                   </div>
                 </details>
+              )}
+            </>
+          )}
+
+          {tab === 'scheduled' && (
+            <>
+              {scheduled.length === 0 ? (
+                <div className="dd-empty">
+                  <Clock size={40}/>
+                  <p>No scheduled orders pending dispatch.</p>
+                  <p className="dd-empty-sub">Orders scheduled for a future time appear here until dispatched 60 min before their pickup time.</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="dd-section-label">Queued for dispatch ({scheduled.length})</p>
+                  <div className="dd-sched-list">
+                    {scheduled.map(o => {
+                      const addr = [o.delivery_address, o.delivery_city, o.delivery_state].filter(Boolean).join(', ');
+                      return (
+                        <div key={o.id} className="dd-sched-row">
+                          <div className="dd-sched-info">
+                            <span className="dd-sched-num">#{o.order_number}</span>
+                            <span className="dd-sched-time"><Clock size={12}/> {o.expected_time}</span>
+                          </div>
+                          <div className="dd-sched-detail">
+                            <span>{o.customer_name}</span>
+                            <span className="dd-sched-addr">{addr}</span>
+                          </div>
+                          <span className="dd-sched-total">${parseFloat(o.total || 0).toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </>
           )}

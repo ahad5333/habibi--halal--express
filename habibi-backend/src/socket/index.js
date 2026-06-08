@@ -1,14 +1,6 @@
 const pool = require("../config/db");
 const jwt  = require("jsonwebtoken");
 
-const DRIVER_RESPONSES = [
-  "Assalamu Alaikum! I'm currently picking up your food. It should be hot and fresh!",
-  "I'm at the Bronx Habibi Express kitchen now. They are packing it up.",
-  "En route to your location. Traffic is light, should be there soon!",
-  "I've arrived near your delivery location. Coming up now!",
-  "Got your message! Let me know if you need anything else.",
-  "Thank you for ordering with Habibi Halal Express! Delivery is on the way.",
-];
 
 async function saveMessage(order_number, sender, text) {
   try {
@@ -105,16 +97,6 @@ module.exports = (io) => {
       await saveMessage(order_id, sender, text);
       io.to(room).emit("receive_message", { order_id, sender, text, timestamp });
       console.log(`[SOCKET] Chat [${room}] ${sender}: ${text}`);
-
-      // Simulated driver auto-reply (remove when real driver app is live)
-      if (sender === "customer") {
-        setTimeout(async () => {
-          const autoText = DRIVER_RESPONSES[Math.floor(Math.random() * DRIVER_RESPONSES.length)];
-          const ts       = new Date().toISOString();
-          await saveMessage(order_id, "driver", autoText);
-          io.to(room).emit("receive_message", { order_id, sender: "driver", text: autoText, timestamp: ts });
-        }, 1500);
-      }
     });
 
     socket.on("disconnect", () => {

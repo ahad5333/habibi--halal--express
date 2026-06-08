@@ -155,8 +155,14 @@ export const adminAPI = {
   getMarketplaceStats:   ()        => req('/api/marketplace/stats'),
   updateMarketplaceOrder:(id, body) => req(`/api/marketplace/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  // Roadie long-distance
+  getRoadieShipments:     ()         => req('/api/roadie/'),
+  getRoadieEstimate:      (addr)     => req('/api/roadie/estimate', { method: 'POST', body: JSON.stringify({ dropoff_address: addr }) }),
+  cancelRoadieShipment:   (shipId)   => req(`/api/roadie/${shipId}/cancel`, { method: 'DELETE' }),
+
   // In-house dispatch
   getAssignments:         () => req('/api/dispatch/assignments'),
+  getScheduledOrders:     () => req('/api/dispatch/scheduled'),
   getDeliveryDrivers:     () => req('/api/dispatch/drivers'),
   assignDriver:           (body) => req('/api/dispatch/assign', { method: 'POST', body: JSON.stringify(body) }),
   updateAssignmentStatus: (id, status) => req(`/api/dispatch/assignments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

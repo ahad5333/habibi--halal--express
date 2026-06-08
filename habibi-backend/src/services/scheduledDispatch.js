@@ -203,6 +203,11 @@ function startScheduledDispatch(io) {
         if (minsUntil <= DISPATCH_LEAD_MIN) {
           console.log(`[ScheduledDispatch] Firing #${order.order_number} (${minsUntil.toFixed(1)} min until ${order.expected_time})`);
           await dispatchOrder(order, io);
+          if (io) io.emit('scheduled_dispatch_fired', {
+            order_number: order.order_number,
+            expected_time: order.expected_time,
+            mins_until: Math.round(minsUntil),
+          });
         }
       }
     } catch (err) {

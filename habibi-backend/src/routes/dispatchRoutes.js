@@ -30,4 +30,26 @@ router.get('/assignments',   getAssignments);
 router.get('/drivers',       getDeliveryDrivers);
 router.post('/assign',       assignDriver);
 
+// Scheduled orders waiting for dispatch
+router.get('/scheduled', async (req, res) => {
+  const pool = require('../config/db');
+  try {
+    const result = await pool.query(
+      `SELECT id, order_number, customer_name, customer_phone,
+              delivery_address, delivery_city, delivery_state, delivery_zip,
+              total, expected_time, placed_at
+         FROM guest_orders
+        WHERE delivery_method = 'delivery'
+          AND dispatch_fired  = FALSE
+          AND expected_time  IS NOT NULL
+          AND expected_time  != ''
+          AND expected_time  != 'ASAP'
+        ORDER BY placed_at ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

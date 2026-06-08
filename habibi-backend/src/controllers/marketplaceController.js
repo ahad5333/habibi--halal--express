@@ -3,12 +3,27 @@ const pool = require('../config/db');
 const crypto = require('crypto');
 const { notifyPlatform } = require('../services/orderCallbackService');
 
-// ── Verify UberEats webhook signature ──────────────────────────────
+// ── Webhook signature helpers ───────────────────────────────────────
 function verifyUberSignature(rawBody, signature) {
   const secret = process.env.UBEREATS_WEBHOOK_SECRET;
-  if (!secret) return true; // skip if not configured
+  if (!secret) return true;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   return signature === expected;
+}
+
+function verifyGrubHubSignature(rawBody, signature) {
+  const secret = process.env.GRUBHUB_WEBHOOK_SECRET;
+  if (!secret) return true; // skip if not configured
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
+}
+
+function verifyCaviarSignature(rawBody, signature) {
+  // Caviar is DoorDash-powered — uses same HMAC-SHA256 with DOORDASH_WEBHOOK_SECRET
+  const secret = process.env.DOORDASH_WEBHOOK_SECRET;
+  if (!secret) return true;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
 }
 
 // ── Normalise an UberEats order into our schema ─────────────────────
@@ -93,7 +108,12 @@ const handleUberEatsWebhook = async (req, res) => {
 
 // ── GrubHub webhook ──────────────────────────────────────────────────
 const handleGrubHubWebhook = async (req, res) => {
+  const sig = req.headers['x-grubhub-signature'] || req.headers['x-hub-signature-256'] || '';
+  const raw = JSON.stringify(req.body);
   try {
+    if (!verifyGrubHubSignature(raw, sig.replace(/^sha256=/, ''))) {
+      return res.status(401).json({ message: 'Invalid signature' });
+    }
     const order = req.body.order || req.body;
     if (!order?.id && !order?.order_id) return res.sendStatus(200);
 
@@ -111,6 +131,9 @@ const handleGrubHubWebhook = async (req, res) => {
 
 // ── Caviar (powered by DoorDash) — webhook mirrors DoorDash format ──
 const handleCaviarWebhook = async (req, res) => {
+  const sig = req.headers['x-doordash-signature'] || req.headers['x-caviar-signature'] || '';
+  const raw = JSON.stringify(req.body);
+  if (!verifyCaviarSignature(raw, sig)) return res.status(401).json({ message: 'Invalid signature' });
   try {
     const order = req.body;
     const norm = {

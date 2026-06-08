@@ -42,6 +42,7 @@ import LiveBoard from './pages/LiveBoard';
 import Broadcasts from './pages/Broadcasts';
 import DeliveryDispatch from './pages/DeliveryDispatch';
 import MarketplaceOrders from './pages/MarketplaceOrders';
+import RoadieDeliveries from './pages/RoadieDeliveries';
 import DriverView from './pages/Driver';
 import BusinessMenuAdmin from './pages/BusinessMenuAdmin';
 import PartnerOrders from './pages/PartnerOrders';
@@ -87,6 +88,7 @@ function AdminLayout() {
             <Route path="/broadcasts"  element={<Broadcasts />} />
             <Route path="/dispatch"   element={<DeliveryDispatch />} />
             <Route path="/marketplace"   element={<MarketplaceOrders />} />
+            <Route path="/roadie"   element={<RoadieDeliveries />} />
             <Route path="/integrations"   element={<Integrations />} />
             <Route path="/credentials"    element={<PlatformCredentials />} />
             <Route path="/audit-log"      element={<AuditLog />} />

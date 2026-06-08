@@ -1,6 +1,16 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
+const crypto = require('crypto');
 const { roadieRequest, isConfigured } = require('../utils/roadie');
+
+function verifyRoadieSignature(rawBody, signature) {
+  const secret = process.env.ROADIE_WEBHOOK_SECRET || process.env.ROADIE_API_KEY;
+  if (!secret) return true;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
+  } catch { return false; }
+}
 
 const RESTAURANT_NAME    = process.env.RESTAURANT_NAME    || 'Habibi Halal Express';
 const RESTAURANT_PHONE   = process.env.RESTAURANT_PHONE   || '+13477033731';
@@ -135,6 +145,10 @@ const listShipments = async (req, res) => {
 
 // ── Roadie webhook — receives state change events ───────────────────
 const handleWebhook = async (req, res) => {
+  const sig = req.headers['x-roadie-signature'] || '';
+  const raw = JSON.stringify(req.body);
+  if (!verifyRoadieSignature(raw, sig)) return res.status(401).json({ message: 'Invalid signature' });
+
   try {
     const { event, data } = req.body;
 
