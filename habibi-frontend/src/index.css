@@ -201,6 +201,10 @@ input:focus, textarea:focus, select:focus {
   border-color: rgba(249,115,22,0.45);
   box-shadow: 0 0 0 2px rgba(249,115,22,0.08);
 }
+select option {
+  background: #111111;
+  color: #f0ede8;
+}
 
 /* ── Sitewide logo watermark ───────────────────────────────── */
 /* Wrap any page's root div with .page-watermark to get the logo */

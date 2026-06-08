@@ -235,6 +235,10 @@
 .pay-input::placeholder { color: rgba(255,255,255,0.2); }
 
 .pay-select { cursor: pointer; }
+.pay-select option {
+  background: #111111;
+  color: #ffffff;
+}
 
 /* Amount with $ icon */
 .pay-amount-wrap {
