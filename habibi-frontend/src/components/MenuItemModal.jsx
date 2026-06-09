@@ -160,6 +160,8 @@ export default function MenuItemModal({ itemId, onClose }) {
       tag:   item.category || 'Item',
       note:  fullNote,
       qty,
+      selectedChoices: choiceSel,
+      selectedAddons:  addonSel,
     });
     setAdded(true);
     setTimeout(() => { setAdded(false); onClose(); }, 1400);

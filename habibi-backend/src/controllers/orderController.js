@@ -161,17 +161,49 @@ const createGuestOrder = async (req, res) => {
         const priceMap = {};
         priceRows.rows.forEach(r => { priceMap[r.id] = parseFloat(r.price); });
 
+        // Fetch modifier JSONB alongside prices in one round trip
+        const modRows = await pool.query(
+          'SELECT id, choices, addons FROM menus WHERE id = ANY($1)',
+          [itemIds]
+        );
+        const modMap = {};
+        modRows.rows.forEach(r => { modMap[r.id] = { choices: r.choices || [], addons: r.addons || [] }; });
+
+        // Per-item: verify client price >= dbBasePrice + selected modifier extras
         let recalcSubtotal = 0;
         for (const item of items) {
           const menuId = parseInt(item.id || item.menu_id, 10);
           if (!menuId) continue;
           const dbPrice = priceMap[menuId];
-          if (dbPrice === undefined) continue; // item not in DB (addon, custom) — skip
+          if (dbPrice === undefined) continue;
+
+          const { choices, addons } = modMap[menuId] || { choices: [], addons: [] };
+          const selChoices = item.selectedChoices || {};
+          const selAddons  = item.selectedAddons  || {};
+          let modifierExtra = 0;
+
+          for (const [cgId, optId] of Object.entries(selChoices)) {
+            const cg  = choices.find(c => c.id === parseInt(cgId));
+            const opt = (cg?.options || []).find(o => o.id === parseInt(optId));
+            modifierExtra += parseFloat(opt?.extra_price || 0);
+          }
+          for (const [optId, addonQty] of Object.entries(selAddons)) {
+            for (const ag of addons) {
+              const opt = (ag?.options || []).find(o => o.id === parseInt(optId));
+              if (opt) modifierExtra += parseFloat(opt.price || 0) * parseInt(addonQty, 10);
+            }
+          }
+
+          const expectedUnit = parseFloat(dbPrice) + modifierExtra;
+          const clientUnit   = parseFloat(item.price || item.unit_price || 0);
+          if (clientUnit < expectedUnit - 0.02) {
+            return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
+          }
+
           const qty = parseInt(item.qty || item.quantity || 1, 10);
-          recalcSubtotal += dbPrice * qty;
+          recalcSubtotal += clientUnit * qty;
         }
 
-        // Allow $0.50 tolerance for addons/modifiers not individually tracked in menus table
         if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.50) {
           return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
         }
