@@ -270,10 +270,10 @@ const Menu = () => {
     const name    = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
     const price   = parseFloat(item.price || 0);
     const isFav   = favoriteIds.has(item.id);
-    const isDrink = (item.category || '').toLowerCase().includes('drink');
-    const isTuna  = name.toLowerCase().includes('tuna');
+    const cat     = (item.category || '').toLowerCase();
+    const isCold  = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
     const isSpicy = !!item.is_spicy;
-    const fxClass = isDrink ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : (!isTuna ? 'item-fx item-fx-steam' : ''));
+    const fxClass = isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
 
     return (
       <div
@@ -486,10 +486,10 @@ const Menu = () => {
                 const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
                 const price  = parseFloat(item.price || 0);
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
-                const isDrink = (item.category || '').toLowerCase().includes('drink');
-                const isTuna  = name.toLowerCase().includes('tuna');
+                const cat     = (item.category || '').toLowerCase();
+                const isCold  = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
                 const isSpicy = !!item.is_spicy;
-                const fxClass = isDrink ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : (!isTuna ? 'item-fx item-fx-steam' : ''));
+                const fxClass = isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
                 return (
                   <div
                     key={item.id}

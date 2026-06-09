@@ -1466,7 +1466,7 @@
 /* Bundle A — left side of image (wisps s1, s2, s3 grouped tightly) */
 /* s1 = bright core */
 .item-fx-steam .smoke.s1 {
-  left: 30%; width: 5px;
+  left: 30%; width: 3px;
   background: linear-gradient(to top,
     rgba(255,255,255,0.98) 0%,
     rgba(252,250,248,0.85) 14%,
@@ -1481,7 +1481,7 @@
 }
 /* s2 = left secondary wisp of bundle A */
 .item-fx-steam .smoke.s2 {
-  left: 24%; width: 3px;
+  left: 24%; width: 2px;
   background: linear-gradient(to top,
     rgba(255,255,255,0.72) 0%,
     rgba(245,242,238,0.58) 18%,
@@ -1495,7 +1495,7 @@
 }
 /* s3 = right secondary wisp of bundle A */
 .item-fx-steam .smoke.s3 {
-  left: 37%; width: 3px;
+  left: 37%; width: 2px;
   background: linear-gradient(to top,
     rgba(255,255,255,0.68) 0%,
     rgba(245,242,238,0.52) 18%,
@@ -1510,7 +1510,7 @@
 
 /* Bundle B — right side of image (wisps s4, s5), delayed so both bundles alternate */
 .item-fx-steam .smoke.s4 {
-  left: 62%; width: 5px;
+  left: 62%; width: 3px;
   background: linear-gradient(to top,
     rgba(255,255,255,0.95) 0%,
     rgba(250,248,245,0.82) 14%,
@@ -1524,7 +1524,7 @@
   animation-delay: 1.8s;
 }
 .item-fx-steam .smoke.s5 {
-  left: 56%; width: 3px;
+  left: 56%; width: 2px;
   background: linear-gradient(to top,
     rgba(255,255,255,0.65) 0%,
     rgba(244,240,236,0.50) 20%,
