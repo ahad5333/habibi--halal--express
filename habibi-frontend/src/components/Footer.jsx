@@ -72,35 +72,6 @@ const Footer = () => {
             ))}
           </div>
 
-          <div className="footer-badges-row mt-4">
-            <div className="footer-badge-card">
-              <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">Halal<br/>Certified</span>
-            </div>
-            <div className="footer-badge-card">
-              <img src="/images/logos/grade-a.jpg" alt="NYC Grade A" className="footer-badge-card-img footer-badge-card-img--rect" />
-              <span className="footer-badge-card-label">NYC Health<br/>Grade A</span>
-            </div>
-            <div className="footer-badge-card">
-              <img src="/images/logos/delivery-service.png" alt="Delivery Service" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">Fast<br/>Delivery</span>
-            </div>
-            <div className="footer-badge-card">
-              <img src="/images/logos/pickup-sign.png" alt="Online Order Pick Up" className="footer-badge-card-img footer-badge-card-img--circle footer-badge-card-img--dark" />
-              <span className="footer-badge-card-label">Online<br/>Pick Up</span>
-            </div>
-            <a
-              href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-badge-card footer-badge-card--google"
-            >
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="footer-badge-google-icon">
-                <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.579-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 5.92 1 1 5.92 1 12.2s4.92 11.2 11.24 11.2c6.6 0 11-4.64 11-11.2 0-.753-.08-1.325-.2-1.915H12.24z"/>
-              </svg>
-              <span className="footer-badge-card-label">Order<br/>on Google</span>
-            </a>
-          </div>
         </div>
 
         <div className="footer-links">
@@ -172,6 +143,33 @@ const Footer = () => {
           <div className="footer-trust-badge" title="Authorize.net Secured">
             <img src="/images/partners/authorize-net.png" alt="Authorize.net" className="trust-partner-img" />
           </div>
+          <div className="footer-badge-card">
+            <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
+            <span className="footer-badge-card-label">Halal<br/>Certified</span>
+          </div>
+          <div className="footer-badge-card">
+            <img src="/images/logos/grade-a.jpg" alt="NYC Grade A" className="footer-badge-card-img footer-badge-card-img--rect" />
+            <span className="footer-badge-card-label">NYC Health<br/>Grade A</span>
+          </div>
+          <div className="footer-badge-card">
+            <img src="/images/logos/delivery-service.png" alt="Delivery Service" className="footer-badge-card-img footer-badge-card-img--circle" />
+            <span className="footer-badge-card-label">Fast<br/>Delivery</span>
+          </div>
+          <div className="footer-badge-card">
+            <img src="/images/logos/pickup-sign.png" alt="Online Order Pick Up" className="footer-badge-card-img footer-badge-card-img--circle footer-badge-card-img--dark" />
+            <span className="footer-badge-card-label">Online<br/>Pick Up</span>
+          </div>
+          <a
+            href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-badge-card footer-badge-card--google"
+          >
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="footer-badge-google-icon">
+              <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.579-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 5.92 1 1 5.92 1 12.2s4.92 11.2 11.24 11.2c6.6 0 11-4.64 11-11.2 0-.753-.08-1.325-.2-1.915H12.24z"/>
+            </svg>
+            <span className="footer-badge-card-label">Order<br/>on Google</span>
+          </a>
         </div>
         <div className="footer-delivery-badges">
           <span className="footer-delivery-label">Order via:</span>
