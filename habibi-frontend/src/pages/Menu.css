@@ -1428,146 +1428,78 @@
   }
 }
 
-/* ── FIRE SMOKE EFFECT (Hot Items) — Dark billowing smoke like burning fire ── */
+/* ── WHITE WAVE SMOKE (Hot Items) ── */
 .item-fx-steam {
   background: transparent;
   overflow: visible;
 }
 
-/* Burning ember glow at the base — deep orange-red like hot coals */
+/* Warm orange-red ember glow at the base */
 .item-fx-steam::before {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 45%;
+  height: 40%;
   background: radial-gradient(ellipse at bottom,
-    rgba(255, 70, 0,  0.60) 0%,
-    rgba(220, 50, 0,  0.38) 30%,
-    rgba(160, 30, 0,  0.18) 58%,
-    rgba(0,   0,  0,  0)    85%
+    rgba(255, 90,  0,  0.55) 0%,
+    rgba(220, 60,  0,  0.30) 35%,
+    rgba(160, 30,  0,  0.12) 62%,
+    rgba(0,   0,   0,  0)    88%
   );
-  filter: blur(9px);
+  filter: blur(8px);
   pointer-events: none;
   border-radius: 50%;
-  opacity: 1;
 }
 
-/* Extra heat shimmer layer on top of ember glow */
-.item-fx-steam::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 10%;
-  right: 10%;
-  height: 30%;
-  background: radial-gradient(ellipse at bottom,
-    rgba(255, 140, 0, 0.30) 0%,
-    rgba(255, 80,  0, 0.12) 50%,
-    rgba(0,   0,   0, 0)    80%
-  );
-  filter: blur(5px);
-  pointer-events: none;
-  animation: emberFlicker 1.8s ease-in-out infinite alternate;
-}
-
-@keyframes emberFlicker {
-  0%   { opacity: 0.6; transform: scaleX(0.92); }
-  100% { opacity: 1.0; transform: scaleX(1.08); }
-}
-
-/* Dark, near-black smoke puffs distorted by the SVG turbulence filter */
+/* White smoke puffs with soft warm centre — turbulence filter gives organic shape */
 .item-fx-steam .smoke {
   position: absolute;
-  bottom: 4%;
-  width: 70px;
-  height: 70px;
+  bottom: 5%;
+  width: 68px;
+  height: 68px;
   background: radial-gradient(circle,
-    rgba(8,  6,  4,  0.95) 0%,
-    rgba(28, 22, 16, 0.85) 20%,
-    rgba(55, 42, 30, 0.68) 42%,
-    rgba(90, 68, 48, 0.42) 62%,
-    rgba(130, 100, 70, 0.16) 80%,
-    rgba(0, 0, 0, 0) 100%
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(240, 235, 228, 0.80) 22%,
+    rgba(220, 215, 205, 0.55) 46%,
+    rgba(200, 195, 185, 0.25) 68%,
+    rgba(255, 255, 255, 0)    100%
   );
   border-radius: 50%;
   opacity: 0;
   transform-origin: bottom center;
   pointer-events: none;
-  /* SVG turbulence distorts circles into ragged fire-smoke shapes */
   filter: url(#smoke-filter) blur(6px);
 }
 
 /* Staggered positions */
-.item-fx-steam .smoke.s1 {
-  left: 8%;
-  animation: fireSmokeLeft  2.4s ease-in infinite;
-  animation-delay: 0s;
-}
-.item-fx-steam .smoke.s2 {
-  left: 28%;
-  animation: fireSmokeRight 2.1s ease-in infinite;
-  animation-delay: 0.4s;
-}
-.item-fx-steam .smoke.s3 {
-  left: 50%;
-  animation: fireSmokeLeft  2.6s ease-in infinite;
-  animation-delay: 0.9s;
-}
-.item-fx-steam .smoke.s4 {
-  left: 70%;
-  animation: fireSmokeRight 2.3s ease-in infinite;
-  animation-delay: 1.4s;
-}
-.item-fx-steam .smoke.s5 {
-  left: 38%;
-  animation: fireSmokeLeft  2.5s ease-in infinite;
-  animation-delay: 1.9s;
+.item-fx-steam .smoke.s1 { left: 8%;  animation: smokeWaveL 3.0s ease-in-out infinite; animation-delay: 0s;   }
+.item-fx-steam .smoke.s2 { left: 28%; animation: smokeWaveR 2.7s ease-in-out infinite; animation-delay: 0.5s; }
+.item-fx-steam .smoke.s3 { left: 50%; animation: smokeWaveL 3.2s ease-in-out infinite; animation-delay: 1.0s; }
+.item-fx-steam .smoke.s4 { left: 70%; animation: smokeWaveR 2.9s ease-in-out infinite; animation-delay: 1.6s; }
+.item-fx-steam .smoke.s5 { left: 38%; animation: smokeWaveL 3.1s ease-in-out infinite; animation-delay: 2.2s; }
+
+/* Wave left — sinusoidal X sway: right → left → right as it rises */
+@keyframes smokeWaveL {
+  0%   { transform: translateY(0px)    translateX(0px)   scale(0.32); opacity: 0;    }
+  8%   { transform: translateY(-10px)  translateX(6px)   scale(0.55); opacity: 0.90; }
+  25%  { transform: translateY(-38px)  translateX(14px)  scale(1.10); opacity: 0.82; }
+  42%  { transform: translateY(-65px)  translateX(4px)   scale(1.70); opacity: 0.68; }
+  58%  { transform: translateY(-92px)  translateX(-12px) scale(2.40); opacity: 0.50; }
+  75%  { transform: translateY(-120px) translateX(-4px)  scale(3.10); opacity: 0.28; }
+  100% { transform: translateY(-158px) translateX(8px)   scale(4.20); opacity: 0;    }
 }
 
-@keyframes fireSmokeLeft {
-  0% {
-    transform: translateY(0px)    translateX(0px)   scale(0.3)  rotate(0deg);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.92;
-  }
-  35% {
-    transform: translateY(-60px)  translateX(-16px) scale(1.8)  rotate(-8deg);
-    opacity: 0.80;
-  }
-  65% {
-    transform: translateY(-110px) translateX(10px)  scale(3.0)  rotate(5deg);
-    opacity: 0.45;
-  }
-  100% {
-    transform: translateY(-165px) translateX(-8px)  scale(4.4)  rotate(-4deg);
-    opacity: 0;
-  }
-}
-
-@keyframes fireSmokeRight {
-  0% {
-    transform: translateY(0px)    translateX(0px)   scale(0.3)  rotate(0deg);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.92;
-  }
-  35% {
-    transform: translateY(-60px)  translateX(16px)  scale(1.8)  rotate(8deg);
-    opacity: 0.80;
-  }
-  65% {
-    transform: translateY(-110px) translateX(-10px) scale(3.0)  rotate(-5deg);
-    opacity: 0.45;
-  }
-  100% {
-    transform: translateY(-165px) translateX(8px)   scale(4.4)  rotate(4deg);
-    opacity: 0;
-  }
+/* Wave right — mirror of smokeWaveL */
+@keyframes smokeWaveR {
+  0%   { transform: translateY(0px)    translateX(0px)   scale(0.32); opacity: 0;    }
+  8%   { transform: translateY(-10px)  translateX(-6px)  scale(0.55); opacity: 0.90; }
+  25%  { transform: translateY(-38px)  translateX(-14px) scale(1.10); opacity: 0.82; }
+  42%  { transform: translateY(-65px)  translateX(-4px)  scale(1.70); opacity: 0.68; }
+  58%  { transform: translateY(-92px)  translateX(12px)  scale(2.40); opacity: 0.50; }
+  75%  { transform: translateY(-120px) translateX(4px)   scale(3.10); opacity: 0.28; }
+  100% { transform: translateY(-158px) translateX(-8px)  scale(4.20); opacity: 0;    }
 }
 
 /* ── FROST EFFECT (Cold Items) ── */
