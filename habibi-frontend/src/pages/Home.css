@@ -2168,10 +2168,6 @@
     font-size: 2rem;
   }
 
-  .hero-title-exact {
-    font-size: 3rem;
-  }
-
   /* Curated section header stacks on mobile */
   .curated-section .section-header.space-between {
     flex-direction: column;
@@ -2256,12 +2252,6 @@
     display: none;
   }
 
-  .hero-title-exact { font-size: 2.3rem; }
-  .hero-creative-line { font-size: 0.82rem; letter-spacing: 1px; }
-
-  .hero-cta-group { justify-content: flex-start; }
-  .hero-quick-picks { align-items: flex-start; }
-
   .bowl-builder { margin-top: 2rem; }
 
   .step-options { flex-wrap: wrap; }
@@ -2284,8 +2274,7 @@
 }
 
 @media (max-width: 400px) {
-  .hero-title-exact { font-size: 1.9rem; }
-  .heading-2        { font-size: 1.5rem; }
+  .heading-2  { font-size: 1.5rem; }
 
   .btn-option { font-size: 0.74rem; padding: 0.5rem 0.3rem; }
 
@@ -2536,26 +2525,28 @@
 /* ── Hero section — comprehensive mobile fix ─────────────────── */
 @media (max-width: 768px) {
   .hero-top-dark {
-    min-height: 44vh;
-    padding: 4.5rem 0.875rem 5rem;
+    min-height: clamp(35vh, 4vw + 32vh, 44vh);
+    padding: 3.25rem 0.75rem 4rem;
     align-items: center;
     justify-content: flex-end;
     overflow: visible;
   }
   .hero-halal-badge {
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
     top: 0.75rem;
     left: 0.75rem;
   }
   .hero-logo-watermark { display: none; }
   .floating-item { display: none; }
 
+  /* Single authoritative hero-content rule — applies identically to every phone */
   .hero-content {
     width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
-    margin: 1rem auto 1.25rem;
-    padding: 1.1rem 1rem;
+    margin: 0.75rem auto;
+    margin-bottom: -11rem;
+    padding: 0.875rem 1rem;
     border-radius: 14px;
     text-align: center;
     position: relative;
@@ -2563,7 +2554,7 @@
     box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.08);
   }
   .hero-title-exact {
-    font-size: clamp(1.2rem, 4.2vw, 1.55rem);
+    font-size: clamp(1.1rem, 4.2vw, 1.55rem);
     line-height: 1.25;
     margin-top: 0.1rem;
     margin-bottom: 0.5rem;
@@ -2571,12 +2562,6 @@
   .hero-bottom-light {
     padding-top: 7.5rem;
     padding-bottom: 3rem;
-  }
-  .hero-title-exact {
-    font-size: 1.45rem;
-    line-height: 1.25;
-    margin-top: 0.1rem;
-    margin-bottom: 0.5rem;
   }
   .hero-title-line-1,
   .hero-title-line-2,
@@ -2619,36 +2604,11 @@
 }
 
 @media (max-width: 480px) {
-  .hero-top-dark {
-    min-height: 38vh;
-    padding: 3.5rem 0.75rem 4.5rem;
-    overflow: visible;
-  }
-  .hero-title-exact { font-size: 1.25rem; }
-  .hero-content {
-    padding: 0.9rem 0.875rem;
-    max-width: calc(100% - 2rem);
-    margin-bottom: -5.5rem;
-  }
-  .hero-bottom-light { padding-top: 8rem; }
   .hero-btn-primary, .hero-btn-ghost { font-size: 0.85rem; padding: 0.65rem 0.875rem; }
 }
 
 @media (max-width: 400px) {
-  .hero-top-dark {
-    min-height: 35vh;
-    padding: 3.25rem 0.625rem 4rem;
-    overflow: visible;
-  }
-  .hero-title-exact { font-size: 1.1rem; }
-  .hero-halal-badge { width: 58px; height: 58px; }
   .hero-creative-line { font-size: 0.65rem; padding: 0.3rem 0.6rem; }
-  .hero-content {
-    max-width: calc(100% - 1.5rem);
-    margin-bottom: -11rem;
-    padding: 0.75rem;
-  }
-  .hero-bottom-light { padding-top: 7.5rem; }
 }
 
 /* ── Story section ── */
