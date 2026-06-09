@@ -138,12 +138,12 @@
 }
 
 .footer-badge-card-img--circle {
-  width: 44px;
-  height: 44px;
+  width: 54px;
+  height: 50px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffffeb;
   padding: 3px;
-  border: 1px solid rgba(255, 215, 0, 0.15);
+  border: 1px solid #ffd70026;
 }
 
 .footer-badge-card-img--rect {
