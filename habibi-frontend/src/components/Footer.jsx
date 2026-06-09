@@ -125,24 +125,6 @@ const Footer = () => {
       {/* Trust & Certification Badges */}
       <div className="footer-trust-row">
         <div className="footer-trust-badges">
-          <div className="footer-trust-badge" title="SSL Secured">
-            <span className="trust-icon">🔒</span>
-            <span className="trust-label">SSL Secured</span>
-          </div>
-          <div className="footer-trust-badge" title="NYC Health Inspection Certified">
-            <span className="trust-icon">🏥</span>
-            <span className="trust-label">NYC Health A-Rating</span>
-          </div>
-          <div className="footer-trust-badge" title="Consumer Affairs Approved">
-            <span className="trust-icon">✅</span>
-            <span className="trust-label">Consumer Affairs</span>
-          </div>
-          <div className="footer-trust-badge" title="PayPal Accepted">
-            <img src="/images/partners/paypal.png" alt="PayPal" className="trust-partner-img" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='inline'; }} /><span style={{display:'none'}}>PayPal</span>
-          </div>
-          <div className="footer-trust-badge" title="Authorize.net Secured">
-            <img src="/images/partners/authorize-net.png" alt="Authorize.net" className="trust-partner-img" />
-          </div>
           <div className="footer-badge-card">
             <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
             <span className="footer-badge-card-label">Halal<br/>Certified</span>
