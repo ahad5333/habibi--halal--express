@@ -43,8 +43,8 @@ export default function CateringAdmin() {
 
   const load = useCallback(() => {
     setLoading(true);
-    apiFetch('/api/reservations/admin')
-      .then(d => setQuotes(Array.isArray(d?.data) ? d.data : []))
+    apiFetch('/api/reservations/admin?type=catering')
+      .then(d => setQuotes(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : [])))
       .catch(() => setQuotes([]))
       .finally(() => setLoading(false));
   }, []);

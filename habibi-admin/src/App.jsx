@@ -48,6 +48,7 @@ import BusinessMenuAdmin from './pages/BusinessMenuAdmin';
 import PartnerOrders from './pages/PartnerOrders';
 import TableManager from './pages/TableManager';
 import CateringAdmin from './pages/CateringAdmin';
+import TableReservations from './pages/TableReservations';
 import CareersAdmin from './pages/Careers';
 import Reviews from './pages/Reviews';
 import Integrations from './pages/Integrations';
@@ -72,6 +73,7 @@ function AdminLayout() {
             <Route path="/wholesale-catalog" element={<BusinessMenuAdmin />} />
             <Route path="/partner-orders"    element={<PartnerOrders />} />
             <Route path="/tables"           element={<TableManager />} />
+            <Route path="/reservations"     element={<TableReservations />} />
             <Route path="/catering"         element={<CateringAdmin />} />
           <Route path="/careers"          element={<CareersAdmin />} />
             <Route path="/reviews"          element={<Reviews />} />

@@ -67,11 +67,15 @@ const createReservation = async (req, res) => {
   }
 };
 
-// 2. Get all catering quotes (Admin)
+// 2. Get all reservations, optionally filtered by type (Admin)
 const getAllReservations = async (req, res) => {
   try {
+    const { type } = req.query;
+    let where = '';
+    if (type === 'table')   where = "WHERE service_type = 'table_reservation'";
+    if (type === 'catering') where = "WHERE service_type != 'table_reservation' OR service_type IS NULL";
     const result = await pool.query(
-      `SELECT * FROM reservations ORDER BY created_at DESC`
+      `SELECT * FROM reservations ${where} ORDER BY created_at DESC`
     );
     res.json(result.rows);
   } catch (error) {
