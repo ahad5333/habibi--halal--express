@@ -2290,7 +2290,7 @@
 }
 @media (max-width: 480px) {
   .marquee-item { font-size: 0.9rem; margin-right: 1.5rem; gap: 0.65rem; }
-  .hero-bottom-title-exact { font-size: 2.5rem; }
+  .hero-bottom-title-exact { font-size: 1.5rem; margin-top: 85px; }
   .hero-arched-cards { gap: 1rem; }
   .arched-card { width: 160px; height: 210px; }
   .feast-thumbs { grid-template-columns: 1fr; }
