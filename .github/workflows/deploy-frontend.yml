@@ -1,0 +1,48 @@
+# Builds and deploys habibi-frontend (React/Vite) to the production VPS whenever
+# the frontend changes on main.  Nginx serves the built files from dist/.
+#
+# Required GitHub Secrets (same set as deploy-backend.yml, plus):
+#   FRONTEND_PATH    — absolute path to habibi-frontend on the server (e.g. /var/www/habibi/habibi-frontend)
+#   VITE_API_URL     — production API base URL injected at build time (e.g. https://api.habibihalal.com)
+#
+# Assumptions:
+#   - The server has Node.js >= 20 installed
+#   - Nginx is configured to serve FRONTEND_PATH/dist as the document root
+
+name: Deploy — Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'habibi-frontend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & deploy frontend
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Build and deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          port:     ${{ secrets.DEPLOY_PORT }}
+          script: |
+            set -e
+            echo "==> Pulling latest code..."
+            cd ${{ secrets.FRONTEND_PATH }}
+            git pull origin main
+
+            echo "==> Installing dependencies..."
+            npm ci
+
+            echo "==> Building frontend..."
+            VITE_API_URL=${{ secrets.VITE_API_URL }} npm run build
+
+            echo "==> Build complete. Nginx serves from dist/."
+            ls -lh dist/

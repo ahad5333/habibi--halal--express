@@ -2518,14 +2518,13 @@
 
 @media (max-width: 360px) {
   .hero-top-dark { padding: 0.75rem 0.5rem 1.75rem; }
-  .hero-creative-line { display: none; }
   .hero-btn-primary, .hero-btn-ghost { font-size: 0.78rem; padding: 0.6rem 1.25rem; }
 }
 
 /* ── Hero section — comprehensive mobile fix ─────────────────── */
 @media (max-width: 768px) {
   .hero-top-dark {
-    min-height: clamp(35vh, 4vw + 32vh, 44vh);
+    min-height: clamp(250px, 72vw, 320px);
     padding: 3.25rem 0.75rem 4rem;
     align-items: center;
     justify-content: flex-end;
