@@ -26,7 +26,7 @@
 .rb-title {
   font-size: .92rem;
   font-weight: 700;
-  color: #111111;
+  color: #ffffff;
   margin: 0;
   letter-spacing: .01em;
   white-space: nowrap;
@@ -76,24 +76,25 @@
 .rb-card {
   flex: 0 0 176px;
   scroll-snap-align: start;
-  background: var(--color-surface, #ffffff);
-  border: 1px solid rgba(229, 182, 78, 0.15);
+  background: linear-gradient(135deg, rgba(22, 22, 22, 0.75) 0%, rgba(10, 10, 10, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   transform-style: preserve-3d;
   perspective: 1000px;
+  backdrop-filter: blur(10px);
 }
 
 .rb-card:hover {
-  border-color: var(--color-gold, #E5B64E);
+  border-color: var(--color-primary, #F97316);
   transform: translateY(-8px) rotateX(5deg) rotateY(-4deg) scale(1.01);
   box-shadow: 
-    -6px 12px 24px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(229, 182, 78, 0.08);
+    -6px 12px 24px rgba(0, 0, 0, 0.6),
+    0 4px 12px rgba(249, 115, 22, 0.15);
 }
 
 .rb-img-wrap {
