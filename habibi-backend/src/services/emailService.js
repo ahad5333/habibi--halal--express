@@ -327,7 +327,20 @@ const sendCateringInvoice = async (email, name, quote, invoiceNotes = '') => {
   );
 };
 
+const sendTableReservationConfirmation = async (email, { name, location, date, time, party_size, table_number, ref_number }) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = renderEmail('table-reservation-confirmed', {
+    name, location, date, time, party_size, table_number: table_number || null, ref_number,
+  });
+  return sendMailHelper(
+    email,
+    `Your table is confirmed — ${date} at ${time} | Habibi Halal Express`,
+    html,
+  );
+};
+
 module.exports = {
+  sendTableReservationConfirmation,
   sendOrderConfirmation,
   sendOrderStatusUpdate,
   sendSignupWelcome,

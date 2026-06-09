@@ -113,7 +113,34 @@ const updateReservationStatus = async (req, res) => {
       [status || null, admin_notes || null, quoted_price || null, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'Quote not found' });
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+
+    // Send confirmation email for table reservations when admin confirms
+    if (status === 'confirmed' && row.service_type === 'table_reservation') {
+      const contact = row.email || row.phone || '';
+      const isEmail = contact.includes('@');
+      if (isEmail) {
+        // Parse time and special requests from stored notes
+        let time = '—', location = row.event_type || '—';
+        (row.notes || '').split(' | ').forEach(p => {
+          if (p.startsWith('Time: ')) time = p.replace('Time: ', '');
+        });
+        const dateStr = row.scheduled_date
+          ? new Date(row.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+          : '—';
+        emailService.sendTableReservationConfirmation(contact, {
+          name:         row.name,
+          location,
+          date:         dateStr,
+          time,
+          party_size:   row.party_size,
+          table_number: admin_notes || null,
+          ref_number:   `#TBL-${String(row.id).padStart(4, '0')}`,
+        }).catch(err => console.error('[Reservation] Confirmation email failed:', err.message));
+      }
+    }
+
+    res.json(row);
   } catch (error) {
     res.status(500).json(safeError(error));
   }
