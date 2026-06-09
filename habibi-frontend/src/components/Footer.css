@@ -129,6 +129,48 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+/* Delivery + Pickup service logos */
+.footer-service-logos {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-service-logo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer-service-logo-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.footer-service-logo-img--dark {
+  background: #1a1a1a;
+}
+
+.footer-service-logo-item:hover .footer-service-logo-img {
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(229, 182, 78, 0.25);
+}
+
+.footer-service-logo-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .footer-tagline {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;

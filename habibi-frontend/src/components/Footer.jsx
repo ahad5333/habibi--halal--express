@@ -79,6 +79,16 @@ const Footer = () => {
             <div className="footer-grade-badge">
               <img src="/images/logos/grade-a.jpg" alt="NYC Sanitary Inspection Grade A" className="footer-grade-img" />
             </div>
+            <div className="footer-service-logos">
+              <div className="footer-service-logo-item">
+                <img src="/images/logos/delivery-service.png" alt="Delivery Service" className="footer-service-logo-img" />
+                <span className="footer-service-logo-label">Delivery</span>
+              </div>
+              <div className="footer-service-logo-item">
+                <img src="/images/logos/pickup-sign.png" alt="Online Order Pick Up" className="footer-service-logo-img footer-service-logo-img--dark" />
+                <span className="footer-service-logo-label">Pick Up</span>
+              </div>
+            </div>
             <a 
               href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx" 
               target="_blank" 
