@@ -1119,7 +1119,7 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -1228,16 +1228,9 @@
   overflow: visible !important;
 }
 
-/* Menu list image wrap: always clipped so image is visible and effects stay inside */
+/* Allow smoke/frost effects to float above the image wrap */
 .menu-item-row-img-wrap {
-  overflow: hidden !important;
-}
-
-/* Hide visual effects on mobile — too small to look good and causes overflow */
-@media (max-width: 768px) {
-  .menu-item-row-img-wrap .item-fx {
-    display: none !important;
-  }
+  overflow: visible !important;
 }
 
 /* Ensure the img elements still clip to their borders properly */
