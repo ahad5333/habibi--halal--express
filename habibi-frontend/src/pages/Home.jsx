@@ -724,7 +724,7 @@ const Home = () => {
             <div className="book-table-image-side">
               <div className="book-table-img-frame">
                 <img
-                  src="/images/restaurant-interior.jpg"
+                  src="/images/restaurant-interior.png"
                   alt="Habibi Restaurant Interior"
                   className="book-table-img"
                   onError={e => { e.target.style.display = 'none'; }}
