@@ -136,6 +136,13 @@ const FeastVideo = ({ src }) => {
   );
 };
 
+const TIME_SLOTS = [
+  '11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','1:30 PM',
+  '2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM',
+  '5:00 PM','5:30 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM',
+  '8:00 PM','8:30 PM','9:00 PM','9:30 PM','10:00 PM',
+];
+
 const STATS = [
   { value: 500,  suffix: '+', label: 'Menu Items',      icon: '🍽️' },
   { value: 10,   suffix: 'K+', label: 'Happy Customers', icon: '❤️' },
@@ -201,6 +208,26 @@ const Home = () => {
   const [reviewStats, setReviewStats] = useState(null);
   const [featItems, setFeatItems] = useState([]);
   const carouselRef = useRef(null);
+
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [booking, setBooking] = useState({ location: '', party: '', date: '', time: '', name: '', contact: '', notes: '' });
+  const [bookingStatus, setBookingStatus] = useState('');
+
+  const handleBooking = async (e) => {
+    e.preventDefault();
+    setBookingStatus('loading');
+    try {
+      const res = await fetch(`${API_BASE}/api/reservations/table`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(booking),
+      });
+      if (!res.ok) throw new Error();
+      setBookingStatus('ok');
+    } catch {
+      setBookingStatus('error');
+    }
+  };
 
   const [typedText, setTypedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
@@ -672,6 +699,51 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          BOOK A TABLE
+      ═══════════════════════════════════════════════════════ */}
+      <section className="section book-table-section">
+        <div className="container">
+          <div className="book-table-inner">
+            <div className="book-table-content">
+              <p className="section-eyebrow text-gold">DINE WITH US</p>
+              <h2 className="heading-2">Reserve Your Table</h2>
+              <p className="book-table-desc mt-3">
+                Skip the wait. Book your table in advance and arrive to a seat ready for you — whether it's a family dinner, a birthday celebration, or just a craving that can't wait.
+              </p>
+              <div className="book-table-perks mt-4">
+                <div className="book-perk"><span className="book-perk-icon">⚡</span><span>Instant confirmation</span></div>
+                <div className="book-perk"><span className="book-perk-icon">👨‍🍳</span><span>Chef's special on request</span></div>
+                <div className="book-perk"><span className="book-perk-icon">🎉</span><span>Special occasion setup</span></div>
+                <div className="book-perk"><span className="book-perk-icon">📍</span><span>3 Bronx locations</span></div>
+              </div>
+              <button className="book-table-btn mt-5" onClick={() => { setBookingOpen(true); setBookingStatus(''); }}>
+                Reserve a Table <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="book-table-image-side">
+              <div className="book-table-img-frame">
+                <img
+                  src="/images/restaurant-interior.jpg"
+                  alt="Habibi Restaurant Interior"
+                  className="book-table-img"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+                <div className="book-table-img-overlay">
+                  <div className="book-table-hours-card">
+                    <p className="hours-card-title">Dining Hours</p>
+                    <p className="hours-card-line">🕐 Bedford Park &nbsp;·&nbsp; Open 24/7</p>
+                    <p className="hours-card-line">🕐 Lehman Area &nbsp;·&nbsp; 7AM – 11PM</p>
+                    <p className="hours-card-line">🕐 Bronx Science &nbsp;·&nbsp; 6AM – 10PM</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
           LOCATIONS
       ═══════════════════════════════════════════════════════ */}
       <section className="section locations-section">
@@ -729,6 +801,100 @@ const Home = () => {
           </div>
         </div>
       </section>
+      {/* ═══════════════════════════════════════════════════════
+          TABLE BOOKING MODAL
+      ═══════════════════════════════════════════════════════ */}
+      {bookingOpen && (
+        <div className="booking-modal-overlay" onClick={e => e.target === e.currentTarget && setBookingOpen(false)}>
+          <div className="booking-modal">
+            <button className="booking-modal-close" onClick={() => setBookingOpen(false)}>✕</button>
+            <div className="booking-modal-header">
+              <p className="section-eyebrow text-gold" style={{ fontSize: '0.68rem' }}>HABIBI HALAL EXPRESS</p>
+              <h3 className="booking-modal-title">Reserve a Table</h3>
+              <p className="booking-modal-sub">Fill in the details below — we'll confirm within a few hours.</p>
+            </div>
+
+            {bookingStatus === 'ok' ? (
+              <div className="booking-success">
+                <span style={{ fontSize: '2rem' }}>🎉</span>
+                <p>Your table is reserved! We'll reach out shortly to confirm.</p>
+                <button className="booking-done-btn" onClick={() => setBookingOpen(false)}>Done</button>
+              </div>
+            ) : (
+              <form className="booking-form" onSubmit={handleBooking}>
+                <div className="booking-form-row">
+                  <div className="booking-field">
+                    <label>Location</label>
+                    <select value={booking.location} onChange={e => setBooking({ ...booking, location: e.target.value })} required>
+                      <option value="">Select location</option>
+                      <option value="Bedford Park & Jerome Ave">Bedford Park &amp; Jerome Ave</option>
+                      <option value="Lehman College Area">Lehman College Area</option>
+                      <option value="Bronx Science Area">Bronx Science Area</option>
+                    </select>
+                  </div>
+                  <div className="booking-field">
+                    <label>Party Size</label>
+                    <select value={booking.party} onChange={e => setBooking({ ...booking, party: e.target.value })} required>
+                      <option value="">Guests</option>
+                      {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
+                        <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="booking-form-row">
+                  <div className="booking-field">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={booking.date}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={e => setBooking({ ...booking, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="booking-field">
+                    <label>Time</label>
+                    <select value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} required>
+                      <option value="">Select time</option>
+                      {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="booking-form-row">
+                  <div className="booking-field">
+                    <label>Your Name</label>
+                    <input type="text" placeholder="Full name" value={booking.name} onChange={e => setBooking({ ...booking, name: e.target.value })} required />
+                  </div>
+                  <div className="booking-field">
+                    <label>Phone or Email</label>
+                    <input type="text" placeholder="Phone or email" value={booking.contact} onChange={e => setBooking({ ...booking, contact: e.target.value })} required />
+                  </div>
+                </div>
+
+                <div className="booking-field">
+                  <label>Special Requests <span className="optional">(optional)</span></label>
+                  <textarea
+                    placeholder="Birthday setup, high chair, dietary preferences…"
+                    rows={3}
+                    value={booking.notes}
+                    onChange={e => setBooking({ ...booking, notes: e.target.value })}
+                  />
+                </div>
+
+                <button type="submit" className="booking-submit-btn" disabled={bookingStatus === 'loading'}>
+                  {bookingStatus === 'loading' ? 'Reserving…' : 'Confirm Reservation'}
+                </button>
+                {bookingStatus === 'error' && (
+                  <p className="booking-error">Something went wrong. Call us at (718) 367-7878 to book.</p>
+                )}
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

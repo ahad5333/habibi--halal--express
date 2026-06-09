@@ -149,8 +149,39 @@ const sendInvoice = async (req, res) => {
   }
 };
 
+// 6. Table reservation (Public — dine-in booking)
+const createTableReservation = async (req, res) => {
+  try {
+    const { name, contact, location, date, time, party, notes } = req.body;
+    const email = contact.includes('@') ? contact.trim() : '';
+    const phone = !contact.includes('@') ? contact.trim() : '';
+    const fullNotes = [`Time: ${time}`, `Location: ${location}`, notes ? `Notes: ${notes}` : null]
+      .filter(Boolean).join(' | ');
+
+    const result = await pool.query(
+      `INSERT INTO reservations
+         (name, email, phone, party_size, scheduled_date,
+          event_type, service_type, estimated_total, notes, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'table_reservation',0,$7,'pending')
+       RETURNING id`,
+      [name.trim(), email, phone, parseInt(party), date, location, fullNotes]
+    );
+
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihalal.com';
+    emailService.sendCateringAdminAlert(adminEmail, {
+      ...result.rows[0], name, email, phone, party_size: party,
+      scheduled_date: date, event_type: `Table — ${location} @ ${time}`,
+    }).catch(() => {});
+
+    res.status(201).json({ ok: true, id: result.rows[0].id });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 module.exports = {
   createReservation,
+  createTableReservation,
   getAllReservations,
   getReservationById,
   updateReservationStatus,

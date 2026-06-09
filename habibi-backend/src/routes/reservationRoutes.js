@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   createReservation,
+  createTableReservation,
   getAllReservations,
   getReservationById,
   updateReservationStatus,
@@ -22,6 +23,19 @@ router.post('/public',
   body('notes').optional({ checkFalsy: true }).isLength({ max: 1000 }).withMessage('Notes too long.'),
   handleValidation,
   createReservation
+);
+
+// Public: table / dine-in booking
+router.post('/table',
+  body('name').trim().notEmpty().withMessage('Name is required.').isLength({ max: 100 }),
+  body('contact').trim().notEmpty().withMessage('Phone or email is required.').isLength({ max: 150 }),
+  body('location').notEmpty().withMessage('Location is required.').isLength({ max: 100 }),
+  body('date').notEmpty().withMessage('Date is required.').isISO8601().withMessage('Invalid date.'),
+  body('time').notEmpty().withMessage('Time is required.').isLength({ max: 20 }),
+  body('party').notEmpty().withMessage('Party size is required.').isInt({ min: 1, max: 50 }),
+  body('notes').optional({ checkFalsy: true }).isLength({ max: 500 }),
+  handleValidation,
+  createTableReservation
 );
 
 // Admin-protected management
