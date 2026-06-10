@@ -161,13 +161,11 @@ const Footer = () => {
             <span className="footer-badge-card-label">SSL<br/>Secured</span>
           </div>
           <div className="footer-badge-card footer-badge-card--authnet">
-            <span className="footer-badge-authnet-logo">Authorize<span>.Net</span></span>
+            <img src="/images/partners/authorize-net.png" alt="Authorize.Net" className="footer-badge-partner-img" />
             <span className="footer-badge-card-label">Secure<br/>Payments</span>
           </div>
           <div className="footer-badge-card footer-badge-card--paypal">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="footer-badge-paypal-icon">
-              <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.68H7.72a.483.483 0 0 1-.477-.558L7.418 21h1.518l.95-6.02h1.385c4.678 0 7.75-2.203 8.796-6.502zm-2.96-5.009c.928 1.106 1.07 2.458.705 4.06C16.78 11.147 14.42 12.5 11.37 12.5H9.57L8.265 20H5.037a.57.57 0 0 1-.562-.658L6.935 3.698A.804.804 0 0 1 7.729 3h6.033c2.085 0 3.702.396 4.345 1.469z"/>
-            </svg>
+            <img src="/images/partners/paypal.png" alt="PayPal" className="footer-badge-partner-img" />
             <span className="footer-badge-card-label">Pay<br/>with PayPal</span>
           </div>
         </div>
@@ -186,12 +184,12 @@ const Footer = () => {
         <p>© {new Date().getFullYear()} Habibi Halal Express, INC. All rights reserved.</p>
         <div className="footer-payments">
           <span className="payment-label">We Accept:</span>
-          <span className="payment-badge">Visa</span>
+          <img src="/images/partners/visa.png" alt="Visa" className="payment-logo" title="Visa" />
+          <img src="/images/partners/apple-pay.png" alt="Apple Pay" className="payment-logo" title="Apple Pay" />
+          <img src="/images/partners/google-pay.png" alt="Google Pay" className="payment-logo" title="Google Pay" />
+          <img src="/images/partners/paypal.png" alt="PayPal" className="payment-logo" title="PayPal" />
           <span className="payment-badge">Mastercard</span>
           <span className="payment-badge">Amex</span>
-          <span className="payment-badge">Apple Pay</span>
-          <span className="payment-badge">Google Pay</span>
-          <span className="payment-badge">PayPal</span>
           <span className="payment-badge">Cash App</span>
           <span className="payment-badge">Zelle</span>
           <span className="payment-badge">Cash</span>

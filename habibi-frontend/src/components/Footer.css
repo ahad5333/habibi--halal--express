@@ -564,6 +564,28 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
+.payment-logo {
+  height: 22px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.85;
+  filter: brightness(1.1);
+  transition: opacity 0.2s;
+  background: rgba(255,255,255,0.9);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.payment-logo:hover { opacity: 1; }
+
+.footer-badge-partner-img {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  max-width: 60px;
+  filter: brightness(1.05);
+}
+
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 900px) {
   .footer-newsletter { max-width: 100%; width: 100%; }
