@@ -340,12 +340,12 @@
 }
 
 .form-input {
-  background: #ffffff;
-  border: 1px solid #111827;
+  background: #ffffff !important;
+  border: 1px solid #111827 !important;
   border-radius: 6px;
   padding: 0.875rem 1rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: #111827 !important;
   font-family: var(--font-sans);
   width: 100%;
   outline: none;
