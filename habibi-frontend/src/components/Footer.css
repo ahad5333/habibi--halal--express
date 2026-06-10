@@ -381,11 +381,22 @@
 /* Certification badges below QR codes */
 .footer-cert-badges {
   display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.footer-cert-badges .footer-badge-card {
+  min-width: 0;
+  padding: 0.5rem 0.5rem;
+  flex: 1;
+}
+
+.footer-cert-badges .footer-badge-card-label {
+  font-size: 8px;
+  white-space: nowrap;
 }
 
 /* Trust & certification row */
