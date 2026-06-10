@@ -373,6 +373,9 @@ const Menu = () => {
                     <span className="smoke s3" />
                     <span className="smoke s4" />
                     <span className="smoke s5" />
+                    <span className="smoke s6" />
+                    <span className="smoke s7" />
+                    <span className="smoke s8" />
                   </>
                 ) : (
                   <>
@@ -545,6 +548,9 @@ const Menu = () => {
                               <span className="smoke s3" />
                               <span className="smoke s4" />
                               <span className="smoke s5" />
+                              <span className="smoke s6" />
+                              <span className="smoke s7" />
+                              <span className="smoke s8" />
                             </>
                           ) : (
                             <>
@@ -786,9 +792,15 @@ const Menu = () => {
         </div>
       )}
 
-      {/* Hidden SVG Filter for Realistic Wave Smoke */}
+      {/* SVG Filters — smoke warp + fire displacement */}
       <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
         <defs>
+          {/* Organic warp for smoke blobs */}
+          <filter id="smoke-warp" x="-50%" y="-50%" width="200%" height="200%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.020 0.008" numOctaves="5" seed="7" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="32" xChannelSelector="R" yChannelSelector="G" result="warped" />
+          </filter>
+          {/* Fire displacement */}
           <filter id="smoke-filter" x="-30%" y="-30%" width="160%" height="160%">
             <feTurbulence type="fractalNoise" baseFrequency="0.008 0.003" numOctaves="2" seed="5" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="G" />
