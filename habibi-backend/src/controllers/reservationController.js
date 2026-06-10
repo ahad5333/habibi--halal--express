@@ -13,12 +13,13 @@ const PRICE_PER_HEAD = (guests) => {
 const createReservation = async (req, res) => {
   try {
     const {
-      name, email, phone,
+      name, full_name, email, phone,
       event_type, event_date, guest_count, service_type,
       notes,
     } = req.body;
+    const customerName = (full_name || name || '').trim();
 
-    if (!name || !email || !event_date || !guest_count) {
+    if (!customerName || !email || !event_date || !guest_count) {
       return res.status(400).json({ message: 'name, email, event_date, and guest_count are required' });
     }
 
@@ -32,7 +33,7 @@ const createReservation = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
        RETURNING *`,
       [
-        name.trim(),
+        customerName,
         email.trim(),
         phone?.trim() || '',
         guests,

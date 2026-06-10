@@ -574,8 +574,8 @@ const createOrder = async (req, res) => {
 
     const cartId = cart.rows[0].id;
     const items = await pool.query(
-      `SELECT ci.menu_id, ci.quantity, m.price
-       FROM cart_items ci JOIN menus m ON ci.menu_id = m.id
+      `SELECT ci.menu_item_id AS menu_id, ci.quantity, m.price
+       FROM cart_items ci JOIN menus m ON ci.menu_item_id = m.id
        WHERE ci.cart_id = $1`,
       [cartId]
     );
@@ -585,14 +585,14 @@ const createOrder = async (req, res) => {
     items.rows.forEach(item => { total += item.price * item.quantity; });
 
     const order = await pool.query(
-      "INSERT INTO orders(user_id,total_amount) VALUES($1,$2) RETURNING *",
+      "INSERT INTO orders(customer_id,total,order_status,payment_status) VALUES($1,$2,'pending','unpaid') RETURNING *",
       [userId, total]
     );
     const orderId = order.rows[0].id;
 
     for (const item of items.rows) {
       await pool.query(
-        "INSERT INTO order_items(order_id,menu_id,quantity,price) VALUES($1,$2,$3,$4)",
+        "INSERT INTO order_items(order_id,menu_item_id,quantity,unit_price) VALUES($1,$2,$3,$4)",
         [orderId, item.menu_id, item.quantity, item.price]
       );
     }
