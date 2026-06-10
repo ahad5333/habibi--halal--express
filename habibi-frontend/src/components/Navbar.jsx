@@ -160,7 +160,7 @@ function DropdownPanel({ item }) {
           )}
         </div>
         <div className="nav-dropdown-image-wrap">
-          <img src={`/images/nav/${item.id}.png`} alt={item.label} className="nav-dropdown-img" />
+          <img src={`/images/nav/${item.id}.webp`} alt={item.label} className="nav-dropdown-img" />
           <div className="nav-dropdown-caption-overlay">
             <p>{item.panel.caption}</p>
           </div>

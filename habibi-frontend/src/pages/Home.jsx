@@ -345,7 +345,7 @@ const Home = () => {
             </h2>
 
             <div className="hero-food-wrapper">
-              <img src="/images/hero/round_food.png" alt="Delicious Food" className="hero-food-img" />
+              <img src="/images/hero/round_food.webp" alt="Delicious Food" className="hero-food-img" />
             </div>
             
             <p className="hero-bottom-desc-exact">
@@ -440,7 +440,7 @@ const Home = () => {
           </div>
           <div className="story-image-col">
             <div className="story-image-frame">
-              <img src="/images/story-chef.png" alt="Fresh authentic halal culinary preparation" className="story-main-img" />
+              <img src="/images/story-chef.webp" alt="Fresh authentic halal culinary preparation" className="story-main-img" loading="lazy" />
               <div className="story-image-overlay-card">
                 <span className="overlay-card-title">Est. 2018</span>
                 <span className="overlay-card-desc">Handcrafted with Love</span>
@@ -491,7 +491,7 @@ const Home = () => {
           <div className="curated-grid mt-5">
             {/* Mixed Platter */}
             <div className="curated-card large">
-              <img src="/images/mixed-platter.jpg" alt="The Mixed Platter" className="curated-img" />
+              <img src="/images/mixed-platter.jpg" alt="The Mixed Platter" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
                 <p className="text-sm font-bold" style={{ color: '#F97316', letterSpacing: '2px' }}>★ CHEF'S PICK</p>
                 <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif" }}>The Mixed Platter</h3>
@@ -666,7 +666,7 @@ const Home = () => {
           </div>
 
           <div className="beyond-image-wrapper">
-            <img src="/images/chef-plating.jpg" alt="Chef Plating" className="beyond-img" />
+            <img src="/images/chef-plating.jpg" alt="Chef Plating" className="beyond-img" loading="lazy" />
             <div className="beyond-quote-box">
               <p className="quote-text">
                 "Habibi Halal Express has put a modern, upscale spin on Mediterranean classics, delivering fantastic flavor and artisan presentation."

@@ -25,22 +25,22 @@ const CATEGORIES = [
 const CAT_ORDER = CATEGORIES.map(c => c.match).filter(Boolean);
 
 const BOWL_BASE_OPTIONS = [
-  { id: 'rice',   label: 'Rice',   image: '/images/builder/base_rice.png' },
-  { id: 'salad',  label: 'Salad',  image: '/images/builder/base_salad.png' },
-  { id: 'hummus', label: 'Hummus', image: '/images/builder/base_hummus.png' },
+  { id: 'rice',   label: 'Rice',   image: '/images/builder/base_rice.webp' },
+  { id: 'salad',  label: 'Salad',  image: '/images/builder/base_salad.webp' },
+  { id: 'hummus', label: 'Hummus', image: '/images/builder/base_hummus.webp' },
 ];
 const BOWL_PROTEIN_OPTIONS = [
-  { id: 'chicken', label: 'Chicken', image: '/images/builder/protein_chicken.png' },
-  { id: 'beef',    label: 'Beef',    image: '/images/builder/protein_beef.png' },
-  { id: 'falafel', label: 'Falafel', image: '/images/builder/protein_falafel.png' },
+  { id: 'chicken', label: 'Chicken', image: '/images/builder/protein_chicken.webp' },
+  { id: 'beef',    label: 'Beef',    image: '/images/builder/protein_beef.webp' },
+  { id: 'falafel', label: 'Falafel', image: '/images/builder/protein_falafel.webp' },
 ];
 const BOWL_TOPPING_OPTIONS = [
-  { id: 'feta',   label: 'Feta Cheese', image: '/images/builder/topping_feta.png' },
-  { id: 'olives', label: 'Olives',      image: '/images/builder/topping_olives.png' },
+  { id: 'feta',   label: 'Feta Cheese', image: '/images/builder/topping_feta.webp' },
+  { id: 'olives', label: 'Olives',      image: '/images/builder/topping_olives.webp' },
 ];
 const BOWL_SAUCE_OPTIONS = [
-  { id: 'white', label: 'White Sauce', image: '/images/builder/sauce_white.png' },
-  { id: 'hot',   label: 'Hot Sauce',   image: '/images/builder/sauce_hot.png' },
+  { id: 'white', label: 'White Sauce', image: '/images/builder/sauce_white.webp' },
+  { id: 'hot',   label: 'Hot Sauce',   image: '/images/builder/sauce_hot.webp' },
 ];
 const BYO_ITEM = { id: 'byo-menu', name: 'Build Your Own Bowl', price: '12.99', category: 'Build Your Own', img: '/images/personalized-bowls.jpg' };
 
@@ -655,7 +655,7 @@ const Menu = () => {
                   <div className="bowl-plate" style={{ backgroundColor: selectedBase ? '#fef9ef' : '#f5f0e8' }}>
                     {!selectedBase && !selectedProtein && !selectedTopping && !selectedSauce ? (
                       <div className="bowl-empty-state">
-                        <img src="/images/builder/realistic-3d-bowl.png" alt="Bowl" className="bowl-empty-img-rotate" />
+                        <img src="/images/builder/realistic-3d-bowl.webp" alt="Bowl" className="bowl-empty-img-rotate" />
                         <p className="bowl-empty-text">Your bowl awaits</p>
                       </div>
                     ) : (
