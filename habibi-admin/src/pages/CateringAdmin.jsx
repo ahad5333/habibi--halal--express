@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Mail, ChevronDown, ChevronUp, Users, CalendarDays, Send } from 'lucide-react';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -28,8 +29,6 @@ const STATUS_BADGE = {
 const fmt = (n) =>
   n != null ? `$${parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—';
 
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function CateringAdmin() {
   const [quotes, setQuotes]         = useState([]);
@@ -122,7 +121,7 @@ export default function CateringAdmin() {
                         <Users size={12}/> {q.party_size || q.guest_count} guests
                       </span>
                       <span style={{fontSize:'.78rem',color:'#6b7280',display:'flex',alignItems:'center',gap:'.3rem'}}>
-                        <CalendarDays size={12}/> {fmtDate(q.scheduled_date)}
+                        <CalendarDays size={12}/> {fmtDateTime(q.scheduled_date)}
                       </span>
                       <span style={{fontSize:'.78rem',color:'#E5B64E',fontWeight:700}}>
                         Est. {fmt(q.estimated_total)}

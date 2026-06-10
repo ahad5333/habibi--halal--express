@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Reports.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
 const MONTH_AGO = new Date(Date.now() - 30 * 864e5).toISOString().split('T')[0];
@@ -169,7 +170,7 @@ export default function Reports() {
                           <td className="text-muted">{t.delivery_method}</td>
                           <td style={{fontWeight:700}}>${parseFloat(t.total||0).toFixed(2)}</td>
                           <td><span className={`badge ${t.order_status==='delivered'||t.order_status==='completed'?'badge-success':t.order_status==='cancelled'?'badge-error':'badge-warning'}`}>{t.order_status}</span></td>
-                          <td className="text-muted" style={{fontSize:'0.72rem',whiteSpace:'nowrap'}}>{new Date(t.placed_at).toLocaleDateString()}</td>
+                          <td className="text-muted" style={{fontSize:'0.72rem',whiteSpace:'nowrap'}}>{fmtDateShort(t.placed_at)}</td>
                         </tr>
                       ))}
                     </tbody>

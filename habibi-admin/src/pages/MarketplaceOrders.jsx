@@ -6,6 +6,7 @@ import {
 import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
 import './MarketplaceOrders.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const PLATFORMS = [
   { id: 'all',      label: 'All Platforms' },
@@ -43,7 +44,7 @@ function OrderCard({ order, onAccept, onDecline }) {
         <div>
           <PlatformDot platform={order.platform} />
           <p className="mp-order-id">{order.platform_order_id}</p>
-          <p className="mp-timestamp">{new Date(order.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+          <p className="mp-timestamp">{fmtTime(order.placed_at, { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <span className={`mp-badge ${badge.cls}`}>{badge.label}</span>
       </div>

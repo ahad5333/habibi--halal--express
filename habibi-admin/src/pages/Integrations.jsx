@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Integrations.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const PLATFORM_META = {
   ubereats: {
@@ -163,7 +164,7 @@ function PlatformCard({ platform, data, onSave, onSync, syncing }) {
         {/* Last sync */}
         {data.last_sync_at && (
           <p className="int-last-sync">
-            Last sync: {new Date(data.last_sync_at).toLocaleString()}
+            Last sync: {fmtDateTime(data.last_sync_at)}
           </p>
         )}
       </div>

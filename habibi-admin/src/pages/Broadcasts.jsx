@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, Send, Trash2, X, Eye, Mail } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Broadcasts.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const BLANK = {
   title: '', message: '', audience: 'all', channels: ['sms'],
@@ -178,7 +179,7 @@ export default function Broadcasts() {
                       <span className={`badge ${b.status === 'sent' ? 'badge-success' : b.status === 'failed' ? 'badge-error' : 'badge-muted'}`}>{b.status}</span>
                     </td>
                     <td className="text-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
-                      {b.sent_at ? new Date(b.sent_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {b.sent_at ? fmtDateTime(b.sent_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
                     <td>
                       <button className="btn btn-danger btn-sm btn-icon" onClick={() => { if (confirm('Delete this broadcast record?')) { adminAPI.deleteBroadcast(b.id).then(load); } }}>

@@ -7,6 +7,7 @@ import {
 import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
 import './DeliveryDispatch.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUS_COLORS = {
   assigned:   'dd-badge-warn',
@@ -125,7 +126,7 @@ function DDCard({ delivery, onDispatch, onCancel }) {
         {delivery.customer_name && <div className="dd-info-row"><User size={13}/> {delivery.customer_name}</div>}
         {delivery.dasher_name   && <div className="dd-info-row"><Navigation size={13}/> Dasher: {delivery.dasher_name} {delivery.dasher_phone && <a href={`tel:${delivery.dasher_phone}`}><Phone size={11}/></a>}</div>}
         {delivery.estimated_dropoff_time && (
-          <div className="dd-info-row"><Clock size={13}/> ETA: {new Date(delivery.estimated_dropoff_time).toLocaleTimeString()}</div>
+          <div className="dd-info-row"><Clock size={13}/> ETA: {fmtTime(delivery.estimated_dropoff_time)}</div>
         )}
         {delivery.order_total && <div className="dd-info-row"><Package size={13}/> ${parseFloat(delivery.order_total).toFixed(2)}</div>}
       </div>

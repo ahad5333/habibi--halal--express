@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Zap, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Login.css';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Login() {
   const { login } = useAdminAuth();
@@ -27,11 +29,14 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-brand">
-        <div className="login-brand-icon"><Zap size={22} /></div>
-        <div>
-          <p className="login-brand-name">Habibi Admin</p>
-          <p className="login-brand-sub">Staff Portal</p>
-        </div>
+        <img
+          src={`${API_URL}/images/logos/logo.png`}
+          alt="Habibi Halal Express"
+          className="login-logo"
+          onError={e => { e.target.style.display = 'none'; }}
+        />
+        <p className="login-brand-name">Habibi Admin</p>
+        <p className="login-brand-sub">Staff Portal</p>
       </div>
 
       <div className="login-card">

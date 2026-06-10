@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, ChevronDown } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Careers.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const VACANCY_BLANK = {
   title: '', department: '', location: 'Bronx, NY', type: 'full-time',
@@ -250,7 +251,7 @@ export default function Careers() {
                     </td>
                     <td>{a.role_applied || '—'}</td>
                     <td>{a.vacancy_title || 'General'}</td>
-                    <td>{new Date(a.created_at).toLocaleDateString()}</td>
+                    <td>{fmtDateShort(a.created_at)}</td>
                     <td>
                       <span className={`badge ${STATUS_COLORS[a.status] || 'badge-muted'}`}>
                         {a.status}
@@ -409,7 +410,7 @@ export default function Careers() {
                 <div className="app-detail-row"><span>Phone</span><span>{aModal.phone || '—'}</span></div>
                 <div className="app-detail-row"><span>Role Applied</span><span>{aModal.role_applied || '—'}</span></div>
                 <div className="app-detail-row"><span>Position</span><span>{aModal.vacancy_title || 'General'}</span></div>
-                <div className="app-detail-row"><span>Submitted</span><span>{new Date(aModal.created_at).toLocaleString()}</span></div>
+                <div className="app-detail-row"><span>Submitted</span><span>{fmtDateTime(aModal.created_at)}</span></div>
                 {aModal.resume_url && (
                   <div className="app-detail-row">
                     <span>Resume</span>

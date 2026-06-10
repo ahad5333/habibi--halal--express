@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Phone, RefreshCw, X } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './UrgentRequests.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const URGENCY_BADGE = { High:'badge-error', Normal:'badge-warning', Low:'badge-muted' };
 
@@ -54,7 +55,7 @@ export default function UrgentRequests() {
                       <td className="mono text-muted" style={{fontSize:'0.72rem'}}>{r.order_number || '—'}</td>
                       <td><span className={`badge ${URGENCY_BADGE[r.urgency_level]||'badge-muted'}`}>{r.urgency_level||'Normal'}</span></td>
                       <td className="text-muted" style={{fontSize:'0.72rem', whiteSpace:'nowrap'}}>
-                        {r.created_at ? new Date(r.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}
+                        {r.created_at ? fmtDateTime(r.created_at, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}
                       </td>
                     </tr>
                   ))}

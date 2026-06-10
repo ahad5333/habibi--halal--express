@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ToggleLeft, ToggleRight, X, Tag } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Coupons.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const DISCOUNT_TYPES = [
   { value: 'percentage',   label: 'Percentage Off (%)',          needsValue: true  },
@@ -194,7 +195,7 @@ export default function Coupons() {
                       {c.total_saved > 0 ? `-$${parseFloat(c.total_saved).toFixed(2)}` : '—'}
                     </td>
                     <td className="text-muted" style={{fontSize:'0.72rem'}}>
-                      {c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Never'}
+                      {c.expiry_date ? fmtDate(c.expiry_date, {month:'short',day:'numeric',year:'numeric'}) : 'Never'}
                     </td>
                     <td>
                       <span className={`badge ${c.is_active ? 'badge-success' : 'badge-muted'}`}>

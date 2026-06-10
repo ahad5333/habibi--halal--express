@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './AuditLog.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const ENTITY_TYPES = [
   '', 'menu_item', 'coupon', 'order', 'user', 'location', 'staff',

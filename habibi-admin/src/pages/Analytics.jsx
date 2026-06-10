@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart2, TrendingUp, DollarSign, ShoppingBag, Download } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Analytics.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const StatBox = ({ label, value, sub, color = 'var(--color-primary)' }) => (
   <div className="card analytics-stat">
@@ -97,7 +98,7 @@ export default function Analytics() {
                     <td style={{fontWeight:600,color:'var(--color-success)'}}>${parseFloat(p.total||p.amount||0).toFixed(2)}</td>
                     <td><span className={`badge ${(p.order_status||p.status)==='completed'||( p.order_status||p.status)==='delivered'?'badge-success':'badge-warning'}`}>{p.order_status||p.status||'—'}</span></td>
                     <td className="text-muted" style={{fontSize:'0.72rem', whiteSpace:'nowrap'}}>
-                      {(p.placed_at||p.created_at) ? new Date(p.placed_at||p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
+                      {(p.placed_at||p.created_at) ? fmtDate(p.placed_at||p.created_at, {month:'short',day:'numeric',year:'numeric'}) : '—'}
                     </td>
                   </tr>
                 ))}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DollarSign, ShoppingBag, Clock, Utensils, TrendingUp, ChevronRight, Circle } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Dashboard.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUS_BADGE = {
   pending:    'badge-warning',
@@ -110,7 +111,7 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td className="text-muted" style={{fontSize:'0.72rem', whiteSpace:'nowrap'}}>
-                      {o.created_at ? new Date(o.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {o.created_at ? fmtTime(o.created_at, { hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
                   </tr>
                 ))}

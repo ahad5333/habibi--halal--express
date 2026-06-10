@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, Plus, Pencil, Trash2, X, Check, RefreshCw, AlertTriangle, History } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Inventory.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const BLANK = { name: '', category: 'General', current_stock: '', unit: 'unit', low_stock_threshold: '10', cost_per_unit: '', supplier: '', notes: '' };
 
@@ -159,7 +160,7 @@ export default function Inventory() {
                   {log.map(l => (
                     <tr key={l.id}>
                       <td className="text-muted" style={{fontSize:'0.78rem',whiteSpace:'nowrap'}}>
-                        {new Date(l.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+                        {fmtDateTime(l.created_at, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
                       </td>
                       <td style={{fontWeight:500}}>{l.item_name}</td>
                       <td className="text-success">+{l.quantity} {l.unit}</td>

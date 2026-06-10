@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Payments.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const METHOD_ICONS = {
   card:    '💳',
@@ -25,10 +26,6 @@ const STATUS_CLASS = {
 };
 
 function fmt(n) { return parseFloat(n || 0).toFixed(2); }
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
 function methodLabel(m) {
   const map = { card: 'Credit Card', cash: 'Cash on Delivery', apple: 'Apple Pay', google: 'Google Pay', paypal: 'PayPal', cashapp: 'Cash App' };
   return map[(m || '').toLowerCase()] || m || '—';
@@ -119,7 +116,7 @@ export default function Payments() {
     const headers = ['Order #','Customer','Email','Date','Method','Subtotal','Tax','Service Fee','Tip','Discount','Total','Status'];
     const rows = filtered.map(t => [
       t.order_number, t.customer_name, t.customer_email,
-      fmtDate(t.placed_at), methodLabel(t.payment_method),
+      fmtDateTime(t.placed_at), methodLabel(t.payment_method),
       fmt(t.sub_total), fmt(t.tax), fmt(t.service_fee),
       fmt(t.tip), fmt(t.discount), fmt(t.total), t.order_status,
     ]);
@@ -287,7 +284,7 @@ export default function Payments() {
                   <p className="pay-customer-name">{t.customer_name || 'Guest'}</p>
                   {t.customer_email && <p className="pay-customer-email">{t.customer_email}</p>}
                 </td>
-                <td className="pay-date">{fmtDate(t.placed_at)}</td>
+                <td className="pay-date">{fmtDateTime(t.placed_at)}</td>
                 <td>
                   <span className="pay-method-badge">
                     {METHOD_ICONS[(t.payment_method || '').toLowerCase()] || '💰'}{' '}

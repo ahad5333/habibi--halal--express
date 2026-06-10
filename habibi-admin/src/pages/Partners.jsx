@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Handshake, X, Check, ExternalLink } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Partners.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUS_BADGE = { pending:'badge-warning', approved:'badge-success', rejected:'badge-error' };
 
@@ -58,7 +59,7 @@ export default function Partners() {
                       <td className="text-muted" style={{fontSize:'0.78rem'}}>{a.contact_name || a.name || '—'}</td>
                       <td><span className="badge badge-muted">{a.business_type || a.partner_type || '—'}</span></td>
                       <td className="text-muted" style={{fontSize:'0.72rem', whiteSpace:'nowrap'}}>
-                        {a.created_at ? new Date(a.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
+                        {a.created_at ? fmtDate(a.created_at, {month:'short',day:'numeric',year:'numeric'}) : '—'}
                       </td>
                       <td><span className={`badge ${STATUS_BADGE[a.status]||'badge-muted'}`}>{a.status||'pending'}</span></td>
                     </tr>

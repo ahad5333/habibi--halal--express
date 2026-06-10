@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, CalendarDays, Users, Clock, MapPin, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -34,11 +35,9 @@ const SC = {
   cancelled: { bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)', text: '#ef4444', label: 'Cancelled' },
 };
 
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 const fmtSubmitted = (d) =>
-  d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  d ? fmtDateTime(d, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function TableReservations() {
   const [list, setList]               = useState([]);
@@ -191,7 +190,7 @@ export default function TableReservations() {
                         <MapPin size={11} /> {r.event_type || '—'}
                       </span>
                       <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
-                        <CalendarDays size={11} /> {fmtDate(r.scheduled_date)}
+                        <CalendarDays size={11} /> {fmtDate(r.scheduled_date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                         <Clock size={11} /> {parsed.time || '—'}

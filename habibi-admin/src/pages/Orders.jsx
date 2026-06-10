@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Orders.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUSES = ['all', 'received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
 const STATUS_BADGE = {
@@ -57,7 +58,7 @@ function OrderRow({ order, onUpdate }) {
           </span>
         </td>
         <td style={{fontSize:'0.72rem', color:'var(--color-text-muted)', whiteSpace:'nowrap'}}>
-          {order.created_at ? new Date(order.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}
+          {order.created_at ? fmtDateTime(order.created_at, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}
         </td>
         <td>
           <ChevronDown size={14} className="text-muted" style={{transform: open ? 'rotate(180deg)' : '', transition:'transform 0.2s'}} />

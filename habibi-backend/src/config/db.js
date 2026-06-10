@@ -18,4 +18,8 @@ const pool = process.env.DATABASE_URL
       ssl:      isProduction ? { rejectUnauthorized: false } : false,
     });
 
+pool.on('connect', client => {
+  client.query("SET timezone = 'America/New_York'");
+});
+
 module.exports = pool;

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './RoadieDeliveries.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATE_MAP = {
   pending:    { cls: 'rd-badge-warn',    label: 'Pending' },
@@ -24,7 +25,7 @@ function StatusBadge({ state }) {
 function ShipmentCard({ shipment, onCancel }) {
   const canCancel = !['delivered', 'cancelled', 'returned'].includes(shipment.state);
   const eta = shipment.estimated_dropoff_time
-    ? new Date(shipment.estimated_dropoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    ? fmtTime(shipment.estimated_dropoff_time, { hour: '2-digit', minute: '2-digit' })
     : null;
 
   return (
@@ -114,7 +115,7 @@ function EstimateWidget() {
       {result && !result.error && (
         <p className="rd-estimate-result">
           <CheckCircle size={13}/> Est. price: <strong>${((result.price || 0) / 100).toFixed(2)}</strong>
-          {result.estimated_pickup_time && <> · Pickup: {new Date(result.estimated_pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>}
+          {result.estimated_pickup_time && <> · Pickup: {fmtTime(result.estimated_pickup_time, { hour: '2-digit', minute: '2-digit' })}</>}
         </p>
       )}
       {result?.error && <p className="rd-estimate-error"><AlertCircle size={13}/> {result.error}</p>}

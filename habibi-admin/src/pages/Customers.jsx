@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, X, Mail, Phone, MapPin, ShoppingBag } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Customers.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -76,7 +77,7 @@ export default function Customers() {
                       <td className="text-muted">{c.email}</td>
                       <td className="text-muted">{c.phone || '—'}</td>
                       <td className="text-muted" style={{fontSize:'0.72rem', whiteSpace:'nowrap'}}>
-                        {c.created_at ? new Date(c.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
+                        {c.created_at ? fmtDate(c.created_at, {month:'short',day:'numeric',year:'numeric'}) : '—'}
                       </td>
                       <td style={{textAlign:'center'}}><span className="badge badge-muted">{c.total_orders ?? 0}</span></td>
                       <td style={{fontWeight:500,color:'var(--gold)'}}>${parseFloat(c.total_spent || 0).toFixed(2)}</td>

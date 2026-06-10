@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Trash2, MessageSquare, X, CheckCircle, XCircle, Award } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Reviews.css';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const TABS = [
   { key: '',         label: 'All' },
@@ -25,9 +26,6 @@ function StarDisplay({ rating }) {
   );
 }
 
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 export default function Reviews() {
   const [tab, setTab]             = useState('pending');

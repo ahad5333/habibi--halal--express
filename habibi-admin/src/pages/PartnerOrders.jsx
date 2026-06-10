@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ChevronDown, ChevronUp, Handshake } from 'lucide-react';
 import { adminAPI } from '../services/api';
+import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -19,9 +20,6 @@ function parseItems(raw) {
 }
 
 function fmt(v) { return `$${parseFloat(v || 0).toFixed(2)}`; }
-function fmtDate(d) {
-  return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-}
 
 export default function PartnerOrders() {
   const [orders, setOrders]   = useState([]);
