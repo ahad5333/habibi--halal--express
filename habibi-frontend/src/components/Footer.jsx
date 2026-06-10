@@ -146,7 +146,7 @@ const Footer = () => {
       {/* Payment & Security Badges */}
       <div className="footer-trust-row">
         <div className="footer-trust-badges">
-          <
+          <a
             href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx"
             target="_blank"
             rel="noopener noreferrer"
