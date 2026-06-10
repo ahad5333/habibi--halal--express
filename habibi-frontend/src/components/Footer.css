@@ -378,6 +378,16 @@
   letter-spacing: 0.04em;
 }
 
+/* Certification badges below QR codes */
+.footer-cert-badges {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
 /* Trust & certification row */
 .footer-trust-row {
   position: relative;

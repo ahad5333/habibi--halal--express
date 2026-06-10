@@ -72,6 +72,26 @@ const Footer = () => {
             ))}
           </div>
 
+          {/* Certification & service badges */}
+          <div className="footer-cert-badges">
+            <div className="footer-badge-card">
+              <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">Halal<br/>Certified</span>
+            </div>
+            <div className="footer-badge-card">
+              <img src="/images/logos/grade-a.jpg" alt="NYC Grade A" className="footer-badge-card-img footer-badge-card-img--rect" />
+              <span className="footer-badge-card-label">NYC Health<br/>Grade A</span>
+            </div>
+            <div className="footer-badge-card">
+              <img src="/images/logos/delivery-service.png" alt="Delivery Service" className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">Fast<br/>Delivery</span>
+            </div>
+            <div className="footer-badge-card">
+              <img src="/images/logos/pickup-sign.png" alt="Online Order Pick Up" className="footer-badge-card-img footer-badge-card-img--circle footer-badge-card-img--dark" />
+              <span className="footer-badge-card-label">Online<br/>Pick Up</span>
+            </div>
+          </div>
+
         </div>
 
         <div className="footer-links">
@@ -123,26 +143,10 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      {/* Trust & Certification Badges */}
+      {/* Payment & Security Badges */}
       <div className="footer-trust-row">
         <div className="footer-trust-badges">
-          <div className="footer-badge-card">
-            <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
-            <span className="footer-badge-card-label">Halal<br/>Certified</span>
-          </div>
-          <div className="footer-badge-card">
-            <img src="/images/logos/grade-a.jpg" alt="NYC Grade A" className="footer-badge-card-img footer-badge-card-img--rect" />
-            <span className="footer-badge-card-label">NYC Health<br/>Grade A</span>
-          </div>
-          <div className="footer-badge-card">
-            <img src="/images/logos/delivery-service.png" alt="Delivery Service" className="footer-badge-card-img footer-badge-card-img--circle" />
-            <span className="footer-badge-card-label">Fast<br/>Delivery</span>
-          </div>
-          <div className="footer-badge-card">
-            <img src="/images/logos/pickup-sign.png" alt="Online Order Pick Up" className="footer-badge-card-img footer-badge-card-img--circle footer-badge-card-img--dark" />
-            <span className="footer-badge-card-label">Online<br/>Pick Up</span>
-          </div>
-          <a
+          <
             href="https://maps.google.com/?q=Habibi+Halal+Express+Bronx"
             target="_blank"
             rel="noopener noreferrer"
