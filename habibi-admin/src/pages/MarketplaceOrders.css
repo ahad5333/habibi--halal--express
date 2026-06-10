@@ -395,7 +395,34 @@
 
 @keyframes mpSpin { to { transform: rotate(360deg); } }
 
+/* Location stats bar */
+.mp-location-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.mp-location-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 1rem;
+  flex: 1;
+  min-width: 200px;
+}
+.mp-location-stat-card svg { color: var(--color-primary); flex-shrink: 0; }
+.mp-location-stat-name { font-size: 0.82rem; font-weight: 600; }
+.mp-location-stat-sub  { font-size: 0.7rem; color: var(--color-text-muted); }
+
+/* Location row on order card */
+.mp-location-row { color: var(--color-primary); font-weight: 500; }
+.mp-location-addr { color: var(--color-text-muted); font-weight: 400; }
+
 @media (max-width: 600px) {
   .mp-page { padding: 1rem; }
   .mp-topbar { flex-direction: column; gap: 0.75rem; }
+  .mp-location-stat-card { min-width: 100%; }
 }

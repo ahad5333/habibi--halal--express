@@ -39,9 +39,10 @@ async function uploadPatch(path, formData) {
 }
 
 export const authAPI = {
-  login: (email, password) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  save: (t) => localStorage.setItem('habibi_admin_token', t),
-  clear: () => localStorage.removeItem('habibi_admin_token'),
+  login:  (email, password) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  logout: () => req('/api/auth/logout', { method: 'POST' }),
+  save:   (t) => localStorage.setItem('habibi_admin_token', t),
+  clear:  () => localStorage.removeItem('habibi_admin_token'),
 };
 
 export const adminAPI = {
@@ -151,9 +152,11 @@ export const adminAPI = {
   cancelDoorDashDelivery:  (ddId)   => req(`/api/doordash/${ddId}/cancel`, { method: 'PUT' }),
 
   // Marketplace (UberEats / GrubHub / Caviar)
-  getMarketplaceOrders:  (qs = '') => req(`/api/marketplace/${qs}`),
-  getMarketplaceStats:   ()        => req('/api/marketplace/stats'),
-  updateMarketplaceOrder:(id, body) => req(`/api/marketplace/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  getMarketplaceOrders:    (qs = '')     => req(`/api/marketplace/${qs}`),
+  getMarketplaceStats:     ()            => req('/api/marketplace/stats'),
+  updateMarketplaceOrder:  (id, body)    => req(`/api/marketplace/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  getMarketplaceLocationMappings: ()     => req('/api/marketplace/location-mappings'),
+  saveMarketplaceLocationMapping: (body) => req('/api/marketplace/location-mappings', { method: 'POST', body: JSON.stringify(body) }),
 
   // Roadie long-distance
   getRoadieShipments:     ()         => req('/api/roadie/'),

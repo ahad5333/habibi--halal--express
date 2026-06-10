@@ -48,6 +48,10 @@ const createTables = async () => {
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email     VARCHAR(255)`);
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
 
+    // ── Marketplace orders: add location tracking ─────────────────
+    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS platform_store_id VARCHAR(255)`);
+
     // ── Urgent requests: make phone nullable for contact-form use ──
     await client.query(`ALTER TABLE urgent_requests ALTER COLUMN phone DROP NOT NULL`).catch(() => {});
 
