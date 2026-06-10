@@ -79,6 +79,7 @@ const Footer = () => {
             <h4>Discover</h4>
             <Link to="/menu">Our Menu</Link>
             <Link to="/locations">Locations</Link>
+            <Link to="/delivery-coverage">Delivery Coverage</Link>
             <Link to="/checkout">Order Online</Link>
             <Link to="/wholesale">Wholesale</Link>
           </div>
@@ -152,6 +153,23 @@ const Footer = () => {
             </svg>
             <span className="footer-badge-card-label">Order<br/>on Google</span>
           </a>
+          <div className="footer-badge-card footer-badge-card--ssl">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="footer-badge-ssl-icon">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span className="footer-badge-card-label">SSL<br/>Secured</span>
+          </div>
+          <div className="footer-badge-card footer-badge-card--authnet">
+            <span className="footer-badge-authnet-logo">Authorize<span>.Net</span></span>
+            <span className="footer-badge-card-label">Secure<br/>Payments</span>
+          </div>
+          <div className="footer-badge-card footer-badge-card--paypal">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="footer-badge-paypal-icon">
+              <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.68H7.72a.483.483 0 0 1-.477-.558L7.418 21h1.518l.95-6.02h1.385c4.678 0 7.75-2.203 8.796-6.502zm-2.96-5.009c.928 1.106 1.07 2.458.705 4.06C16.78 11.147 14.42 12.5 11.37 12.5H9.57L8.265 20H5.037a.57.57 0 0 1-.562-.658L6.935 3.698A.804.804 0 0 1 7.729 3h6.033c2.085 0 3.702.396 4.345 1.469z"/>
+            </svg>
+            <span className="footer-badge-card-label">Pay<br/>with PayPal</span>
+          </div>
         </div>
         <div className="footer-delivery-badges">
           <span className="footer-delivery-label">Order via:</span>
@@ -162,6 +180,9 @@ const Footer = () => {
       </div>
 
       <div className="footer-bottom">
+        <p className="footer-urgent-contact">
+          Get Urgent Reply: <a href="mailto:admin@habibiHE.com">admin@habibiHE.com</a>
+        </p>
         <p>© {new Date().getFullYear()} Habibi Halal Express, INC. All rights reserved.</p>
         <div className="footer-payments">
           <span className="payment-label">We Accept:</span>

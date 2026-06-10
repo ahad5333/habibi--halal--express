@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Pencil, ToggleLeft, ToggleRight, Clock, Phone, CheckCircle, XCircle, X, Check } from 'lucide-react';
+import { MapPin, Pencil, ToggleLeft, ToggleRight, Clock, Phone, CheckCircle, XCircle, X, Check, Plus, Trash2 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Locations.css';
 
@@ -10,6 +10,7 @@ export default function Locations() {
   const [form, setForm]           = useState({});
   const [saving, setSaving]       = useState(false);
   const [toggling, setToggling]   = useState(null);
+  const [addrInput, setAddrInput] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -43,7 +44,11 @@ export default function Locations() {
       tablet_password:   '',
       // location image
       image_url:         loc.image_url || '',
+      // pre-selected delivery addresses
+      delivery_addresses: Array.isArray(loc.delivery_addresses) ? loc.delivery_addresses
+        : (typeof loc.delivery_addresses === 'string' ? JSON.parse(loc.delivery_addresses || '[]') : []),
     });
+    setAddrInput('');
     setModal(loc);
   };
 
@@ -104,6 +109,11 @@ export default function Locations() {
                 {loc.working_days_hours && (
                   <div className="loc-detail-row">
                     <Clock size={12}/> {loc.working_days_hours}
+                  </div>
+                )}
+                {loc.holidays && (
+                  <div className="loc-detail-row" style={{color:'var(--color-text-muted)',fontSize:'0.72rem'}}>
+                    Holidays: {loc.holidays}
                   </div>
                 )}
                 <div className="loc-detail-row">
@@ -220,6 +230,65 @@ export default function Locations() {
                   <input type="checkbox" checked={form.accepting_orders} onChange={e => setForm({...form,accepting_orders:e.target.checked})} />
                   <span>Accepting Orders</span>
                 </label>
+              </div>
+
+              {/* Pre-selected delivery addresses */}
+              <div className="field">
+                <label>
+                  Pre-Selected Delivery Addresses
+                  <span className="text-muted" style={{fontWeight:400,marginLeft:'0.4rem',fontSize:'0.7rem'}}>
+                    ({(form.delivery_addresses||[]).length}/30)
+                  </span>
+                </label>
+                <div className="loc-addr-list">
+                  {(form.delivery_addresses||[]).map((addr, i) => (
+                    <div key={i} className="loc-addr-row">
+                      <span style={{flex:1,fontSize:'0.8rem'}}>{addr}</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        style={{color:'#ef4444',padding:'0.2rem'}}
+                        onClick={() => setForm({...form, delivery_addresses: form.delivery_addresses.filter((_,j)=>j!==i)})}
+                      >
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {(form.delivery_addresses||[]).length < 30 && (
+                  <div style={{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}}>
+                    <input
+                      className="input"
+                      style={{flex:1}}
+                      placeholder="123 Main St, Bronx, NY 10451"
+                      value={addrInput}
+                      onChange={e => setAddrInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const v = addrInput.trim();
+                          if (v && (form.delivery_addresses||[]).length < 30) {
+                            setForm({...form, delivery_addresses: [...(form.delivery_addresses||[]), v]});
+                            setAddrInput('');
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        const v = addrInput.trim();
+                        if (v && (form.delivery_addresses||[]).length < 30) {
+                          setForm({...form, delivery_addresses: [...(form.delivery_addresses||[]), v]});
+                          setAddrInput('');
+                        }
+                      }}
+                    >
+                      <Plus size={13}/> Add
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="modal-footer">

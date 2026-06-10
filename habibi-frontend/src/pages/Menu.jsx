@@ -92,6 +92,7 @@ const Menu = () => {
   const [byoItem,     setByoItem]     = useState(null);
   const [modalItemId, setModalItemId] = useState(null);
   const featCarouselRef = useRef(null);
+  const [locAvailMap,  setLocAvailMap]  = useState({});
 
   const scrollFeatCarousel = dir => {
     const el = featCarouselRef.current;
@@ -114,6 +115,17 @@ const Menu = () => {
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('habibi_service_location');
+    if (!stored) return;
+    const { id } = JSON.parse(stored);
+    if (!id) return;
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/menus/location-availability?location_id=${id}`)
+      .then(r => r.json())
+      .then(d => setLocAvailMap(d || {}))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -157,6 +169,7 @@ const Menu = () => {
   const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
 
   const filtered = items.filter(item => {
+    if ((locAvailMap[item.id] || 'available') === 'inactive') return false;
     let catMatch = false;
     if (activeCategory === 'all') {
       catMatch = true;
@@ -180,7 +193,7 @@ const Menu = () => {
 
   // Featured section — breakfast items first, then by sort_order
   const featuredItems = useMemo(() => {
-    const available = items.filter(i => i.is_available !== false && i.is_active !== false);
+    const available = items.filter(i => i.is_available !== false && i.is_active !== false && (locAvailMap[i.id] || 'available') !== 'inactive');
     const breakfast = available.filter(i =>
       (i.category || '').toLowerCase().includes('breakfast')
     );
@@ -266,20 +279,25 @@ const Menu = () => {
 
   // ── Item row (UberEats-style horizontal) ───────────────────────
   const renderItemRow = (item, idx) => {
-    const imgSrc  = item.image || item.image_url || categoryFallback(item);
-    const name    = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
-    const price   = parseFloat(item.price || 0);
-    const isFav   = favoriteIds.has(item.id);
-    const cat     = (item.category || '').toLowerCase();
-    const isCold  = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
-    const isSpicy = !!item.is_spicy;
-    const fxClass = isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
+    const locStatus = locAvailMap[item.id] || 'available';
+    if (locStatus === 'inactive') return null;
+
+    const imgSrc   = item.image || item.image_url || categoryFallback(item);
+    const name     = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
+    const price    = parseFloat(item.price || 0);
+    const isFav    = favoriteIds.has(item.id);
+    const cat      = (item.category || '').toLowerCase();
+    const isCold   = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
+    const isSpicy  = !!item.is_spicy;
+    const isTuna   = name.toLowerCase().includes('tuna');
+    const fxClass  = isTuna ? '' : (isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam'));
+    const isSoldOut = locStatus === 'sold_out';
 
     return (
       <div
         key={item.id}
-        className="menu-item-row"
-        onClick={() => handleCardClick(item)}
+        className={`menu-item-row${isSoldOut ? ' menu-item-sold-out' : ''}`}
+        onClick={() => !isSoldOut && handleCardClick(item)}
         role="button"
         tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && handleCardClick(item)}
@@ -317,6 +335,7 @@ const Menu = () => {
                 t.src = categoryFallback(item);
               }}
             />
+            {isSoldOut && <div className="menu-item-sold-out-overlay">SOLD OUT</div>}
             {isLoggedIn && (
               <button
                 className={`menu-item-fav-btn${isFav ? ' active' : ''}`}

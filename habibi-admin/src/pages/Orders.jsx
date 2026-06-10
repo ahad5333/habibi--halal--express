@@ -4,6 +4,17 @@ import { adminAPI } from '../services/api';
 import './Orders.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
+const CANCEL_REASONS = [
+  'Customer requested cancellation',
+  'Item(s) out of stock',
+  'Restaurant too busy',
+  'Duplicate order',
+  'Customer unreachable',
+  'Payment issue',
+  'Delivery area unavailable',
+  'Order placed by mistake',
+];
+
 const STATUSES = ['all', 'received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
 const STATUS_BADGE = {
   received:   'badge-warning',
@@ -25,16 +36,44 @@ const NEXT_STEPS = {
   cancelled:  [],
 };
 
+function CancelReasonPicker({ onConfirm, onDismiss }) {
+  const [reason, setReason] = useState(CANCEL_REASONS[0]);
+  const [custom, setCustom] = useState('');
+  return (
+    <div className="cancel-picker" onClick={e => e.stopPropagation()}>
+      <p className="cancel-picker-title">Cancellation Reason</p>
+      <select className="input select cancel-picker-select" value={reason} onChange={e => setReason(e.target.value)}>
+        {CANCEL_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+        <option value="__custom">Other (type below)…</option>
+      </select>
+      {reason === '__custom' && (
+        <input className="input cancel-picker-input" placeholder="Enter reason…" value={custom} onChange={e => setCustom(e.target.value)} />
+      )}
+      <div className="cancel-picker-actions">
+        <button className="btn btn-sm btn-secondary" onClick={onDismiss}>Go Back</button>
+        <button
+          className="btn btn-sm btn-danger"
+          onClick={() => onConfirm(reason === '__custom' ? (custom || 'Other') : reason)}
+          disabled={reason === '__custom' && !custom.trim()}
+        >
+          Confirm Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OrderRow({ order, onUpdate }) {
-  const [open, setOpen]     = useState(false);
+  const [open, setOpen]         = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const nexts = NEXT_STEPS[order.status] || [];
 
-  const handleStatus = async (s) => {
+  const handleStatus = async (s, reason) => {
     setUpdating(true);
-    try { await onUpdate(order.id, s); }
+    try { await onUpdate(order.id, s, reason); }
     catch (_) {}
-    finally { setUpdating(false); }
+    finally { setUpdating(false); setCancelling(false); }
   };
 
   return (
@@ -104,18 +143,35 @@ function OrderRow({ order, onUpdate }) {
               {nexts.length > 0 && (
                 <div className="order-detail-section">
                   <p className="order-detail-label">UPDATE STATUS</p>
-                  <div className="order-action-btns">
-                    {nexts.map(s => (
-                      <button
-                        key={s}
-                        className={`btn btn-sm ${s === 'cancelled' ? 'btn-danger' : 'btn-primary'}`}
-                        onClick={(e) => { e.stopPropagation(); handleStatus(s); }}
-                        disabled={updating}
-                      >
-                        {updating ? <span className="spinner" style={{width:12,height:12}} /> : `→ ${s.replace(/_/g,' ')}`}
-                      </button>
-                    ))}
-                  </div>
+                  {cancelling ? (
+                    <CancelReasonPicker
+                      onConfirm={(reason) => handleStatus('cancelled', reason)}
+                      onDismiss={() => setCancelling(false)}
+                    />
+                  ) : (
+                    <div className="order-action-btns">
+                      {nexts.map(s => (
+                        <button
+                          key={s}
+                          className={`btn btn-sm ${s === 'cancelled' ? 'btn-danger' : 'btn-primary'}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (s === 'cancelled') { setCancelling(true); }
+                            else { handleStatus(s); }
+                          }}
+                          disabled={updating}
+                        >
+                          {updating && s !== 'cancelled' ? <span className="spinner" style={{width:12,height:12}} /> : `→ ${s.replace(/_/g,' ')}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {order.cancellation_reason && (
+                <div className="order-detail-section">
+                  <p className="order-detail-label">CANCELLATION REASON</p>
+                  <p style={{fontSize:'0.82rem',color:'var(--color-error)'}}>{order.cancellation_reason}</p>
                 </div>
               )}
             </div>
@@ -152,13 +208,13 @@ export default function Orders() {
     return () => clearInterval(t);
   }, [fetchOrders]);
 
-  const handleUpdate = async (id, status) => {
+  const handleUpdate = async (id, status, cancellation_reason) => {
     const prev = orders;
-    setOrders(p => p.map(o => o.id === id ? { ...o, status } : o));
+    setOrders(p => p.map(o => o.id === id ? { ...o, status, ...(cancellation_reason ? { cancellation_reason } : {}) } : o));
     try {
-      await adminAPI.updateOrder(id, status);
+      await adminAPI.updateOrder(id, status, cancellation_reason);
     } catch (err) {
-      setOrders(prev); // rollback on failure
+      setOrders(prev);
       alert(`Failed to update order: ${err.message}`);
     }
   };

@@ -414,6 +414,26 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(249, 115, 22, 0.15);
 }
 
+.menu-item-sold-out {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.menu-item-sold-out-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 /* Left — text */
 .menu-item-row-content {
   flex: 1;

@@ -17,9 +17,9 @@ const getCart = async (req, res) => {
     const cartId = cart.rows[0].id;
 
     const items = await pool.query(
-      `SELECT ci.id AS cart_item_id, ci.menu_id, ci.quantity, m.name, m.price
+      `SELECT ci.id AS cart_item_id, ci.menu_item_id AS menu_id, ci.quantity, m.name, m.price
        FROM cart_items ci
-       JOIN menus m ON ci.menu_id = m.id
+       JOIN menus m ON ci.menu_item_id = m.id
        WHERE ci.cart_id = $1`,
       [cartId]
     );
@@ -56,7 +56,7 @@ const addToCart = async (req, res) => {
     }
 
     const existingItem = await pool.query(
-      "SELECT * FROM cart_items WHERE cart_id=$1 AND menu_id=$2",
+      "SELECT * FROM cart_items WHERE cart_id=$1 AND menu_item_id=$2",
       [cartId, menu_id]
     );
 
@@ -67,7 +67,7 @@ const addToCart = async (req, res) => {
       );
     } else {
       await pool.query(
-        "INSERT INTO cart_items(cart_id, menu_id, quantity) VALUES($1,$2,$3)",
+        "INSERT INTO cart_items(cart_id, menu_item_id, quantity) VALUES($1,$2,$3)",
         [cartId, menu_id, quantity]
       );
     }
@@ -162,7 +162,7 @@ const syncCart = async (req, res) => {
       for (const item of items) {
         if (item.menu_id && item.quantity > 0) {
           await pool.query(
-            "INSERT INTO cart_items(cart_id, menu_id, quantity) VALUES($1,$2,$3)",
+            "INSERT INTO cart_items(cart_id, menu_item_id, quantity) VALUES($1,$2,$3)",
             [cartId, item.menu_id, item.quantity]
           );
         }

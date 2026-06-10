@@ -80,6 +80,24 @@
 
 .order-action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
+.cancel-picker {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-width: 360px;
+}
+.cancel-picker-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.cancel-picker-select, .cancel-picker-input { font-size: 0.82rem; }
+.cancel-picker-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
 @keyframes spin-once { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 .spin-once { animation: spin-once 0.5s linear; }
 

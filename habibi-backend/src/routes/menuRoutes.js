@@ -15,6 +15,24 @@ const { getRecommendations } = require("../controllers/aiController");
 const pool = require("../config/db");
 
 router.get("/recommendations", getRecommendations);
+
+// Public: per-location menu availability map — { menu_id: 'available'|'sold_out'|'inactive' }
+router.get("/location-availability", async (req, res) => {
+  try {
+    const { location_id } = req.query;
+    if (!location_id) return res.json({});
+    const { rows } = await pool.query(
+      `SELECT menu_id, status FROM menu_location_availability WHERE location_id=$1`,
+      [location_id]
+    );
+    const map = {};
+    rows.forEach(r => { map[r.menu_id] = r.status; });
+    res.json(map);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
 router.get("/", getMenus);
 
 router.post("/", protect, admin, createMenu);

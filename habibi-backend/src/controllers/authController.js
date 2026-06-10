@@ -7,7 +7,7 @@ const emailService = require("../services/emailService");
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, dob, first_name, last_name } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' });
@@ -37,11 +37,14 @@ const registerUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 86400000);
 
+    const dobValue = dob && /^\d{4}-\d{2}-\d{2}$/.test(dob) ? dob : null;
+    const phoneValue = phone ? String(phone).trim().slice(0, 20) : null;
+
     const result = await pool.query(
-      `INSERT INTO users(name, email, password_hash, verification_token, verification_token_expires)
-       VALUES($1,$2,$3,$4,$5)
+      `INSERT INTO users(name, email, password_hash, verification_token, verification_token_expires, phone_number, date_of_birth)
+       VALUES($1,$2,$3,$4,$5,$6,$7)
        RETURNING id, name, email, role`,
-      [name, email, hashedPassword, verificationToken, verificationExpires]
+      [name, email, hashedPassword, verificationToken, verificationExpires, phoneValue, dobValue]
     );
 
     const user = result.rows[0];
@@ -96,11 +99,10 @@ const loginUser = async (req, res) => {
         id: user.id,
         role: user.role,
         is_partner: !!user.is_partner,
+        jti: crypto.randomUUID(),
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: user.role === 'admin' ? '24h' : '7d' }
     );
 
     // Fetch partner application info if applicable
@@ -112,6 +114,46 @@ const loginUser = async (req, res) => {
           [user.partner_id]
         );
         partnerInfo = pRes.rows[0] || null;
+      } catch (_) {}
+    }
+
+    // Birthday reward: issue a coupon if today is the user's birthday and reward not yet given this year
+    let birthdayCoupon = null;
+    if (user.date_of_birth) {
+      try {
+        const now = new Date();
+        const dob = new Date(user.date_of_birth);
+        const isBirthday = (dob.getUTCMonth() === now.getMonth()) && (dob.getUTCDate() === now.getDate());
+        const currentYear = now.getFullYear();
+
+        if (isBirthday && user.birthday_rewarded_year !== currentYear) {
+          const code = `BDAY-${user.id}-${currentYear}`;
+          // Coupon valid for 7 days; 30% off (free delivery + 30%) as birthday perk
+          const expiryDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const expStr = expiryDate.toISOString().slice(0, 10);
+
+          // Upsert so duplicate logins on same birthday are safe
+          await pool.query(
+            `INSERT INTO coupons (code, discount_type, discount_value, min_order_amount, usage_limit, expiry_date, customer_email, title, description, is_active)
+             VALUES ($1, 'percentage', 30, 0, 1, $2, $3, $4, $5, TRUE)
+             ON CONFLICT (code) DO NOTHING`,
+            [code, expStr, user.email,
+             `Happy Birthday, ${(user.name || '').split(' ')[0] || 'Friend'}!`,
+             '30% off your birthday order. Valid for 7 days. Single use only.']
+          );
+
+          await pool.query(
+            `UPDATE users SET birthday_rewarded_year = $1 WHERE id = $2`,
+            [currentYear, user.id]
+          );
+
+          birthdayCoupon = {
+            code,
+            discount_type: 'percentage',
+            discount_value: 30,
+            expiry_date: expStr,
+          };
+        }
       } catch (_) {}
     }
 
@@ -127,6 +169,7 @@ const loginUser = async (req, res) => {
         business_name: partnerInfo?.business_name || null,
         price_tier: partnerInfo?.price_tier || null,
       },
+      birthday_coupon: birthdayCoupon,
     });
   } catch (error) {
     res.status(500).json(safeError(error));
@@ -248,10 +291,120 @@ const resetPassword = async (req, res) => {
   }
 };
 
+/* ── SMS 5-digit recovery code ──────────────────────────────────────── */
+const { sendSMS } = require('../services/smsService');
+
+const sendSmsRecoveryCode = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || typeof phone !== 'string' || !phone.trim()) {
+      return res.status(400).json({ message: 'Phone number is required.' });
+    }
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      return res.status(400).json({ message: 'Invalid phone number.' });
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, sms_code_expires FROM users WHERE phone_number LIKE $1`,
+      [`%${cleaned.slice(-10)}`]
+    );
+    // Always respond success to avoid user enumeration
+    if (result.rows.length === 0) {
+      return res.json({ message: 'If that number is on file, a code has been sent.' });
+    }
+
+    const user = result.rows[0];
+
+    // Rate-limit: don't send a new code if a valid one was sent < 60s ago
+    if (user.sms_code_expires && new Date(user.sms_code_expires) > new Date(Date.now() + 9 * 60 * 1000)) {
+      return res.status(429).json({ message: 'A code was recently sent. Please wait before requesting another.' });
+    }
+
+    const code    = String(Math.floor(10000 + Math.random() * 90000)); // 5 digits
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const hash    = await bcrypt.hash(code, 10);
+
+    await pool.query(
+      `UPDATE users SET sms_code_hash=$1, sms_code_expires=$2, sms_code_attempts=0 WHERE id=$3`,
+      [hash, expires, user.id]
+    );
+
+    await sendSMS(phone.trim(), `Your Habibi account recovery code is: ${code}. It expires in 10 minutes. Do not share it.`);
+
+    res.json({ message: 'If that number is on file, a code has been sent.' });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+const verifySmsRecoveryCode = async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    if (!phone || !code) {
+      return res.status(400).json({ message: 'Phone and code are required.' });
+    }
+    if (!/^\d{5}$/.test(String(code))) {
+      return res.status(400).json({ message: 'Code must be exactly 5 digits.' });
+    }
+
+    const cleaned = phone.replace(/\D/g, '');
+    const result  = await pool.query(
+      `SELECT id, name, email, role, is_partner, sms_code_hash, sms_code_expires, sms_code_attempts
+       FROM users WHERE phone_number LIKE $1`,
+      [`%${cleaned.slice(-10)}`]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid phone number or code.' });
+    }
+
+    const user = result.rows[0];
+
+    if (!user.sms_code_hash || !user.sms_code_expires) {
+      return res.status(400).json({ message: 'No recovery code found. Please request a new one.' });
+    }
+    if (new Date(user.sms_code_expires) < new Date()) {
+      return res.status(400).json({ message: 'Recovery code has expired. Please request a new one.' });
+    }
+    if ((user.sms_code_attempts || 0) >= 5) {
+      return res.status(429).json({ message: 'Too many failed attempts. Please request a new code.' });
+    }
+
+    const valid = await bcrypt.compare(String(code), user.sms_code_hash);
+    if (!valid) {
+      await pool.query(`UPDATE users SET sms_code_attempts = sms_code_attempts + 1 WHERE id=$1`, [user.id]);
+      return res.status(400).json({ message: 'Incorrect code. Please try again.' });
+    }
+
+    // Invalidate the code after successful verification
+    await pool.query(
+      `UPDATE users SET sms_code_hash=NULL, sms_code_expires=NULL, sms_code_attempts=0 WHERE id=$1`,
+      [user.id]
+    );
+
+    // Issue a short-lived recovery token (for password reset or direct login)
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, sms_verified: true },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    res.json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
   verifyEmail,
+  sendSmsRecoveryCode,
+  verifySmsRecoveryCode,
 };

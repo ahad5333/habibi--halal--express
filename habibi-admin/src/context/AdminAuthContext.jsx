@@ -8,9 +8,29 @@ export function AdminAuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('habibi_admin_user');
-    if (stored) {
-      try { setAdmin(JSON.parse(stored)); } catch (_) {}
+    const storedToken = localStorage.getItem('habibi_admin_token');
+    const storedUser  = localStorage.getItem('habibi_admin_user');
+
+    if (storedToken) {
+      try {
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token has expired — clear everything and force re-login
+          localStorage.removeItem('habibi_admin_token');
+          localStorage.removeItem('habibi_admin_user');
+          setLoading(false);
+          return;
+        }
+      } catch (_) {
+        localStorage.removeItem('habibi_admin_token');
+        localStorage.removeItem('habibi_admin_user');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (storedUser) {
+      try { setAdmin(JSON.parse(storedUser)); } catch (_) {}
     }
     setLoading(false);
   }, []);
@@ -24,7 +44,9 @@ export function AdminAuthProvider({ children }) {
     return data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Tell the server to revoke this token so it can't be reused
+    try { await authAPI.logout(); } catch (_) {}
     authAPI.clear();
     localStorage.removeItem('habibi_admin_user');
     setAdmin(null);

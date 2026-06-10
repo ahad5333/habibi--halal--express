@@ -133,6 +133,27 @@
   padding-right: 0.5rem;
 }
 
+/* ── Location Availability Panel ── */
+.mb-loc-avail-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+.mb-loc-avail-hdr {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.mb-loc-select { max-width: 280px; font-size: 0.85rem; }
+.mb-loc-avail-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  flex: 1;
+}
+
 /* ── Modal form ── */
 .mb-error {
   background: rgba(239,68,68,0.08);

@@ -97,14 +97,16 @@ const getAllMenus = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, cancellation_reason } = req.body;
     const io = req.app.get("io");
 
     const updated = await pool.query(
-      `UPDATE guest_orders SET order_status=$1, updated_at=NOW()
+      `UPDATE guest_orders
+       SET order_status=$1, updated_at=NOW(),
+           cancellation_reason = CASE WHEN $1='cancelled' THEN $3 ELSE cancellation_reason END
        WHERE order_number=$2 OR CAST(id AS TEXT)=$2
        RETURNING customer_phone, customer_email, order_number`,
-      [status.toLowerCase(), id]
+      [status.toLowerCase(), id, cancellation_reason || null]
     );
 
     if (io) {
@@ -297,8 +299,9 @@ const getAdminLocations = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, title, brief_address, exact_address, phone_number,
-              working_days_hours, is_active, accepting_orders,
-              delivery_radius_miles, delivery_cost, latitude, longitude
+              working_days_hours, holidays, is_active, accepting_orders,
+              delivery_radius_miles, delivery_cost, latitude, longitude,
+              preference_level, image_url, tablet_username, delivery_addresses
        FROM locations ORDER BY preference_level DESC, id`
     );
     res.json(result.rows);
@@ -310,21 +313,52 @@ const getAdminLocations = async (req, res) => {
 const updateAdminLocation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, phone_number, working_days_hours, is_active, accepting_orders,
-            delivery_radius_miles, delivery_cost } = req.body;
+    const {
+      title, phone_number, working_days_hours, is_active, accepting_orders,
+      delivery_radius_miles, delivery_cost,
+      holidays, preference_level, image_url,
+      tablet_username, tablet_password, delivery_addresses,
+    } = req.body;
+
+    // Only hash tablet password if a new one was provided
+    let tabletPasswordHash;
+    if (tablet_password) {
+      const bcrypt = require('bcrypt');
+      tabletPasswordHash = await bcrypt.hash(tablet_password, 10);
+    }
+
+    const addrJson = Array.isArray(delivery_addresses)
+      ? JSON.stringify(delivery_addresses.slice(0, 30))
+      : null;
+
     const result = await pool.query(
       `UPDATE locations
        SET title=$1, phone_number=$2, working_days_hours=$3,
            is_active=$4, accepting_orders=$5,
            delivery_radius_miles=$6, delivery_cost=$7,
+           holidays=$8, preference_level=$9, image_url=$10,
+           tablet_username=$11,
+           tablet_password_hash = COALESCE($12, tablet_password_hash),
+           delivery_addresses = COALESCE($14::jsonb, delivery_addresses),
            updated_at=NOW()
-       WHERE id=$8 RETURNING *`,
-      [title, phone_number, working_days_hours,
-       is_active !== false, accepting_orders !== false,
-       delivery_radius_miles || 5, delivery_cost || 0, id]
+       WHERE id=$13 RETURNING *`,
+      [
+        title, phone_number, working_days_hours,
+        is_active !== false, accepting_orders !== false,
+        delivery_radius_miles || 5, delivery_cost || 0,
+        holidays || null,
+        preference_level ? parseInt(preference_level) : 1,
+        image_url || null,
+        tablet_username || null,
+        tabletPasswordHash || null,
+        id,
+        addrJson,
+      ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });
-    res.json(result.rows[0]);
+    const row = { ...result.rows[0] };
+    delete row.tablet_password_hash; // never expose hash to frontend
+    res.json(row);
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -341,6 +375,42 @@ const toggleLocation = async (req, res) => {
     if (!sqlMap[field]) return res.status(400).json({ error: 'Invalid field' });
     const result = await pool.query(sqlMap[field], [id]);
     res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Per-Location Menu Availability ───────────────────────────────
+const getLocationMenuAvailability = async (req, res) => {
+  try {
+    const { location_id } = req.query;
+    if (!location_id) return res.status(400).json({ error: 'location_id required' });
+    const result = await pool.query(
+      `SELECT menu_id, status FROM menu_location_availability WHERE location_id=$1`,
+      [location_id]
+    );
+    const map = {};
+    result.rows.forEach(r => { map[r.menu_id] = r.status; });
+    res.json(map);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const setLocationMenuAvailability = async (req, res) => {
+  try {
+    const { menu_id, location_id, status } = req.body;
+    if (!menu_id || !location_id || !status) return res.status(400).json({ error: 'menu_id, location_id, status required' });
+    const allowed = ['available', 'sold_out', 'inactive'];
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    await pool.query(
+      `INSERT INTO menu_location_availability (menu_id, location_id, status, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, updated_at=NOW()`,
+      [menu_id, location_id, status]
+    );
+    logAudit(pool, req.user?.id, req.user?.name, 'set_location_menu_availability', 'menu', String(menu_id), { location_id, status }, req.ip);
+    res.json({ menu_id, location_id, status });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -411,5 +481,7 @@ module.exports = {
   updateAdminLocation,
   toggleLocation,
   toggleMenuAvailability,
+  getLocationMenuAvailability,
+  setLocationMenuAvailability,
   getCouponStats,
 };

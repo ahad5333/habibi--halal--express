@@ -5,15 +5,16 @@ import './Coupons.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const DISCOUNT_TYPES = [
-  { value: 'percentage',   label: 'Percentage Off (%)',          needsValue: true  },
-  { value: 'fixed_amount', label: 'Fixed Amount Off ($)',         needsValue: true  },
-  { value: 'free_delivery',label: 'Free Delivery',               needsValue: false },
-  { value: 'bogo',         label: 'Buy One Get One Free',        needsValue: false },
-  { value: 'bogo_half',    label: 'Buy One Get One 50% Off',     needsValue: false },
-  { value: 'free_item',    label: 'Free Item (cheapest in cart)',needsValue: false },
+  { value: 'percentage',           label: 'Percentage Off (%)',               needsValue: true,  needsCategory: false },
+  { value: 'fixed_amount',         label: 'Fixed Amount Off ($)',              needsValue: true,  needsCategory: false },
+  { value: 'free_delivery',        label: 'Free Delivery',                    needsValue: false, needsCategory: false },
+  { value: 'bogo',                 label: 'Buy One Get One Free (no Family Tray)', needsValue: false, needsCategory: false },
+  { value: 'bogo_half',            label: 'Buy One Get One 50% Off (no Family Tray)', needsValue: false, needsCategory: false },
+  { value: 'free_item',            label: 'Free Item (cheapest in cart)',     needsValue: false, needsCategory: false },
+  { value: 'free_item_from_category', label: 'Free Item from Category',      needsValue: false, needsCategory: true  },
 ];
 
-const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', expires_at:'', customer_email:'', location_id:'' };
+const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'' };
 
 function CouponModal({ onClose, onCreate }) {
   const [form, setForm]       = useState({ ...EMPTY });
@@ -66,6 +67,12 @@ function CouponModal({ onClose, onCreate }) {
                   <input type="number" min="0" step="0.01" className="input" placeholder={form.discount_type==='percentage'?'20':'5.00'} value={form.discount_value} onChange={e => set('discount_value', e.target.value)} required />
                 </div>
               )}
+              {DISCOUNT_TYPES.find(dt => dt.value === form.discount_type)?.needsCategory && (
+                <div className="field">
+                  <label>Free Item Category *</label>
+                  <input className="input" placeholder="e.g. Drinks" value={form.free_item_category} onChange={e => set('free_item_category', e.target.value)} required />
+                </div>
+              )}
             </div>
             <div className="coupon-row">
               <div className="field">
@@ -77,9 +84,15 @@ function CouponModal({ onClose, onCreate }) {
                 <input type="number" min="1" className="input" placeholder="Unlimited" value={form.max_uses} onChange={e => set('max_uses', e.target.value)} />
               </div>
             </div>
-            <div className="field">
-              <label>Expiry Date</label>
-              <input type="date" className="input" value={form.expires_at} onChange={e => set('expires_at', e.target.value)} />
+            <div className="coupon-row">
+              <div className="field">
+                <label>Start Date</label>
+                <input type="date" className="input" value={form.valid_from} onChange={e => set('valid_from', e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Expiry Date</label>
+                <input type="date" className="input" value={form.expires_at} onChange={e => set('expires_at', e.target.value)} />
+              </div>
             </div>
             <div style={{borderTop:'1px solid var(--color-border)',paddingTop:'0.75rem',marginTop:'0.25rem'}}>
               <p style={{fontSize:'0.72rem',fontWeight:'700',color:'var(--color-text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.5rem'}}>Restrictions (optional)</p>
@@ -168,6 +181,7 @@ export default function Coupons() {
                   <th>Min Order</th>
                   <th>Uses (Limit)</th>
                   <th>Total Saved</th>
+                  <th>Starts</th>
                   <th>Expires</th>
                   <th>Status</th>
                   <th></th>
@@ -195,7 +209,10 @@ export default function Coupons() {
                       {c.total_saved > 0 ? `-$${parseFloat(c.total_saved).toFixed(2)}` : '—'}
                     </td>
                     <td className="text-muted" style={{fontSize:'0.72rem'}}>
-                      {c.expiry_date ? fmtDate(c.expiry_date, {month:'short',day:'numeric',year:'numeric'}) : 'Never'}
+                      {c.valid_from ? fmtDateShort(c.valid_from) : '—'}
+                    </td>
+                    <td className="text-muted" style={{fontSize:'0.72rem'}}>
+                      {c.expiry_date || c.valid_until ? fmtDateShort(c.expiry_date || c.valid_until) : 'Never'}
                     </td>
                     <td>
                       <span className={`badge ${c.is_active ? 'badge-success' : 'badge-muted'}`}>

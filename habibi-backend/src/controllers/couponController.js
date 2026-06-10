@@ -73,11 +73,25 @@ const validateCoupon = async (req, res) => {
     let message = '';
 
     // Normalise cart items for BOGO/free-item calculations
+    const FAMILY_TRAY_KEYWORDS = ['family tray', 'family-tray', 'familytray'];
+    const isFamilyTray = (item) => {
+      const hay = `${item.name || ''} ${item.category || ''}`.toLowerCase();
+      return FAMILY_TRAY_KEYWORDS.some(k => hay.includes(k));
+    };
     const cartItems = (cart || [])
-      .map(i => ({ price: parseFloat(i.price || i.unit_price || 0), quantity: parseInt(i.quantity || i.qty || 1) }))
+      .map(i => ({
+        price:    parseFloat(i.price || i.unit_price || 0),
+        quantity: parseInt(i.quantity || i.qty || 1),
+        name:     i.name || '',
+        category: i.category || '',
+      }))
       .filter(i => i.price > 0);
-    const sortedByPrice = [...cartItems].sort((a, b) => a.price - b.price);
-    const cheapestPrice = sortedByPrice[0]?.price || 0;
+    // For BOGO purposes, exclude family tray items
+    const bogoItems     = cartItems.filter(i => !isFamilyTray(i));
+    const bogoSorted    = [...bogoItems].sort((a, b) => a.price - b.price);
+    const bogoMinPrice  = bogoSorted[0]?.price || 0;
+    const allSorted     = [...cartItems].sort((a, b) => a.price - b.price);
+    const cheapestPrice = allSorted[0]?.price || 0;
 
     switch (coupon.discount_type) {
       case 'percentage':
@@ -94,20 +108,33 @@ const validateCoupon = async (req, res) => {
         message = 'Free delivery applied!';
         break;
       case 'bogo':
-        // Buy one get one free — discount = price of cheapest item
-        discount = cheapestPrice;
+        // Buy one get one free — cheapest non-family-tray item free
+        discount = bogoMinPrice;
         message = 'Buy One Get One Free applied!';
         break;
       case 'bogo_half':
-        // Buy one get one half price — discount = half price of cheapest item
-        discount = cheapestPrice / 2;
+        // Buy one get one half price — half price of cheapest non-family-tray item
+        discount = bogoMinPrice / 2;
         message = 'Buy One Get One 50% Off applied!';
         break;
       case 'free_item':
-        // Free item — discount = price of cheapest item (or matching category item)
+        // Free cheapest item in cart
         discount = cheapestPrice;
         message = 'Free item applied!';
         break;
+      case 'free_item_from_category': {
+        // Free cheapest item in the specified category
+        const targetCat = (coupon.free_item_category || '').toLowerCase().trim();
+        const catItems  = targetCat
+          ? cartItems.filter(i => i.category.toLowerCase().includes(targetCat) || i.name.toLowerCase().includes(targetCat))
+          : cartItems;
+        const catSorted = [...catItems].sort((a, b) => a.price - b.price);
+        discount = catSorted[0]?.price || 0;
+        message  = discount > 0
+          ? `Free ${coupon.free_item_category || 'item'} applied!`
+          : `No matching ${coupon.free_item_category || 'item'} found in cart.`;
+        break;
+      }
       default:
         discount = 0;
     }
@@ -151,9 +178,11 @@ const createCoupon = async (req, res) => {
       min_order, min_order_amount,
       max_uses, usage_limit,
       expires_at, expiry_date, valid_until,
+      valid_from, starts_at,
       title, description,
       customer_email,
       location_id,
+      free_item_category,
     } = req.body;
 
     const minOrder = parseFloat(min_order || min_order_amount || 0);
@@ -161,6 +190,7 @@ const createCoupon = async (req, res) => {
     const conditionValue = minOrder > 0 ? minOrder : null;
     const usageLimit     = parseInt(max_uses || usage_limit || 0) || null;
     const validUntil     = expires_at || expiry_date || valid_until || null;
+    const validFrom      = valid_from || starts_at || null;
 
     // Validate discount_value — must be non-negative for types that use it
     const needsValue = ['percentage', 'fixed_amount', 'fixed'].includes(discount_type);
@@ -176,10 +206,10 @@ const createCoupon = async (req, res) => {
       `INSERT INTO coupons (
         code, discount_type, discount_value,
         condition_type, condition_value,
-        usage_limit, valid_until,
+        usage_limit, valid_from, valid_until,
         title, description,
-        customer_email, location_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        customer_email, location_id, free_item_category
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         code.toUpperCase(),
         discount_type || 'percentage',
@@ -187,11 +217,13 @@ const createCoupon = async (req, res) => {
         conditionType,
         conditionValue,
         usageLimit,
+        validFrom || null,
         validUntil || null,
         title || null,
         description || null,
         customer_email || null,
         location_id ? parseInt(location_id) : null,
+        free_item_category || null,
       ]
     );
 

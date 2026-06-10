@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, ImageOff, EyeOff, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, ImageOff, EyeOff, Eye, MapPin } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
@@ -248,6 +248,9 @@ function MenuModal({ item, categories, onClose, onSave }) {
   );
 }
 
+const AVAIL_LABELS = { available: 'Available', sold_out: 'Sold Out', inactive: 'Inactive' };
+const AVAIL_BADGE  = { available: 'badge-success', sold_out: 'badge-warning', inactive: 'badge-danger' };
+
 /* ── Main Page ────────────────────────────────────────────────── */
 export default function MenuBuilder() {
   const [items, setItems]       = useState([]);
@@ -257,6 +260,13 @@ export default function MenuBuilder() {
   const [modal, setModal]       = useState(null);
   const [deleting, setDeleting] = useState(null);
 
+  // Location availability mode
+  const [locView, setLocView]       = useState(false);
+  const [locations, setLocations]   = useState([]);
+  const [selectedLoc, setSelectedLoc] = useState('');
+  const [locAvailMap, setLocAvailMap] = useState({});
+  const [savingAvail, setSavingAvail] = useState(null);
+
   const fetchItems = async () => {
     setLoading(true);
     try { setItems(await adminAPI.menus()); }
@@ -265,6 +275,27 @@ export default function MenuBuilder() {
   };
 
   useEffect(() => { fetchItems(); }, []);
+
+  useEffect(() => {
+    adminAPI.getLocations().then(d => setLocations(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (selectedLoc) {
+      adminAPI.getLocationMenuAvailability(selectedLoc).then(d => setLocAvailMap(d || {})).catch(() => {});
+    } else {
+      setLocAvailMap({});
+    }
+  }, [selectedLoc]);
+
+  const handleSetAvail = async (menuId, status) => {
+    setSavingAvail(menuId);
+    try {
+      await adminAPI.setLocationMenuAvailability({ menu_id: menuId, location_id: parseInt(selectedLoc), status });
+      setLocAvailMap(prev => ({ ...prev, [menuId]: status }));
+    } catch (e) { alert(e.message); }
+    finally { setSavingAvail(null); }
+  };
 
   const categories = ['all', ...new Set(items.map(i => i.category).filter(Boolean))];
 
@@ -318,7 +349,14 @@ export default function MenuBuilder() {
           <p className="page-sub">{items.length} items · {categories.length - 1} categories</p>
         </div>
         <div style={{display:'flex',gap:'0.5rem'}}>
-          {catFilter !== 'all' && (
+          <button
+            className={`btn btn-sm ${locView ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setLocView(v => !v)}
+            title="Manage per-location item availability"
+          >
+            <MapPin size={13}/> Location Availability
+          </button>
+          {!locView && catFilter !== 'all' && (
             <>
               <button className="btn btn-secondary btn-sm" title={`Enable all in ${catFilter}`} onClick={() => handleBulkToggle(catFilter, true)}>
                 <Eye size={13}/> Enable All
@@ -328,14 +366,82 @@ export default function MenuBuilder() {
               </button>
             </>
           )}
-          <button className="btn btn-primary" onClick={() => setModal('add')}>
-            <Plus size={15} /> Add Item
-          </button>
+          {!locView && (
+            <button className="btn btn-primary" onClick={() => setModal('add')}>
+              <Plus size={15} /> Add Item
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="mb-toolbar">
+      {/* Location Availability Panel */}
+      {locView && (
+        <div className="mb-loc-avail-panel">
+          <div className="mb-loc-avail-hdr">
+            <select
+              className="input select mb-loc-select"
+              value={selectedLoc}
+              onChange={e => setSelectedLoc(e.target.value)}
+            >
+              <option value="">— Select a location —</option>
+              {locations.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+            </select>
+            {selectedLoc && (
+              <p className="mb-loc-avail-hint">
+                Set availability for each item at this location. Default is <strong>Available</strong>.
+              </p>
+            )}
+          </div>
+          {selectedLoc && (
+            <div className="mb-table-wrap">
+              <table className="mb-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th style={{width:170}}>Availability at this location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map(item => {
+                    const current = locAvailMap[item.id] || 'available';
+                    return (
+                      <tr key={item.id} className={current === 'inactive' ? 'mb-row-inactive' : ''}>
+                        <td>
+                          <p className="mb-item-name">{item.name}</p>
+                          {item.category && <p className="mb-item-desc">{item.category}</p>}
+                        </td>
+                        <td><span className="mb-cat-pill">{item.category || '—'}</span></td>
+                        <td>
+                          <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+                            <select
+                              className="input select"
+                              style={{fontSize:'0.78rem',padding:'0.25rem 0.4rem'}}
+                              value={current}
+                              onChange={e => handleSetAvail(item.id, e.target.value)}
+                              disabled={savingAvail === item.id}
+                            >
+                              <option value="available">Available</option>
+                              <option value="sold_out">Sold Out</option>
+                              <option value="inactive">Inactive (hidden)</option>
+                            </select>
+                            <span className={`badge ${AVAIL_BADGE[current]}`} style={{fontSize:'0.65rem',whiteSpace:'nowrap'}}>
+                              {AVAIL_LABELS[current]}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Toolbar — hidden in location availability view */}
+      {!locView && <div className="mb-toolbar">
         <div className="mb-cats">
           {categories.map(c => (
             <button
@@ -353,10 +459,10 @@ export default function MenuBuilder() {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-      </div>
+      </div>}
 
-      {/* Table */}
-      {loading ? (
+      {/* Table — hidden in location availability view */}
+      {!locView && (loading ? (
         <div className="empty"><div className="spinner" /></div>
       ) : visible.length === 0 ? (
         <div className="empty" style={{ minHeight: 200 }}>
@@ -438,10 +544,10 @@ export default function MenuBuilder() {
             </tbody>
           </table>
         </div>
-      )}
+      ))}
 
       {/* Row count */}
-      {!loading && visible.length > 0 && (
+      {!locView && !loading && visible.length > 0 && (
         <p className="mb-count">Showing {visible.length} of {items.length} items</p>
       )}
 

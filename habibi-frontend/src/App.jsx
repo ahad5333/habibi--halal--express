@@ -39,8 +39,9 @@ const TermsOfService   = lazy(() => import('./pages/TermsOfService'));
 const SmsTerms         = lazy(() => import('./pages/SmsTerms'));
 const Accessibility    = lazy(() => import('./pages/Accessibility'));
 const Legal            = lazy(() => import('./pages/Legal'));
-const Unsubscribe      = lazy(() => import('./pages/Unsubscribe'));
-const NotFound         = lazy(() => import('./pages/NotFound'));
+const Unsubscribe         = lazy(() => import('./pages/Unsubscribe'));
+const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
+const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
 
@@ -108,7 +109,9 @@ function Layout() {
           <Route path="/terms"          element={<TermsOfService />} />
           <Route path="/sms-terms"      element={<SmsTerms />} />
           <Route path="/accessibility"  element={<Accessibility />} />
-          <Route path="/unsubscribe"    element={<Unsubscribe />} />
+          <Route path="/unsubscribe"       element={<Unsubscribe />} />
+          <Route path="/delivery-coverage" element={<DeliveryCoverage />} />
+          <Route path="/where-we-deliver"  element={<DeliveryCoverage />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

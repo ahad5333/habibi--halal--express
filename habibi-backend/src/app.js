@@ -1,3 +1,9 @@
+// Crash fast if JWT_SECRET is missing — never run without it
+if (!process.env.JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET environment variable is not set. Set it before starting the server.');
+  process.exit(1);
+}
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -87,6 +93,13 @@ const gpsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 1000 : 120,
+  message: { error: "Too many admin requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const userRoutes = require("./routes/userRoutes")
 const menuRoutes = require("./routes/menuRoutes")
 const authRoutes = require("./routes/authRoutes")
@@ -151,7 +164,7 @@ app.use("/api/orders", orderLimiter, orderRoutes);
 app.use("/api/payments", payLimiter, paymentRoutes);
 app.use("/api/delivery", deliveryRoutes);
 app.use("/api/reservations", reservationRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminLimiter, adminRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/coupons", couponLimiter, couponRoutes);

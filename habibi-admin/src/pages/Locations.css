@@ -32,3 +32,24 @@
 .loc-modal-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; }
 .loc-modal-toggle input { width: 16px; height: 16px; accent-color: var(--color-primary); }
 .loc-partners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem; }
+
+.loc-addr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+  background: var(--color-surface-2, #111);
+}
+.loc-addr-list:empty { display: none; }
+.loc-addr-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.loc-addr-row:last-child { border-bottom: none; }

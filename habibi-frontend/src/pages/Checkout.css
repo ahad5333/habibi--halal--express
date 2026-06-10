@@ -329,6 +329,27 @@
   color: #ffffff;
 }
 
+/* Pre-selected address quick-pick */
+.preset-addr-list { margin-bottom: 0.625rem; }
+.preset-addr-hint { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin: 0 0 0.4rem; }
+.preset-addr-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.preset-addr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-align: left;
+}
+.preset-addr-chip:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.2); }
+.preset-addr-chip.active { background: rgba(229,182,78,0.12); border-color: rgba(229,182,78,0.4); color: #E5B64E; }
+
 .address-input-wrapper {
   position: relative;
 }

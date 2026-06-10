@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Settings.css';
 
 export default function Settings() {
-  const [tiers, setTiers]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(null);
-  const [saved, setSaved]       = useState(null);
+  const [tiers, setTiers]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving]             = useState(null);
+  const [saved, setSaved]               = useState(null);
+
+  const [payMethods, setPayMethods]     = useState([]);
+  const [pmLoading, setPmLoading]       = useState(true);
+  const [pmToggling, setPmToggling]     = useState(null);
 
   useEffect(() => {
     adminAPI.tiers()
       .then(d => setTiers(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    adminAPI.paymentSettings()
+      .then(d => setPayMethods(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setPmLoading(false));
   }, []);
 
   const updateTier = (id, key, val) => {
@@ -28,6 +37,19 @@ export default function Settings() {
       setTimeout(() => setSaved(null), 2000);
     } catch (_) {}
     finally { setSaving(null); }
+  };
+
+  const togglePayMethod = async (method) => {
+    setPmToggling(method.id);
+    const next = !method.is_active;
+    setPayMethods(prev => prev.map(m => m.id === method.id ? { ...m, is_active: next } : m));
+    try {
+      await adminAPI.updatePaymentSetting(method.id, next);
+    } catch (_) {
+      setPayMethods(prev => prev.map(m => m.id === method.id ? { ...m, is_active: method.is_active } : m));
+    } finally {
+      setPmToggling(null);
+    }
   };
 
   return (
@@ -85,6 +107,46 @@ export default function Settings() {
                     {saving === tier.id ? <span className="spinner" style={{width:12,height:12}} /> : saved === tier.id ? '✓ Saved' : <><Save size={12} /> Save</>}
                   </button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Payment Methods */}
+      <section className="settings-section">
+        <div className="settings-section-hdr">
+          <p className="settings-section-title">Payment Methods</p>
+          <p className="settings-section-sub">Enable or disable payment options shown at checkout.</p>
+        </div>
+
+        {pmLoading ? (
+          <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
+        ) : payMethods.length === 0 ? (
+          <div className="empty" style={{minHeight:80}}><p>No payment methods found</p></div>
+        ) : (
+          <div className="pm-list">
+            {payMethods.map(m => (
+              <div key={m.id} className="pm-row card">
+                <CreditCard size={16} className="text-muted" />
+                <div style={{flex:1}}>
+                  <p style={{fontWeight:600,fontSize:'0.88rem'}}>{m.label}</p>
+                  {m.provider && <p className="text-muted" style={{fontSize:'0.72rem'}}>{m.provider}</p>}
+                </div>
+                <span className={`badge ${m.is_active ? 'badge-success' : 'badge-muted'}`} style={{fontSize:'0.7rem'}}>
+                  {m.is_active ? 'Enabled' : 'Disabled'}
+                </span>
+                <button
+                  className="btn btn-ghost btn-icon"
+                  title={m.is_active ? 'Disable' : 'Enable'}
+                  onClick={() => togglePayMethod(m)}
+                  disabled={pmToggling === m.id}
+                  style={{color: m.is_active ? 'var(--color-primary)' : '#555'}}
+                >
+                  {pmToggling === m.id
+                    ? <span className="spinner" style={{width:14,height:14}} />
+                    : m.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                </button>
               </div>
             ))}
           </div>

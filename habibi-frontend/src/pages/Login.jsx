@@ -56,7 +56,10 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      const data = await login(email, password);
+      if (data?.birthday_coupon) {
+        localStorage.setItem('habibi_birthday_coupon', JSON.stringify(data.birthday_coupon));
+      }
       navigate(redirectTo);
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');

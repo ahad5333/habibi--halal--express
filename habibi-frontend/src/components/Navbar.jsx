@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, ArrowUpRight } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, ArrowUpRight, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { notificationsAPI } from '../services/api';
@@ -67,7 +67,7 @@ const CENTER_ITEM = {
     { label: 'Express Delivery', path: '/order?type=delivery' },
     { label: 'Pickup Order', path: '/order?type=pickup' },
     { label: 'Catering & Events 🍽️', path: '/catering' },
-    { label: 'Where Can You Deliver?', path: '/locations#coverage' },
+    { label: 'Where Can You Deliver?', path: '/delivery-coverage' },
   ],
 };
 
@@ -197,6 +197,19 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
+  const [serviceLocation, setServiceLocation] = useState(() => {
+    try { const s = localStorage.getItem('habibi_service_location'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'habibi_service_location') {
+        try { setServiceLocation(e.newValue ? JSON.parse(e.newValue) : null); } catch { setServiceLocation(null); }
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) { setUnreadCount(0); return; }
@@ -319,6 +332,12 @@ const Navbar = () => {
                   </div>
                 )}
               </div>
+            )}
+            {isLoggedIn && serviceLocation && (
+              <Link to="/checkout" className="navbar-service-location" title="Change location at checkout">
+                <MapPin size={12} />
+                <span>{serviceLocation.title.split('&')[0].trim()}</span>
+              </Link>
             )}
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
               <ShoppingBag size={20} />

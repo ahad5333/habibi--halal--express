@@ -64,15 +64,26 @@ const getPartnerApplications = async (req, res) => {
 
 const updateApplicationStatus = async (req, res) => {
   const { id } = req.params;
-  const { status, price_tier, notes } = req.body;
+  const { status, price_tier, notes, payment_methods, credit_balance } = req.body;
+
+  const pmethods = Array.isArray(payment_methods) ? JSON.stringify(payment_methods) : (payment_methods ?? null);
+  const balance  = credit_balance !== undefined && credit_balance !== '' ? parseFloat(credit_balance) : null;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const result = await client.query(
-      "UPDATE partner_applications SET status = $1, price_tier = $2, notes = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *",
-      [status, price_tier, notes, id]
+      `UPDATE partner_applications
+          SET status           = $1,
+              price_tier       = $2,
+              notes            = $3,
+              payment_methods  = COALESCE($5::jsonb, payment_methods),
+              credit_balance   = COALESCE($6, credit_balance),
+              updated_at       = CURRENT_TIMESTAMP
+        WHERE id = $4
+        RETURNING *`,
+      [status, price_tier, notes, id, pmethods, balance]
     );
 
     if (result.rows.length === 0) {

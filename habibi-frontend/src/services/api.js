@@ -66,6 +66,14 @@ export const authAPI = {
   resetPassword: (token, password) =>
     request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
 
+  /** POST /api/auth/sms-recovery/send */
+  sendSmsCode: (phone) =>
+    request('/api/auth/sms-recovery/send', { method: 'POST', body: JSON.stringify({ phone }) }),
+
+  /** POST /api/auth/sms-recovery/verify */
+  verifySmsCode: (phone, code) =>
+    request('/api/auth/sms-recovery/verify', { method: 'POST', body: JSON.stringify({ phone, code }) }),
+
   /** Check if user is logged in */
   isLoggedIn: () => !!localStorage.getItem('habibi_token'),
 

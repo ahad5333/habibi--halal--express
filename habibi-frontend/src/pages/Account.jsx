@@ -41,6 +41,40 @@ function StatusBadge({ status }) {
   );
 }
 
+// ── Birthday Coupon Banner ────────────────────────────────────────────────────
+function BirthdayCouponBanner() {
+  const [coupon, setCoupon] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('habibi_birthday_coupon') || 'null'); } catch { return null; }
+  });
+  const [copied, setCopied] = useState(false);
+
+  if (!coupon) return null;
+
+  const dismiss = () => {
+    localStorage.removeItem('habibi_birthday_coupon');
+    setCoupon(null);
+  };
+
+  const copy = () => {
+    navigator.clipboard.writeText(coupon.code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="birthday-banner">
+      <span className="birthday-banner-emoji">🎂</span>
+      <div className="birthday-banner-body">
+        <p className="birthday-banner-title">Happy Birthday! Here's your gift 🎁</p>
+        <p className="birthday-banner-sub">Use code <strong>{coupon.code}</strong> for {coupon.discount_value}% off your order. Valid until {coupon.expiry_date}.</p>
+      </div>
+      <button className="birthday-banner-copy" onClick={copy}>{copied ? 'Copied!' : 'Copy Code'}</button>
+      <button className="birthday-banner-close" onClick={dismiss}><X size={14} /></button>
+    </div>
+  );
+}
+
 // ── Profile Tab ───────────────────────────────────────────────────────────────
 function ProfileTab({ user, logout, refreshUser }) {
   const navigate = useNavigate();
@@ -126,6 +160,7 @@ function ProfileTab({ user, logout, refreshUser }) {
 
   return (
     <div className="acct-profile">
+      <BirthdayCouponBanner />
       {/* Avatar + name row */}
       <div className="acct-avatar-row">
         <div className="acct-avatar">{initial}</div>

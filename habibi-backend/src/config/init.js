@@ -39,18 +39,42 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider             VARCHAR(20)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id          VARCHAR(255)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified       BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_hash           VARCHAR(255)`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_expires        TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_attempts       INTEGER DEFAULT 0`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_rewarded_year  INTEGER`);
 
     // ── Coupons: safe migration columns ───────────────────────────
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title              VARCHAR(255)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS description        TEXT`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_from         TIMESTAMPTZ`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_until        TIMESTAMPTZ`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email     VARCHAR(255)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title               VARCHAR(255)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS description         TEXT`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_from          TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_until         TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email      VARCHAR(255)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id         INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS free_item_category  VARCHAR(100)`);
+
+    // ── Partner applications: add payment_methods + credit_balance ──
+    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
+    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS credit_balance  NUMERIC(10,2) DEFAULT 0`);
+
+    // ── Locations: add pre-selected delivery addresses ─────────────
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_addresses JSONB DEFAULT '[]'`);
 
     // ── Marketplace orders: add location tracking ─────────────────
     await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS platform_store_id VARCHAR(255)`);
+
+    // ── Per-location menu item availability ───────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS menu_location_availability (
+        menu_id     INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+        location_id INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+        status      VARCHAR(20) NOT NULL DEFAULT 'available'
+                    CHECK (status IN ('available', 'sold_out', 'inactive')),
+        updated_at  TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (menu_id, location_id)
+      )
+    `);
 
     // ── Urgent requests: make phone nullable for contact-form use ──
     await client.query(`ALTER TABLE urgent_requests ALTER COLUMN phone DROP NOT NULL`).catch(() => {});
@@ -281,7 +305,10 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS table_number VARCHAR(50)`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS loyalty_points_redeemed INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);
 
     // ── Migrate carts.customer_id → user_id if old schema ─────────
     await client.query(`

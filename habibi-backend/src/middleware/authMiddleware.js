@@ -1,29 +1,41 @@
 const jwt = require("jsonwebtoken");
 
+// ── In-memory token revocation list ────────────────────────────────────────
+// Stores { jti -> exp (unix seconds) } for tokens invalidated via logout.
+// Survives within a process; clears on restart (acceptable: tokens now
+// expire in 24 h, so the maximum residual window after a restart is 24 h).
+const _revokedJTIs = new Map();
+
+// Cleanup: remove entries for tokens that have already expired naturally
+setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  for (const [jti, exp] of _revokedJTIs) {
+    if (exp < now) _revokedJTIs.delete(jti);
+  }
+}, 60 * 60 * 1000).unref(); // .unref() so this never keeps the process alive
+
+const revokeToken = (jti, exp) => { if (jti) _revokedJTIs.set(jti, exp); };
+
 const protect = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      return res.status(401).json({
-        message: "No token provided",
-      });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.slice(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
+    // Reject explicitly revoked tokens (logout)
+    if (decoded.jti && _revokedJTIs.has(decoded.jti)) {
+      return res.status(401).json({ message: 'Session expired. Please log in again.' });
+    }
 
     req.user = decoded;
-
     next();
   } catch (error) {
-    res.status(401).json({
-      message: "Invalid token",
-    });
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
@@ -47,3 +59,4 @@ const optionalAuth = (req, res, next) => {
 module.exports = protect;
 module.exports.admin = admin;
 module.exports.optionalAuth = optionalAuth;
+module.exports.revokeToken = revokeToken;

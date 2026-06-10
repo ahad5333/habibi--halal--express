@@ -50,7 +50,7 @@ export const adminAPI = {
   sidebar:     () => req('/api/admin/sidebar'),
 
   orders:      () => req('/api/admin/orders'),
-  updateOrder: (id, status) => req(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateOrder: (id, status, cancellation_reason) => req(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...(cancellation_reason ? { cancellation_reason } : {}) }) }),
 
   menus:       () => req('/api/admin/menus'),
   createMenu:  (fd) => upload('/api/admin/menus', fd),
@@ -71,7 +71,8 @@ export const adminAPI = {
   deleteCoupon:(id) => req(`/api/admin/coupons/${id}`, { method: 'DELETE' }),
 
   partners:    () => req('/api/admin/partners/applications'),
-  updatePartner:(id, status, note) => req(`/api/admin/partners/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status, note }) }),
+  updatePartner:(id, status, note, price_tier, payment_methods, credit_balance) =>
+    req(`/api/admin/partners/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes: note, price_tier, payment_methods, credit_balance }) }),
 
   urgent:      () => req('/api/urgent-requests'),
 
@@ -82,6 +83,9 @@ export const adminAPI = {
 
   tiers:       () => req('/api/admin/delivery-tiers'),
   updateTier:  (id, body) => req(`/api/admin/delivery-tiers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  paymentSettings:       () => req('/api/admin/payment-settings'),
+  updatePaymentSetting:  (id, is_active) => req(`/api/admin/payment-settings/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
 
   payments:    () => req('/api/admin/payments'),
   refundOrder: (orderNumber) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST' }),
@@ -96,6 +100,8 @@ export const adminAPI = {
 
   // Menu availability
   toggleMenuAvailability: (body) => req('/api/admin/menus/availability', { method: 'PATCH', body: JSON.stringify(body) }),
+  getLocationMenuAvailability: (location_id) => req(`/api/admin/menus/location-availability?location_id=${location_id}`),
+  setLocationMenuAvailability: (body) => req('/api/admin/menus/location-availability', { method: 'POST', body: JSON.stringify(body) }),
 
   // Staff
   getStaff:    () => req('/api/admin/staff'),

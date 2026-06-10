@@ -124,7 +124,10 @@ const Checkout = () => {
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setLocations(list);
-        if (list.length > 0) setSelectedLocation(list[0]);
+        const stored = localStorage.getItem('habibi_service_location');
+        const storedLoc = stored ? list.find(l => l.id === JSON.parse(stored).id) : null;
+        const first = storedLoc || (list.length > 0 ? list[0] : null);
+        if (first) { setSelectedLocation(first); localStorage.setItem('habibi_service_location', JSON.stringify({ id: first.id, title: first.title })); }
       })
       .catch(() => {});
   }, []);
@@ -505,6 +508,24 @@ const Checkout = () => {
                     <>
                       <div className="form-group mb-4">
                         <label className="form-label">DELIVERY ADDRESS</label>
+                        {/* Pre-selected addresses quick-pick */}
+                        {selectedLocation && Array.isArray(selectedLocation.delivery_addresses) && selectedLocation.delivery_addresses.length > 0 && (
+                          <div className="preset-addr-list">
+                            <p className="preset-addr-hint">Quick-select a nearby address:</p>
+                            <div className="preset-addr-chips">
+                              {selectedLocation.delivery_addresses.map((a, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  className={`preset-addr-chip${address === a ? ' active' : ''}`}
+                                  onClick={() => setAddress(a)}
+                                >
+                                  <MapPin size={11} /> {a}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="address-input-wrapper">
                           <MapPin size={14} className="address-icon text-muted" />
                           <input ref={addressInputRef} type="text" className="form-input address-input" placeholder="Enter your full delivery address" value={address} onChange={e => setAddress(e.target.value)} autoComplete="street-address" />
@@ -556,7 +577,7 @@ const Checkout = () => {
                                   key={loc.id}
                                   type="button"
                                   className={`timing-card ${active ? 'active' : ''}`}
-                                  onClick={() => setSelectedLocation(loc)}
+                                  onClick={() => { setSelectedLocation(loc); localStorage.setItem('habibi_service_location', JSON.stringify({ id: loc.id, title: loc.title })); }}
                                   style={{ width: '100%', margin: 0 }}
                                 >
                                   <span className="timing-icon">📍</span>

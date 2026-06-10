@@ -13,5 +13,8 @@
 .tier-active { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted); }
 .tier-active input { width: 16px; height: 16px; accent-color: var(--color-primary); }
 
+.pm-list { display: flex; flex-direction: column; gap: 0.625rem; }
+.pm-row { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1.25rem; }
+
 .integrations-list { display: flex; flex-direction: column; gap: 0.625rem; }
 .integration-row { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; }

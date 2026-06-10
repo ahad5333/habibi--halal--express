@@ -187,6 +187,65 @@
   height: 28px;
 }
 
+.footer-badge-card--ssl {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.footer-badge-card--ssl:hover {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+.footer-badge-ssl-icon {
+  color: #10b981;
+  width: 26px;
+  height: 26px;
+}
+
+.footer-badge-card--authnet {
+  border-color: rgba(0, 112, 187, 0.3);
+  min-width: 74px;
+}
+.footer-badge-card--authnet:hover {
+  background: rgba(0, 112, 187, 0.08);
+  border-color: rgba(0, 112, 187, 0.5);
+}
+.footer-badge-authnet-logo {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.2;
+}
+.footer-badge-authnet-logo span {
+  color: #0070bb;
+}
+
+.footer-badge-card--paypal {
+  border-color: rgba(0, 112, 186, 0.3);
+}
+.footer-badge-card--paypal:hover {
+  background: rgba(0, 112, 186, 0.08);
+  border-color: rgba(0, 112, 186, 0.5);
+}
+.footer-badge-paypal-icon {
+  color: #009cde;
+  width: 28px;
+  height: 28px;
+}
+
+.footer-urgent-contact {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 0.5rem;
+}
+.footer-urgent-contact a {
+  color: #f97316;
+  text-decoration: none;
+  font-weight: 500;
+}
+.footer-urgent-contact a:hover {
+  text-decoration: underline;
+}
+
 .footer-tagline {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;

@@ -20,6 +20,8 @@ const {
   updateAdminLocation,
   toggleLocation,
   toggleMenuAvailability,
+  getLocationMenuAvailability,
+  setLocationMenuAvailability,
   getCouponStats,
 } = require("../controllers/adminController");
 const { getRevenueAnalytics, getCustomerGrowth } = require("../controllers/analyticsController");
@@ -78,6 +80,8 @@ const upload = require("../middleware/uploadMiddleware");
 
 router.get("/menus", getAllMenus);
 router.patch("/menus/availability", toggleMenuAvailability);
+router.get("/menus/location-availability", getLocationMenuAvailability);
+router.post("/menus/location-availability", setLocationMenuAvailability);
 router.post("/menus", upload.single("image"), createMenu);
 router.patch("/menus/:id", upload.single("image"), updateMenu);
 router.delete("/menus/:id", deleteMenu);
@@ -133,6 +137,11 @@ router.get("/payments", async (req, res) => {
 // Refund
 const { refundOrder } = require("../controllers/paymentController");
 router.post("/payments/:orderNumber/refund", refundOrder);
+
+// Payment Method Settings (enable/disable)
+const { getAdminPaymentSettings, updatePaymentSetting } = require("../controllers/settingsController");
+router.get("/payment-settings", getAdminPaymentSettings);
+router.patch("/payment-settings/:id", updatePaymentSetting);
 
 // Coupons
 const couponRoutes = require("./couponRoutes");
