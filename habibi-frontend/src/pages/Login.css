@@ -197,11 +197,11 @@
 }
 
 .form-input {
-  background: var(--color-bg);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #ffffff;
+  border: 1px solid #111827;
   border-radius: 6px;
   padding: 0.875rem 1rem;
-  color: var(--color-text-main);
+  color: #111827;
   font-family: var(--font-sans);
   font-size: 0.875rem;
   outline: none;
@@ -215,7 +215,7 @@
 }
 
 .form-input::placeholder {
-  color: rgba(255,255,255,0.3);
+  color: #9ca3af;
 }
 
 /* Forgot password link */
