@@ -1,10 +1,19 @@
 -- Fix reservations table if production DB was created with old schema
 -- (reservation_date/time/guests/occasion/special_requests instead of name/email/scheduled_date/party_size/notes)
 
--- Drop NOT NULL from old columns so new inserts (which use scheduled_date/party_size) don't violate them
-ALTER TABLE reservations ALTER COLUMN reservation_date DROP NOT NULL;
-ALTER TABLE reservations ALTER COLUMN reservation_time DROP NOT NULL;
-ALTER TABLE reservations ALTER COLUMN guests         DROP NOT NULL;
+-- Drop NOT NULL from old columns if they exist (some DBs may not have them)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='reservations' AND column_name='reservation_date') THEN
+    ALTER TABLE reservations ALTER COLUMN reservation_date DROP NOT NULL;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='reservations' AND column_name='reservation_time') THEN
+    ALTER TABLE reservations ALTER COLUMN reservation_time DROP NOT NULL;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='reservations' AND column_name='guests') THEN
+    ALTER TABLE reservations ALTER COLUMN guests DROP NOT NULL;
+  END IF;
+END $$;
 
 -- Add columns that schema.sql defines but old DBs may be missing
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS name           VARCHAR(255);
