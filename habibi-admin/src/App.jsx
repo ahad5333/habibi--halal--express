@@ -57,11 +57,13 @@ import AuditLog from './pages/AuditLog';
 import './App.css';
 
 function AdminLayout() {
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   return (
     <div className="admin-shell">
-      <Sidebar />
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="admin-main">
-        <TopBar />
+        <TopBar onMenuToggle={() => setSidebarOpen(o => !o)} />
         <div className="admin-content">
           <Routes>
             <Route path="/"          element={<Dashboard />} />

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShoppingBag, Utensils, Users, Tag,
   Handshake, BarChart2, AlertTriangle, Settings, LogOut, Zap, CreditCard,
   UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation, Store,
-  Briefcase, ClipboardList, QrCode, CalendarDays, Link2, KeyRound, Star, Shield,
+  Briefcase, ClipboardList, QrCode, CalendarDays, Link2, KeyRound, Star, Shield, X,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -42,12 +42,12 @@ const NAV = [
   { to: '/settings',   icon: <Settings size={17} />,        label: 'Settings' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const { admin, logout } = useAdminAuth();
   const location = useLocation();
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
       {/* Brand */}
       <div className="sidebar-brand">
         <div className="sidebar-brand-icon"><Zap size={16} /></div>
@@ -55,6 +55,9 @@ export default function Sidebar() {
           <p className="sidebar-brand-name">Habibi Admin</p>
           <p className="sidebar-brand-sub">CPanel v1.0</p>
         </div>
+        <button className="sidebar-close" onClick={onClose} aria-label="Close menu">
+          <X size={16} />
+        </button>
       </div>
 
       {/* Nav */}
@@ -64,6 +67,7 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
+            onClick={onClose}
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''} ${item.urgent ? 'urgent' : ''}`
             }

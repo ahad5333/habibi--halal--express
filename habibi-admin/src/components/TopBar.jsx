@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, ExternalLink } from 'lucide-react';
+import { Bell, ExternalLink, Menu } from 'lucide-react';
 import './TopBar.css';
 
 const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
@@ -36,13 +36,16 @@ const TITLES = {
   '/driver':         { label: 'Driver View',          sub: 'Active delivery tracking' },
 };
 
-export default function TopBar() {
+export default function TopBar({ onMenuToggle }) {
   const { pathname } = useLocation();
   const info = TITLES[pathname] || { label: 'Admin', sub: '' };
 
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <button className="topbar-hamburger" onClick={onMenuToggle} aria-label="Open menu">
+          <Menu size={20} />
+        </button>
         <h1 className="topbar-title">{info.label}</h1>
         {info.sub && <p className="topbar-sub">{info.sub}</p>}
       </div>

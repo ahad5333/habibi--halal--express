@@ -103,3 +103,10 @@
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
   .dash-quick { grid-template-columns: repeat(2, 1fr); }
 }
+
+@media (max-width: 480px) {
+  .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .dash-quick { grid-template-columns: 1fr; }
+  .stat-card  { padding: 0.875rem; }
+  .stat-card-value { font-size: 1.5rem; }
+}

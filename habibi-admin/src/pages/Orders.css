@@ -82,3 +82,10 @@
 
 @keyframes spin-once { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 .spin-once { animation: spin-once 0.5s linear; }
+
+@media (max-width: 768px) {
+  .orders-search { width: 100%; }
+  .orders-toolbar { flex-direction: column; align-items: stretch; }
+  .orders-right { width: 100%; }
+  .order-detail { grid-template-columns: 1fr; gap: 1rem; }
+}

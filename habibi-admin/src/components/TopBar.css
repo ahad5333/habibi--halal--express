@@ -76,3 +76,41 @@
   background: var(--color-error);
   border: 1px solid var(--color-surface);
 }
+
+/* ── Hamburger (mobile only) ── */
+.topbar-hamburger {
+  display: none;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.topbar-hamburger:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-dim);
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 1rem;
+  }
+
+  .topbar-hamburger {
+    display: flex;
+  }
+
+  .topbar-sub {
+    display: none;
+  }
+
+  .topbar-site-link span:last-child {
+    display: none;
+  }
+}

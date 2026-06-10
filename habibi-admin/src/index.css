@@ -157,6 +157,42 @@ input, select, textarea { font-family: var(--font-sans); }
 /* ── Divider ── */
 .divider { border: none; border-top: 1px solid var(--color-border); }
 
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page-hdr {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .page-hdr .btn,
+  .page-hdr button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal {
+    padding: 1.25rem;
+    max-height: 95vh;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn,
+  .modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Stat grids — collapse to 2 columns on mobile */
+  [class*="stats-grid"],
+  [class*="stat-grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 /* ── Spinner ── */
 .spinner { width: 20px; height: 20px; border: 2px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

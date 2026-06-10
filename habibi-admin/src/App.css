@@ -24,3 +24,26 @@
   justify-content: center;
   height: 100vh;
 }
+
+/* Dark backdrop when sidebar is open on mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+@media (max-width: 768px) {
+  .admin-main {
+    margin-left: 0;
+  }
+
+  .admin-content {
+    padding: 1rem;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+}
