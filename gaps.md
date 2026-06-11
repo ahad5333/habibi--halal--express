@@ -1,6 +1,128 @@
 # Habibi Halal Express — Gap Analysis
-**Updated:** 2026-05-31 (post all sessions — website feature-complete)
-**Status key:** ✅ Done · 🔶 Partial · ❌ Missing
+**Updated:** 2026-06-11 (post all sessions — all modules code-complete)
+**Status key:** ✅ Done · 🔶 Partial · ❌ Missing · ⏳ Waiting on external approval
+
+---
+
+## Milestone Tracking
+
+> **Rule:** No coding is blocking any milestone. Everything below is waiting on client-side account setups or third-party partner approvals.
+
+| Milestone | Description | Code | Blocking |
+|---|---|---|---|
+| **M1** | Full Website + CPanel Live | ✅ 100% done | API keys from client (see below) |
+| **M2** | Integrations Live (UberEats + DoorDash + GrubHub) | ✅ 100% done | Tech Partner approval (see below) |
+| **M3** | Customer Ordering Apps Live (Android + iOS) | ✅ 100% done | Store accounts + API approvals (see below) |
+| **M4** | Merchant Tablet App Live | 🔶 Needs full testing | Depends on M3 accounts being set up |
+| **M5** | Business Wholesale App Live | 🔶 Needs full testing | Depends on M3 accounts being set up |
+
+---
+
+## Milestone 1 — Full Website + CPanel Live
+**Code: ✅ Complete. Server deployed at habibihe.com. Waiting on API keys only.**
+
+### Server `.env` — still placeholder/missing (update via `nano /var/www/habibi/habibi-backend/.env` then `pm2 restart habibi-backend`)
+
+| Env Var | Current Value | What's Needed | Who Gets It |
+|---|---|---|---|
+| `NODE_ENV` | `development` | `production` | We change it |
+| `FRONTEND_URL` | `http://localhost:5175` | `https://habibihe.com` | We change it |
+| `CORS_ORIGINS` | localhost only | `https://habibihe.com,https://www.habibihe.com` | We change it |
+| `STRIPE_SECRET_KEY` | `sk_test_REPLACE_ME` | `sk_live_...` | Client — dashboard.stripe.com |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_REPLACE_ME` | Real secret after adding webhook endpoint | Client — Stripe Dashboard → Webhooks |
+| `PAYPAL_CLIENT_ID` | `REPLACE_ME` | Real production ID | Client — developer.paypal.com |
+| `PAYPAL_CLIENT_SECRET` | `REPLACE_ME` | Real production secret | Client — same page |
+| `PAYPAL_MODE` | `sandbox` | `production` | We change it once PayPal keys arrive |
+| `SENDGRID_API_KEY` | *(empty)* | `SG.xxxx` — **also activates admin MFA** | Client — app.sendgrid.com |
+| `EMAIL_FROM` | `noreply@habibihalal.com` | Verified sender (e.g. `orders@habibihe.com`) | Client — SendGrid domain auth |
+| `TWILIO_ACCOUNT_SID` | *(empty)* | `ACxxxx` | Client — console.twilio.com |
+| `TWILIO_AUTH_TOKEN` | *(empty)* | Real token | Client — same page |
+| `TWILIO_PHONE_NUMBER` | *(empty)* | `+1xxxxxxxxxx` | Client — buy number in Twilio |
+| `GOOGLE_MAPS_API_KEY` | `SIMULATED` | `AIzaxxxx` (enable Distance Matrix + Places + Geocoding APIs) | Client — console.cloud.google.com |
+
+### Frontend `.env` — still placeholder (update locally, rebuild, redeploy dist/ to server)
+
+| Env Var | Current Value | What's Needed |
+|---|---|---|
+| `VITE_STRIPE_PUBLISHABLE_KEY` | `pk_test_REPLACE_ME` | `pk_live_...` |
+| `VITE_PAYPAL_CLIENT_ID` | `REPLACE_ME` | Real PayPal client ID |
+| `VITE_GOOGLE_MAPS_KEY` | *(missing)* | Same Google Maps key as backend |
+| `VITE_GA_MEASUREMENT_ID` | `G-MOCKTRACKER` | Real GA4 ID from analytics.google.com |
+| `VITE_FB_PIXEL_ID` | `123456789012345` | Real Pixel ID from Facebook Business |
+
+### Already set on server ✅
+- `CREDENTIAL_ENCRYPTION_KEY` — set
+- `HEALTH_SECRET` — set
+- `DB_*` — local PostgreSQL running
+- `JWT_SECRET` — set
+- `ZELLE_EMAIL`, `CASHAPP_CASHTAG` — set
+
+### Effort once keys arrive
+~1 hour: update `.env` → `pm2 restart` → update frontend `.env` → `npm run build` → copy `dist/` to server.
+
+---
+
+## Milestone 2 — Integrations Live (UberEats + DoorDash + GrubHub)
+**Code: ✅ Complete. All integrations built and simulated. Zero code changes needed when approvals arrive — just swap env vars.**
+⏱️ Timeline depends on Tech Partner approval.
+
+| Platform | What's Built | Current State | Blocking | Env Var to Swap |
+|---|---|---|---|---|
+| **DoorDash Drive** | Auto-dispatch, webhook, admin list/cancel | Simulated | DoorDash Developer account approval | `DOORDASH_DEVELOPER_ID`, `DOORDASH_KEY_ID`, `DOORDASH_SIGNING_SECRET` |
+| **Roadie** | Long-distance dispatch (10+ mi), webhook, admin list | Simulated | Roadie API key from roadie.com | `ROADIE_API_KEY` |
+| **UberEats** | Webhook receiver, order normalisation, admin tab | Ready | UberEats Restaurant Manager API partner approval | No new var — webhook URL registered in UberEats portal |
+| **GrubHub** | Webhook receiver, order normalisation, admin tab | Ready | GrubHub partner-level API access | No new var — webhook URL registered in GrubHub portal |
+| **Caviar** | Webhook receiver (DoorDash-backed format) | Ready | No extra approval needed | No new var |
+
+> Webhook URLs to register with each platform once approved:
+> - DoorDash: `https://habibihe.com/api/doordash/webhook`
+> - Roadie: `https://habibihe.com/api/roadie/webhook`
+> - UberEats: `https://habibihe.com/api/marketplace/webhook/ubereats`
+> - GrubHub: `https://habibihe.com/api/marketplace/webhook/grubhub`
+> - Caviar: `https://habibihe.com/api/marketplace/webhook/caviar`
+
+---
+
+## Milestone 3 — Customer Ordering Apps Live (Android + iOS)
+**Code: ✅ Complete. All 19 feature gaps resolved. Waiting on store accounts and API approvals.**
+
+| Blocking item | Details | Who Gets It |
+|---|---|---|
+| **EAS project ID** | Create Expo account → `eas init` in `habibi-mobile/` | Client |
+| **Google Play Developer account** | $25 one-time fee, ~1–3 day review | Client — play.google.com/console |
+| **Apple Developer account** | $99/year, ~24–48 hr review | Client — developer.apple.com |
+| **APNs certificate** | Comes with Apple Developer account — needed for iOS push | Client |
+| **Firebase project** | Free, 10 min setup — provides FCM push for both platforms | Client — console.firebase.google.com |
+| `FCM_SERVER_KEY` + `FCM_PROJECT_ID` | From Firebase project settings | Client adds to server `.env` |
+| **Google Maps mobile key** | Same Google Cloud project as M1 key, add iOS + Android app restrictions | Client |
+
+> Once EAS is set up: `eas build --platform all` submits builds to both stores. Apple review takes 1–3 days, Google review takes 1–3 days.
+
+---
+
+## Milestone 4 — Merchant Tablet App Live
+**Code: 🔶 Screens built, needs full end-to-end testing before store submission.**
+Depends on M3 accounts (same EAS + store accounts, same Firebase).
+
+Features to test before submission:
+- [ ] Live order board — incoming → preparing → ready → delivered
+- [ ] Accept / reject orders with one tap
+- [ ] Print receipt (Bluetooth thermal printer)
+- [ ] End-of-day sales summary
+- [ ] Item availability toggle (mark sold out)
+
+---
+
+## Milestone 5 — Business Wholesale App Live
+**Code: 🔶 Screens built, needs full end-to-end testing before store submission.**
+Depends on M3 accounts (same EAS + store accounts).
+
+Features to test before submission:
+- [ ] Partner login (same credentials as web portal)
+- [ ] Browse business catalog at tier prices
+- [ ] Bulk order cart
+- [ ] Order history + invoices
+- [ ] Request custom quote
 
 ---
 
@@ -8,14 +130,14 @@
 
 | # | Deliverable | Status | Completion |
 |---|---|---|---|
-| 1 | Restaurant ordering website (habibihe.com) | ✅ | ~100% |
-| 2 | Admin CPanel | ✅ | ~100% |
-| 3 | Android customer ordering app | ❌ | 0% |
-| 4 | iOS customer ordering app | ❌ | 0% |
-| 5 | Android tablet merchant app (Habibi Merchant) | ❌ | 0% |
-| 6 | Business wholesale Android & iOS app | ❌ | 0% (web portal ✅) |
+| 1 | Restaurant ordering website (habibihe.com) | ✅ | 100% — code done, server deployed |
+| 2 | Admin CPanel | ✅ | 100% — code done, server deployed |
+| 3 | Android customer ordering app | ✅ | 100% code — waiting on Play Store account |
+| 4 | iOS customer ordering app | ✅ | 100% code — waiting on Apple Developer account |
+| 5 | Android tablet merchant app (Habibi Merchant) | 🔶 | Code built — needs testing |
+| 6 | Business wholesale Android & iOS app | 🔶 | Code built — needs testing (web portal ✅ live) |
 
-> Website and Admin CPanel are feature-complete. Remaining 3% is infrastructure (cloud DB, hosting, SSL) — see Phase 11.
+> All coding is complete. No module is blocked by missing code. All remaining items are external accounts, API approvals, or testing.
 
 ---
 
@@ -268,6 +390,7 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 
 ### 🔶 Partial
 - **Environment config** — `.env` has 60+ vars; real keys partially filled; `.env.production` not present; no secrets manager (Vault / AWS SSM)
+- **Admin MFA (email OTP)** — code is fully built and live on server. Automatically activates once `SENDGRID_API_KEY` or `SMTP_HOST`+`SMTP_USER`+`SMTP_PASS` are added to `.env` and PM2 is restarted. Currently bypassed because SMTP is not configured — admin logs in with password only. See Phase 12a (Email / SendGrid) for setup steps.
 
 ### ✅ Input Validation
 - **express-validator** installed and wired — schemas on auth (register/login/forgot/reset), orders (guest), coupons (validate/create), users (profile/password/addresses), reviews, reservations (catering), urgent requests
@@ -795,6 +918,7 @@ VITE_SITE_URL=https://habibihalal.com                  # Used for canonical URLs
 | 5 | Add custom domains + update DNS records | ✅ Yes | 30 min + DNS propagation |
 | 6 | Get Stripe **live** keys + add webhook endpoint in dashboard | ✅ Yes — no real payments without | 15 min |
 | 7 | Verify sender domain in SendGrid (DNS records) | ✅ Yes — emails go to spam without | 30 min + DNS |
+| 7a | Add `SENDGRID_API_KEY` to `.env` + `pm2 restart habibi-backend` | No — but activates admin MFA automatically | 2 min |
 | 8 | Buy Twilio phone number + add `TWILIO_*` credentials | No — SMS optional at launch | 10 min |
 | 9 | Enable Google Maps APIs + add `GOOGLE_MAPS_API_KEY` | No — fee defaults to $0 without it | 15 min |
 | 10 | `npm install helmet winston morgan` + apply in `app.js` | No — but a security risk without | 10 min |
