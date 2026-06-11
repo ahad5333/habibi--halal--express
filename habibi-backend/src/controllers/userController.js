@@ -43,8 +43,8 @@ const updateProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
-    if (!new_password || new_password.length < 6)
-      return res.status(400).json({ message: "New password must be at least 6 characters." });
+    if (!new_password || new_password.length < 8)
+      return res.status(400).json({ message: "New password must be at least 8 characters." });
 
     const userResult = await pool.query("SELECT password_hash FROM users WHERE id=$1", [req.user.id]);
     if (!userResult.rows[0]) return res.status(404).json({ message: "User not found." });
@@ -52,7 +52,7 @@ const changePassword = async (req, res) => {
     const match = await bcrypt.compare(current_password || "", userResult.rows[0].password_hash);
     if (!match) return res.status(400).json({ message: "Current password is incorrect." });
 
-    const hashed = await bcrypt.hash(new_password, 10);
+    const hashed = await bcrypt.hash(new_password, 12);
     await pool.query("UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2", [hashed, req.user.id]);
     res.json({ message: "Password updated successfully." });
   } catch (err) {
@@ -301,13 +301,15 @@ const createUser = async (req, res) => res.status(501).json({ message: "Use /api
 const getUsers = async (req, res) => {
   try {
     if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
-    const { limit = 50, offset = 0, search = '' } = req.query;
+    const rawSearch = String(req.query.search || '').slice(0, 100); // cap to prevent ReDoS
+    const { limit = 50, offset = 0 } = req.query;
+    const search = rawSearch;
     const searchClause = search
       ? `AND (name ILIKE $3 OR email ILIKE $3 OR phone_number ILIKE $3)`
       : '';
     const params = search
-      ? [parseInt(limit), parseInt(offset), `%${search}%`]
-      : [parseInt(limit), parseInt(offset)];
+      ? [Math.min(parseInt(limit) || 50, 200), Math.max(parseInt(offset) || 0, 0), `%${search}%`]
+      : [Math.min(parseInt(limit) || 50, 200), Math.max(parseInt(offset) || 0, 0)];
     const result = await pool.query(
       `SELECT id, name, email, phone_number, role, loyalty_points, created_at
        FROM users

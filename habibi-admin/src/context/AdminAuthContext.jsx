@@ -4,8 +4,9 @@ import { authAPI } from '../services/api';
 const Ctx = createContext(null);
 
 export function AdminAuthProvider({ children }) {
-  const [admin, setAdmin] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [admin, setAdmin]         = useState(null);
+  const [mfaEmail, setMfaEmail]   = useState(null);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('habibi_admin_token');
@@ -37,10 +38,25 @@ export function AdminAuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
+    if (data.mfa_required) {
+      setMfaEmail(data.email);
+      return data;
+    }
     if (data.user?.role !== 'admin') throw new Error('Access denied — admin accounts only.');
     authAPI.save(data.token);
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
+    return data;
+  };
+
+  const verifyMfa = async (otp) => {
+    if (!mfaEmail) throw new Error('No MFA session. Please log in again.');
+    const data = await authAPI.verifyAdminMfa(mfaEmail, otp);
+    if (data.user?.role !== 'admin') throw new Error('Access denied.');
+    authAPI.save(data.token);
+    localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
+    setAdmin(data.user);
+    setMfaEmail(null);
     return data;
   };
 
@@ -53,7 +69,7 @@ export function AdminAuthProvider({ children }) {
   };
 
   return (
-    <Ctx.Provider value={{ admin, loading, login, logout, isAdmin: !!admin }}>
+    <Ctx.Provider value={{ admin, loading, login, verifyMfa, logout, isAdmin: !!admin, mfaRequired: !!mfaEmail }}>
       {children}
     </Ctx.Provider>
   );

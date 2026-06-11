@@ -34,18 +34,7 @@ const validateCoupon = async (req, res) => {
       return res.status(400).json({ message: "This coupon is not yet active." });
     }
 
-    // Check usage limit with row-level lock to prevent race conditions
-    const lockedCoupon = await pool.query(
-      "SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE",
-      [coupon.id]
-    );
-    const lc = lockedCoupon.rows[0];
-    if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
-      return res.status(400).json({ message: "This coupon has reached its usage limit." });
-    }
-    // Increment usage count atomically on validation
-    await pool.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [coupon.id]);
-
+    // All validation checks FIRST — then increment inside a transaction
     // Check condition_type / condition_value (min order amount)
     if (coupon.condition_type === 'min_order' && parseFloat(amount) < parseFloat(coupon.condition_value || 0)) {
       return res.status(400).json({
@@ -55,8 +44,10 @@ const validateCoupon = async (req, res) => {
 
     // Check customer-specific restriction
     if (coupon.customer_email) {
-      const customerIdentifier = req.body.customer_email || (req.user?.email) || '';
-      if (!customerIdentifier || coupon.customer_email.toLowerCase() !== customerIdentifier.toLowerCase()) {
+      if (!req.user) {
+        return res.status(401).json({ message: "Please log in to use this coupon." });
+      }
+      if (coupon.customer_email.toLowerCase() !== req.user.email.toLowerCase()) {
         return res.status(400).json({ message: "This coupon is not valid for your account." });
       }
     }
@@ -67,6 +58,29 @@ const validateCoupon = async (req, res) => {
         return res.status(400).json({ message: "This coupon is only valid at a specific location." });
       }
     }
+
+    // All checks passed — now atomically lock + verify + increment in one transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const lockedCoupon = await client.query(
+        "SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE",
+        [coupon.id]
+      );
+      const lc = lockedCoupon.rows[0];
+      if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(400).json({ message: "This coupon has reached its usage limit." });
+      }
+      await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [coupon.id]);
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw txErr;
+    }
+    client.release();
 
     let discount = 0;
     let isFreeDelivery = false;

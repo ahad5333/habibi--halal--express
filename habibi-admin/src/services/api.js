@@ -5,6 +5,7 @@ function token() { return localStorage.getItem('habibi_admin_token'); }
 async function req(path, opts = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
@@ -20,6 +21,7 @@ async function upload(path, formData) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
     body: formData,
+    credentials: 'include',
     headers: token() ? { Authorization: `Bearer ${token()}` } : {},
   });
   const data = await res.json().catch(() => ({}));
@@ -31,6 +33,7 @@ async function uploadPatch(path, formData) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'PATCH',
     body: formData,
+    credentials: 'include',
     headers: token() ? { Authorization: `Bearer ${token()}` } : {},
   });
   const data = await res.json().catch(() => ({}));
@@ -39,7 +42,8 @@ async function uploadPatch(path, formData) {
 }
 
 export const authAPI = {
-  login:  (email, password) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login:          (email, password) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  verifyAdminMfa: (email, otp)      => req('/api/auth/admin-mfa/verify', { method: 'POST', body: JSON.stringify({ email, otp }) }),
   logout: () => req('/api/auth/logout', { method: 'POST' }),
   save:   (t) => localStorage.setItem('habibi_admin_token', t),
   clear:  () => localStorage.removeItem('habibi_admin_token'),

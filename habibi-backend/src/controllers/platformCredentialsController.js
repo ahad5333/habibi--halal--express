@@ -2,6 +2,7 @@ const pool         = require('../config/db');
 const safeError    = require('../utils/safeError');
 const platformAuth = require('../services/platformAuthService');
 const { syncMenuToPlatform, getMenuPreview } = require('../services/menuTransformService');
+const { encryptObject, decryptObject } = require('../utils/encrypt');
 
 // ── Credentials ─────────────────────────────────────────────────────
 const getCredentials = async (req, res) => {
@@ -11,7 +12,7 @@ const getCredentials = async (req, res) => {
     );
     // Mask actual values — only expose whether each key is set
     const rows = result.rows.map(row => {
-      const raw    = row.credentials || {};
+      const raw    = decryptObject(row.credentials || {});
       const masked = {};
       for (const [key, val] of Object.entries(raw)) {
         if (val && String(val).length > 0) {
@@ -35,16 +36,18 @@ const updateCredentials = async (req, res) => {
     if (!existing.rows[0]) return res.status(404).json({ message: 'Platform not found' });
 
     // Merge: only overwrite keys that have a non-empty value in the request
-    const current = existing.rows[0].credentials || {};
+    const current = decryptObject(existing.rows[0].credentials || {});
     const merged  = { ...current };
     for (const [k, v] of Object.entries(incoming)) {
       if (v !== null && v !== undefined && v !== '') merged[k] = v;
     }
     const hasKeys = Object.values(merged).some(v => v && String(v).length > 4);
 
+    // Encrypt before persisting
+    const encrypted = encryptObject(merged);
     await pool.query(
       `UPDATE platform_settings SET credentials=$1, api_key_set=$2, updated_at=NOW() WHERE platform=$3`,
-      [JSON.stringify(merged), hasKeys, platform]
+      [JSON.stringify(encrypted), hasKeys, platform]
     );
 
     // Invalidate cached tokens so next request re-authenticates with new creds

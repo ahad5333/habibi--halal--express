@@ -4,12 +4,13 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
-const pool = require("./config/db");
+const express      = require("express");
+const cors         = require("cors");
+const helmet       = require("helmet");
+const morgan       = require("morgan");
+const rateLimit    = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
+const pool         = require("./config/db");
 const app = express();
 
 // Security headers
@@ -133,8 +134,13 @@ const reviewsRoutes = require("./routes/reviewsRoutes");
 const favoritesRoutes = require("./routes/favoritesRoutes");
 const { getPaymentSettings, getCheckoutSettings } = require("./controllers/settingsController");
 
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
+  console.error('[FATAL] CORS_ORIGINS must be set in production. Refusing to start with wildcard origins.');
+  process.exit(1);
+}
+
 const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(",")
+  ? process.env.CORS_ORIGINS.split(",").map(o => o.trim())
   : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:8081", "http://localhost:8082", "http://localhost:8083", "http://localhost:8084", "http://localhost:8085", "http://localhost:19006"];
 
 app.use(cors({
@@ -151,6 +157,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cookieParser());
 app.use(express.json({ limit: '50kb' }))
 const staticOpts = { maxAge: '1y', etag: true, lastModified: true }
 app.use(express.static("public", staticOpts))
@@ -190,11 +197,18 @@ app.get("/api/settings/checkout", getCheckoutSettings);
 app.use("/", seoRoutes);
 
 app.get("/health", async (req, res) => {
+  // Only allow internal/monitoring requests — block public access in production
+  const clientIp = req.ip || '';
+  const isLocalhost = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+  const allowedMonitorHeader = req.headers['x-monitor-secret'] === process.env.HEALTH_SECRET;
+  if (process.env.NODE_ENV === 'production' && !isLocalhost && !allowedMonitorHeader) {
+    return res.status(404).json({ message: 'Not found' });
+  }
   try {
     await pool.query("SELECT 1");
     res.json({ status: "ok", db: "connected", uptime: Math.floor(process.uptime()) + "s" });
-  } catch (e) {
-    res.status(503).json({ status: "error", db: "unreachable", message: e.message });
+  } catch (_) {
+    res.status(503).json({ status: "error", db: "unreachable" });
   }
 });
 

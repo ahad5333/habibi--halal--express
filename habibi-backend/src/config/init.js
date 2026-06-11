@@ -43,6 +43,9 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_expires        TIMESTAMPTZ`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_attempts       INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_rewarded_year  INTEGER`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_hash          VARCHAR(255)`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_expires       TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_attempts      INTEGER DEFAULT 0`);
 
     // ── Coupons: safe migration columns ───────────────────────────
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title               VARCHAR(255)`);
@@ -995,15 +998,20 @@ const seedDefaults = async () => {
     console.log("✅ Default payment settings seeded");
   }
 
-  // Seed default admin user
+  // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);
   if (adminCheck.rows.length === 0) {
-    const hash = await bcrypt.hash('Habibi@Admin2025', 10);
-    await pool.query(
-      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'admin')`,
-      ['Habibi Admin', 'admin@habibihe.com', hash]
-    );
-    console.log("✅ Default admin user created — admin@habibihe.com / Habibi@Admin2025");
+    const seedPwd = process.env.SEED_ADMIN_PASSWORD;
+    if (!seedPwd || seedPwd.length < 12) {
+      console.warn("⚠️  SEED_ADMIN_PASSWORD not set or too short — skipping admin seed. Set it in .env to create the default admin.");
+    } else {
+      const hash = await bcrypt.hash(seedPwd, 12);
+      await pool.query(
+        `INSERT INTO users (name, email, password_hash, role, email_verified) VALUES ($1, $2, $3, 'admin', TRUE)`,
+        ['Habibi Admin', 'admin@habibihe.com', hash]
+      );
+      console.log("✅ Default admin user created — admin@habibihe.com (password from SEED_ADMIN_PASSWORD)");
+    }
   }
 };
 

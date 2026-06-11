@@ -1,5 +1,7 @@
+const crypto = require('crypto');
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
+const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
 const { getDistance } = require("../utils/googleMaps");
@@ -108,7 +110,7 @@ async function autoDispatchRoadie(order_id, order) {
 const createGuestOrder = async (req, res) => {
   try {
     const {
-      order_number, customer_name, customer_phone, customer_email,
+      customer_name, customer_phone, customer_email,
       delivery_method, delivery_address, delivery_city, delivery_zip,
       delivery_state, delivery_instructions, payment_method,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
@@ -117,6 +119,9 @@ const createGuestOrder = async (req, res) => {
       table_number: table_number_raw,
       loyalty_points_redeemed: loyalty_points_raw,
     } = req.body;
+
+    // Generate order number server-side — never trust client-supplied values
+    const order_number = `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     const loyalty_points_redeemed = Math.max(0, parseInt(loyalty_points_raw, 10) || 0);
 
@@ -463,11 +468,21 @@ const getAdminOrders = async (req, res) => {
   }
 };
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  'pending', 'accepted', 'preparing', 'cooking',
+  'ready', 'out_for_delivery', 'delivered', 'cancelled', 'completed',
+]);
+
 /* ── Admin: update order status ── */
 const updateGuestOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!status || !ALLOWED_ORDER_STATUSES.has(status)) {
+      return res.status(400).json({ message: 'Invalid order status.' });
+    }
+
     const updated = await pool.query(
       `UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2
        RETURNING customer_phone, customer_email, order_number, total`,
@@ -547,6 +562,7 @@ const deleteGuestOrder = async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query("DELETE FROM guest_orders WHERE id=$1", [id]);
+    logAudit(pool, req.user?.id, req.user?.name, 'delete_order', 'order', String(id), {}, req.ip);
     res.json({ success: true });
   } catch (err) {
     console.error("deleteGuestOrder error:", err.message);
@@ -558,6 +574,7 @@ const deleteGuestOrder = async (req, res) => {
 const clearCompletedOrders = async (req, res) => {
   try {
     await pool.query("DELETE FROM guest_orders WHERE order_status='completed'");
+    logAudit(pool, req.user?.id, req.user?.name, 'clear_completed_orders', 'order', 'bulk', {}, req.ip);
     res.json({ success: true });
   } catch (err) {
     console.error("clearCompletedOrders error:", err.message);
@@ -629,8 +646,11 @@ const getOrderById = async (req, res) => {
 
     // Enforce ownership — non-admin users can only read their own orders
     const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
-    if (!isAdmin && order.rows[0].user_id && order.rows[0].user_id !== req.user?.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (!isAdmin) {
+      const ownerId = order.rows[0].user_id;
+      if (!ownerId || ownerId !== req.user?.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     const items = await pool.query(
@@ -645,8 +665,16 @@ const getOrderById = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
   try {
+    const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
+    if (!isAdmin) return res.status(403).json({ message: 'Admin access required.' });
+
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!status || !ALLOWED_ORDER_STATUSES.has(status)) {
+      return res.status(400).json({ message: 'Invalid order status.' });
+    }
+
     await pool.query("UPDATE orders SET status=$1 WHERE id=$2", [status, id]);
     res.json({ message: "Order status updated" });
   } catch (err) {

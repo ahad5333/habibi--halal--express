@@ -4,6 +4,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../services/emailService");
+const { sendAdminOTP } = require('../services/emailService');
+
+function setAuthCookie(res, token, maxAgeMs) {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('auth_token', token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'strict' : 'lax',
+    maxAge: maxAgeMs,
+  });
+}
 
 const registerUser = async (req, res) => {
   try {
@@ -31,7 +42,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate email verification token (expires in 24 h)
     const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -94,6 +105,28 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // VULN-05: block unverified emails (admin accounts are exempt)
+    if (!user.email_verified && user.role !== 'admin') {
+      return res.status(403).json({
+        message: "Please verify your email address before logging in.",
+        needs_verification: true,
+        email: user.email,
+      });
+    }
+
+    // VULN-11: admin login requires email OTP second factor
+    if (user.role === 'admin') {
+      const otp        = String(crypto.randomInt(100000, 1000000)); // 6 digits
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);     // 10 min
+      const otpHash    = await bcrypt.hash(otp, 12);
+      await pool.query(
+        `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
+        [otpHash, otpExpires, user.id]
+      );
+      sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
+      return res.json({ mfa_required: true, email: user.email });
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -102,7 +135,7 @@ const loginUser = async (req, res) => {
         jti: crypto.randomUUID(),
       },
       process.env.JWT_SECRET,
-      { expiresIn: user.role === 'admin' ? '24h' : '7d' }
+      { expiresIn: user.role === 'admin' ? '24h' : '1d' }
     );
 
     // Fetch partner application info if applicable
@@ -157,6 +190,7 @@ const loginUser = async (req, res) => {
       } catch (_) {}
     }
 
+    setAuthCookie(res, token, 24 * 60 * 60 * 1000); // 1d
     res.json({
       token,
       user: {
@@ -170,6 +204,60 @@ const loginUser = async (req, res) => {
         price_tier: partnerInfo?.price_tier || null,
       },
       birthday_coupon: birthdayCoupon,
+    });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+/* ── Admin MFA verify ────────────────────────────────────────────────── */
+const verifyAdminMfa = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required.' });
+    if (!/^\d{6}$/.test(String(otp))) return res.status(400).json({ message: 'OTP must be 6 digits.' });
+
+    const result = await pool.query(
+      `SELECT id, name, email, role, is_partner, partner_id,
+              admin_otp_hash, admin_otp_expires, admin_otp_attempts
+       FROM users WHERE email=$1 AND role='admin'`,
+      [email]
+    );
+
+    if (result.rows.length === 0) return res.status(400).json({ message: 'Invalid request.' });
+    const user = result.rows[0];
+
+    if (!user.admin_otp_hash || !user.admin_otp_expires) {
+      return res.status(400).json({ message: 'No pending MFA session. Please log in again.' });
+    }
+    if (new Date(user.admin_otp_expires) < new Date()) {
+      return res.status(400).json({ message: 'OTP has expired. Please log in again.' });
+    }
+    if ((user.admin_otp_attempts || 0) >= 5) {
+      return res.status(429).json({ message: 'Too many failed attempts. Please log in again.' });
+    }
+
+    const valid = await bcrypt.compare(String(otp), user.admin_otp_hash);
+    if (!valid) {
+      await pool.query(`UPDATE users SET admin_otp_attempts = admin_otp_attempts + 1 WHERE id=$1`, [user.id]);
+      return res.status(400).json({ message: 'Incorrect OTP.' });
+    }
+
+    await pool.query(
+      `UPDATE users SET admin_otp_hash=NULL, admin_otp_expires=NULL, admin_otp_attempts=0 WHERE id=$1`,
+      [user.id]
+    );
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    setAuthCookie(res, token, 24 * 60 * 60 * 1000); // 24h
+    res.json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
     res.status(500).json(safeError(error));
@@ -207,9 +295,10 @@ const verifyEmail = async (req, res) => {
     const jwtToken = jwt.sign(
       { id: user.id, role: user.role, is_partner: !!user.is_partner },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '1d' }
     );
 
+    setAuthCookie(res, jwtToken, 24 * 60 * 60 * 1000); // 1d
     res.json({
       success: true,
       token: jwtToken,
@@ -279,7 +368,7 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired reset token." });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     await pool.query(
       "UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2",
       [hashedPassword, result.rows[0].id]
@@ -321,9 +410,9 @@ const sendSmsRecoveryCode = async (req, res) => {
       return res.status(429).json({ message: 'A code was recently sent. Please wait before requesting another.' });
     }
 
-    const code    = String(Math.floor(10000 + Math.random() * 90000)); // 5 digits
+    const code    = String(crypto.randomInt(10000, 100000)); // cryptographically secure 5 digits
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-    const hash    = await bcrypt.hash(code, 10);
+    const hash    = await bcrypt.hash(code, 10); // OTP: 10 is fine — short-lived
 
     await pool.query(
       `UPDATE users SET sms_code_hash=$1, sms_code_expires=$2, sms_code_attempts=0 WHERE id=$3`,
@@ -385,11 +474,12 @@ const verifySmsRecoveryCode = async (req, res) => {
 
     // Issue a short-lived recovery token (for password reset or direct login)
     const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, sms_verified: true },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, sms_verified: true, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
+    setAuthCookie(res, token, 15 * 60 * 1000); // 15m
     res.json({
       token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
@@ -402,6 +492,7 @@ const verifySmsRecoveryCode = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  verifyAdminMfa,
   forgotPassword,
   resetPassword,
   verifyEmail,

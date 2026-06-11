@@ -31,7 +31,13 @@ const getDashboardStats = async (req, res) => {
 // 2. Global Order Feed
 const getAllOrders = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM guest_orders ORDER BY placed_at DESC");
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = (page - 1) * limit;
+    const result = await pool.query(
+      "SELECT * FROM guest_orders ORDER BY placed_at DESC LIMIT $1 OFFSET $2",
+      [limit, offset]
+    );
 
     const mapped = result.rows.map(o => {
       let items = [];
@@ -93,11 +99,21 @@ const getAllMenus = async (req, res) => {
 };
 
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  'pending', 'accepted', 'preparing', 'cooking',
+  'ready', 'out_for_delivery', 'delivered', 'cancelled', 'completed',
+]);
+
 // 4. Update Order Status (Admin Override)
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, cancellation_reason } = req.body;
+
+    if (!status || !ALLOWED_ORDER_STATUSES.has(String(status).toLowerCase())) {
+      return res.status(400).json({ message: 'Invalid order status.' });
+    }
+
     const io = req.app.get("io");
 
     const updated = await pool.query(
@@ -198,9 +214,11 @@ const getSidebarItems = async (req, res) => {
 };
 
 // 6. User Management
-// 6. User Management
 const getAllCustomers = async (req, res) => {
   try {
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = (page - 1) * limit;
     const result = await pool.query(`
       SELECT
         u.id,
@@ -216,7 +234,8 @@ const getAllCustomers = async (req, res) => {
       LEFT JOIN guest_orders o ON o.customer_email = u.email
       GROUP BY u.id
       ORDER BY u.created_at DESC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
     res.json(result.rows);
   } catch (error) {
     res.status(500).json(safeError(error));

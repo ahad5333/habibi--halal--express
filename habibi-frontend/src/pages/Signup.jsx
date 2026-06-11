@@ -10,7 +10,8 @@ const US_STATES = ['NY','NJ','CT','PA','MA','FL','CA','TX','IL','OH','GA','NC','
 const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const rawRedirect = searchParams.get('redirect') || '/';
+  const redirectTo = /^\/(?!\/)/.test(rawRedirect) ? rawRedirect : '/';
   const { register } = useAuth();
 
   const [loading, setLoading] = useState(false);

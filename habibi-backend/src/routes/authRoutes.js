@@ -1,11 +1,39 @@
-const express = require("express");
-const router  = express.Router();
-const { body } = require('express-validator');
+const express    = require("express");
+const router     = express.Router();
+const rateLimit  = require('express-rate-limit');
+const { body }   = require('express-validator');
 const { handleValidation, rules } = require('../middleware/validate');
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+const smsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 50 : 3,
+  message: { error: 'Too many SMS requests. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 50 : 5,
+  message: { error: 'Too many password reset requests. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const smsVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 100 : 10,
+  message: { error: 'Too many verification attempts. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const {
   registerUser,
   loginUser,
+  verifyAdminMfa,
   forgotPassword,
   resetPassword,
   verifyEmail,
@@ -30,7 +58,16 @@ router.post("/login",
   loginUser
 );
 
+router.post("/admin-mfa/verify",
+  smsVerifyLimiter,
+  body('email').trim().isEmail().withMessage('Valid email required.'),
+  body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits.'),
+  handleValidation,
+  verifyAdminMfa
+);
+
 router.post("/forgot-password",
+  forgotPasswordLimiter,
   rules.email(),
   handleValidation,
   forgotPassword
@@ -46,8 +83,8 @@ router.post("/reset-password",
 router.get("/verify-email", verifyEmail);
 
 // SMS 5-digit recovery code
-router.post("/sms-recovery/send",   body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
-router.post("/sms-recovery/verify", body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
+router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
+router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
 
 // Invalidate the calling token (admin logout / "sign out everywhere")
 router.post('/logout', protect, (req, res) => {

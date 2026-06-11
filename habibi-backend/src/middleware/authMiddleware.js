@@ -16,15 +16,23 @@ setInterval(() => {
 
 const revokeToken = (jti, exp) => { if (jti) _revokedJTIs.set(jti, exp); };
 
+function extractToken(req) {
+  // Prefer httpOnly cookie (not accessible to XSS)
+  if (req.cookies?.auth_token) return req.cookies.auth_token;
+  // Fall back to Authorization header for API clients and mobile
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
+  return null;
+}
+
 const protect = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const token = authHeader.slice(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Reject explicitly revoked tokens (logout)
@@ -47,10 +55,12 @@ const admin = (req, res, next) => {
 // Sets req.user if a valid token is present, but never rejects unauthenticated requests.
 const optionalAuth = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const token = authHeader.split(' ')[1];
-      req.user = jwt.verify(token, process.env.JWT_SECRET);
+    const token = extractToken(req);
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (!decoded.jti || !_revokedJTIs.has(decoded.jti)) {
+        req.user = decoded;
+      }
     }
   } catch (_) { /* invalid or expired token — proceed as guest */ }
   next();

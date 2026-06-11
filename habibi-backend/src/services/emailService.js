@@ -339,6 +339,21 @@ const sendTableReservationConfirmation = async (email, { name, location, date, t
   );
 };
 
+const sendAdminOTP = async (email, code) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">Admin Login — Verification Code</h2>
+      <p style="margin:0 0 24px;font-size:15px">Your one-time login code for Habibi Admin Panel:</p>
+      <div style="background:#1a1a1a;border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:24px;text-align:center">
+        <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#c9a84c">${code}</span>
+      </div>
+      <p style="margin:24px 0 0;font-size:13px;color:#9ca3af">This code expires in <strong style="color:#f0ede8">10 minutes</strong>. Do not share it with anyone.</p>
+      <p style="margin:8px 0 0;font-size:12px;color:#6b7280">If you did not attempt to log in, change your admin password immediately.</p>
+    </div>`;
+  return sendMailHelper(email, 'Admin Login Code — Habibi Halal Express', html);
+};
+
 module.exports = {
   sendTableReservationConfirmation,
   sendOrderConfirmation,
@@ -353,4 +368,5 @@ module.exports = {
   sendCateringQuoteConfirmation,
   sendCateringAdminAlert,
   sendCateringInvoice,
+  sendAdminOTP,
 };

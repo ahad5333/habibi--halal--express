@@ -145,7 +145,14 @@ const clearCart = async (req, res) => {
 const syncCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { items } = req.body; // [{ menu_id, quantity }]
+    const rawItems = req.body.items; // [{ menu_id, quantity }]
+
+    if (!Array.isArray(rawItems)) {
+      return res.status(400).json({ error: 'items must be an array.' });
+    }
+
+    // Cap at 50 items to prevent DoS via oversized cart payloads
+    const items = rawItems.slice(0, 50).filter(i => i.menu_id && parseInt(i.quantity) > 0);
 
     let cart = await pool.query("SELECT id FROM carts WHERE user_id=$1", [userId]);
     let cartId;
@@ -158,15 +165,14 @@ const syncCart = async (req, res) => {
 
     await pool.query("DELETE FROM cart_items WHERE cart_id=$1", [cartId]);
 
-    if (Array.isArray(items) && items.length > 0) {
-      for (const item of items) {
-        if (item.menu_id && item.quantity > 0) {
-          await pool.query(
-            "INSERT INTO cart_items(cart_id, menu_item_id, quantity) VALUES($1,$2,$3)",
-            [cartId, item.menu_id, item.quantity]
-          );
-        }
-      }
+    // Batch insert — avoids N+1 round trips
+    if (items.length > 0) {
+      const values = items.map((item, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3})`).join(', ');
+      const params = [cartId, ...items.flatMap(i => [parseInt(i.menu_id), Math.min(99, parseInt(i.quantity))])];
+      await pool.query(
+        `INSERT INTO cart_items(cart_id, menu_item_id, quantity) VALUES ${values}`,
+        params
+      );
     }
 
     res.json({ success: true });
