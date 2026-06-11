@@ -89,6 +89,16 @@ module.exports = (io) => {
       socket.leave(`order_${orderId}`);
     });
 
+    // ── join_driver ───────────────────────────────────────────────────────────
+    // Driver opens /driver?id=X — joins their personal room so they receive
+    // assignment_created events in real time without manual polling.
+    socket.on("join_driver", (driverId) => {
+      const id = parseInt(driverId);
+      if (!id || isNaN(id)) return;
+      socket.join(`driver_${id}`);
+      console.log(`[SOCKET] Driver ${id} joined room driver_${id} (${socket.id})`);
+    });
+
     // ── update_location ───────────────────────────────────────────────────────
     // Only authenticated drivers or admins may push GPS updates.
     socket.on("update_location", (data) => {

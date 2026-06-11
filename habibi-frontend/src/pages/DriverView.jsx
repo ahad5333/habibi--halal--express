@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { Navigation, MapPin, CheckCircle, AlertCircle, Clock, User, Package, Phone, MessageSquare, DoorOpen, Camera, X } from 'lucide-react';
 import './DriverView.css';
 
@@ -36,8 +37,9 @@ export default function DriverView() {
   const [submitting, setSubmitting]       = useState(false);
   const [proofError, setProofError]       = useState('');
   const photoInputRef = useRef(null);
-  const watchRef = useRef(null);
-  const intervalRef = useRef(null);
+  const watchRef      = useRef(null);
+  const intervalRef   = useRef(null);
+  const socketRef     = useRef(null);
 
   const loadAssignment = useCallback(async () => {
     if (!driverId) return;
@@ -49,6 +51,35 @@ export default function DriverView() {
   }, [driverId]);
 
   useEffect(() => { loadAssignment(); }, [loadAssignment]);
+
+  // ── Socket.IO — real-time assignment notifications ──────────────────
+  useEffect(() => {
+    if (!driverId) return;
+
+    const socket = io(API_BASE, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_driver', driverId);
+    });
+
+    // Admin assigned a new order — reload from API
+    socket.on('assignment_created', (data) => {
+      if (String(data.driver_id) === String(driverId)) {
+        loadAssignment();
+      }
+    });
+
+    // Admin cancelled or updated — reload to get current state
+    socket.on('assignment_status_update', () => {
+      loadAssignment();
+    });
+
+    return () => socket.disconnect();
+  }, [driverId, loadAssignment]);
 
   // Send GPS update to backend
   const sendGPS = useCallback(async (lat, lng) => {
@@ -191,8 +222,11 @@ export default function DriverView() {
     return (
       <div className="dv-shell dv-center">
         <Package size={40}/>
-        <p>No active delivery assignment.</p>
-        <p className="dv-muted">Check with dispatch for your next order.</p>
+        <p>No active assignment</p>
+        <p className="dv-muted">Waiting for dispatch to assign you an order…</p>
+        <p className="dv-live-waiting">
+          <span className="dv-live-dot" /> Live — you'll be notified automatically
+        </p>
       </div>
     );
   }

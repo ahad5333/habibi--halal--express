@@ -1,6 +1,7 @@
 ﻿const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { getDistance, feeFromMiles } = require('../utils/googleMaps');
+const { sendSMS } = require('../services/smsService');
 
 // ── Admin: list active delivery assignments ─────────────────────────
 const getAssignments = async (req, res) => {
@@ -25,7 +26,7 @@ const assignDriver = async (req, res) => {
   const { order_id, order_number, driver_id, delivery_address, customer_name, customer_phone } = req.body;
   try {
     const driverResult = await pool.query(
-      `SELECT id, name FROM staff_members WHERE id=$1 AND role='delivery' AND is_active=TRUE`,
+      `SELECT id, name, phone FROM staff_members WHERE id=$1 AND role='delivery' AND is_active=TRUE`,
       [driver_id]
     );
     if (!driverResult.rows.length) return res.status(400).json({ message: 'Driver not found or unavailable' });
@@ -38,11 +39,24 @@ const assignDriver = async (req, res) => {
        RETURNING *`,
       [order_id, order_number, driver_id, driver.name, delivery_address, customer_name, customer_phone]
     );
+    const assignment = result.rows[0];
 
+    // Notify driver via Socket.IO — targeted to their personal room only
     const io = req.app.get('io');
-    if (io) io.emit('assignment_created', result.rows[0]);
+    if (io) io.to(`driver_${driver_id}`).emit('assignment_created', assignment);
 
-    res.status(201).json(result.rows[0]);
+    // Notify driver via SMS — fires in background, does not block response
+    if (driver.phone) {
+      const base = process.env.FRONTEND_URL || 'https://habibihe.com';
+      const msg  = `New delivery assigned: Order ${order_number} for ${customer_name || 'customer'}. ` +
+                   `Drop-off: ${delivery_address}. ` +
+                   `Open your app: ${base}/driver?id=${driver_id}`;
+      sendSMS(driver.phone, msg).catch(err =>
+        console.error('[Dispatch] Driver SMS failed:', err.message)
+      );
+    }
+
+    res.status(201).json(assignment);
   } catch (err) {
     res.status(500).json(safeError(err));
   }
