@@ -39,6 +39,7 @@ const TermsOfService   = lazy(() => import('./pages/TermsOfService'));
 const SmsTerms         = lazy(() => import('./pages/SmsTerms'));
 const Accessibility    = lazy(() => import('./pages/Accessibility'));
 const Legal            = lazy(() => import('./pages/Legal'));
+const Reviews             = lazy(() => import('./pages/Reviews'));
 const Unsubscribe         = lazy(() => import('./pages/Unsubscribe'));
 const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
@@ -109,6 +110,7 @@ function Layout() {
           <Route path="/terms"          element={<TermsOfService />} />
           <Route path="/sms-terms"      element={<SmsTerms />} />
           <Route path="/accessibility"  element={<Accessibility />} />
+          <Route path="/reviews"           element={<Reviews />} />
           <Route path="/unsubscribe"       element={<Unsubscribe />} />
           <Route path="/delivery-coverage" element={<DeliveryCoverage />} />
           <Route path="/where-we-deliver"  element={<DeliveryCoverage />} />

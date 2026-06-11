@@ -28,6 +28,7 @@ const LEFT_ITEMS = [
     panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fecaca 100%)', emoji: '⭐', caption: 'Our Story & Values' },
     sub: [
       { label: 'Why Us?', path: '/about' },
+      { label: 'Customer Reviews', path: '/reviews' },
       { label: 'Facebook', path: 'https://facebook.com/habibihalalexpress', external: true, icon: '📘' },
       { label: 'Instagram', path: 'https://instagram.com/habibihalalexpress', external: true, icon: '📸' },
       { label: 'YouTube', path: 'https://youtube.com/habibihalalexpress', external: true, icon: '▶️' },
