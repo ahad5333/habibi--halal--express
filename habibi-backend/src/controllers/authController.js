@@ -115,16 +115,25 @@ const loginUser = async (req, res) => {
     }
 
     // VULN-11: admin login requires email OTP second factor
+    // MFA is only enforced when SMTP/SendGrid is configured — skipped otherwise so
+    // admin can still log in before email credentials are set up.
     if (user.role === 'admin') {
-      const otp        = String(crypto.randomInt(100000, 1000000)); // 6 digits
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);     // 10 min
-      const otpHash    = await bcrypt.hash(otp, 12);
-      await pool.query(
-        `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
-        [otpHash, otpExpires, user.id]
+      const smtpConfigured = !!(
+        process.env.SENDGRID_API_KEY ||
+        (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
-      sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
-      return res.json({ mfa_required: true, email: user.email });
+      if (smtpConfigured) {
+        const otp        = String(crypto.randomInt(100000, 1000000)); // 6 digits
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);     // 10 min
+        const otpHash    = await bcrypt.hash(otp, 12);
+        await pool.query(
+          `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
+          [otpHash, otpExpires, user.id]
+        );
+        sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
+        return res.json({ mfa_required: true, email: user.email });
+      }
+      console.warn('[Auth] Admin MFA skipped — SMTP not configured. Set SENDGRID_API_KEY or SMTP_HOST+SMTP_USER+SMTP_PASS to enable.');
     }
 
     const token = jwt.sign(
