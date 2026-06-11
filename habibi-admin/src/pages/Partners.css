@@ -22,3 +22,8 @@
   cursor: pointer;
 }
 .partner-pay-check input[type="checkbox"] { accent-color: var(--color-primary, #E5B64E); cursor: pointer; }
+
+@media (max-width: 768px) {
+  .partners-layout { flex-direction: column; }
+  .partner-detail { width: 100%; position: static; top: unset; }
+}

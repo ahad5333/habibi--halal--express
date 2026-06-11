@@ -26,3 +26,8 @@
 .inv-stock { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; }
 .inv-stock.low { color: var(--color-warning); }
 .inv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+
+@media (max-width: 600px) {
+  .inv-form-grid { grid-template-columns: 1fr; }
+  .inv-tabs { flex-wrap: wrap; }
+}

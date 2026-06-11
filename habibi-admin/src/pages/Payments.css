@@ -317,3 +317,18 @@ td.muted { color: var(--color-text-muted); }
   font-size: 0.78rem;
   color: var(--color-text-muted);
 }
+
+@media (max-width: 768px) {
+  .pay-method-left { min-width: unset; }
+  .pay-method-row { flex-wrap: wrap; gap: 0.5rem; }
+  .pay-hdr-actions { flex-wrap: wrap; }
+  .pay-toolbar { flex-direction: column; align-items: flex-start; }
+  .pay-search { width: 100%; }
+  .pay-search-wrap { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .pay-modal-actions { flex-direction: column-reverse; }
+  .pay-modal-actions button { width: 100%; justify-content: center; }
+  .pay-method-filters { gap: 0.25rem; }
+}

@@ -300,3 +300,9 @@
   background: var(--color-surface-2);
   color: var(--color-text-main);
 }
+
+@media (max-width: 600px) {
+  .mb-search { width: 100%; }
+  .mb-row { grid-template-columns: 1fr; }
+  .mb-loc-select { max-width: 100%; }
+}

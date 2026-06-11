@@ -40,3 +40,8 @@
 .cust-detail-addr span { color: var(--color-text-main); }
 
 .cust-detail-order { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; }
+
+@media (max-width: 768px) {
+  .customers-layout { flex-direction: column; }
+  .cust-detail { width: 100%; position: static; top: unset; }
+}

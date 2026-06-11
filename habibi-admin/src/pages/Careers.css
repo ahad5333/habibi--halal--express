@@ -455,3 +455,11 @@
   border: 1px solid var(--color-border);
   border-radius: 7px;
 }
+
+@media (max-width: 600px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .app-filter-bar { flex-wrap: wrap; }
+  .modal-header { padding: 1rem 1.25rem 0; }
+  .modal-body { padding: 1rem 1.25rem; }
+  .modal-footer { padding: 0.875rem 1.25rem 1.25rem; }
+}

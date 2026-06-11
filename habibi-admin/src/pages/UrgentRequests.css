@@ -5,3 +5,8 @@
 .urg-detail-fields { display: flex; flex-direction: column; gap: 0.625rem; }
 .urg-detail-field { display: flex; flex-direction: column; gap: 0.15rem; }
 .urg-message { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); border-radius: var(--radius); padding: 0.875rem; }
+
+@media (max-width: 768px) {
+  .urg-admin-layout { flex-direction: column; }
+  .urg-admin-detail { width: 100%; position: static; top: unset; }
+}
