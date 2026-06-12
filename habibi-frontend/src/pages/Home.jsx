@@ -392,20 +392,50 @@ const Home = () => {
       <StatsRow />
 
       {/* ═══════════════════════════════════════════════════════
-          BUILD YOUR OWN — CTA STRIP
+          BUILD YOUR OWN — CTA STRIP (Redesigned)
       ═══════════════════════════════════════════════════════ */}
       <section className="byo-strip">
+        <div className="byo-strip-bg-overlay" aria-hidden="true" />
+        <div className="byo-strip-glow" aria-hidden="true" />
         <div className="container byo-strip-inner">
+          {/* Left — content */}
           <div className="byo-strip-left">
-            <img src="/images/byo-bowl-3d.webp" alt="Bowl" className="byo-strip-icon" />
-            <div className="byo-strip-text">
-              <h3 className="byo-strip-title">Build Your Own Bowl</h3>
-              <p className="byo-strip-desc">Choose your base, protein, toppings &amp; sauce — crafted exactly how you like it.</p>
+            <div className="byo-strip-eyebrow">
+              <span className="byo-strip-eyebrow-dot" />
+              PERSONALIZE YOUR MEAL
+            </div>
+            <h3 className="byo-strip-title">
+              Build Your Own<br />
+              <span className="byo-strip-title-accent">Habibi Bowl</span>
+            </h3>
+            <p className="byo-strip-desc">
+              Layer your perfect bowl — fresh base, halal protein, bold toppings &amp; signature sauces.
+              Over <strong>100+</strong> combinations await.
+            </p>
+            {/* Step indicators */}
+            <div className="byo-steps">
+              {['Base', 'Protein', 'Toppings', 'Sauce'].map((step, i) => (
+                <div key={step} className="byo-step">
+                  <div className="byo-step-num">{i + 1}</div>
+                  <span className="byo-step-label">{step}</span>
+                </div>
+              ))}
+            </div>
+            <Link to="/menu?cat=byo" className="byo-strip-btn">
+              <span>Start Building</span>
+              <span className="byo-strip-btn-arrow"><ChevronRight size={18} /></span>
+            </Link>
+          </div>
+
+          {/* Right — floating bowl image */}
+          <div className="byo-strip-right">
+            <div className="byo-bowl-glow" aria-hidden="true" />
+            <img src="/images/byo-bowl-3d.webp" alt="Build Your Own Bowl" className="byo-strip-icon" />
+            <div className="byo-strip-badge">
+              <span className="byo-badge-num">100+</span>
+              <span className="byo-badge-label">Combos</span>
             </div>
           </div>
-          <Link to="/menu?cat=byo" className="byo-strip-btn">
-            Start Building <ChevronRight size={16} />
-          </Link>
         </div>
       </section>
 
