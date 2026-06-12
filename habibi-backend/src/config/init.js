@@ -743,17 +743,6 @@ const createTables = async () => {
     `);
     await client.query(`INSERT INTO loyalty_config (id, earn_rate, redeem_rate) VALUES (1, 10, 100) ON CONFLICT (id) DO NOTHING`);
 
-    // ── Device tokens (push notifications) ────────────────────────
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_device_tokens (
-        id           SERIAL PRIMARY KEY,
-        user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        device_token TEXT        NOT NULL UNIQUE,
-        device_type  VARCHAR(10),
-        updated_at   TIMESTAMPTZ DEFAULT NOW()
-      );
-    `);
-
     // ── Roadie Long-Distance Deliveries ───────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS roadie_deliveries (

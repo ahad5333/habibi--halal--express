@@ -52,17 +52,17 @@ router.patch('/:id/read', async (req, res) => {
 // POST /api/users/me/notifications/device-token
 // Registers or refreshes the browser FCM push token for this user.
 router.post('/device-token', async (req, res) => {
-  const { token, platform = 'web' } = req.body;
+  const { token, device_type = 'web' } = req.body;
   if (!token || typeof token !== 'string' || token.length > 512) {
     return res.status(400).json({ message: 'Invalid token.' });
   }
   try {
     await pool.query(
-      `INSERT INTO device_tokens (user_id, device_token, platform, updated_at)
+      `INSERT INTO user_device_tokens (user_id, device_token, device_type, updated_at)
        VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (user_id, device_token)
-       DO UPDATE SET platform = $3, updated_at = NOW()`,
-      [req.user.id, token, platform]
+       ON CONFLICT (device_token)
+       DO UPDATE SET user_id = $1, device_type = $3, updated_at = NOW()`,
+      [req.user.id, token, device_type]
     );
     res.json({ ok: true });
   } catch (err) {
@@ -77,7 +77,7 @@ router.delete('/device-token', async (req, res) => {
   if (!token) return res.status(400).json({ message: 'Token required.' });
   try {
     await pool.query(
-      `DELETE FROM device_tokens WHERE user_id = $1 AND device_token = $2`,
+      `DELETE FROM user_device_tokens WHERE user_id = $1 AND device_token = $2`,
       [req.user.id, token]
     );
     res.json({ ok: true });
