@@ -397,7 +397,7 @@ const Home = () => {
       <section className="byo-strip">
         <div className="container byo-strip-inner">
           <div className="byo-strip-left">
-            <span className="byo-strip-icon">🥣</span>
+            <img src="/images/byo-bowl-3d.webp" alt="Bowl" className="byo-strip-icon" />
             <div className="byo-strip-text">
               <h3 className="byo-strip-title">Build Your Own Bowl</h3>
               <p className="byo-strip-desc">Choose your base, protein, toppings &amp; sauce — crafted exactly how you like it.</p>
