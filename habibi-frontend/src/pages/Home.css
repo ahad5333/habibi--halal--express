@@ -1165,8 +1165,10 @@
   z-index: 2;
   width: 280px;
   height: 280px;
-  object-fit: contain;
-  filter: drop-shadow(0 20px 40px rgba(249,115,22,0.4)) drop-shadow(0 0 60px rgba(249,115,22,0.15));
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid rgba(249, 115, 22, 0.6);
+  box-shadow: 0 0 0 6px rgba(249,115,22,0.12), 0 20px 50px rgba(0,0,0,0.5), 0 0 60px rgba(249,115,22,0.2);
   animation: bowlFloat 4s ease-in-out infinite;
 }
 
@@ -1229,7 +1231,7 @@
   .byo-strip-desc { max-width: 100%; }
   .byo-steps { justify-content: center; }
   .byo-strip-right { width: 260px; height: 260px; }
-  .byo-strip-icon { width: 200px; height: 200px; }
+  .byo-strip-icon { width: 200px; height: 200px; border-radius: 50%; }
   .byo-strip-title { font-size: 2.8rem; }
 }
 
@@ -1238,7 +1240,7 @@
   .byo-strip-title { font-size: 2.2rem; }
   .byo-strip-desc { font-size: 0.85rem; }
   .byo-strip-right { width: 200px; height: 200px; }
-  .byo-strip-icon { width: 160px; height: 160px; }
+  .byo-strip-icon { width: 160px; height: 160px; border-radius: 50%; }
   .byo-strip-badge { width: 56px; height: 56px; bottom: 10px; right: 0; }
   .byo-badge-num { font-size: 0.85rem; }
 }
