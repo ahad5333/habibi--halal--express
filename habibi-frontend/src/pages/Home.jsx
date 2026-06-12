@@ -430,7 +430,9 @@ const Home = () => {
           {/* Right — floating bowl image */}
           <div className="byo-strip-right">
             <div className="byo-bowl-glow" aria-hidden="true" />
-            <img src="/images/byo-bowl-3d.webp" alt="Build Your Own Bowl" className="byo-strip-icon" />
+            <div className="byo-bowl-crop">
+              <img src="/images/byo-bowl-3d.webp" alt="Build Your Own Bowl" className="byo-strip-icon" />
+            </div>
           </div>
         </div>
       </section>

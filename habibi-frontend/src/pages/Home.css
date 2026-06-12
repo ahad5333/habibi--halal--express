@@ -1141,22 +1141,31 @@
   filter: blur(24px);
 }
 
-@keyframes bowlFloat {
-  0%   { transform: translateY(0px) rotate(-2deg); }
-  50%  { transform: translateY(-16px) rotate(2deg); }
-  100% { transform: translateY(0px) rotate(-2deg); }
+@keyframes bowlSpin {
+  from { transform: scale(1.18) rotate(0deg); }
+  to   { transform: scale(1.18) rotate(360deg); }
+}
+
+/* Circular crop wrapper — clips the image during rotation */
+.byo-bowl-crop {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(229,182,78,0.35);
+  box-shadow: 0 0 0 8px rgba(229,182,78,0.07), 0 24px 48px rgba(0,0,0,0.6);
 }
 
 .byo-strip-icon {
-  position: relative;
-  z-index: 2;
-  width: 280px;
-  height: 280px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid rgba(229,182,78,0.3);
-  box-shadow: 0 0 0 8px rgba(229,182,78,0.06), 0 24px 48px rgba(0,0,0,0.55);
-  animation: bowlFloat 4s ease-in-out infinite;
+  object-position: center;
+  display: block;
+  animation: bowlSpin 22s linear infinite;
 }
 
 
@@ -1174,7 +1183,7 @@
   .byo-strip-desc { max-width: 100%; }
   .byo-steps { justify-content: center; }
   .byo-strip-right { width: 260px; height: 260px; }
-  .byo-strip-icon { width: 200px; height: 200px; border-radius: 50%; }
+  .byo-bowl-crop { width: 200px; height: 200px; }
   .byo-strip-title { font-size: 2.8rem; }
 }
 
@@ -1183,7 +1192,7 @@
   .byo-strip-title { font-size: 2.2rem; }
   .byo-strip-desc { font-size: 0.85rem; }
   .byo-strip-right { width: 200px; height: 200px; }
-  .byo-strip-icon { width: 160px; height: 160px; border-radius: 50%; }
+  .byo-bowl-crop { width: 160px; height: 160px; }
 }
 
 /* ── Personalized Bowls ───────────────────────────────────── */
