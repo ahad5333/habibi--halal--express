@@ -925,11 +925,11 @@
 /* ── Build Your Own — CTA Strip (Redesigned) ──────────────── */
 .byo-strip {
   position: relative;
-  background: linear-gradient(135deg, #080808 0%, #0e0a00 40%, #1a0f00 70%, #0a0a0a 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a0a 100%);
   overflow: hidden;
   padding: 5rem 0;
-  border-top: 1px solid rgba(249, 115, 22, 0.12);
-  border-bottom: 1px solid rgba(249, 115, 22, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Subtle noise texture overlay */
@@ -940,7 +940,7 @@
   pointer-events: none;
 }
 
-/* Glowing orb in the center */
+/* Very subtle ambient glow */
 .byo-strip-glow {
   position: absolute;
   top: 50%;
@@ -948,7 +948,7 @@
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(ellipse at center, rgba(249,115,22,0.14) 0%, rgba(249,115,22,0.05) 45%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(229,182,78,0.05) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -978,16 +978,15 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #F97316;
+  color: #E5B64E;
 }
 
 .byo-strip-eyebrow-dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #F97316;
-  box-shadow: 0 0 8px #F97316;
+  background: #E5B64E;
   animation: byo-dot-pulse 2s ease-in-out infinite;
 }
 
@@ -1007,12 +1006,12 @@
 }
 
 .byo-strip-title-accent {
-  background: linear-gradient(120deg, #F97316 0%, #facc15 60%, #F97316 100%);
+  background: linear-gradient(120deg, #E5B64E 0%, #facc15 50%, #E5B64E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   background-size: 200%;
-  animation: byo-shimmer 3s linear infinite;
+  animation: byo-shimmer 4s linear infinite;
 }
 
 @keyframes byo-shimmer {
@@ -1029,7 +1028,7 @@
 }
 
 .byo-strip-desc strong {
-  color: #F97316;
+  color: #E5B64E;
   font-weight: 700;
 }
 
@@ -1044,8 +1043,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(249,115,22,0.2);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50px;
   padding: 0.38rem 0.9rem 0.38rem 0.38rem;
   backdrop-filter: blur(6px);
@@ -1053,22 +1052,22 @@
 }
 
 .byo-step:hover {
-  border-color: rgba(249,115,22,0.55);
-  background: rgba(249,115,22,0.07);
+  border-color: rgba(229,182,78,0.35);
+  background: rgba(229,182,78,0.05);
 }
 
 .byo-step-num {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #F97316, #ea580c);
-  color: #ffffff;
+  background: rgba(229,182,78,0.15);
+  border: 1px solid rgba(229,182,78,0.4);
+  color: #E5B64E;
   font-size: 0.68rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
   flex-shrink: 0;
 }
 
@@ -1086,9 +1085,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.95rem 2.2rem;
-  background: linear-gradient(135deg, #F97316 0%, #ea580c 100%);
+  background: #E5B64E;
   border-radius: 50px;
-  color: #ffffff;
+  color: #0a0a0a;
   font-size: 0.9rem;
   font-weight: 800;
   text-decoration: none;
@@ -1096,20 +1095,14 @@
   letter-spacing: 0.1em;
   white-space: nowrap;
   width: fit-content;
-  box-shadow: 0 4px 24px rgba(249,115,22,0.45), 0 0 0 0 rgba(249,115,22,0.3);
-  transition: transform 0.25s, box-shadow 0.25s;
-  animation: byo-btn-pulse 3s ease-in-out infinite;
-}
-
-@keyframes byo-btn-pulse {
-  0%, 100% { box-shadow: 0 4px 24px rgba(249,115,22,0.45), 0 0 0 0 rgba(249,115,22,0.3); }
-  50% { box-shadow: 0 8px 32px rgba(249,115,22,0.6), 0 0 0 6px rgba(249,115,22,0.08); }
+  box-shadow: 0 4px 20px rgba(229,182,78,0.25);
+  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
 }
 
 .byo-strip-btn:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 12px 36px rgba(249,115,22,0.65);
-  animation: none;
+  transform: translateY(-2px);
+  background: #f0c96a;
+  box-shadow: 0 8px 28px rgba(229,182,78,0.35);
 }
 
 .byo-strip-btn-arrow {
@@ -1139,19 +1132,13 @@
   height: 360px;
 }
 
-/* Glowing blob behind the bowl */
+/* Subtle ambient glow behind the bowl */
 .byo-bowl-glow {
   position: absolute;
-  inset: 15%;
+  inset: 10%;
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0.1) 55%, transparent 75%);
-  filter: blur(28px);
-  animation: byo-bowl-breathe 3.5s ease-in-out infinite;
-}
-
-@keyframes byo-bowl-breathe {
-  0%, 100% { transform: scale(0.9); opacity: 0.7; }
-  50% { transform: scale(1.15); opacity: 1; }
+  background: radial-gradient(ellipse, rgba(229,182,78,0.12) 0%, transparent 70%);
+  filter: blur(24px);
 }
 
 @keyframes bowlFloat {
@@ -1167,55 +1154,11 @@
   height: 280px;
   object-fit: cover;
   border-radius: 50%;
-  border: 3px solid rgba(249, 115, 22, 0.6);
-  box-shadow: 0 0 0 6px rgba(249,115,22,0.12), 0 20px 50px rgba(0,0,0,0.5), 0 0 60px rgba(249,115,22,0.2);
+  border: 2px solid rgba(229,182,78,0.3);
+  box-shadow: 0 0 0 8px rgba(229,182,78,0.06), 0 24px 48px rgba(0,0,0,0.55);
   animation: bowlFloat 4s ease-in-out infinite;
 }
 
-/* Floating badge */
-.byo-strip-badge {
-  position: absolute;
-  bottom: 30px;
-  right: 10px;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #F97316 0%, #facc15 100%);
-  box-shadow: 0 4px 20px rgba(249,115,22,0.5);
-  animation: byo-badge-spin 6s linear infinite;
-}
-
-@keyframes byo-badge-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.byo-badge-num {
-  font-size: 1rem;
-  font-weight: 900;
-  color: #fff;
-  line-height: 1;
-  animation: byo-badge-counter 6s linear infinite reverse; /* counter-rotate text */
-}
-
-.byo-badge-label {
-  font-size: 0.48rem;
-  font-weight: 800;
-  color: rgba(255,255,255,0.85);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  animation: byo-badge-counter 6s linear infinite reverse;
-}
-
-@keyframes byo-badge-counter {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
-}
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
@@ -1241,8 +1184,6 @@
   .byo-strip-desc { font-size: 0.85rem; }
   .byo-strip-right { width: 200px; height: 200px; }
   .byo-strip-icon { width: 160px; height: 160px; border-radius: 50%; }
-  .byo-strip-badge { width: 56px; height: 56px; bottom: 10px; right: 0; }
-  .byo-badge-num { font-size: 0.85rem; }
 }
 
 /* ── Personalized Bowls ───────────────────────────────────── */

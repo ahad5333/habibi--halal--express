@@ -431,10 +431,6 @@ const Home = () => {
           <div className="byo-strip-right">
             <div className="byo-bowl-glow" aria-hidden="true" />
             <img src="/images/byo-bowl-3d.webp" alt="Build Your Own Bowl" className="byo-strip-icon" />
-            <div className="byo-strip-badge">
-              <span className="byo-badge-num">100+</span>
-              <span className="byo-badge-label">Combos</span>
-            </div>
           </div>
         </div>
       </section>
