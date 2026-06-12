@@ -220,7 +220,7 @@ const MenuItemPage = () => {
         )}
 
         <img
-          src="/images/hero/halal-certified.png"
+          src="/images/hero/halal-certified.webp"
           alt="Halal Certified"
           className="mip-halal-stamp"
         />

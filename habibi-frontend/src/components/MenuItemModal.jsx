@@ -196,7 +196,7 @@ export default function MenuItemModal({ itemId, onClose }) {
 
                 <div className="mim-img-top">
                   <img
-                    src="/images/hero/halal-certified.png"
+                    src="/images/hero/halal-certified.webp"
                     alt="Halal"
                     className="mim-halal-stamp"
                   />

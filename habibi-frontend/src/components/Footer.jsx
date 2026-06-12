@@ -75,7 +75,7 @@ const Footer = () => {
           {/* Certification & service badges */}
           <div className="footer-cert-badges">
             <div className="footer-badge-card">
-              <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img src="/images/hero/halal-certified.webp" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">Halal<br/>Certified</span>
             </div>
             <div className="footer-badge-card">

@@ -219,7 +219,7 @@ select option {
   transform: translateY(-50%);
   width: 700px;
   height: 700px;
-  background-image: url('/images/logos/logo-badge.png');
+  background-image: url('/images/logos/logo-badge.webp');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;

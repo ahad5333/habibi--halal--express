@@ -306,7 +306,7 @@ const Home = () => {
         <div className="hero-top-dark">
           
           <div className="hero-halal-badge">
-            <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="halal-img" />
+            <img src="/images/hero/halal-certified.webp" alt="Halal Certified" className="halal-img" />
           </div>
 
           <div className="floating-ingredients">
@@ -532,7 +532,7 @@ const Home = () => {
 
             {/* Burger */}
             <div className="curated-card small">
-              <img src="/images/habibi-burger.jpg" alt="Habibi Burger" className="curated-img" />
+              <img src="/images/habibi-burger.jpg" alt="Habibi Burger" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
                 <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase', fontFamily: "'Bebas Neue', sans-serif" }}>Habibi Burger</h3>
                 <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$10.99</p>
@@ -558,7 +558,7 @@ const Home = () => {
 
             {/* Halal Salad */}
             <div className="curated-card wide">
-              <img src="/images/halal-salad.jpg" alt="Halal Salad" className="curated-img" />
+              <img src="/images/halal-salad.jpg" alt="Halal Salad" className="curated-img" loading="lazy" />
             </div>
           </div>
         </div>

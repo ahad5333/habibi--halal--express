@@ -156,7 +156,7 @@ const About = () => (
     <section className="about-hero">
       <div className="about-hero-ribbon" />
       <div className="about-hero-content">
-        <img src="/images/hero/halal-certified.png" alt="Halal Certified" className="about-hero-halal" />
+        <img src="/images/hero/halal-certified.webp" alt="Halal Certified" className="about-hero-halal" />
         <h1 className="about-hero-title">
           Crafting the Gold Standard<br />of <span style={{ color: '#E5B64E' }}>Halal Dining</span>
         </h1>
