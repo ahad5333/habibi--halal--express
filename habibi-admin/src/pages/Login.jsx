@@ -45,7 +45,7 @@ export default function Login() {
       <div className="login-page">
         <div className="login-brand">
           <img
-            src={`${API_URL}/images/logos/logo.png`}
+            src={`${API_URL}/images/logos/logo-full.jpg`}
             alt="Habibi Halal Express"
             className="login-logo"
             onError={e => { e.target.style.display = 'none'; }}
@@ -90,7 +90,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-brand">
         <img
-          src={`${API_URL}/images/logos/logo.png`}
+          src={`${API_URL}/images/logos/logo-full.jpg`}
           alt="Habibi Halal Express"
           className="login-logo"
           onError={e => { e.target.style.display = 'none'; }}
