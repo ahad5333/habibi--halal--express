@@ -166,11 +166,7 @@ const Signup = () => {
       {/* Left panel */}
       <div className="signup-panel">
         <Link to="/" className="signup-panel-logo">
-          <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="sp-logo-img" />
-          <div>
-            <p className="sp-brand">HABIBI HALAL EXPRESS</p>
-            <p className="sp-brand-sub">Authentic · Fresh · Halal</p>
-          </div>
+          <img src="/images/logos/logo-brand.jpg" alt="Habibi Halal Express" className="sp-logo-img" />
         </Link>
 
         <div className="signup-panel-content">
