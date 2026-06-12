@@ -192,7 +192,7 @@ app.use("/api/roadie", roadieRoutes);
 app.use("/api/careers", careersRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/favorites", favoritesRoutes);
-app.use("/api/settings/payments", getPaymentSettings);
+app.get("/api/settings/payments", getPaymentSettings);
 app.get("/api/settings/checkout", getCheckoutSettings);
 app.use("/", seoRoutes);
 

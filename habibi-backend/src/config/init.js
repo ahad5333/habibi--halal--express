@@ -55,6 +55,8 @@ const createTables = async () => {
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email      VARCHAR(255)`);
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id         INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS free_item_category  VARCHAR(100)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_type      VARCHAR(50)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_value     NUMERIC(10,2)`);
 
     // ── Partner applications: add payment_methods + credit_balance ──
     await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
