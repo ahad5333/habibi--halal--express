@@ -485,6 +485,156 @@ const getCouponStats = async (req, res) => {
   }
 };
 
+// ── Chat Inbox ────────────────────────────────────────────────────────────────
+const getChatConversations = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        cm.order_number,
+        go.customer_name,
+        go.customer_email,
+        go.customer_phone,
+        go.order_status,
+        go.placed_at,
+        MAX(cm.created_at)                                              AS last_message_at,
+        COUNT(*)::int                                                   AS message_count,
+        COUNT(*) FILTER (WHERE cm.is_read_by_admin = FALSE AND cm.sender = 'customer')::int AS unread_count,
+        (SELECT text    FROM chat_messages WHERE order_number = cm.order_number ORDER BY created_at DESC LIMIT 1) AS last_message,
+        (SELECT sender  FROM chat_messages WHERE order_number = cm.order_number ORDER BY created_at DESC LIMIT 1) AS last_sender
+      FROM chat_messages cm
+      LEFT JOIN guest_orders go ON go.order_number = cm.order_number
+      GROUP BY cm.order_number, go.customer_name, go.customer_email, go.customer_phone, go.order_status, go.placed_at
+      ORDER BY last_message_at DESC
+      LIMIT 200
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const getChatMessages = async (req, res) => {
+  const { order_number } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT * FROM chat_messages WHERE order_number = $1 ORDER BY created_at ASC`,
+      [order_number]
+    );
+    // Mark customer messages as read
+    await pool.query(
+      `UPDATE chat_messages SET is_read_by_admin = TRUE WHERE order_number = $1 AND sender = 'customer'`,
+      [order_number]
+    );
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const sendAdminChatMessage = async (req, res) => {
+  const { order_number } = req.params;
+  const { text } = req.body;
+  if (!text || typeof text !== 'string' || text.length > 2000) {
+    return res.status(400).json({ message: 'text is required (max 2000 chars)' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO chat_messages (order_number, sender, text, is_read_by_admin) VALUES ($1, 'admin', $2, TRUE) RETURNING *`,
+      [order_number, text.trim()]
+    );
+    const message = result.rows[0];
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${order_number}`).emit('receive_message', {
+        order_id: order_number,
+        sender: 'admin',
+        text: message.text,
+        timestamp: message.created_at,
+      });
+    }
+    res.status(201).json(message);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// ── Loyalty Management ────────────────────────────────────────────────────────
+const getLoyaltyStats = async (req, res) => {
+  try {
+    const [members, redeemed, config] = await Promise.all([
+      pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE loyalty_points > 0)::int        AS active_members,
+          COALESCE(SUM(loyalty_points), 0)::int                  AS total_outstanding_pts,
+          COUNT(*)::int                                          AS total_users
+        FROM users WHERE is_active = TRUE
+      `),
+      pool.query(`
+        SELECT COALESCE(SUM(loyalty_points_redeemed), 0)::int AS total_redeemed_pts
+        FROM guest_orders
+      `),
+      pool.query(`SELECT earn_rate, redeem_rate FROM loyalty_config WHERE id = 1`),
+    ]);
+    const cfg = config.rows[0] || { earn_rate: 10, redeem_rate: 100 };
+    const outstanding = members.rows[0].total_outstanding_pts || 0;
+    res.json({
+      ...members.rows[0],
+      total_redeemed_pts: redeemed.rows[0].total_redeemed_pts,
+      outstanding_value: (outstanding / parseFloat(cfg.redeem_rate)).toFixed(2),
+      earn_rate:  cfg.earn_rate,
+      redeem_rate: cfg.redeem_rate,
+    });
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const getLoyaltyCustomers = async (req, res) => {
+  const search = req.query.search || '';
+  const limit  = Math.min(100, parseInt(req.query.limit) || 50);
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  try {
+    const result = await pool.query(`
+      SELECT id, name, email, phone_number, loyalty_points,
+             (SELECT COUNT(*)::int FROM guest_orders WHERE user_id = users.id) AS order_count,
+             (SELECT COALESCE(SUM(total), 0)::numeric FROM guest_orders WHERE user_id = users.id) AS total_spent
+      FROM users
+      WHERE is_active = TRUE
+        AND ($1 = '' OR name ILIKE $2 OR email ILIKE $2)
+      ORDER BY loyalty_points DESC
+      LIMIT $3 OFFSET $4
+    `, [search, `%${search}%`, limit, offset]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const adjustLoyaltyPoints = async (req, res) => {
+  const { user_id, points, reason } = req.body;
+  if (!user_id || points === undefined) return res.status(400).json({ message: 'user_id and points required' });
+  const delta = parseInt(points);
+  if (isNaN(delta)) return res.status(400).json({ message: 'points must be a number' });
+  try {
+    const result = await pool.query(
+      `UPDATE users SET loyalty_points = GREATEST(0, loyalty_points + $1) WHERE id = $2 RETURNING id, name, email, loyalty_points`,
+      [delta, user_id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'User not found' });
+    await logAudit(req.user?.id, 'adjust_loyalty', 'user', user_id, { delta, reason });
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const getLoyaltyConfig = async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM loyalty_config WHERE id = 1`);
+    res.json(result.rows[0] || { earn_rate: 10, redeem_rate: 100 });
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const updateLoyaltyConfig = async (req, res) => {
+  const { earn_rate, redeem_rate } = req.body;
+  if (!earn_rate || !redeem_rate) return res.status(400).json({ message: 'earn_rate and redeem_rate required' });
+  try {
+    const result = await pool.query(
+      `UPDATE loyalty_config SET earn_rate = $1, redeem_rate = $2, updated_at = NOW() WHERE id = 1 RETURNING *`,
+      [parseFloat(earn_rate), parseFloat(redeem_rate)]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
 module.exports = {
   getDashboardStats,
   getAllOrders,
@@ -503,4 +653,12 @@ module.exports = {
   getLocationMenuAvailability,
   setLocationMenuAvailability,
   getCouponStats,
+  getChatConversations,
+  getChatMessages,
+  sendAdminChatMessage,
+  getLoyaltyStats,
+  getLoyaltyCustomers,
+  adjustLoyaltyPoints,
+  getLoyaltyConfig,
+  updateLoyaltyConfig,
 };

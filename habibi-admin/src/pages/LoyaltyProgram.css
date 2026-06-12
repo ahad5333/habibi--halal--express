@@ -1,0 +1,199 @@
+/* ── Loyalty Program ──────────────────────────────────────────────────── */
+.lp-page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.lp-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.lp-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.lp-sub { font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
+.lp-cfg-btn { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+
+/* ── Config Panel ── */
+.lp-config-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.lp-config-title { font-weight: 700; font-size: 0.85rem; color: var(--text); margin-bottom: 0.875rem; }
+.lp-config-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.lp-config-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.lp-config-hint { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+.lp-config-input { width: 140px; }
+.lp-config-eg { font-size: 0.78rem; color: var(--muted); margin-top: 0.75rem; }
+.lp-cfg-msg { font-size: 0.78rem; margin-top: 0.5rem; }
+.lp-cfg-msg.ok  { color: #4ade80; }
+.lp-cfg-msg.err { color: #f87171; }
+
+/* ── Stats ── */
+.lp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.lp-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.lp-stat-icon       { color: var(--muted); }
+.lp-stat-icon.gold  { color: #E5B64E; }
+.lp-stat-icon.red   { color: #f87171; }
+.lp-stat-icon.green { color: #4ade80; }
+.lp-stat-val   { font-size: 1.6rem; font-weight: 700; color: var(--text); line-height: 1; }
+.lp-stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Table ── */
+.lp-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.lp-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+.lp-search-icon {
+  position: absolute;
+  left: 0.625rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+.lp-search {
+  padding-left: 2rem !important;
+  width: 220px;
+}
+.lp-table-wrap { overflow-x: auto; }
+.lp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.lp-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lp-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.lp-table tr:last-child td { border-bottom: none; }
+.lp-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.lp-name  { font-weight: 600; }
+.lp-muted { color: var(--muted); }
+.lp-empty { padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+.lp-pts-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.lp-pts-badge.has-pts {
+  background: rgba(229,182,78,0.12);
+  color: #E5B64E;
+  border-color: rgba(229,182,78,0.3);
+}
+
+.lp-adj-btn { font-size: 0.75rem; padding: 0.3rem 0.75rem; }
+
+/* ── Adjust Modal ── */
+.lp-modal { max-width: 420px; }
+.lp-modal-current {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.875rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.lp-adj-btns {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.lp-sign-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  transition: all 0.15s;
+}
+.lp-sign-btn:hover { background: rgba(239,68,68,0.18); }
+.lp-sign-add {
+  background: rgba(34,197,94,0.1);
+  border-color: rgba(34,197,94,0.25);
+  color: #4ade80;
+}
+.lp-sign-add:hover { background: rgba(34,197,94,0.18); }
+.lp-adj-err {
+  font-size: 0.78rem;
+  color: #f87171;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .lp-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .lp-stats { grid-template-columns: 1fr 1fr; }
+  .lp-config-row { flex-direction: column; align-items: stretch; }
+  .lp-config-input { width: 100%; }
+  .lp-search { width: 160px; }
+}

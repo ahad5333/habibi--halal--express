@@ -54,6 +54,8 @@ import Reviews from './pages/Reviews';
 import Integrations from './pages/Integrations';
 import PlatformCredentials from './pages/PlatformCredentials';
 import AuditLog from './pages/AuditLog';
+import ChatInbox from './pages/ChatInbox';
+import LoyaltyProgram from './pages/LoyaltyProgram';
 import './App.css';
 
 function AdminLayout() {
@@ -96,6 +98,8 @@ function AdminLayout() {
             <Route path="/integrations"   element={<Integrations />} />
             <Route path="/credentials"    element={<PlatformCredentials />} />
             <Route path="/audit-log"      element={<AuditLog />} />
+            <Route path="/chat"           element={<ChatInbox />} />
+            <Route path="/loyalty"        element={<LoyaltyProgram />} />
             <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
         </div>

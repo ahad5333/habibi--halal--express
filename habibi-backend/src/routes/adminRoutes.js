@@ -23,6 +23,14 @@ const {
   getLocationMenuAvailability,
   setLocationMenuAvailability,
   getCouponStats,
+  getChatConversations,
+  getChatMessages,
+  sendAdminChatMessage,
+  getLoyaltyStats,
+  getLoyaltyCustomers,
+  adjustLoyaltyPoints,
+  getLoyaltyConfig,
+  updateLoyaltyConfig,
 } = require("../controllers/adminController");
 const { getRevenueAnalytics, getCustomerGrowth } = require("../controllers/analyticsController");
 const { syncCatalogToPartners, updatePartnerAvailability } = require("../controllers/catalogController");
@@ -311,6 +319,18 @@ router.get("/reports/by-category",  getRevenueByCategory);
 router.get("/reports/tax",          getTaxReport);
 router.get("/reports/orders",       getOrderReport);
 router.get("/reports/coupon-usage", getCouponUsageReport);
+
+// Chat Inbox
+router.get("/chat",                       getChatConversations);
+router.get("/chat/:order_number",         getChatMessages);
+router.post("/chat/:order_number",        sendAdminChatMessage);
+
+// Loyalty Program
+router.get("/loyalty/stats",             getLoyaltyStats);
+router.get("/loyalty/customers",         getLoyaltyCustomers);
+router.post("/loyalty/adjust",           adjustLoyaltyPoints);
+router.get("/loyalty/config",            getLoyaltyConfig);
+router.put("/loyalty/config",            updateLoyaltyConfig);
 
 module.exports = router;
 

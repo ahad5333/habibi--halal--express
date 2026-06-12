@@ -211,3 +211,17 @@ export const adminAPI = {
   updateReview:  (id, body)   => req(`/api/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteReview:  (id)         => req(`/api/admin/reviews/${id}`, { method: 'DELETE' }),
 };
+
+export const chatAPI = {
+  getConversations: ()                    => req('/api/admin/chat'),
+  getMessages:      (orderNumber)         => req(`/api/admin/chat/${orderNumber}`),
+  sendMessage:      (orderNumber, text)   => req(`/api/admin/chat/${orderNumber}`, { method: 'POST', body: JSON.stringify({ text }) }),
+};
+
+export const loyaltyAPI = {
+  getStats:      ()                              => req('/api/admin/loyalty/stats'),
+  getCustomers:  (search = '', limit = 50)       => req(`/api/admin/loyalty/customers?search=${encodeURIComponent(search)}&limit=${limit}`),
+  adjustPoints:  (userId, points, reason = '')   => req('/api/admin/loyalty/adjust', { method: 'POST', body: JSON.stringify({ user_id: userId, points, reason }) }),
+  getConfig:     ()                              => req('/api/admin/loyalty/config'),
+  updateConfig:  (earn_rate, redeem_rate)        => req('/api/admin/loyalty/config', { method: 'PUT', body: JSON.stringify({ earn_rate, redeem_rate }) }),
+};

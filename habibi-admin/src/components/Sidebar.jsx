@@ -5,6 +5,7 @@ import {
   Handshake, BarChart2, AlertTriangle, Settings, LogOut, Zap, CreditCard,
   UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation, Store,
   Briefcase, ClipboardList, QrCode, CalendarDays, Link2, KeyRound, Star, Shield, X,
+  MessageSquare, Gift,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -37,6 +38,8 @@ const NAV = [
   { to: '/reports',    icon: <FileText size={17} />,        label: 'Reports' },
   { to: '/payments',   icon: <CreditCard size={17} />,      label: 'Payments' },
   { to: '/broadcasts', icon: <Bell size={17} />,            label: 'Broadcasts' },
+  { to: '/chat',       icon: <MessageSquare size={17} />,   label: 'Customer Chat', live: true },
+  { to: '/loyalty',    icon: <Gift size={17} />,            label: 'Loyalty Program' },
   { to: '/urgent',     icon: <AlertTriangle size={17} />,   label: 'Urgent Requests', urgent: true },
   { to: '/audit-log',  icon: <Shield size={17} />,          label: 'Audit Log' },
   { to: '/settings',   icon: <Settings size={17} />,        label: 'Settings' },

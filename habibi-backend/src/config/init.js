@@ -727,6 +727,21 @@ const createTables = async () => {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_chat_messages_order ON chat_messages(order_number);
     `);
+    // Allow 'admin' as a sender (original constraint only had customer/driver/system)
+    await client.query(`ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_sender_check`);
+    await client.query(`ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_sender_check CHECK (sender IN ('customer','driver','admin','system'))`);
+    await client.query(`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_read_by_admin BOOLEAN DEFAULT FALSE`);
+
+    // ── Loyalty Config ────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS loyalty_config (
+        id           SERIAL PRIMARY KEY,
+        earn_rate    NUMERIC(10,2) NOT NULL DEFAULT 10,
+        redeem_rate  NUMERIC(10,2) NOT NULL DEFAULT 100,
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`INSERT INTO loyalty_config (id, earn_rate, redeem_rate) VALUES (1, 10, 100) ON CONFLICT (id) DO NOTHING`);
 
     // ── Device tokens (push notifications) ────────────────────────
     await client.query(`
