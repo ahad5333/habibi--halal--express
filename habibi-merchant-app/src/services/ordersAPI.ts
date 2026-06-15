@@ -64,7 +64,7 @@ export const ordersAPI = {
   },
 
   getAll: async (params?: { status?: string; limit?: number }) => {
-    const res = await api.get('/api/admin/orders', { params });
+    const res = await api.get('/api/admin/orders/merchant', { params });
     return res.data as Order[];
   },
 
@@ -88,7 +88,7 @@ export const ordersAPI = {
 
   getTodayOrders: async () => {
     const today = new Date().toISOString().split('T')[0];
-    const res = await api.get('/api/admin/orders', { params: { date: today } });
+    const res = await api.get('/api/admin/orders/merchant', { params: { date: today } });
     return res.data as Order[];
   },
 };

@@ -665,8 +665,87 @@ const addItemToOrder = async (req, res) => {
   } catch (err) { res.status(500).json(safeError(err)); }
 };
 
+// Returns raw DB fields in the format the merchant tablet app expects.
+// Separate from getAllOrders which returns admin-panel-shaped data.
+const getMerchantOrders = async (req, res) => {
+  try {
+    const limit  = Math.min(500, Math.max(1, parseInt(req.query.limit) || 200));
+    const status = req.query.status || null;
+    const date   = req.query.date   || null; // YYYY-MM-DD
+
+    const conditions = [];
+    const values     = [limit];
+    if (status) { conditions.push(`order_status = $${values.push(status)}`); }
+    if (date)   { conditions.push(`placed_at::date = $${values.push(date)}`); }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await pool.query(
+      `SELECT id, order_number, customer_name, customer_phone, customer_email,
+              delivery_method, delivery_address, table_number, payment_method,
+              sub_total, tax, service_fee, delivery_fee, tip, discount, total,
+              order_status, items, placed_at, updated_at, notes, coupon_code,
+              estimated_minutes, cancellation_reason
+       FROM guest_orders
+       ${where}
+       ORDER BY placed_at DESC
+       LIMIT $1`,
+      values
+    );
+
+    const rows = result.rows.map(o => {
+      let items = [];
+      try {
+        const raw = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []);
+        items = raw.map(i => ({
+          id:                   i.id || undefined,
+          name:                 i.name || 'Item',
+          quantity:             i.quantity || 1,
+          price:                parseFloat(i.price) || 0,
+          choices:              i.selectedOption || (Array.isArray(i.choices) ? i.choices.join(', ') : i.choices) || undefined,
+          addons:               Array.isArray(i.selectedAddons)
+                                  ? i.selectedAddons.map(a => typeof a === 'string' ? a : (a.name || '')).join(', ')
+                                  : (i.addons || undefined),
+          special_instructions: i.special_instructions || undefined,
+        }));
+      } catch (_) { items = []; }
+
+      return {
+        id:                   o.id,
+        order_number:         o.order_number || String(o.id),
+        customer_name:        o.customer_name || 'Guest',
+        customer_phone:       o.customer_phone || undefined,
+        customer_email:       o.customer_email || undefined,
+        delivery_method:      (o.delivery_method || 'pickup').toLowerCase(),
+        delivery_address:     o.delivery_address || undefined,
+        table_number:         o.table_number || undefined,
+        payment_method:       o.payment_method || 'unknown',
+        sub_total:            parseFloat(o.sub_total) || 0,
+        tax:                  parseFloat(o.tax) || 0,
+        service_fee:          parseFloat(o.service_fee) || 0,
+        delivery_fee:         parseFloat(o.delivery_fee) || 0,
+        tip:                  parseFloat(o.tip) || 0,
+        discount:             parseFloat(o.discount) || 0,
+        total:                parseFloat(o.total) || 0,
+        order_status:         o.order_status || 'pending',
+        items,
+        placed_at:            o.placed_at,
+        updated_at:           o.updated_at || undefined,
+        notes:                o.notes || undefined,
+        coupon_code:          o.coupon_code || undefined,
+        estimated_minutes:    o.estimated_minutes || undefined,
+        cancellation_reason:  o.cancellation_reason || undefined,
+      };
+    });
+
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getDashboardStats,
+  getMerchantOrders,
   getAllOrders,
   getAllMenus,
   updateOrderStatus,

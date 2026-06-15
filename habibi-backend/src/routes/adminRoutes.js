@@ -7,6 +7,7 @@ const { handleValidation, body } = require('../middleware/validate');
 const safeError = require('../utils/safeError');
 const {
   getDashboardStats,
+  getMerchantOrders,
   getAllOrders,
   getAllMenus,
   updateOrderStatus,
@@ -62,6 +63,7 @@ router.get("/analytics/revenue", getRevenueAnalytics);
 router.get("/analytics/growth", getCustomerGrowth);
 
 // Global Orders
+router.get("/orders/merchant", getMerchantOrders);
 router.get("/orders", getAllOrders);
 router.patch("/orders/:id/status", updateOrderStatus);
 router.post("/orders/:id/add-item", protect, admin, addItemToOrder);
