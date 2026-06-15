@@ -178,9 +178,11 @@ const createGuestOrder = async (req, res) => {
         let recalcSubtotal = 0;
         for (const item of items) {
           const menuId = parseInt(item.id || item.menu_id, 10);
-          if (!menuId) continue;
+          if (!menuId || menuId < 0) continue; // skip zero/NaN/negative (themed/special items)
           const dbPrice = priceMap[menuId];
-          if (dbPrice === undefined) continue;
+          if (dbPrice === undefined) {
+            return res.status(400).json({ message: 'One or more items are no longer available. Please refresh your cart.' });
+          }
 
           const { choices, addons } = modMap[menuId] || { choices: [], addons: [] };
           const selChoices = item.selectedChoices || {};
@@ -251,6 +253,27 @@ const createGuestOrder = async (req, res) => {
     }
     if (clientSvcFee < serverSvcFee - 0.10) {
       return res.status(400).json({ message: 'Service fee is incorrect. Please refresh and retry.' });
+    }
+
+    // 5. Birthday coupon validation — verify server-side so the client cannot self-grant
+    if (coupon_code && coupon_code.toUpperCase() === 'BIRTHDAY10' && clientDiscount > 0) {
+      let birthdayValid = false;
+      if (customer_email) {
+        try {
+          const uRes = await pool.query(
+            'SELECT date_of_birth FROM users WHERE LOWER(email) = LOWER($1) AND date_of_birth IS NOT NULL',
+            [customer_email]
+          );
+          if (uRes.rows.length) {
+            const dob = new Date(uRes.rows[0].date_of_birth);
+            const now = new Date();
+            birthdayValid = dob.getUTCMonth() === now.getMonth() && dob.getUTCDate() === now.getDate();
+          }
+        } catch (_) { /* non-fatal */ }
+      }
+      if (!birthdayValid) {
+        return res.status(400).json({ message: 'Birthday discount is not valid for today.' });
+      }
     }
 
     // Input length caps
@@ -482,6 +505,17 @@ const createGuestOrder = async (req, res) => {
       }).catch(err => console.error('FCM lookup error during guest checkout:', err.message));
     }
 
+    // Broadcast new order to authenticated merchant/admin sockets only
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('new_order', { order_number, order_status: 'pending' });
+
+    // Push to merchant tablets (wakes app if backgrounded/screen off)
+    fcmService.sendPushToAdmins(
+      '🔔 New Order!',
+      `Order #${order_number} just came in — tap to review.`,
+      { orderNumber: order_number, type: 'new_order', channelId: 'new-orders' }
+    ).catch(err => console.error('[Push] Merchant alert failed:', err.message));
+
     res.status(201).json({ success: true, db_id });
   } catch (err) {
     console.error("createGuestOrder error:", err.message);
@@ -585,6 +619,34 @@ const updateGuestOrderStatus = async (req, res) => {
             [pts, customer_email]
           ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
         }
+
+        // 5. Complete pending referral on the referee's first delivered order
+        pool.query(
+          `SELECT id FROM guest_orders
+           WHERE customer_email = $1 AND order_status = 'delivered'`,
+          [customer_email]
+        ).then(async (countRes) => {
+          if (countRes.rows.length !== 1) return; // not their first delivered order
+          const userRes = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [customer_email]);
+          if (!userRes.rows[0]) return;
+          const refereeId = userRes.rows[0].id;
+          const refRow = await pool.query(
+            `SELECT id, referrer_id FROM referrals WHERE referee_user_id = $1 AND status = 'pending' LIMIT 1`,
+            [refereeId]
+          );
+          if (!refRow.rows[0]) return;
+          const { id: refId, referrer_id } = refRow.rows[0];
+          const REFERRAL_BONUS = 500;
+          await pool.query(
+            `UPDATE referrals SET status = 'completed', points_awarded = $1, completed_at = NOW() WHERE id = $2`,
+            [REFERRAL_BONUS, refId]
+          );
+          await pool.query(
+            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE id = $2`,
+            [REFERRAL_BONUS, referrer_id]
+          );
+          console.log(`[Referral] Awarded ${REFERRAL_BONUS} pts to user ${referrer_id} for referring user ${refereeId}`);
+        }).catch(err => console.error('[Referral] Completion check failed:', err.message));
       }
     }
 

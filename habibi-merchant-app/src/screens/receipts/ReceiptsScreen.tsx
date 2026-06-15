@@ -12,7 +12,9 @@ import { ordersAPI, Order } from '../../services/ordersAPI';
 import { formatCurrency, formatDate, formatTime } from '../../utils/formatters';
 import StatusBadge from '../../components/StatusBadge';
 
-const todayStr = new Date().toISOString().slice(0, 10);
+const TODAY = new Date().toISOString().slice(0, 10);
+
+type StatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 
 const RESTAURANT = {
   name:    'Habibi Halal Express',
@@ -337,13 +339,34 @@ function TotalRow({ label, value, bold, green }: { label: string; value: string;
 type Filter = 'today' | 'all';
 
 export default function ReceiptsScreen() {
-  const [orders,     setOrders]     = useState<Order[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [printing,   setPrinting]   = useState<string | null>(null);
-  const [search,     setSearch]     = useState('');
-  const [filter,     setFilter]     = useState<Filter>('today');
+  const [orders,        setOrders]        = useState<Order[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+  const [printing,      setPrinting]      = useState<string | null>(null);
+  const [search,        setSearch]        = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  // null = "all time", otherwise filter by that date
+  const [pickedDate,    setPickedDate]    = useState<Date | null>(new Date());
+  const [statusFilter,  setStatusFilter]  = useState<StatusFilter>('all');
+
+  const pickedStr  = pickedDate ? pickedDate.toISOString().slice(0, 10) : null;
+  const isToday    = pickedStr === TODAY;
+  const dateLabel  = !pickedStr ? 'All Time'
+    : isToday      ? 'Today'
+    : (() => {
+        const yStr = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        return pickedStr === yStr ? 'Yesterday'
+          : pickedDate!.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      })();
+
+  const shiftDate = (delta: number) => {
+    setPickedDate(prev => {
+      const base = prev ?? new Date();
+      const next = new Date(base);
+      next.setDate(next.getDate() + delta);
+      return next;
+    });
+  };
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -377,7 +400,11 @@ export default function ReceiptsScreen() {
 
   const filtered = orders
     .filter(o => {
-      if (filter === 'today' && !(o.placed_at || '').startsWith(todayStr)) return false;
+      if (pickedStr && !(o.placed_at || '').startsWith(pickedStr)) return false;
+      const s = (o.order_status || '').toLowerCase();
+      if (statusFilter === 'completed' && !['delivered', 'completed'].includes(s)) return false;
+      if (statusFilter === 'cancelled' && s !== 'cancelled') return false;
+      if (statusFilter === 'active' && !['pending', 'accepted', 'confirmed', 'preparing', 'cooking', 'ready'].includes(s)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         return o.order_number.toLowerCase().includes(q) || o.customer_name.toLowerCase().includes(q);
@@ -408,8 +435,7 @@ export default function ReceiptsScreen() {
         <View>
           <Text style={styles.title}>Receipts</Text>
           <Text style={styles.subtitle}>
-            {filtered.length} order{filtered.length !== 1 ? 's' : ''}
-            {filter === 'today' ? ' today' : ' total'}
+            {filtered.length} order{filtered.length !== 1 ? 's' : ''} · {dateLabel}
           </Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={() => { setRefreshing(true); fetchOrders(); }}>
@@ -435,20 +461,44 @@ export default function ReceiptsScreen() {
           )}
         </View>
 
+        {/* Date navigator */}
+        <View style={styles.dateNav}>
+          <TouchableOpacity style={styles.dateNavArrow} onPress={() => shiftDate(-1)}>
+            <Feather name="chevron-left" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dateNavLabel} onPress={() => setPickedDate(null)}>
+            <Feather name="calendar" size={13} color={Colors.textMuted} />
+            <Text style={styles.dateNavText}>{dateLabel}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.dateNavArrow, (isToday || !pickedDate) && { opacity: 0.25 }]}
+            onPress={() => shiftDate(1)}
+            disabled={isToday || !pickedDate}
+          >
+            <Feather name="chevron-right" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+          {(!isToday && pickedDate) && (
+            <TouchableOpacity style={styles.todayChip} onPress={() => setPickedDate(new Date())}>
+              <Text style={styles.todayChipText}>Today</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Status filter chips */}
         <View style={styles.filterRow}>
-          {(['today', 'all'] as Filter[]).map(f => (
+          {([
+            { key: 'all',       label: 'All Status' },
+            { key: 'active',    label: 'Active' },
+            { key: 'completed', label: 'Completed' },
+            { key: 'cancelled', label: 'Cancelled' },
+          ] as { key: StatusFilter; label: string }[]).map(({ key, label }) => (
             <TouchableOpacity
-              key={f}
-              style={[styles.filterBtn, filter === f && styles.filterBtnActive]}
-              onPress={() => setFilter(f)}
+              key={key}
+              style={[styles.filterBtn, statusFilter === key && styles.filterBtnActive]}
+              onPress={() => setStatusFilter(key)}
             >
-              <Feather
-                name={f === 'today' ? 'sun' : 'archive'}
-                size={13}
-                color={filter === f ? Colors.primary : Colors.textMuted}
-              />
-              <Text style={[styles.filterBtnText, filter === f && styles.filterBtnTextActive]}>
-                {f === 'today' ? "Today" : 'All Orders'}
+              <Text style={[styles.filterBtnText, statusFilter === key && styles.filterBtnTextActive]}>
+                {label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -472,7 +522,7 @@ export default function ReceiptsScreen() {
             <Feather name="printer" size={40} color={Colors.border2} />
             <Text style={styles.emptyTitle}>No orders found</Text>
             <Text style={styles.emptySubtitle}>
-              {filter === 'today' ? 'No orders placed today yet.' : 'No orders match your search.'}
+              {`No orders found for ${dateLabel}${statusFilter !== 'all' ? ` · ${statusFilter}` : ''}.`}
             </Text>
           </View>
         }
@@ -580,11 +630,39 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, color: Colors.text, fontSize: FontSize.sm },
 
-  filterRow: { flexDirection: 'row', gap: 8, paddingBottom: 8 },
-  filterBtn: {
+  dateNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    paddingBottom: 8,
+    gap: 4,
+  },
+  dateNavArrow: { padding: 6 },
+  dateNavLabel: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.surface2,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  dateNavText: { color: Colors.text, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  todayChip: {
+    backgroundColor: Colors.primaryDim,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  todayChipText: { color: Colors.primary, fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+
+  filterRow: { flexDirection: 'row', gap: 8, paddingBottom: 8, flexWrap: 'wrap' },
+  filterBtn: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,

@@ -5,7 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="Habibi Halal Express — Fresh, authentic halal platters, gyros, burgers and more. Fast delivery across the Bronx, NY." />
+    <meta name="keywords" content="halal food bronx, halal delivery bronx, mediterranean food, halal platters, gyros, shawarma, halal burgers, habibi halal, bronx food delivery" />
+    <meta name="author" content="Habibi Halal Express" />
     <meta name="robots" content="index, follow" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://habibihe.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type"        content="restaurant.restaurant" />
+    <meta property="og:url"         content="https://habibihe.com/" />
+    <meta property="og:site_name"   content="Habibi Halal Express" />
+    <meta property="og:locale"      content="en_US" />
+    <meta property="og:title"       content="Habibi Halal Express | Authentic Halal Street Food · Bronx, NY" />
+    <meta property="og:description" content="Fresh halal platters, gyros, shawarma & burgers made to order. Fast delivery + pickup across the Bronx. Order online now!" />
+    <meta property="og:image"       content="https://habibihe.com/images/hero/round_food.webp" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"    content="Halal platter with chicken, rice and salad from Habibi Halal Express" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="Habibi Halal Express | Authentic Halal Street Food · Bronx, NY" />
+    <meta name="twitter:description" content="Fresh halal platters, gyros, shawarma & burgers made to order. Fast delivery + pickup across the Bronx." />
+    <meta name="twitter:image"       content="https://habibihe.com/images/hero/round_food.webp" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -17,6 +40,45 @@
     <link rel="preload" as="image" href="/images/hero/halal-certified.webp" />
     <link rel="preload" as="image" href="/images/logos/logo-badge.webp" />
     <title>Habibi Halal Express | Authentic Mediterranean Street Food</title>
+
+    <!-- JSON-LD: LocalBusiness / Restaurant structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "Habibi Halal Express",
+      "url": "https://habibihe.com",
+      "logo": "https://habibihe.com/images/logos/logo-badge.webp",
+      "image": "https://habibihe.com/images/hero/round_food.webp",
+      "description": "Fresh, authentic halal platters, gyros, shawarma and burgers made to order. Fast delivery and pickup in the Bronx, NY.",
+      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "American"],
+      "priceRange": "$$",
+      "telephone": "+1-929-000-0000",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "The Bronx",
+        "addressLocality": "Bronx",
+        "addressRegion": "NY",
+        "addressCountry": "US"
+      },
+      "hasMenu": "https://habibihe.com/menu",
+      "acceptsReservations": false,
+      "paymentAccepted": ["Cash", "Credit Card", "Debit Card", "PayPal", "Zelle"],
+      "currenciesAccepted": "USD",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+          "opens": "10:00",
+          "closes": "22:00"
+        }
+      ],
+      "sameAs": [
+        "https://www.instagram.com/habibihalal",
+        "https://www.facebook.com/habibihalal"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

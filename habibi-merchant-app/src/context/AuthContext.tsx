@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { authAPI } from '../services/authAPI';
 import { Storage } from '../utils/storage';
+import { initSocket, disconnectSocket } from '../services/socket';
+import api from '../services/api';
 
 interface User {
   id: number;
@@ -47,10 +52,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await Storage.setToken(data.token);
     await Storage.setUser(u);
     setUser(u);
+    initSocket(data.token);
+
+    // Register Expo push token so the backend can alert this tablet when new orders arrive
+    (async () => {
+      try {
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('new-orders', {
+            name: 'New Orders',
+            importance: Notifications.AndroidImportance.MAX,
+            sound: 'default',
+            vibrationPattern: [0, 300, 200, 300],
+          });
+        }
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') return;
+        const projectId = (Constants.expoConfig?.extra?.eas as any)?.projectId as string | undefined;
+        const tokenData = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined as any);
+        await api.post('/api/users/me/notifications/device-token', {
+          device_token: tokenData.data,
+          device_type: Platform.OS,
+        });
+      } catch { /* simulator or denied — silent */ }
+    })();
   };
 
   const logout = async () => {
     await Storage.clearAll();
+    disconnectSocket();
     setUser(null);
   };
 

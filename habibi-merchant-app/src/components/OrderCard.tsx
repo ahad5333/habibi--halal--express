@@ -6,6 +6,16 @@ import { FontSize, FontWeight } from '../theme/typography';
 import { Order } from '../services/ordersAPI';
 import { formatCurrency } from '../utils/formatters';
 
+const DELIVERY_ICON: Record<string, keyof typeof Feather.glyphMap> = {
+  delivery: 'truck',
+  pickup:   'package',
+  dine_in:  'coffee',
+};
+
+function elapsedMin(placedAt: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(placedAt).getTime()) / 60_000));
+}
+
 interface Props {
   order: Order;
   onPress: (order: Order) => void;
@@ -15,16 +25,26 @@ interface Props {
 }
 
 export default function OrderCard({ order, onPress, onAccept, onReject, onAdvance }: Props) {
+  const mins        = elapsedMin(order.placed_at);
+  const isLate      = mins >= 15;
+  const elapsedLabel = mins < 1 ? 'Just now' : `${mins} min`;
+  const deliveryIcon = DELIVERY_ICON[order.delivery_method] ?? 'circle';
+  const typeLabel    = order.delivery_method === 'dine_in' && order.table_number
+    ? `Table ${order.table_number}`
+    : order.delivery_method === 'dine_in' ? 'Dine-In'
+    : order.delivery_method === 'delivery' ? 'Delivery'
+    : 'Pickup';
+
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isLate && styles.cardLate]}
       onPress={() => onPress(order)}
       activeOpacity={0.85}
     >
       {/* Header row */}
       <View style={styles.header}>
         <Text style={styles.customerName}>{order.customer_name}</Text>
-        <Text style={styles.orderNum}>Order #{order.order_number}</Text>
+        <Text style={styles.orderNum}>#{order.order_number}</Text>
       </View>
 
       <View style={styles.divider} />
@@ -48,6 +68,23 @@ export default function OrderCard({ order, onPress, onAccept, onReject, onAdvanc
           <Text style={styles.moreItems}>+ {order.items.length - 3} more items...</Text>
         )}
       </View>
+
+      {/* Footer: delivery type | elapsed time | total */}
+      <View style={styles.footer}>
+        <View style={styles.footerLeft}>
+          <Feather name={deliveryIcon} size={12} color={Colors.textMuted} />
+          <Text style={styles.footerType}>{typeLabel}</Text>
+        </View>
+        <View style={styles.footerRight}>
+          <View style={[styles.timerBadge, isLate && styles.timerBadgeLate]}>
+            <Feather name="clock" size={11} color={isLate ? Colors.error : Colors.textMuted} />
+            <Text style={[styles.timerText, isLate && styles.timerTextLate]}>{elapsedLabel}</Text>
+          </View>
+          <Text style={styles.total}>{formatCurrency(order.total)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.divider} />
 
       {/* Action buttons */}
       <View style={styles.actions}>
@@ -82,19 +119,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  cardLate: {
+    borderColor: Colors.error,
+    borderLeftWidth: 3,
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   customerName: {
     color: Colors.text,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: 'bold',
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
   },
   orderNum: {
     color: Colors.textMuted,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  footerType: { color: Colors.textMuted, fontSize: FontSize.xs },
+  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  timerBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: Colors.surface2, borderRadius: 6,
+    paddingHorizontal: 6, paddingVertical: 3,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  timerBadgeLate: { backgroundColor: Colors.errorDim, borderColor: Colors.error },
+  timerText:      { color: Colors.textMuted, fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
+  timerTextLate:  { color: Colors.error },
+  total: { color: Colors.text, fontSize: FontSize.sm, fontWeight: FontWeight.bold },
   divider: {
     height: 1,
     backgroundColor: Colors.border,

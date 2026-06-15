@@ -1,69 +1,71 @@
+/**
+ * Push notification service — uses Expo Push Notification API.
+ *
+ * The mobile app registers Expo push tokens (ExponentPushToken[...]) which
+ * route through Expo's servers to FCM (Android) and APNs (iOS). No FCM
+ * server key or Apple certificates are needed here; Expo handles that layer.
+ *
+ * Docs: https://docs.expo.dev/push-notifications/sending-notifications/
+ */
+
 const pool = require('../config/db');
 
-const fcmServerKey = process.env.FCM_SERVER_KEY;
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+
+function isExpoPushToken(token) {
+  return typeof token === 'string' && token.startsWith('ExponentPushToken[');
+}
 
 /**
- * Sends a push notification to a specific device token (FCM Legacy HTTP Protocol)
+ * Send a single push notification to one Expo push token.
  */
 const sendPushNotification = async (deviceToken, title, body, data = {}) => {
-  console.log(`[FCM Push] Attempting push transmission to token: ${deviceToken.slice(0, 15)}...`);
-
-  if (!fcmServerKey) {
-    // Premium simulation console output
-    console.log('\n┌────────────────────────────────────────────────────────┐');
-    console.log(`│                📲  SIMULATED PUSH NOTIFICATION          │`);
-    console.log(`├────────────────────────────────────────────────────────┤`);
-    console.log(`│ TOKEN: ${deviceToken.slice(0, 48).padEnd(46)}... │`);
-    console.log(`│ TITLE: ${title.slice(0, 48).padEnd(46)} │`);
-    console.log(`│ BODY:  ${body.slice(0, 48).padEnd(46)} │`);
-    if (Object.keys(data).length) {
-      console.log(`│ DATA:  ${JSON.stringify(data).slice(0, 48).padEnd(46)} │`);
-    }
-    console.log('└────────────────────────────────────────────────────────┘\n');
-    return { success: true, simulated: true };
+  if (!isExpoPushToken(deviceToken)) {
+    console.warn(`[Push] Skipping non-Expo token: ${String(deviceToken).slice(0, 20)}...`);
+    return { success: false, error: 'Not an Expo push token' };
   }
 
+  const message = {
+    to:       deviceToken,
+    title,
+    body,
+    data,
+    sound:    'default',
+    priority: 'high',
+  };
+
+  // Android channel — only sent when the channelId field is present
+  if (data?.channelId) message.channelId = data.channelId;
+
   try {
-    const endpoint = 'https://fcm.googleapis.com/fcm/send';
-    const response = await fetch(endpoint, {
-      method: 'POST',
+    const res = await fetch(EXPO_PUSH_URL, {
+      method:  'POST',
       headers: {
-        'Authorization': `key=${fcmServerKey}`,
-        'Content-Type': 'application/json'
+        'Accept':       'application/json',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        to: deviceToken,
-        notification: {
-          title,
-          body,
-          sound: 'default'
-        },
-        data: {
-          ...data,
-          click_action: 'FLUTTER_NOTIFICATION_CLICK'
-        }
-      })
+      body: JSON.stringify(message),
     });
 
-    const responseText = await response.text();
-    let result = {};
-    try { result = JSON.parse(responseText); } catch (_) {}
+    const json = await res.json().catch(() => ({}));
+    const ticket = Array.isArray(json.data) ? json.data[0] : json.data;
 
-    if (!response.ok || (result.failure && result.failure > 0)) {
-      console.error(`[FCM Push] FCM API returned failure: ${responseText}`);
-      return { success: false, error: responseText };
+    if (!res.ok || ticket?.status === 'error') {
+      const detail = ticket?.details?.error || JSON.stringify(json);
+      console.error(`[Push] Expo API error for token ${deviceToken.slice(0, 30)}...: ${detail}`);
+      return { success: false, error: detail };
     }
 
-    console.log(`[FCM Push] Push notification successfully sent! ID: ${result.results?.[0]?.message_id || 'unknown'}`);
-    return { success: true, messageId: result.results?.[0]?.message_id };
+    console.log(`[Push] Sent — ticket: ${ticket?.id || 'ok'}`);
+    return { success: true, ticketId: ticket?.id };
   } catch (err) {
-    console.error(`[FCM Push] Transmission FAILED: ${err.message}`);
+    console.error(`[Push] Network error: ${err.message}`);
     return { success: false, error: err.message };
   }
 };
 
 /**
- * Fetches all registered device tokens for a user and pushes the message to each
+ * Send a push notification to every registered device for a user ID.
  */
 const sendPushToUser = async (userId, title, body, data = {}) => {
   if (!userId) return { success: false, error: 'No user ID provided' };
@@ -75,57 +77,93 @@ const sendPushToUser = async (userId, title, body, data = {}) => {
     );
 
     if (result.rows.length === 0) {
-      console.log(`[FCM Push] User ID ${userId} has no registered push tokens. Skipping push notification.`);
+      console.log(`[Push] No device tokens for user ${userId} — skipping.`);
       return { success: true, sent_count: 0 };
     }
 
-    console.log(`[FCM Push] Found ${result.rows.length} device token(s) for User ID ${userId}. Dispatching...`);
+    console.log(`[Push] Sending to ${result.rows.length} device(s) for user ${userId}…`);
     let successCount = 0;
 
-    for (const row of result.rows) {
-      const res = await sendPushNotification(row.device_token, title, body, data);
-      if (res.success) successCount++;
+    for (const { device_token } of result.rows) {
+      const r = await sendPushNotification(device_token, title, body, data);
+      if (r.success) successCount++;
     }
 
     return { success: true, sent_count: successCount };
   } catch (err) {
-    console.error(`[FCM Push] User dispatch error: ${err.message}`);
+    console.error(`[Push] User dispatch error: ${err.message}`);
     return { success: false, error: err.message };
   }
 };
 
 /**
- * Generates and triggers push notifications specific to order updates
+ * Send an order-status push notification to a user.
  */
 const sendOrderPushNotification = async (userId, orderNumber, status) => {
   if (!userId) return;
 
-  const statusTitles = {
-    'preparing': 'Kitchen is Cooking! 🍳',
-    'in-transit': 'Order on the Way! 🛵',
-    'out-for-delivery': 'Order on the Way! 🛵',
-    'delivered': 'Feast Delivered! 🎉',
-    'completed': 'Feast Delivered! 🎉',
-    'cancelled': 'Order Cancelled 🚨'
+  const titles = {
+    pending:          'Order Received 🧾',
+    accepted:         'Order Accepted ✅',
+    preparing:        'Kitchen is Cooking 🍳',
+    cooking:          'Kitchen is Cooking 🍳',
+    ready:            'Order Ready 🔔',
+    out_for_delivery: 'On the Way! 🛵',
+    delivered:        'Delivered! 🎉',
+    completed:        'Delivered! 🎉',
+    cancelled:        'Order Cancelled 🚨',
   };
 
-  const statusBodies = {
-    'preparing': `Your order #${orderNumber} is now being crafted by our chef.`,
-    'in-transit': `Your order #${orderNumber} is out for delivery. Get ready to eat!`,
-    'out-for-delivery': `Your order #${orderNumber} is out for delivery. Get ready to eat!`,
-    'delivered': `Your order #${orderNumber} has been dropped off. Enjoy your meal!`,
-    'completed': `Your order #${orderNumber} has been dropped off. Enjoy your meal!`,
-    'cancelled': `Your order #${orderNumber} has been cancelled. Contact support for assistance.`
+  const bodies = {
+    pending:          `Your order #${orderNumber} is awaiting confirmation.`,
+    accepted:         `The kitchen has accepted order #${orderNumber}.`,
+    preparing:        `Your order #${orderNumber} is being prepared.`,
+    cooking:          `Your order #${orderNumber} is being prepared.`,
+    ready:            `Order #${orderNumber} is ready for pickup / on its way.`,
+    out_for_delivery: `Order #${orderNumber} is out for delivery. Get ready!`,
+    delivered:        `Order #${orderNumber} delivered. Enjoy your meal!`,
+    completed:        `Order #${orderNumber} delivered. Enjoy your meal!`,
+    cancelled:        `Order #${orderNumber} was cancelled. Contact us for help.`,
   };
 
-  const title = statusTitles[status.toLowerCase()] || 'Order Update';
-  const body = statusBodies[status.toLowerCase()] || `Your order #${orderNumber} status changed to ${status}.`;
+  const key = status.toLowerCase();
+  const title = titles[key] || 'Order Update';
+  const body  = bodies[key] || `Order #${orderNumber} status: ${status}.`;
 
-  return await sendPushToUser(userId, title, body, { orderNumber, status });
+  return sendPushToUser(userId, title, body, {
+    orderNumber,
+    status,
+    channelId: 'orders',
+  });
 };
 
-module.exports = {
-  sendPushNotification,
-  sendPushToUser,
-  sendOrderPushNotification
+/**
+ * Send a push notification to every registered device for admin/merchant users.
+ * Called when a new customer order arrives so kitchen tablets wake up.
+ */
+const sendPushToAdmins = async (title, body, data = {}) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT udt.device_token
+       FROM user_device_tokens udt
+       JOIN users u ON u.id = udt.user_id
+       WHERE u.role IN ('admin', 'merchant')`
+    );
+    if (result.rows.length === 0) {
+      console.log('[Push] No merchant/admin device tokens registered.');
+      return { success: true, sent_count: 0 };
+    }
+    console.log(`[Push] Alerting ${result.rows.length} merchant/admin device(s)…`);
+    let successCount = 0;
+    for (const { device_token } of result.rows) {
+      const r = await sendPushNotification(device_token, title, body, data);
+      if (r.success) successCount++;
+    }
+    return { success: true, sent_count: successCount };
+  } catch (err) {
+    console.error(`[Push] Admin dispatch error: ${err.message}`);
+    return { success: false, error: err.message };
+  }
 };
+
+module.exports = { sendPushNotification, sendPushToUser, sendOrderPushNotification, sendPushToAdmins };

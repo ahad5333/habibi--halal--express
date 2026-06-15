@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView,
-  Modal, ScrollView, ActivityIndicator,
+  Modal, ScrollView, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
@@ -9,17 +9,20 @@ import { FontSize, FontWeight } from '../theme/typography';
 import { useAuth } from '../context/AuthContext';
 import { useLayout } from '../utils/useLayout';
 import { useInventoryAlerts } from '../hooks/useInventoryAlerts';
+import api from '../services/api';
 import OrderBoardScreen from '../screens/orders/OrderBoardScreen';
+import KitchenDisplayScreen from '../screens/orders/KitchenDisplayScreen';
 import ItemAvailabilityScreen from '../screens/menu/ItemAvailabilityScreen';
 import SalesReportScreen from '../screens/reports/SalesReportScreen';
 import ReceiptsScreen from '../screens/receipts/ReceiptsScreen';
 import StoreStatusScreen from '../screens/locations/StoreStatusScreen';
 import TakeOrderScreen from '../screens/pos/TakeOrderScreen';
 
-type TabName = 'Live Orders' | 'Take Order' | 'Menu' | 'Store Status' | 'Sales Report' | 'Receipts';
+type TabName = 'Live Orders' | 'Kitchen' | 'Take Order' | 'Menu' | 'Store Status' | 'Sales Report' | 'Receipts';
 
 const SIDEBAR_ITEMS: { name: TabName; icon: keyof typeof Feather.glyphMap }[] = [
   { name: 'Live Orders',  icon: 'grid' },
+  { name: 'Kitchen',      icon: 'monitor' },
   { name: 'Take Order',   icon: 'clipboard' },
   { name: 'Menu',         icon: 'list' },
   { name: 'Store Status', icon: 'map-pin' },
@@ -33,10 +36,13 @@ export default function MainLayout() {
   const [activeTab, setActiveTab]           = useState<TabName>('Live Orders');
   const [showStockModal, setShowStockModal] = useState(false);
   const { lowStock, loading: stockLoading, refresh } = useInventoryAlerts();
+  const [restockInputs,  setRestockInputs]  = useState<Record<number, string>>({});
+  const [restockLoading, setRestockLoading] = useState<Record<number, boolean>>({});
 
   const renderContent = () => {
     switch (activeTab) {
       case 'Live Orders':  return <OrderBoardScreen />;
+      case 'Kitchen':      return <KitchenDisplayScreen />;
       case 'Take Order':   return <TakeOrderScreen />;
       case 'Menu':         return <ItemAvailabilityScreen />;
       case 'Store Status': return <StoreStatusScreen />;
@@ -179,7 +185,7 @@ export default function MainLayout() {
             </View>
 
             <Text style={styles.modalSubtitle}>
-              Contact your supplier or restock via the admin panel.
+              Add quantity to restock items directly.
             </Text>
 
             <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
@@ -189,24 +195,58 @@ export default function MainLayout() {
                   Number(item.current_stock) / Number(item.low_stock_threshold)
                 ));
                 return (
-                  <View key={item.id} style={styles.stockRow}>
-                    <View style={styles.stockRowLeft}>
-                      <Text style={styles.stockName}>{item.name}</Text>
-                      <Text style={styles.stockCategory}>{item.category}</Text>
-                    </View>
-
-                    {/* Mini progress bar */}
-                    <View style={styles.barWrap}>
-                      <View style={styles.barTrack}>
-                        <View style={[styles.barFill, { width: `${pct * 100}%` as any, backgroundColor: color }]} />
+                  <View key={item.id} style={[styles.stockRow, { flexDirection: 'column', gap: 10 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={styles.stockRowLeft}>
+                        <Text style={styles.stockName}>{item.name}</Text>
+                        <Text style={styles.stockCategory}>{item.category}</Text>
                       </View>
-                      <Text style={styles.stockQty}>
-                        {Number(item.current_stock).toFixed(1)} / {Number(item.low_stock_threshold)} {item.unit}
-                      </Text>
+
+                      {/* Mini progress bar */}
+                      <View style={styles.barWrap}>
+                        <View style={styles.barTrack}>
+                          <View style={[styles.barFill, { width: `${pct * 100}%` as any, backgroundColor: color }]} />
+                        </View>
+                        <Text style={styles.stockQty}>
+                          {Number(item.current_stock).toFixed(1)} / {Number(item.low_stock_threshold)} {item.unit}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.levelBadge, { borderColor: color, backgroundColor: `${color}20` }]}>
+                        <Text style={[styles.levelText, { color }]}>{label}</Text>
+                      </View>
                     </View>
 
-                    <View style={[styles.levelBadge, { borderColor: color, backgroundColor: `${color}20` }]}>
-                      <Text style={[styles.levelText, { color }]}>{label}</Text>
+                    {/* Restock row */}
+                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                      <TextInput
+                        style={styles.restockInput}
+                        placeholder={`Add ${item.unit}s…`}
+                        placeholderTextColor={Colors.textMuted}
+                        keyboardType="numeric"
+                        value={restockInputs[item.id] ?? ''}
+                        onChangeText={v => setRestockInputs(prev => ({ ...prev, [item.id]: v.replace(/[^0-9.]/g, '') }))}
+                      />
+                      <TouchableOpacity
+                        style={[styles.restockBtn, (!restockInputs[item.id] || !!restockLoading[item.id]) && { opacity: 0.5 }]}
+                        disabled={!restockInputs[item.id] || !!restockLoading[item.id]}
+                        onPress={async () => {
+                          const qty = parseFloat(restockInputs[item.id] || '0');
+                          if (!qty || qty <= 0) return;
+                          setRestockLoading(prev => ({ ...prev, [item.id]: true }));
+                          try {
+                            await api.post(`/api/admin/inventory/${item.id}/restock`, { quantity: qty });
+                            setRestockInputs(prev => ({ ...prev, [item.id]: '' }));
+                            await refresh();
+                          } catch { Alert.alert('Error', 'Could not update stock.'); }
+                          finally { setRestockLoading(prev => ({ ...prev, [item.id]: false })); }
+                        }}
+                      >
+                        {restockLoading[item.id]
+                          ? <ActivityIndicator size="small" color="#fff" />
+                          : <Text style={styles.restockBtnText}>+ Add</Text>
+                        }
+                      </TouchableOpacity>
                     </View>
                   </View>
                 );
@@ -335,4 +375,26 @@ const styles = StyleSheet.create({
 
   levelBadge: { borderWidth: 1, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 3 },
   levelText:  { fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5 },
+
+  restockInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    backgroundColor: Colors.surface2,
+  },
+  restockBtn: {
+    backgroundColor: Colors.success,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 64,
+  },
+  restockBtnText: { color: '#fff', fontSize: FontSize.xs, fontWeight: FontWeight.bold },
 });

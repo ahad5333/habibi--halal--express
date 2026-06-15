@@ -29,10 +29,12 @@ interface CartItem {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function calcTotals(cart: CartItem[]) {
+const TIP_PRESETS = [0, 1, 2, 5] as const;
+
+function calcTotals(cart: CartItem[], tip = 0) {
   const subtotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0);
   const tax      = subtotal * TAX_RATE;
-  return { subtotal, tax, total: subtotal + tax };
+  return { subtotal, tax, tip, total: subtotal + tax + tip };
 }
 
 // ── Table grid ────────────────────────────────────────────────────────────────
@@ -361,10 +363,13 @@ function OrderConfirm({
   onBack: () => void;
   onSent: () => void;
 }) {
-  const [payMethod, setPayMethod] = useState<PayMethod>('Cash');
-  const [orderNote, setOrderNote] = useState('');
-  const [sending, setSending]     = useState(false);
-  const { subtotal, tax, total }  = calcTotals(cart);
+  const [payMethod,   setPayMethod]   = useState<PayMethod>('Cash');
+  const [orderNote,   setOrderNote]   = useState('');
+  const [sending,     setSending]     = useState(false);
+  const [tipAmount,   setTipAmount]   = useState(0);
+  const [customTip,   setCustomTip]   = useState('');
+  const [showCustom,  setShowCustom]  = useState(false);
+  const { subtotal, tax, total }      = calcTotals(cart, tipAmount);
 
   const handleSend = async () => {
     setSending(true);
@@ -378,7 +383,7 @@ function OrderConfirm({
         tax:             parseFloat(tax.toFixed(2)),
         service_fee:     0,
         delivery_fee:    0,
-        tip:             0,
+        tip:             parseFloat(tipAmount.toFixed(2)),
         discount:        0,
         total:           parseFloat(total.toFixed(2)),
         notes:           orderNote.trim() || undefined,
@@ -447,6 +452,12 @@ function OrderConfirm({
             <Text style={oc.totalLabel}>Tax (8.875%)</Text>
             <Text style={oc.totalVal}>{formatCurrency(tax)}</Text>
           </View>
+          {tipAmount > 0 && (
+            <View style={oc.totalRow}>
+              <Text style={oc.totalLabel}>Tip</Text>
+              <Text style={oc.totalVal}>{formatCurrency(tipAmount)}</Text>
+            </View>
+          )}
           <View style={oc.divider} />
           <View style={oc.totalRow}>
             <Text style={[oc.totalLabel, oc.totalBold]}>Total</Text>
@@ -473,6 +484,44 @@ function OrderConfirm({
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Tip */}
+        <View style={oc.section}>
+          <Text style={oc.sectionLabel}>Tip</Text>
+          <View style={oc.payRow}>
+            {TIP_PRESETS.map(p => (
+              <TouchableOpacity
+                key={p}
+                style={[oc.payBtn, tipAmount === p && !showCustom && oc.payBtnActive]}
+                onPress={() => { setTipAmount(p); setShowCustom(false); setCustomTip(''); }}
+              >
+                <Text style={[oc.payBtnText, tipAmount === p && !showCustom && oc.payBtnTextActive]}>
+                  {p === 0 ? 'No Tip' : `$${p}`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[oc.payBtn, showCustom && oc.payBtnActive]}
+              onPress={() => setShowCustom(true)}
+            >
+              <Text style={[oc.payBtnText, showCustom && oc.payBtnTextActive]}>Custom</Text>
+            </TouchableOpacity>
+          </View>
+          {showCustom && (
+            <TextInput
+              style={[oc.noteInput, { marginTop: 10, minHeight: 44 }]}
+              value={customTip}
+              onChangeText={v => {
+                setCustomTip(v);
+                const n = parseFloat(v);
+                setTipAmount(isNaN(n) || n < 0 ? 0 : n);
+              }}
+              placeholder="Enter tip amount (e.g. 3.50)"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+          )}
         </View>
 
         {/* Order note */}

@@ -34,7 +34,17 @@
     },
     "owner": "habibihalal",
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#C8A84B",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "New Orders"
+        }
+      ]
     ]
   }
 }

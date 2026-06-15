@@ -9,6 +9,7 @@ interface Props {
   title: string;
   accent: string;
   orders: Order[];
+  emptyText?: string;
   onPress: (order: Order) => void;
   onAccept?: (order: Order) => void;
   onReject?: (order: Order) => void;
@@ -16,7 +17,7 @@ interface Props {
 }
 
 export default function KanbanColumn({
-  title, accent, orders, onPress, onAccept, onReject, onAdvance,
+  title, accent, orders, emptyText, onPress, onAccept, onReject, onAdvance,
 }: Props) {
   return (
     <View style={styles.column}>
@@ -38,7 +39,7 @@ export default function KanbanColumn({
       >
         {orders.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Waiting for incoming orders...</Text>
+            <Text style={styles.emptyText}>{emptyText ?? 'No orders here'}</Text>
           </View>
         ) : (
           orders.map((order) => (

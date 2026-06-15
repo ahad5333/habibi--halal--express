@@ -4,6 +4,7 @@ import {
   Platform, Modal, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { FontSize, FontWeight } from '../../theme/typography';
@@ -16,10 +17,10 @@ import { formatTime } from '../../utils/formatters';
 import { useLayout } from '../../utils/useLayout';
 
 const COLUMNS = [
-  { key: 'incoming',  label: 'Incoming',  accent: Colors.pending,   statuses: ['pending'] },
-  { key: 'preparing', label: 'Preparing', accent: Colors.info,      statuses: ['accepted', 'confirmed', 'preparing', 'cooking'] },
-  { key: 'ready',     label: 'Ready',     accent: Colors.success,   statuses: ['ready'] },
-  { key: 'done',      label: 'Done',      accent: Colors.delivered, statuses: ['delivered', 'completed'] },
+  { key: 'incoming',  label: 'Incoming',  accent: Colors.pending,   statuses: ['pending'],                                         emptyText: 'No pending orders — all clear!' },
+  { key: 'preparing', label: 'Preparing', accent: Colors.info,      statuses: ['accepted', 'confirmed', 'preparing', 'cooking'],   emptyText: 'Nothing cooking yet' },
+  { key: 'ready',     label: 'Ready',     accent: Colors.success,   statuses: ['ready'],                                           emptyText: 'Nothing ready for pickup' },
+  { key: 'done',      label: 'Done',      accent: Colors.delivered, statuses: ['delivered', 'completed'],                          emptyText: 'No completed orders today' },
 ];
 
 const ADVANCE_STATUS: Record<string, string> = {
@@ -31,10 +32,22 @@ const ADVANCE_STATUS: Record<string, string> = {
   ready:     'delivered',
 };
 
+const CANCEL_REASONS = [
+  'Customer requested cancellation',
+  'Item(s) out of stock',
+  'Unable to fulfill delivery',
+  'Duplicate order',
+  'Payment issue',
+  'Kitchen capacity — too busy',
+  'Address undeliverable',
+  'Custom reason…',
+];
+
 const todayStr = new Date().toISOString().slice(0, 10);
 
 export default function OrderBoardScreen() {
   const { isPhone, width } = useLayout();
+  const navigation = useNavigation();
   const [orders,       setOrders]       = useState<Order[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
@@ -43,6 +56,10 @@ export default function OrderBoardScreen() {
   const [quietMode,    setQuietMode]    = useState(false);
   const [showAlerts,   setShowAlerts]   = useState(false);
   const [showSummary,  setShowSummary]  = useState(false);
+  const [prepOrder,    setPrepOrder]    = useState<Order | null>(null);
+  const [prepMinutes,  setPrepMinutes]  = useState<number | null>(null);
+  const [rejectOrder,  setRejectOrder]  = useState<Order | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const pollRef       = useRef<ReturnType<typeof setInterval> | null>(null);
   const alertRingRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,8 +113,15 @@ export default function OrderBoardScreen() {
     return () => { if (alertRingRef.current) clearInterval(alertRingRef.current); };
   }, [quietMode]);
 
+  // Update tab badge whenever pending count changes
+  useEffect(() => {
+    const count = orders.filter(o => (o.order_status || '').toLowerCase() === 'pending').length;
+    navigation.setOptions({ tabBarBadge: count > 0 ? count : undefined });
+  }, [orders, navigation]);
+
   useEffect(() => {
     const socket = getSocket();
+    socket.emit('join_admin');
     const onStatusUpdate = ({ order_id, status }: { order_id: string; status: string }) => {
       setOrders(prev =>
         prev.map(o =>
@@ -107,13 +131,19 @@ export default function OrderBoardScreen() {
         )
       );
     };
+    // Trigger an immediate silent fetch when a new order is placed by a customer
+    const onNewOrder = () => { fetchOrders(true); };
     socket.on('order_status_updated', onStatusUpdate);
-    return () => { socket.off('order_status_updated', onStatusUpdate); };
-  }, []);
+    socket.on('new_order', onNewOrder);
+    return () => {
+      socket.off('order_status_updated', onStatusUpdate);
+      socket.off('new_order', onNewOrder);
+    };
+  }, [fetchOrders]);
 
-  const updateStatus = async (order: Order, status: string) => {
+  const updateStatus = async (order: Order, status: string, cancelReason?: string, estimatedMinutes?: number) => {
     try {
-      await ordersAPI.updateStatus(order.order_number, status);
+      await ordersAPI.updateStatus(order.order_number, status, cancelReason, estimatedMinutes);
       setOrders(prev =>
         prev.map(o => o.order_number === order.order_number ? { ...o, order_status: status } : o)
       );
@@ -125,12 +155,8 @@ export default function OrderBoardScreen() {
     }
   };
 
-  const handleAccept  = (o: Order) => updateStatus(o, 'preparing');
-  const handleReject  = (o: Order) =>
-    Alert.alert('Reject Order', `Cancel order #${o.order_number}?`, [
-      { text: 'No', style: 'cancel' },
-      { text: 'Reject', style: 'destructive', onPress: () => updateStatus(o, 'cancelled') },
-    ]);
+  const handleAccept  = (o: Order) => { setPrepMinutes(null); setPrepOrder(o); };
+  const handleReject  = (o: Order) => { setRejectReason(''); setRejectOrder(o); };
   const handleAdvance = (o: Order) => {
     const next = ADVANCE_STATUS[(o.order_status || '').toLowerCase()];
     if (next) updateStatus(o, next);
@@ -316,6 +342,7 @@ export default function OrderBoardScreen() {
                   title={col.label}
                   accent={col.accent}
                   orders={colOrders}
+                  emptyText={col.emptyText}
                   onPress={setSelected}
                   onAccept={col.key === 'incoming' ? handleAccept  : undefined}
                   onReject={col.key === 'incoming' ? handleReject  : undefined}
@@ -336,6 +363,7 @@ export default function OrderBoardScreen() {
                 title={col.label}
                 accent={col.accent}
                 orders={colOrders}
+                emptyText={col.emptyText}
                 onPress={setSelected}
                 onAccept={col.key === 'incoming' ? handleAccept  : undefined}
                 onReject={col.key === 'incoming' ? handleReject  : undefined}
@@ -359,9 +387,124 @@ export default function OrderBoardScreen() {
         <OrderDetailModal
           order={selected}
           onClose={() => setSelected(null)}
-          onStatusChange={(status) => updateStatus(selected, status)}
+          onStatusChange={(status, cancelReason, estimatedMinutes) => updateStatus(selected, status, cancelReason, estimatedMinutes)}
         />
       )}
+
+      {/* Prep time picker — triggered by Accept button on the order card */}
+      <Modal visible={prepOrder !== null} animationType="fade" transparent onRequestClose={() => setPrepOrder(null)}>
+        <View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', padding:24 }}>
+          <View style={{ backgroundColor: Colors.surface, borderRadius:16, padding:20 }}>
+            <Text style={{ color:Colors.text, fontWeight:'700', fontSize:16, marginBottom:4 }}>
+              Accept Order {prepOrder ? `#${prepOrder.order_number}` : ''}
+            </Text>
+            <Text style={{ color:Colors.textMuted, fontSize:13, marginBottom:16 }}>
+              Set estimated kitchen prep time:
+            </Text>
+            <View style={{ flexDirection:'row', flexWrap:'wrap', gap:10, marginBottom:16 }}>
+              {([10, 15, 20, 30, 45] as const).map(min => (
+                <TouchableOpacity
+                  key={min}
+                  style={{
+                    paddingHorizontal:16, paddingVertical:10, borderRadius:10,
+                    borderWidth:2, borderColor: prepMinutes === min ? Colors.info : Colors.border,
+                    backgroundColor: prepMinutes === min ? `${Colors.info}20` : Colors.surface2,
+                  }}
+                  onPress={() => setPrepMinutes(min)}
+                >
+                  <Text style={{ color: prepMinutes === min ? Colors.info : Colors.text, fontWeight:'600', fontSize:14 }}>
+                    {min} min
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={{
+                  paddingHorizontal:16, paddingVertical:10, borderRadius:10,
+                  borderWidth:2, borderColor: prepMinutes === 0 ? Colors.info : Colors.border,
+                  backgroundColor: prepMinutes === 0 ? `${Colors.info}20` : Colors.surface2,
+                }}
+                onPress={() => setPrepMinutes(0)}
+              >
+                <Text style={{ color: prepMinutes === 0 ? Colors.info : Colors.textMuted, fontWeight:'600', fontSize:14 }}>
+                  No ETA
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection:'row', gap:10 }}>
+              <TouchableOpacity
+                style={{ flex:1, padding:12, borderRadius:10, borderWidth:1, borderColor:Colors.border, alignItems:'center' }}
+                onPress={() => setPrepOrder(null)}
+              >
+                <Text style={{ color:Colors.textMuted, fontWeight:'600' }}>Go Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex:1, padding:12, borderRadius:10, backgroundColor:Colors.info, alignItems:'center' }}
+                onPress={() => {
+                  const order = prepOrder!;
+                  setPrepOrder(null);
+                  updateStatus(order, 'preparing', undefined, prepMinutes && prepMinutes > 0 ? prepMinutes : undefined);
+                }}
+              >
+                <Text style={{ color:'#fff', fontWeight:'700' }}>Accept Order</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Quick-reject with reason modal */}
+      <Modal visible={rejectOrder !== null} animationType="fade" transparent onRequestClose={() => setRejectOrder(null)}>
+        <View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', padding:24 }}>
+          <View style={{ backgroundColor: Colors.surface, borderRadius:16, padding:20 }}>
+            <Text style={{ color:Colors.text, fontWeight:'700', fontSize:16, marginBottom:4 }}>
+              Reject Order {rejectOrder ? `#${rejectOrder.order_number}` : ''}
+            </Text>
+            <Text style={{ color:Colors.textMuted, fontSize:13, marginBottom:16 }}>
+              Select a cancellation reason:
+            </Text>
+            <ScrollView style={{ maxHeight:240 }} showsVerticalScrollIndicator={false}>
+              <View style={{ gap:8 }}>
+                {CANCEL_REASONS.map(r => (
+                  <TouchableOpacity
+                    key={r}
+                    style={{
+                      paddingHorizontal:14, paddingVertical:10, borderRadius:10,
+                      borderWidth:2, borderColor: rejectReason === r ? Colors.error : Colors.border,
+                      backgroundColor: rejectReason === r ? `${Colors.error}15` : Colors.surface2,
+                    }}
+                    onPress={() => setRejectReason(r)}
+                  >
+                    <Text style={{ color: rejectReason === r ? Colors.error : Colors.text, fontSize:14 }}>{r}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+            <View style={{ flexDirection:'row', gap:10, marginTop:16 }}>
+              <TouchableOpacity
+                style={{ flex:1, padding:12, borderRadius:10, borderWidth:1, borderColor:Colors.border, alignItems:'center' }}
+                onPress={() => setRejectOrder(null)}
+              >
+                <Text style={{ color:Colors.textMuted, fontWeight:'600' }}>Go Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flex:1, padding:12, borderRadius:10, alignItems:'center',
+                  backgroundColor: rejectReason ? Colors.error : Colors.surface2,
+                }}
+                disabled={!rejectReason}
+                onPress={() => {
+                  const order = rejectOrder!;
+                  setRejectOrder(null);
+                  setRejectReason('');
+                  updateStatus(order, 'cancelled', rejectReason);
+                }}
+              >
+                <Text style={{ color: rejectReason ? '#fff' : Colors.textMuted, fontWeight:'700' }}>Reject Order</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Pending orders alert panel */}
       <Modal visible={showAlerts} transparent animationType="fade" onRequestClose={() => setShowAlerts(false)}>

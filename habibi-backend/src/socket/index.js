@@ -95,6 +95,29 @@ module.exports = (io) => {
       socket.leave(`order_${orderId}`);
     });
 
+    // ── join_admin ────────────────────────────────────────────────────────────
+    // Merchant/admin clients join this room to receive kitchen-wide broadcasts.
+    socket.on("join_admin", () => {
+      const role = socket.data.user?.role;
+      if (role === "admin" || role === "merchant") {
+        socket.join("admins");
+        console.log(`[SOCKET] ${userLabel} joined admins room`);
+      } else {
+        socket.emit("error", { message: "Admin authentication required." });
+      }
+    });
+
+    // ── join_group / leave_group ──────────────────────────────────────
+    // No auth required — session_id is unguessable (random hex)
+    socket.on("join_group", (sessionId) => {
+      if (!sessionId || typeof sessionId !== "string" || sessionId.length > 40) return;
+      socket.join(`group_${sessionId}`);
+    });
+
+    socket.on("leave_group", (sessionId) => {
+      if (sessionId) socket.leave(`group_${sessionId}`);
+    });
+
     // ── join_driver ───────────────────────────────────────────────────────────
     // Only the driver themselves or an admin may join a driver room.
     socket.on("join_driver", (driverId) => {

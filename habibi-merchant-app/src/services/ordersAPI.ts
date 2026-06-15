@@ -23,6 +23,7 @@ export interface Order {
   updated_at?: string;
   notes?: string;
   coupon_code?: string;
+  estimated_minutes?: number;
 }
 
 export interface OrderItem {
@@ -67,9 +68,17 @@ export const ordersAPI = {
     return res.data as Order[];
   },
 
-  updateStatus: async (orderNumber: string, status: string) => {
-    const res = await api.patch(`/api/admin/orders/${orderNumber}/status`, { status });
+  updateStatus: async (orderNumber: string, status: string, cancelReason?: string, estimatedMinutes?: number) => {
+    const body: Record<string, any> = { status };
+    if (cancelReason) body.cancellation_reason = cancelReason;
+    if (estimatedMinutes != null) body.estimated_minutes = estimatedMinutes;
+    const res = await api.patch(`/api/admin/orders/${orderNumber}/status`, body);
     return res.data;
+  },
+
+  addItem: async (orderNumber: string, item: { name: string; price: number; qty: number; special_instructions?: string }) => {
+    const res = await api.post(`/api/admin/orders/${orderNumber}/add-item`, item);
+    return res.data as Order;
   },
 
   getStats: async () => {

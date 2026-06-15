@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
-import { menuAPI, favoritesAPI } from '../services/api';
+import { menuAPI, favoritesAPI, reviewsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import BuildYourOwn from '../components/BuildYourOwn';
@@ -85,6 +85,8 @@ const Menu = () => {
   const sectionRefs = useRef({});
   const [activeSidebarCat, setActiveSidebarCat] = useState('');
 
+  const [ratingStats, setRatingStats] = useState({ avg: '4.8', count: 170 });
+
   const [bowlBase,    setBowlBase]    = useState('');
   const [bowlProtein, setBowlProtein] = useState('');
   const [bowlTopping, setBowlTopping] = useState('');
@@ -115,6 +117,20 @@ const Menu = () => {
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    reviewsAPI.getApproved({ limit: 1 })
+      .then(data => {
+        const s = data?.stats;
+        if (s && parseInt(s.total) > 0) {
+          setRatingStats({
+            avg:   parseFloat(s.avg_rating).toFixed(1),
+            count: parseInt(s.total),
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -317,7 +333,7 @@ const Menu = () => {
             <span className="menu-item-row-price">${price.toFixed(2)}</span>
             <span className="menu-item-row-rating">
               <Star size={11} fill="#F97316" color="#F97316" />
-              4.8
+              {ratingStats.avg}
             </span>
           </div>
         </div>
@@ -418,7 +434,7 @@ const Menu = () => {
         <div className="menu-info-strip-inner">
           <div className="menu-info-item">
             <Star size={13} fill="#F97316" color="#F97316" />
-            <span><strong>4.8</strong> (170+ ratings)</span>
+            <span><strong>{ratingStats.avg}</strong> ({ratingStats.count >= 100 ? `${ratingStats.count}+` : ratingStats.count} ratings)</span>
           </div>
           <span className="menu-info-dot" />
           <div className="menu-info-item">

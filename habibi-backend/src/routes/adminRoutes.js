@@ -10,6 +10,7 @@ const {
   getAllOrders,
   getAllMenus,
   updateOrderStatus,
+  addItemToOrder,
   getSidebarItems,
   getAllCustomers,
   getCustomerDetails,
@@ -63,6 +64,7 @@ router.get("/analytics/growth", getCustomerGrowth);
 // Global Orders
 router.get("/orders", getAllOrders);
 router.patch("/orders/:id/status", updateOrderStatus);
+router.post("/orders/:id/add-item", protect, admin, addItemToOrder);
 router.patch("/orders/:id/provider", updateOrderProvider);
 
 // Customers

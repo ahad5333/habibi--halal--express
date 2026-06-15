@@ -17,14 +17,35 @@ interface Stats {
   pending: number;
 }
 
-export default function SalesReportScreen() {
-  const [stats,      setStats]      = useState<Stats | null>(null);
-  const [orders,     setOrders]     = useState<Order[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [printing,   setPrinting]   = useState(false);
+const TODAY_STR = new Date().toISOString().slice(0, 10);
 
-  const today = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+export default function SalesReportScreen() {
+  const [stats,       setStats]       = useState<Stats | null>(null);
+  const [allOrders,   setAllOrders]   = useState<Order[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [refreshing,  setRefreshing]  = useState(false);
+  const [printing,    setPrinting]    = useState(false);
+  const [pickedDate,  setPickedDate]  = useState(new Date());
+
+  const pickedStr = pickedDate.toISOString().slice(0, 10);
+  const isToday   = pickedStr === TODAY_STR;
+
+  const dateLabel = isToday ? 'Today'
+    : (() => {
+        const yStr = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        return pickedStr === yStr ? 'Yesterday'
+          : pickedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      })();
+
+  const shiftDate = (delta: number) => {
+    setPickedDate(prev => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + delta);
+      return next;
+    });
+  };
+
+  const orders = allOrders.filter(o => (o.placed_at || '').startsWith(pickedStr));
 
   const fetchData = useCallback(async () => {
     try {
@@ -37,13 +58,7 @@ export default function SalesReportScreen() {
         revenue: Number(statsData.revenue) || 0,
         pending: Number(statsData.pending) || 0,
       });
-
-      // Filter to today's orders only
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todayOrders = ordersData.filter((o: Order) =>
-        o.placed_at && o.placed_at.startsWith(todayStr)
-      );
-      setOrders(todayOrders);
+      setAllOrders(ordersData);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     } finally {
@@ -107,7 +122,7 @@ export default function SalesReportScreen() {
           h3 { font-size: 15px; margin-bottom: 10px; }
         </style></head><body>
         <h1>Habibi Halal Express — Sales Report</h1>
-        <div class="sub">${today}</div>
+        <div class="sub">${dateLabel} · ${pickedStr}</div>
         <div class="stats">
           <div class="stat"><div class="stat-val">${orders.length}</div><div class="stat-lbl">Total Orders Today</div></div>
           <div class="stat"><div class="stat-val">${delivered.length}</div><div class="stat-lbl">Completed</div></div>
@@ -161,9 +176,27 @@ export default function SalesReportScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.title}>Sales Report</Text>
-          <Text style={styles.subtitle}>{today}</Text>
+          {/* Date navigator */}
+          <View style={styles.dateNav}>
+            <TouchableOpacity style={styles.dateNavArrow} onPress={() => shiftDate(-1)}>
+              <Feather name="chevron-left" size={20} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.dateLabel}>{dateLabel}</Text>
+            <TouchableOpacity
+              style={[styles.dateNavArrow, isToday && { opacity: 0.25 }]}
+              onPress={() => shiftDate(1)}
+              disabled={isToday}
+            >
+              <Feather name="chevron-right" size={20} color={Colors.primary} />
+            </TouchableOpacity>
+            {!isToday && (
+              <TouchableOpacity style={styles.todayChip} onPress={() => setPickedDate(new Date())}>
+                <Text style={styles.todayChipText}>Today</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <View style={styles.headerBtns}>
           <TouchableOpacity style={styles.iconBtn} onPress={onRefresh}>
@@ -185,12 +218,12 @@ export default function SalesReportScreen() {
       >
         {/* Stat cards */}
         <View style={styles.statsGrid}>
-          <StatCard icon="shopping-bag"  label="Orders Today"   value={String(orders.length)}         accent={Colors.info} />
-          <StatCard icon="check-circle"  label="Completed"      value={String(delivered.length)}       accent={Colors.success} />
-          <StatCard icon="dollar-sign"   label="Today's Revenue" value={formatCurrency(todayRevenue)} accent={Colors.gold} />
-          <StatCard icon="trending-up"   label="Avg Order"      value={formatCurrency(avgOrder)}      accent={Colors.warning} />
-          <StatCard icon="clock"         label="Pending Now"    value={String(stats?.pending ?? 0)}   accent={Colors.pending} />
-          <StatCard icon="package"       label="All-Time Orders" value={String(stats?.orders ?? 0)}  accent={Colors.textSub} />
+          <StatCard icon="shopping-bag"  label={`Orders (${dateLabel})`}   value={String(orders.length)}         accent={Colors.info} />
+          <StatCard icon="check-circle"  label="Completed"                value={String(delivered.length)}       accent={Colors.success} />
+          <StatCard icon="dollar-sign"   label={`Revenue (${dateLabel})`} value={formatCurrency(todayRevenue)}   accent={Colors.gold} />
+          <StatCard icon="trending-up"   label="Avg Order"                value={formatCurrency(avgOrder)}       accent={Colors.warning} />
+          <StatCard icon="clock"         label="Pending Now"              value={String(stats?.pending ?? 0)}    accent={Colors.pending} />
+          <StatCard icon="package"       label="All-Time Orders"          value={String(stats?.orders ?? 0)}     accent={Colors.textSub} />
         </View>
 
         {/* Order type breakdown */}
@@ -243,7 +276,7 @@ export default function SalesReportScreen() {
         </Section>
 
         {/* Recent orders */}
-        <Section title={`Today's Orders (${orders.length})`}>
+        <Section title={`${dateLabel} Orders (${orders.length})`}>
           {orders.length === 0
             ? <EmptyState />
             : orders
@@ -317,8 +350,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  headerLeft: { gap: 6 },
   title:    { color: Colors.primary, fontSize: FontSize.xl, fontWeight: FontWeight.bold, fontFamily: 'serif' },
-  subtitle: { color: Colors.textMuted, fontSize: FontSize.xs, marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
+  dateNav: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  dateNavArrow: { padding: 4 },
+  dateLabel: { color: Colors.text, fontSize: FontSize.sm, fontWeight: FontWeight.semibold, paddingHorizontal: 6 },
+  todayChip: {
+    backgroundColor: Colors.primaryDim, borderRadius: 12,
+    borderWidth: 1, borderColor: Colors.primary,
+    paddingHorizontal: 8, paddingVertical: 3, marginLeft: 4,
+  },
+  todayChipText: { color: Colors.primary, fontSize: FontSize.xs, fontWeight: FontWeight.bold },
   headerBtns: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn:  { padding: 8, backgroundColor: Colors.surface, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
   printBtn: {
