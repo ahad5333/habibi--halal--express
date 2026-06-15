@@ -16,13 +16,10 @@ function ReviewWidget({ orderNum }) {
     if (!rating) return;
     setStatus('saving');
     try {
-      const token = localStorage.getItem('habibi_token');
       const res = await fetch(`${API_BASE}/api/reviews`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order_number:   orderNum,
           customer_name:  'Customer',

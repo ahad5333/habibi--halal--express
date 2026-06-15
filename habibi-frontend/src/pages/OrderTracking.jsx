@@ -229,10 +229,9 @@ export default function OrderTracking() {
   // ── Socket.IO ────────────────────────────────────────────
   useEffect(() => {
     if (!orderNum) return;
-    const token = localStorage.getItem('habibi_token');
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
-      auth: token ? { token } : undefined,
+      withCredentials: true,
     });
     socketRef.current = socket;
 

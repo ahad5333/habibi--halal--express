@@ -540,6 +540,23 @@ const verifySmsRecoveryCode = async (req, res) => {
   }
 };
 
+/* ── /api/auth/me ────────────────────────────────────────────────── */
+const getMe = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, email, role, is_partner, partner_id, phone_number
+       FROM users WHERE id = $1`,
+      [req.user.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'User not found.' });
+    const u = result.rows[0];
+    res.json({ id: u.id, name: u.name, email: u.email, role: u.role,
+               is_partner: !!u.is_partner, partner_id: u.partner_id || null });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -547,6 +564,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
 };

@@ -37,6 +37,7 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
 } = require("../controllers/authController");
@@ -86,10 +87,14 @@ router.get("/verify-email", verifyEmail);
 router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
 router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
 
-// Invalidate the calling token (admin logout / "sign out everywhere")
+// Return current user info from the httpOnly cookie — used by frontend on page load
+router.get('/me', protect, getMe);
+
+// Invalidate the calling token and clear the httpOnly cookie
 router.post('/logout', protect, (req, res) => {
   const { jti, exp } = req.user || {};
   revokeToken(jti, exp);
+  res.clearCookie('auth_token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' });
   res.json({ ok: true });
 });
 

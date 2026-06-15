@@ -9,31 +9,21 @@ export function AdminAuthProvider({ children }) {
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('habibi_admin_token');
-    const storedUser  = localStorage.getItem('habibi_admin_user');
-
-    if (storedToken) {
-      try {
-        const payload = JSON.parse(atob(storedToken.split('.')[1]));
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-          // Token has expired — clear everything and force re-login
-          localStorage.removeItem('habibi_admin_token');
+    // Validate session via httpOnly cookie — no localStorage token needed
+    authAPI.me()
+      .then(userData => {
+        if (userData.role !== 'admin') {
           localStorage.removeItem('habibi_admin_user');
           setLoading(false);
           return;
         }
-      } catch (_) {
-        localStorage.removeItem('habibi_admin_token');
+        setAdmin(userData);
+        localStorage.setItem('habibi_admin_user', JSON.stringify(userData));
+      })
+      .catch(() => {
         localStorage.removeItem('habibi_admin_user');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (storedUser) {
-      try { setAdmin(JSON.parse(storedUser)); } catch (_) {}
-    }
-    setLoading(false);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
@@ -43,7 +33,7 @@ export function AdminAuthProvider({ children }) {
       return data;
     }
     if (data.user?.role !== 'admin') throw new Error('Access denied — admin accounts only.');
-    authAPI.save(data.token);
+    // Token is in httpOnly cookie — just cache user data
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
     return data;
@@ -53,7 +43,6 @@ export function AdminAuthProvider({ children }) {
     if (!mfaEmail) throw new Error('No MFA session. Please log in again.');
     const data = await authAPI.verifyAdminMfa(mfaEmail, otp);
     if (data.user?.role !== 'admin') throw new Error('Access denied.');
-    authAPI.save(data.token);
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
     setMfaEmail(null);

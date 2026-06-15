@@ -17,13 +17,10 @@ export default function VerifyEmail() {
     }
     authAPI.verifyEmail(token)
       .then(data => {
-        // Save JWT + user just like a login
-        if (data.token) {
-          localStorage.setItem('habibi_token', data.token);
-          localStorage.setItem('habibi_user', JSON.stringify(data.user || {}));
-        }
+        // Token lives in the httpOnly cookie set by the server — just cache user data
+        if (data.user) localStorage.setItem('habibi_user', JSON.stringify(data.user));
         setStatus('success');
-        // Hard redirect so AuthContext re-initializes with the new token
+        // Hard redirect so AuthContext re-initializes from /api/auth/me
         setTimeout(() => { window.location.href = '/'; }, 2500);
       })
       .catch(err => {

@@ -10,11 +10,7 @@ import './Broadcasts.css';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('habibi_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  return { 'Content-Type': 'application/json' };
 }
 
 const AUDIENCE_OPTIONS = [
@@ -128,7 +124,7 @@ export default function Broadcasts() {
   const fetchHistory = useCallback(async () => {
     setFetching(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/broadcasts`, { headers: getAuthHeaders() });
+      const res = await fetch(`${BASE_URL}/api/admin/broadcasts`, { headers: getAuthHeaders(), credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setHistory(Array.isArray(data) ? data : []);
@@ -171,6 +167,7 @@ export default function Broadcasts() {
       const res = await fetch(`${BASE_URL}/api/admin/broadcasts`, {
         method:  'POST',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body:    JSON.stringify(payload),
       });
       const data = await res.json();
@@ -188,7 +185,7 @@ export default function Broadcasts() {
     if (!window.confirm('Delete this broadcast record?')) return;
     try {
       await fetch(`${BASE_URL}/api/admin/broadcasts/${id}`, {
-        method: 'DELETE', headers: getAuthHeaders(),
+        method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
       });
       setHistory(h => h.filter(b => b.id !== id));
     } catch (_) {}

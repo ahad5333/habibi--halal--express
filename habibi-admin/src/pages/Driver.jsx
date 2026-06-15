@@ -22,9 +22,8 @@ export default function DriverView() {
     }
     
     // Connect to websocket
-    const adminToken = localStorage.getItem('habibi_admin_token');
     const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5001', {
-      auth: adminToken ? { token: adminToken } : undefined,
+      withCredentials: true,
     });
     setSocket(newSocket);
 

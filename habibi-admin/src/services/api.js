@@ -1,14 +1,11 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-function token() { return localStorage.getItem('habibi_admin_token'); }
-
 async function req(path, opts = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
       ...(opts.headers || {}),
     },
   });
@@ -22,7 +19,6 @@ async function upload(path, formData) {
     method: 'POST',
     body: formData,
     credentials: 'include',
-    headers: token() ? { Authorization: `Bearer ${token()}` } : {},
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
@@ -34,7 +30,6 @@ async function uploadPatch(path, formData) {
     method: 'PATCH',
     body: formData,
     credentials: 'include',
-    headers: token() ? { Authorization: `Bearer ${token()}` } : {},
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
@@ -45,8 +40,9 @@ export const authAPI = {
   login:          (email, password) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   verifyAdminMfa: (email, otp)      => req('/api/auth/admin-mfa/verify', { method: 'POST', body: JSON.stringify({ email, otp }) }),
   logout: () => req('/api/auth/logout', { method: 'POST' }),
-  save:   (t) => localStorage.setItem('habibi_admin_token', t),
-  clear:  () => localStorage.removeItem('habibi_admin_token'),
+  me:    () => req('/api/auth/me'),
+  save:  () => {}, // token lives in httpOnly cookie — no localStorage storage needed
+  clear: () => localStorage.removeItem('habibi_admin_user'),
 };
 
 export const adminAPI = {

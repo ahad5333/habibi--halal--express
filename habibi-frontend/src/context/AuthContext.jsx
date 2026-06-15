@@ -8,23 +8,25 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('habibi_user');
-    const token  = localStorage.getItem('habibi_token');
-    if (stored && token) {
-      try { setUser(JSON.parse(stored)); } catch (_) {}
-    } else {
-      // Clear stale user data if the token is gone
-      localStorage.removeItem('habibi_user');
-    }
-    setLoading(false);
+    // Validate session via httpOnly cookie — avoids reading JWT from localStorage
+    authAPI.me()
+      .then(userData => {
+        setUser(userData);
+        localStorage.setItem('habibi_user', JSON.stringify(userData));
+      })
+      .catch(() => {
+        localStorage.removeItem('habibi_user');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
-    authAPI.saveToken(data.token);
-    const userData = data.user || { email };
-    localStorage.setItem('habibi_user', JSON.stringify(userData));
-    setUser(userData);
+    // Token lives in httpOnly cookie set by the server — do NOT store in localStorage
+    if (data.user) {
+      localStorage.setItem('habibi_user', JSON.stringify(data.user));
+      setUser(data.user);
+    }
     return data;
   };
 
@@ -35,7 +37,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    authAPI.logout();
+    authAPI.logout(); // calls POST /api/auth/logout → revokes JTI + clears cookie
     localStorage.removeItem('habibi_user');
     setUser(null);
   };

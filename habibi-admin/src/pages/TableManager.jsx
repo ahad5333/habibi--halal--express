@@ -26,7 +26,6 @@ function QRDisplay({ url, size = 180 }) {
 }
 
 export default function TableManager() {
-  const token = localStorage.getItem('habibi_admin_token');
   const [tables, setTables]       = useState([]);
   const [loading, setLoading]     = useState(true);
   const [newName, setNewName]     = useState('');
@@ -35,12 +34,12 @@ export default function TableManager() {
   const [copied, setCopied]       = useState('');
   const printRef = useRef(null);
 
-  const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const authHeaders = { 'Content-Type': 'application/json' };
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/dine-in/tables`, { headers: authHeaders });
+      const res = await fetch(`${API_BASE}/api/dine-in/tables`, { headers: authHeaders, credentials: 'include' });
       const data = await res.json();
       setTables(Array.isArray(data) ? data : []);
     } catch (_) {}
@@ -56,6 +55,7 @@ export default function TableManager() {
       const res = await fetch(`${API_BASE}/api/dine-in/tables`, {
         method: 'POST',
         headers: authHeaders,
+        credentials: 'include',
         body: JSON.stringify({ table_name: newName.trim() }),
       });
       if (res.ok) {
@@ -71,6 +71,7 @@ export default function TableManager() {
       await fetch(`${API_BASE}/api/dine-in/tables/${table.id}`, {
         method: 'PUT',
         headers: authHeaders,
+        credentials: 'include',
         body: JSON.stringify({ is_active: !table.is_active }),
       });
       await load();
@@ -83,6 +84,7 @@ export default function TableManager() {
       await fetch(`${API_BASE}/api/dine-in/tables/${id}`, {
         method: 'DELETE',
         headers: authHeaders,
+        credentials: 'include',
       });
       await load();
     } catch (_) {}

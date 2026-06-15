@@ -35,7 +35,13 @@ module.exports = (io) => {
   // works for guest checkouts (order IDs are hard to guess: HAB-<timestamp>).
   io.use((socket, next) => {
     try {
-      const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+      // Accept token from auth payload (mobile / legacy), query string, or httpOnly cookie
+      let token = socket.handshake.auth?.token || socket.handshake.query?.token;
+      if (!token) {
+        const raw = socket.handshake.headers?.cookie || '';
+        const match = raw.match(/(?:^|;\s*)auth_token=([^;]+)/);
+        if (match) token = decodeURIComponent(match[1]);
+      }
       if (token) {
         socket.data.user = jwt.verify(token, process.env.JWT_SECRET);
       }

@@ -8,11 +8,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('habibi_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  return { 'Content-Type': 'application/json' };
 }
 
 async function request(path, options = {}) {
@@ -52,11 +48,14 @@ export const authAPI = {
       body: JSON.stringify({ name, email, password, ...extra }),
     }),
 
-  /** Save token to localStorage */
-  saveToken: (token) => localStorage.setItem('habibi_token', token),
+  /** No-op — token lives in httpOnly cookie, not localStorage */
+  saveToken: () => {},
 
-  /** Remove token */
-  logout: () => localStorage.removeItem('habibi_token'),
+  /** POST /api/auth/logout — revokes token server-side and clears cookie */
+  logout: () => request('/api/auth/logout', { method: 'POST' }).catch(() => {}),
+
+  /** GET /api/auth/me — returns current user from httpOnly cookie */
+  me: () => request('/api/auth/me'),
 
   /** POST /api/auth/forgot-password */
   forgotPassword: (email) =>
@@ -74,8 +73,8 @@ export const authAPI = {
   verifySmsCode: (phone, code) =>
     request('/api/auth/sms-recovery/verify', { method: 'POST', body: JSON.stringify({ phone, code }) }),
 
-  /** Check if user is logged in */
-  isLoggedIn: () => !!localStorage.getItem('habibi_token'),
+  /** Kept for backward compat — prefer useAuth().isLoggedIn */
+  isLoggedIn: () => !!localStorage.getItem('habibi_user'),
 
   /** GET /api/auth/verify-email?token=xxx */
   verifyEmail: (token) => request(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),

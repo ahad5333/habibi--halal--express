@@ -4,14 +4,12 @@ import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-function token() { return localStorage.getItem('habibi_admin_token'); }
-
 async function apiFetch(path, opts = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
       ...(opts.headers || {}),
     },
   });

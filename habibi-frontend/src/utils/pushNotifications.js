@@ -55,18 +55,13 @@ export const requestPushPermission = async () => {
 
     if (!fcmToken) return { ok: false, reason: 'no_token' };
 
-    // Send token to backend
-    const authToken = localStorage.getItem('habibi_token');
-    if (authToken) {
-      await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/me/notifications/device-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ token: fcmToken, platform: 'web' }),
-      });
-    }
+    // Send token to backend — auth via httpOnly cookie
+    await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/me/notifications/device-token`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: fcmToken, platform: 'web' }),
+    }).catch(() => {});
 
     localStorage.setItem('habibi_fcm_token', fcmToken);
     return { ok: true, token: fcmToken };
@@ -78,16 +73,13 @@ export const requestPushPermission = async () => {
 
 // Removes the stored FCM token from the backend (call on logout)
 export const unregisterPushToken = async () => {
-  const fcmToken  = localStorage.getItem('habibi_fcm_token');
-  const authToken = localStorage.getItem('habibi_token');
-  if (!fcmToken || !authToken) return;
+  const fcmToken = localStorage.getItem('habibi_fcm_token');
+  if (!fcmToken) return;
   try {
     await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/me/notifications/device-token`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`,
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: fcmToken }),
     });
     localStorage.removeItem('habibi_fcm_token');

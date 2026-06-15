@@ -1,4 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
+import { useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -126,14 +127,11 @@ function Layout() {
 }
 
 function InternalGuard({ children, requireAdmin = false }) {
-  const token = localStorage.getItem('habibi_token');
-  if (!token) return <Navigate to="/login" replace />;
-  if (requireAdmin) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (!['admin', 'superadmin'].includes(payload.role)) return <Navigate to="/" replace />;
-    } catch { return <Navigate to="/login" replace />; }
-  }
+  // Read from AuthContext (populated via /api/auth/me on load) — no localStorage token needed
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (requireAdmin && !['admin', 'superadmin'].includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
 

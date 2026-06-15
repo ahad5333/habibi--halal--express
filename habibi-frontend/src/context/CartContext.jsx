@@ -5,17 +5,12 @@ const CartContext = createContext(null);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-function getToken() {
-  return localStorage.getItem('habibi_token');
-}
-
 async function serverSync(items) {
-  const token = getToken();
-  if (!token) return;
   try {
     await fetch(`${API_BASE}/api/cart/sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: items.map(i => ({ menu_id: i.id, quantity: i.qty })) }),
     });
   } catch (_) {}

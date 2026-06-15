@@ -49,10 +49,9 @@ export default function ChatInbox() {
 
   // Socket.IO — join order room to receive live messages
   useEffect(() => {
-    const token = localStorage.getItem('habibi_admin_token');
     const socket = io(BASE, {
       transports: ['websocket', 'polling'],
-      auth: { token },
+      withCredentials: true,
       reconnectionAttempts: 10,
     });
     socketRef.current = socket;
