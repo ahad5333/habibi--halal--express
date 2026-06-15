@@ -123,6 +123,18 @@ const loginUser = async (req, res) => {
         (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
       if (smtpConfigured) {
+        // Prevent OTP reset if a prior session already hit the attempt limit and hasn't expired.
+        // Without this check an attacker could get unlimited 5-guess windows per 10 minutes.
+        if (
+          user.admin_otp_attempts >= 5 &&
+          user.admin_otp_expires &&
+          new Date(user.admin_otp_expires) > new Date()
+        ) {
+          return res.status(429).json({
+            message: 'Too many failed MFA attempts. Please wait a few minutes and try again.',
+          });
+        }
+
         const otp        = String(crypto.randomInt(100000, 1000000)); // 6 digits
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000);     // 10 min
         const otpHash    = await bcrypt.hash(otp, 12);
@@ -302,7 +314,7 @@ const verifyEmail = async (req, res) => {
     });
 
     const jwtToken = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );

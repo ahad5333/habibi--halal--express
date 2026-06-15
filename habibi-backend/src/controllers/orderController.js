@@ -4,7 +4,7 @@ const pool = require("../config/db");
 const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance } = require("../utils/googleMaps");
+const { getDistance, feeFromMiles } = require("../utils/googleMaps");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -213,6 +213,44 @@ const createGuestOrder = async (req, res) => {
           return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
         }
       }
+    }
+
+    // 3. Server-side delivery fee enforcement
+    const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
+    if (!isDeliveryOrder) {
+      // Pickup / dine-in must never carry a delivery fee
+      if (clientDelFee > 0.01) {
+        return res.status(400).json({ message: 'Delivery fee not applicable for this order type.' });
+      }
+    } else if (delivery_address) {
+      // Re-compute the distance-based fee so the client cannot under-report it
+      try {
+        const addrStr = [delivery_address, delivery_city, delivery_state, delivery_zip]
+          .filter(Boolean).join(', ');
+        const dist = await getDistance(RESTAURANT_ADDRESS, addrStr);
+        if (dist) {
+          const serverDelFee = feeFromMiles(dist.miles);
+          if (serverDelFee === null) {
+            return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
+          }
+          if (clientDelFee < serverDelFee - 0.50) {
+            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          }
+        }
+        // If Google Maps is unavailable, fee cannot be validated — allow order through
+      } catch (_) { /* non-fatal */ }
+    }
+
+    // 4. Server-side tax and service fee validation
+    const serverTaxRate    = parseFloat(process.env.TAX_RATE)          || 0.08875;
+    const serverSvcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE)  || 0.04273;
+    const serverTax    = Math.round(clientSubtotal * serverTaxRate    * 100) / 100;
+    const serverSvcFee = Math.round(clientSubtotal * serverSvcFeeRate * 100) / 100;
+    if (clientTax < serverTax - 0.10) {
+      return res.status(400).json({ message: 'Tax amount is incorrect. Please refresh and retry.' });
+    }
+    if (clientSvcFee < serverSvcFee - 0.10) {
+      return res.status(400).json({ message: 'Service fee is incorrect. Please refresh and retry.' });
     }
 
     // Input length caps
