@@ -29,6 +29,9 @@ const registerUser = async (req, res) => {
     if (typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters.' });
     }
+    if (!/[0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one number.' });
+    }
     if (name.length > 100) {
       return res.status(400).json({ message: 'Name too long.' });
     }
@@ -405,6 +408,7 @@ const resetPassword = async (req, res) => {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ message: "Token and password are required." });
     if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters." });
+    if (!/[0-9]/.test(password)) return res.status(400).json({ message: "Password must contain at least one number." });
 
     const result = await pool.query(
       "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()",
