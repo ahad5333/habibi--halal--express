@@ -891,6 +891,10 @@ const createTables = async () => {
       );
     `);
 
+    // ── Login brute-force protection ──────────────────────────────
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts     INTEGER   DEFAULT 0`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_lockout_until TIMESTAMPTZ`);
+
     await client.query("COMMIT");
     console.log("✅ All tables created/verified");
 

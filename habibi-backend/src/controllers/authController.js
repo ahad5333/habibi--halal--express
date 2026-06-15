@@ -89,21 +89,47 @@ const loginUser = async (req, res) => {
     const user = result.rows[0];
 
     if (!user) {
-      return res.status(400).json({
-        message: "Invalid credentials",
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Brute-force lockout check
+    if (user.login_lockout_until && new Date(user.login_lockout_until) > new Date()) {
+      const minutesLeft = Math.ceil(
+        (new Date(user.login_lockout_until) - new Date()) / 60000
+      );
+      return res.status(429).json({
+        message: `Account temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`,
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
+      const newAttempts = (user.login_attempts || 0) + 1;
+      const LOCK_AFTER  = 10;
+      const LOCK_MINS   = 15;
+      if (newAttempts >= LOCK_AFTER) {
+        const lockUntil = new Date(Date.now() + LOCK_MINS * 60 * 1000);
+        await pool.query(
+          `UPDATE users SET login_attempts=$1, login_lockout_until=$2 WHERE id=$3`,
+          [newAttempts, lockUntil, user.id]
+        );
+        return res.status(429).json({
+          message: `Too many failed attempts. Account locked for ${LOCK_MINS} minutes.`,
+        });
+      }
+      await pool.query(
+        `UPDATE users SET login_attempts=$1 WHERE id=$2`,
+        [newAttempts, user.id]
+      );
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
+
+    // Successful login — reset lockout state
+    await pool.query(
+      `UPDATE users SET login_attempts=0, login_lockout_until=NULL WHERE id=$1`,
+      [user.id]
+    );
 
     // VULN-05: block unverified emails (admin accounts are exempt)
     if (!user.email_verified && user.role !== 'admin') {
