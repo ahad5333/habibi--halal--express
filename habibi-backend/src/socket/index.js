@@ -96,11 +96,21 @@ module.exports = (io) => {
     });
 
     // ── join_driver ───────────────────────────────────────────────────────────
-    // Driver opens /driver?id=X — joins their personal room so they receive
-    // assignment_created events in real time without manual polling.
+    // Only the driver themselves or an admin may join a driver room.
     socket.on("join_driver", (driverId) => {
-      const id = parseInt(driverId);
+      const id   = parseInt(driverId);
+      const user = socket.data.user;
       if (!id || isNaN(id)) return;
+      if (!user) {
+        socket.emit("error", { message: "Authentication required." });
+        return;
+      }
+      const isOwnRoom = user.role === "driver" && user.id === id;
+      const isAdmin   = user.role === "admin";
+      if (!isOwnRoom && !isAdmin) {
+        socket.emit("error", { message: "Not authorised." });
+        return;
+      }
       socket.join(`driver_${id}`);
       console.log(`[SOCKET] Driver ${id} joined room driver_${id} (${socket.id})`);
     });
