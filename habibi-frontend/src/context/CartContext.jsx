@@ -32,12 +32,10 @@ export function CartProvider({ children }) {
     syncTimerRef.current = setTimeout(() => serverSync(newItems), 1000);
   }, []);
 
-  // On mount: if logged in, pull server cart and use it
+  // On mount: try to pull server cart — uses httpOnly cookie, 401 if not logged in is handled gracefully
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
     fetch(`${API_BASE}/api/cart`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
