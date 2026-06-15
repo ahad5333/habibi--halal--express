@@ -105,5 +105,34 @@ router.delete('/tables/:id', protect, admin, async (req, res) => {
   }
 });
 
+// ── Public: kitchen load for mobile dine-in landing ──────────────────────────
+router.get('/kitchen-load', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*) AS active_count
+       FROM guest_orders
+       WHERE delivery_method = 'dine_in'
+         AND order_status IN ('pending', 'accepted', 'preparing')
+         AND placed_at > NOW() - INTERVAL '45 minutes'`
+    );
+    const count = parseInt(result.rows[0].active_count, 10);
+
+    let status, time, percentage;
+    if (count <= 2) {
+      status = 'Light Kitchen Load'; time = '8–12 Mins'; percentage = 0.2;
+    } else if (count <= 5) {
+      status = 'Normal Load';        time = '10–15 Mins'; percentage = 0.45;
+    } else if (count <= 9) {
+      status = 'Busy Kitchen';       time = '15–20 Mins'; percentage = 0.75;
+    } else {
+      status = 'Very Busy Kitchen';  time = '20–30 Mins'; percentage = 0.95;
+    }
+
+    res.json({ status, time, percentage, active_orders: count });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
 module.exports = router;
 
