@@ -303,9 +303,11 @@ const Menu = () => {
     const price    = parseFloat(item.price || 0);
     const isFav    = favoriteIds.has(item.id);
     const cat      = (item.category || '').toLowerCase();
-    const isCold   = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
+    const lname    = name.toLowerCase();
+    const isHotDrink = lname.includes('hot ') || lname.includes('coffee') || lname.includes('hot chocolate');
+    const isCold   = !isHotDrink && (cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || lname.includes(' salad'));
     const isSpicy  = !!item.is_spicy;
-    const isTuna   = name.toLowerCase().includes('tuna');
+    const isTuna   = lname.includes('tuna');
     const fxClass  = isTuna ? '' : (isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam'));
     const isSoldOut = locStatus === 'sold_out';
 
@@ -527,7 +529,9 @@ const Menu = () => {
                 const price  = parseFloat(item.price || 0);
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
                 const cat     = (item.category || '').toLowerCase();
-                const isCold  = cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || name.toLowerCase().includes(' salad');
+                const lname2     = name.toLowerCase();
+                const isHotDrink2 = lname2.includes('hot ') || lname2.includes('coffee') || lname2.includes('hot chocolate');
+                const isCold  = !isHotDrink2 && (cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || lname2.includes(' salad'));
                 const isSpicy = !!item.is_spicy;
                 const fxClass = isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
                 return (
