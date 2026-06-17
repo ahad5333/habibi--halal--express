@@ -2,8 +2,11 @@
    MENU PAGE — Habibi Halal Express  |  Black + Orange Theme
    ============================================================ */
 
-/* Prevent visual effects from creating horizontal scroll on mobile */
-.menu-page { overflow-x: hidden; }
+/* position: relative makes this the clipping ancestor for all
+   position:absolute children (steam/fire/frost effects), so
+   overflow-x: hidden actually clips them instead of letting
+   the viewport be the clip boundary */
+.menu-page { position: relative; overflow-x: hidden; }
 
 /* ══════════════════════════════════════════════
    RESTAURANT INFO STRIP

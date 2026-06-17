@@ -345,6 +345,8 @@ const Menu = () => {
               src={imgSrc}
               alt={name}
               className="menu-item-row-img"
+              loading="lazy"
+              decoding="async"
               onError={e => {
                 const t = e.target;
                 t.onerror = null;
