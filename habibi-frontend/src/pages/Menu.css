@@ -1175,28 +1175,38 @@
   /* 3-line descriptions on mobile — better fills the wider card row */
   .menu-item-row-desc { -webkit-line-clamp: 3; }
 
-  /* clip-path on the img-wrap itself — closest possible ancestor to the
-     effects. Clips smoke at the img-wrap's right/left/bottom edges, while
-     the -200px top extension lets smoke float above the food photo.
-     The add/fav buttons sit at right:0.35rem which is within 76px, so they
-     are never cut off. Do NOT put clip-path on .menu-item-row-right — if
-     that wrapper has layout edge-cases the entire image disappears. */
-  .menu-item-row-img-wrap {
-    overflow: visible !important;
-    clip-path: inset(-200px 0px 0px 0px) !important;
+  /* ── Definitive overflow fix ──────────────────────────────────────────────
+     ROOT CAUSE 1: the global rule ".menu-item-row-img-wrap { overflow: visible
+       !important }" at the bottom of this file appears AFTER all media queries,
+       so it wins the specificity tie and overrides every overflow:hidden we set
+       inside a breakpoint. Fix: use a 3-class chain (specificity 0,3,0) which
+       beats the single-class global rule (0,1,0) regardless of source order.
+     ROOT CAUSE 2: filter:url(#smoke-warp) blur(7px) has a 200%×200% paint
+       region and creates compositing layers that Android Chrome/MIUI WebView
+       does NOT clip via ancestor clip-path. Removing filter entirely means
+       overflow:hidden becomes the reliable clip boundary it always should be.
+     ROOT CAUSE 3: rightmost puffs (s4 left:56%, s5 left:68%) exceed even a
+       68px img-wrap before any filter bleed; overflow:hidden clips them cleanly.
+  ─────────────────────────────────────────────────────────────────────────── */
+  .menu-item-row .menu-item-row-right .menu-item-row-img-wrap {
+    overflow: hidden !important;
+    clip-path: none !important;
   }
+
+  /* Remove ALL CSS filter from mobile effects. No filter = no paint bleed =
+     overflow:hidden works on every browser and device. The radial-gradient
+     backgrounds still give smoke/frost a soft, layered look without filter. */
+  .menu-item-row .item-fx-steam .smoke,
+  .menu-item-row .item-fx-frost .frost-particle,
+  .menu-item-row .item-fx-fire .flame,
+  .menu-item-row .item-fx-fire .spark        { filter: none !important; }
+  .menu-item-row .item-fx-fire::before,
+  .menu-item-row .item-fx-steam::before      { filter: none !important; }
+
   .mf-img-wrap { overflow: visible !important; }
 
-  /* On mobile, remove the SVG turbulence warp filter from smoke/frost — the
-     large filter-region (200%×200%) it creates is the main reason filter bleed
-     bypasses overflow and clip-path on older Android WebView. A plain blur is
-     still soft-looking and stays within the clipped area. */
-  .menu-item-row .item-fx-steam .smoke       { filter: blur(4px) !important; }
-  .menu-item-row .item-fx-frost .frost-particle { filter: blur(3px) !important; }
-  .menu-item-row .item-fx-fire::before       { filter: blur(6px) !important; }
-
-  /* Smoke rises straight up, max scale capped at 1.0 so puffs never exceed
-     the 76px img-wrap width even before filter bleed is considered. */
+  /* Smoke rises straight up, scale capped at 1.0 — contained within the
+     img-wrap thumbnail (clipped by overflow:hidden above). */
   @keyframes smokeRiseA {
     0%   { transform: translateY(0)      scale(0.35); opacity: 0;    }
     7%   { opacity: 0.80; }
