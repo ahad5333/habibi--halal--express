@@ -1146,11 +1146,16 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
-    overflow-x: clip;    /* clips horizontal bleed from particle effects */
-    overflow-y: visible; /* smoke/fire/frost can still float above the card */
+    overflow: visible;
+    /* clip-path clips the fully-painted output (including CSS filter blur and
+       SVG feTurbulence warp) — overflow:clip cannot do this. The -160px top
+       extension lets smoke/fire/frost float above the card. */
+    clip-path: inset(-160px 0px 0px 0px);
     max-width: 100%;
     box-sizing: border-box;
   }
+  /* 3-line descriptions on mobile — better fills the wider card row */
+  .menu-item-row-desc { -webkit-line-clamp: 3; }
 
   /* Restore image-wrap and carousel overflow so effects paint outside
      the image box (they are clipped at the row level above) */
