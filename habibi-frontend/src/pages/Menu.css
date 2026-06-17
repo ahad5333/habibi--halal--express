@@ -1168,7 +1168,6 @@
     border-radius: 8px;
     gap: 0.625rem;
     overflow: visible;
-    clip-path: inset(-200px 0px 0px 0px); /* outer safety net */
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -1231,7 +1230,7 @@
     100% { transform: translateY(-100px) scale(0.2); opacity: 0;    }
   }
   /* Fire base glow: don't extend beyond image edges */
-  .item-fx-fire::before { left: 0; right: 0; filter: blur(6px) !important; }
+  .item-fx-fire::before { left: 0; right: 0; }
 }
 
 @media (max-width: 768px) {
