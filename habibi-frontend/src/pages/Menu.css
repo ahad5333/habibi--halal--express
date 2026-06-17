@@ -1146,17 +1146,16 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
-    overflow: hidden;
+    overflow-x: clip;    /* clips horizontal bleed from particle effects */
+    overflow-y: visible; /* smoke/fire/frost can still float above the card */
     max-width: 100%;
     box-sizing: border-box;
   }
 
-  /* Clip image box tightly — particle effects (steam/fire/frost)
-     that drift sideways cause horizontal overflow on phones.
-     Effects are decorative; clip them on mobile. */
-  .menu-item-row-img-wrap { overflow: hidden !important; }
-  .item-fx                { display: none !important; }
-  .mf-img-wrap            { overflow: hidden !important; }
+  /* Restore image-wrap and carousel overflow so effects paint outside
+     the image box (they are clipped at the row level above) */
+  .menu-item-row-img-wrap { overflow: visible !important; }
+  .mf-img-wrap            { overflow: visible !important; }
 }
 
 @media (max-width: 768px) {
