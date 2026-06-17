@@ -93,7 +93,7 @@ exports.getCatalog = async (req, res) => {
 // ── Place Order ───────────────────────────────────────────────────
 exports.placeOrder = async (req, res) => {
   try {
-    const { items, delivery_address, notes, sub_total, tax, total } = req.body;
+    const { items, delivery_address, notes, sub_total, total, payment_method } = req.body;
     if (!items || !items.length) return res.status(400).json({ error: 'No items in order' });
 
     const orderNumber = 'PO-' + crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -113,13 +113,14 @@ exports.placeOrder = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO partner_orders
          (order_number, partner_user_id, partner_application_id, business_name,
-          items, sub_total, tax, total, delivery_address, notes, price_tier)
+          items, sub_total, tax, total, delivery_address, notes, price_tier, payment_method)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-         (SELECT price_tier FROM partner_applications WHERE id=$3))
+         (SELECT price_tier FROM partner_applications WHERE id=$3), $11)
        RETURNING *`,
       [orderNumber, req.user.id, appId, businessName,
-       JSON.stringify(items), sub_total || 0, tax || 0,
-       total || 0, delivery_address || '', notes || '']
+       JSON.stringify(items), sub_total || 0, 0,
+       total || 0, delivery_address || '', notes || '',
+       payment_method || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -133,7 +134,8 @@ exports.getOrders = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, order_number, business_name, items, sub_total, tax, total,
-              delivery_address, notes, price_tier, status, placed_at
+              delivery_address, notes, price_tier, status,
+              payment_status, payment_method, placed_at, updated_at
        FROM partner_orders
        WHERE partner_user_id=$1
        ORDER BY placed_at DESC`,
@@ -144,6 +146,29 @@ exports.getOrders = async (req, res) => {
       items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
     }));
     res.json(orders);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Single Order ──────────────────────────────────────────────────
+exports.getOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT id, order_number, business_name, items, sub_total, tax, total,
+              delivery_address, notes, price_tier, status,
+              payment_status, payment_method, placed_at, updated_at
+       FROM partner_orders
+       WHERE id=$1 AND partner_user_id=$2`,
+      [id, req.user.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Order not found' });
+    const o = result.rows[0];
+    res.json({
+      ...o,
+      items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+    });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

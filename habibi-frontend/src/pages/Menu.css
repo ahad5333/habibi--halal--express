@@ -2,6 +2,9 @@
    MENU PAGE — Habibi Halal Express  |  Black + Orange Theme
    ============================================================ */
 
+/* Prevent visual effects from creating horizontal scroll on mobile */
+.menu-page { overflow-x: hidden; }
+
 /* ══════════════════════════════════════════════
    RESTAURANT INFO STRIP
    ══════════════════════════════════════════════ */
@@ -1129,10 +1132,11 @@
 
 /* Mobile: hide sidebar, show top tabs */
 @media (max-width: 900px) {
-  .menu-sidebar  { display: none; }
+  .menu-sidebar   { display: none; }
   .menu-cats-wrap { display: block; }
-  .menu-layout   { display: block; }
-  .menu-list     { grid-template-columns: 1fr; overflow-x: hidden; }
+  .menu-layout    { display: block; }
+  .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }
+  .menu-main-wrap { overflow-x: hidden; }
 
   .menu-item-row {
     margin: 0;

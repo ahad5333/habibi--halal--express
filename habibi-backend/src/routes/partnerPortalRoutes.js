@@ -8,6 +8,7 @@ const {
   getCatalog,
   placeOrder,
   getOrders,
+  getOrderById,
   getInvoice,
 } = require('../controllers/partnerPortalController');
 
@@ -15,10 +16,11 @@ const {
 router.use(protect);
 router.use(partnerOnly);
 
-router.get('/profile',          getProfile);
-router.get('/catalog',          getCatalog);
-router.post('/orders',          placeOrder);
-router.get('/orders',           getOrders);
+router.get('/profile',            getProfile);
+router.get('/catalog',            getCatalog);
+router.post('/orders',            placeOrder);
+router.get('/orders',             getOrders);
+router.get('/orders/:id',         getOrderById);
 router.get('/orders/:id/invoice', getInvoice);
 
 // Business App — order summary stats
