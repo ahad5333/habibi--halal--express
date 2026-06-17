@@ -1156,6 +1156,35 @@
      the image box (they are clipped at the row level above) */
   .menu-item-row-img-wrap { overflow: visible !important; }
   .mf-img-wrap            { overflow: visible !important; }
+
+  /* On mobile, smoke rises straight up — no horizontal drift.
+     Removes translateX so puffs don't push past the card edge.
+     Smoke still billows nicely above the food image. */
+  @keyframes smokeRiseA {
+    0%   { transform: translateY(0)      scale(0.35); opacity: 0;    }
+    7%   { opacity: 0.80; }
+    28%  { transform: translateY(-32px)  scale(0.65); opacity: 0.65; }
+    55%  { transform: translateY(-64px)  scale(1.00); opacity: 0.38; }
+    80%  { transform: translateY(-96px)  scale(1.25); opacity: 0.15; }
+    100% { transform: translateY(-128px) scale(1.50); opacity: 0;    }
+  }
+  @keyframes smokeRiseB {
+    0%   { transform: translateY(0)      scale(0.35); opacity: 0;    }
+    7%   { opacity: 0.78; }
+    30%  { transform: translateY(-36px)  scale(0.68); opacity: 0.60; }
+    58%  { transform: translateY(-68px)  scale(1.05); opacity: 0.35; }
+    82%  { transform: translateY(-100px) scale(1.30); opacity: 0.13; }
+    100% { transform: translateY(-132px) scale(1.55); opacity: 0;    }
+  }
+  /* Sparks: rise straight up, no side drift */
+  @keyframes sparkRiseHigh {
+    0%   { transform: translateY(0)      scale(0.5); opacity: 0;    }
+    15%  { opacity: 1; }
+    80%  { opacity: 0.95; }
+    100% { transform: translateY(-100px) scale(0.2); opacity: 0;    }
+  }
+  /* Fire base glow: don't extend beyond image edges */
+  .item-fx-fire::before { left: 0; right: 0; }
 }
 
 @media (max-width: 768px) {
