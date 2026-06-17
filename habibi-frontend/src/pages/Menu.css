@@ -1175,18 +1175,17 @@
   /* 3-line descriptions on mobile — better fills the wider card row */
   .menu-item-row-desc { -webkit-line-clamp: 3; }
 
-  /* Primary clip on the direct parent of the image wrap. Applying clip-path
-     here (not just the outer row) reliably catches filter bleed on Android
-     Chrome / MIUI WebView, which doesn't always honour clip-path on distant
-     ancestors when nested CSS filters are involved. */
-  .menu-item-row-right {
-    clip-path: inset(-200px 0px 0px 0px);
+  /* clip-path on the img-wrap itself — closest possible ancestor to the
+     effects. Clips smoke at the img-wrap's right/left/bottom edges, while
+     the -200px top extension lets smoke float above the food photo.
+     The add/fav buttons sit at right:0.35rem which is within 76px, so they
+     are never cut off. Do NOT put clip-path on .menu-item-row-right — if
+     that wrapper has layout edge-cases the entire image disappears. */
+  .menu-item-row-img-wrap {
+    overflow: visible !important;
+    clip-path: inset(-200px 0px 0px 0px) !important;
   }
-
-  /* Allow effects to paint outside the img-wrap box (clipped by the
-     .menu-item-row-right clip-path above, not by overflow) */
-  .menu-item-row-img-wrap { overflow: visible !important; }
-  .mf-img-wrap            { overflow: visible !important; }
+  .mf-img-wrap { overflow: visible !important; }
 
   /* On mobile, remove the SVG turbulence warp filter from smoke/frost — the
      large filter-region (200%×200%) it creates is the main reason filter bleed
