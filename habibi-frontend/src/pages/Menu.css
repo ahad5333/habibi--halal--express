@@ -1146,10 +1146,17 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
-    overflow: visible;
+    overflow: hidden;
     max-width: 100%;
     box-sizing: border-box;
   }
+
+  /* Clip image box tightly — particle effects (steam/fire/frost)
+     that drift sideways cause horizontal overflow on phones.
+     Effects are decorative; clip them on mobile. */
+  .menu-item-row-img-wrap { overflow: hidden !important; }
+  .item-fx                { display: none !important; }
+  .mf-img-wrap            { overflow: hidden !important; }
 }
 
 @media (max-width: 768px) {
