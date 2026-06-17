@@ -544,7 +544,7 @@ const verifySmsRecoveryCode = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, email, role, is_partner, partner_id, phone_number
+      `SELECT id, name, email, role, is_partner, partner_id
        FROM users WHERE id = $1`,
       [req.user.id]
     );
