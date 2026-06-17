@@ -1133,6 +1133,27 @@
   .menu-cats-wrap { display: none; }
 }
 
+/* Tablet / iPad Pro (901px – 1200px): single-column items, slimmer sidebar */
+@media (max-width: 1200px) and (min-width: 901px) {
+  .menu-sidebar   { width: 180px; }
+  .menu-list      { grid-template-columns: 1fr; }
+  .menu-main-wrap { padding: 1.5rem 1.25rem 5rem; }
+
+  /* Slightly larger image + tighter row padding to fill the wider single column */
+  .menu-item-row-img-wrap {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+  }
+  .menu-item-row {
+    padding: 1rem 1.25rem;
+    gap: 1.25rem;
+    border-radius: 14px;
+  }
+  .menu-item-row-name { font-size: 1rem; }
+  .menu-item-row-desc { -webkit-line-clamp: 2; }
+}
+
 /* Mobile: hide sidebar, show top tabs */
 @media (max-width: 900px) {
   .menu-sidebar   { display: none; }
