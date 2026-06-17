@@ -948,7 +948,7 @@
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(ellipse at center, rgba(229,182,78,0.05) 0%, transparent 65%);
+  background: radial-gradient(ellipse at center, rgba(249,115,22,0.08) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -978,7 +978,7 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #E5B64E;
+  color: #F97316;
 }
 
 .byo-strip-eyebrow-dot {
@@ -986,7 +986,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #E5B64E;
+  background: #F97316;
   animation: byo-dot-pulse 2s ease-in-out infinite;
 }
 
@@ -1006,7 +1006,7 @@
 }
 
 .byo-strip-title-accent {
-  background: linear-gradient(120deg, #E5B64E 0%, #facc15 50%, #E5B64E 100%);
+  background: linear-gradient(120deg, #F97316 0%, #ea6c00 50%, #F97316 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1028,7 +1028,7 @@
 }
 
 .byo-strip-desc strong {
-  color: #E5B64E;
+  color: #F97316;
   font-weight: 700;
 }
 
@@ -1052,17 +1052,17 @@
 }
 
 .byo-step:hover {
-  border-color: rgba(229,182,78,0.35);
-  background: rgba(229,182,78,0.05);
+  border-color: rgba(249,115,22,0.4);
+  background: rgba(249,115,22,0.07);
 }
 
 .byo-step-num {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(229,182,78,0.15);
-  border: 1px solid rgba(229,182,78,0.4);
-  color: #E5B64E;
+  background: rgba(249,115,22,0.15);
+  border: 1px solid rgba(249,115,22,0.45);
+  color: #F97316;
   font-size: 0.68rem;
   font-weight: 800;
   display: flex;
@@ -1085,9 +1085,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.95rem 2.2rem;
-  background: #E5B64E;
+  background: #F97316;
   border-radius: 50px;
-  color: #0a0a0a;
+  color: #ffffff;
   font-size: 0.9rem;
   font-weight: 800;
   text-decoration: none;
@@ -1095,14 +1095,14 @@
   letter-spacing: 0.1em;
   white-space: nowrap;
   width: fit-content;
-  box-shadow: 0 4px 20px rgba(229,182,78,0.25);
+  box-shadow: 0 4px 20px rgba(249,115,22,0.35);
   transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
 }
 
 .byo-strip-btn:hover {
   transform: translateY(-2px);
-  background: #f0c96a;
-  box-shadow: 0 8px 28px rgba(229,182,78,0.35);
+  background: #ea6c00;
+  box-shadow: 0 8px 28px rgba(249,115,22,0.5);
 }
 
 .byo-strip-btn-arrow {
