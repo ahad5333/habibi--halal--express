@@ -43,6 +43,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_expires        TIMESTAMPTZ`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_attempts       INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_rewarded_year  INTEGER`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS dietary_prefs          JSONB DEFAULT '{}'`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_hash          VARCHAR(255)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_expires       TIMESTAMPTZ`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_attempts      INTEGER DEFAULT 0`);
@@ -311,6 +312,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS loyalty_points_redeemed INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);
@@ -710,6 +712,8 @@ const createTables = async () => {
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS dietary_info   JSONB          DEFAULT '{}'`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS available_from  TIME`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS available_until TIME`);
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS is_featured     BOOLEAN        DEFAULT FALSE`);
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS addons_max      INTEGER`);
 
     // ── Addresses: ensure user_id column exists (bridge column) ────
     await client.query(`
@@ -965,6 +969,58 @@ const seedDefaults = async () => {
     await pool.query(`UPDATE locations SET image_url='/images/hero_dining_ambiance.jpg'    WHERE LOWER(title) LIKE '%lehman%'      AND (image_url IS NULL OR image_url='')`);
     await pool.query(`UPDATE locations SET image_url='/images/chef-plating.jpg'            WHERE LOWER(title) LIKE '%science%'     AND (image_url IS NULL OR image_url='')`);
   }
+
+  // ── Referrals ─────────────────────────────────────────────────────
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      id              SERIAL PRIMARY KEY,
+      referrer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      referee_email   VARCHAR(255),
+      referee_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      status          VARCHAR(20)  DEFAULT 'pending' CHECK (status IN ('pending','completed','expired')),
+      referral_code   VARCHAR(20)  NOT NULL,
+      points_awarded  INTEGER DEFAULT 0,
+      created_at      TIMESTAMPTZ DEFAULT NOW(),
+      completed_at    TIMESTAMPTZ
+    )
+  `);
+
+  // ── Group Order Sessions ──────────────────────────────────────────
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS group_order_sessions (
+      id           SERIAL PRIMARY KEY,
+      session_id   VARCHAR(20)  UNIQUE NOT NULL,
+      join_code    VARCHAR(8)   UNIQUE NOT NULL,
+      host_name    VARCHAR(100) NOT NULL,
+      status       VARCHAR(20)  DEFAULT 'open' CHECK (status IN ('open', 'locked', 'closed')),
+      expires_at   TIMESTAMPTZ  NOT NULL,
+      created_at   TIMESTAMPTZ  DEFAULT NOW()
+    )
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS group_order_participants (
+      id             SERIAL PRIMARY KEY,
+      session_id     VARCHAR(20)  NOT NULL REFERENCES group_order_sessions(session_id) ON DELETE CASCADE,
+      participant_id VARCHAR(36)  NOT NULL,
+      name           VARCHAR(100) NOT NULL,
+      is_host        BOOLEAN      DEFAULT FALSE,
+      joined_at      TIMESTAMPTZ  DEFAULT NOW(),
+      UNIQUE(session_id, participant_id)
+    )
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS group_order_items (
+      id             SERIAL PRIMARY KEY,
+      session_id     VARCHAR(20)   NOT NULL,
+      participant_id VARCHAR(36)   NOT NULL,
+      menu_item_id   INTEGER,
+      name           VARCHAR(200)  NOT NULL,
+      price          NUMERIC(10,2) NOT NULL,
+      qty            INTEGER       NOT NULL DEFAULT 1,
+      note           TEXT,
+      added_at       TIMESTAMPTZ   DEFAULT NOW()
+    )
+  `);
 
   // Seed categories
   const catCount = await pool.query("SELECT COUNT(*) FROM categories");
