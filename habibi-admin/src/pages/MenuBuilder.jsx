@@ -4,7 +4,7 @@ import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', category: '', notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, image: null, choices: [], addons: [], addons_max: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', category: '', notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '' };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -27,6 +27,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
     is_spicy: !!item.is_spicy,
     is_vegetarian: !!item.is_vegetarian,
     is_gluten_free: !!item.is_gluten_free,
+    is_featured: !!item.is_featured,
     image: null,
     choices:    parseJsonSafe(item.choices),
     addons:     parseJsonSafe(item.addons),
@@ -59,6 +60,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('is_spicy', form.is_spicy);
       fd.append('is_vegetarian', form.is_vegetarian);
       fd.append('is_gluten_free', form.is_gluten_free);
+      fd.append('is_featured', form.is_featured);
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -155,6 +157,9 @@ function MenuModal({ item, categories, onClose, onSave }) {
               </button>
               <button type="button" className={`mb-dietary-pill${form.is_gluten_free ? ' active' : ''}`} onClick={() => set('is_gluten_free', !form.is_gluten_free)}>
                 🌾 Gluten Free
+              </button>
+              <button type="button" className={`mb-dietary-pill${form.is_featured ? ' active' : ''}`} onClick={() => set('is_featured', !form.is_featured)}>
+                ⭐ Featured
               </button>
             </div>
 
@@ -277,7 +282,9 @@ export default function MenuBuilder() {
   useEffect(() => { fetchItems(); }, []);
 
   useEffect(() => {
-    adminAPI.getLocations().then(d => setLocations(Array.isArray(d) ? d : [])).catch(() => {});
+    adminAPI.getLocations()
+      .then(d => setLocations(Array.isArray(d) ? d.filter(l => l.is_active !== false) : []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -386,14 +393,14 @@ export default function MenuBuilder() {
               <option value="">— Select a location —</option>
               {locations.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
             </select>
-            {selectedLoc && (
-              <p className="mb-loc-avail-hint">
-                Set availability for each item at this location. Default is <strong>Available</strong>.
-              </p>
-            )}
+            <p className="mb-loc-avail-hint">
+              {selectedLoc
+                ? <>Set availability for each item at this location. Default is <strong>Available</strong>.</>
+                : 'Select a location above to manage per-location item availability.'}
+            </p>
           </div>
-          {selectedLoc && (
-            <div className="mb-table-wrap">
+          <div className="mb-table-wrap">
+            {!selectedLoc ? null : (
               <table className="mb-table">
                 <thead>
                   <tr>
@@ -435,8 +442,8 @@ export default function MenuBuilder() {
                   })}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
