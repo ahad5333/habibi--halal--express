@@ -62,6 +62,12 @@ export const adminAPI = {
   },
   deleteMenu:  (id) => req(`/api/admin/menus/${id}`, { method: 'DELETE' }),
 
+  // Modifiers (shared choice/addon groups)
+  getModifiers:    ()           => req('/api/admin/modifiers'),
+  createModifier:  (body)       => req('/api/admin/modifiers',     { method: 'POST',  body: JSON.stringify(body) }),
+  updateModifier:  (id, body)   => req(`/api/admin/modifiers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteModifier:  (id, type)   => req(`/api/admin/modifiers/${id}?type=${type}`, { method: 'DELETE' }),
+
   customers:   () => req('/api/admin/customers'),
   customer:    (id) => req(`/api/admin/customers/${id}`),
 

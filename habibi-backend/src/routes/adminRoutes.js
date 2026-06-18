@@ -98,6 +98,12 @@ router.post("/menus", upload.single("image"), createMenu);
 router.patch("/menus/:id", upload.single("image"), updateMenu);
 router.delete("/menus/:id", deleteMenu);
 
+// Modifiers (shared choice groups & addon groups)
+router.get("/modifiers",         getModifiers);
+router.post("/modifiers",        createModifier);
+router.patch("/modifiers/:id",   updateModifier);
+router.delete("/modifiers/:id",  deleteModifier);
+
 // Business Menus
 router.get("/business-menus", getBusinessMenus);
 router.post("/business-menus", upload.single("image"), createBusinessMenu);
