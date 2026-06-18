@@ -971,7 +971,7 @@ const seedDefaults = async () => {
   }
 
   // ── Referrals ─────────────────────────────────────────────────────
-  await client.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS referrals (
       id              SERIAL PRIMARY KEY,
       referrer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -986,7 +986,7 @@ const seedDefaults = async () => {
   `);
 
   // ── Group Order Sessions ──────────────────────────────────────────
-  await client.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS group_order_sessions (
       id           SERIAL PRIMARY KEY,
       session_id   VARCHAR(20)  UNIQUE NOT NULL,
@@ -997,7 +997,7 @@ const seedDefaults = async () => {
       created_at   TIMESTAMPTZ  DEFAULT NOW()
     )
   `);
-  await client.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS group_order_participants (
       id             SERIAL PRIMARY KEY,
       session_id     VARCHAR(20)  NOT NULL REFERENCES group_order_sessions(session_id) ON DELETE CASCADE,
@@ -1008,7 +1008,7 @@ const seedDefaults = async () => {
       UNIQUE(session_id, participant_id)
     )
   `);
-  await client.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS group_order_items (
       id             SERIAL PRIMARY KEY,
       session_id     VARCHAR(20)   NOT NULL,
