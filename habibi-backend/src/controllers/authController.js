@@ -85,7 +85,7 @@ const loginUser = async (req, res) => {
     const identifier = (email || '').trim();
 
     const result = await pool.query(
-      "SELECT * FROM users WHERE email=$1 OR phone_number=$1",
+      "SELECT * FROM users WHERE email=$1",
       [identifier]
     );
 

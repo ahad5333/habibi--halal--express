@@ -57,7 +57,7 @@ export const adminAPI = {
   updateMenu:  (id, fd) => {
     return fetch(`${BASE}/api/admin/menus/${id}`, {
       method: 'PATCH', body: fd,
-      headers: token() ? { Authorization: `Bearer ${token()}` } : {},
+      credentials: 'include',
     }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.message || r.status); return d; });
   },
   deleteMenu:  (id) => req(`/api/admin/menus/${id}`, { method: 'DELETE' }),
