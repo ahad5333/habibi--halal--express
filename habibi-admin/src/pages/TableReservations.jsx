@@ -117,9 +117,9 @@ export default function TableReservations() {
             style={{
               padding: '.38rem .9rem',
               borderRadius: '20px',
-              border: filter === f ? '1px solid #E5B64E' : '1px solid #2a2a2a',
-              background: filter === f ? 'rgba(229,182,78,0.1)' : 'transparent',
-              color: filter === f ? '#E5B64E' : '#6b7280',
+              border: filter === f ? '1px solid #2563eb' : '1px solid #d1d5db',
+              background: filter === f ? 'rgba(37,99,235,0.08)' : 'transparent',
+              color: filter === f ? '#2563eb' : '#374151',
               fontWeight: 600,
               fontSize: '.78rem',
               cursor: 'pointer',
@@ -162,7 +162,7 @@ export default function TableReservations() {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, color: '#f1f1f1', fontSize: '.9rem' }}>{r.name}</span>
+                      <span style={{ fontWeight: 700, color: '#111827', fontSize: '.9rem' }}>{r.name}</span>
                       <span style={{
                         padding: '.15rem .55rem',
                         borderRadius: '20px',
@@ -184,16 +184,16 @@ export default function TableReservations() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '.85rem', marginTop: '.3rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                      <span style={{ fontSize: '.78rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                         <MapPin size={11} /> {r.event_type || '—'}
                       </span>
-                      <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                      <span style={{ fontSize: '.78rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                         <CalendarDays size={11} /> {fmtDate(r.scheduled_date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                      <span style={{ fontSize: '.78rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                         <Clock size={11} /> {parsed.time || '—'}
                       </span>
-                      <span style={{ fontSize: '.78rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                      <span style={{ fontSize: '.78rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                         <Users size={11} /> {r.party_size} {r.party_size === 1 ? 'guest' : 'guests'}
                       </span>
                     </div>
@@ -225,7 +225,7 @@ export default function TableReservations() {
 
                 {/* Expanded detail */}
                 {isOpen && (
-                  <div style={{ borderTop: '1px solid #1f1f1f', padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '.75rem 1.5rem' }}>
+                  <div style={{ borderTop: '1px solid #e5e7eb', padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '.75rem 1.5rem' }}>
                     <Detail label="Contact"   value={contact} />
                     <Detail label="Ref #"     value={`#TBL-${String(r.id).padStart(4, '0')}`} mono />
                     <Detail label="Submitted" value={fmtSubmitted(r.created_at)} />
@@ -250,14 +250,14 @@ export default function TableReservations() {
               {modal.action === 'confirm'
                 ? <CheckCircle2 size={18} style={{ color: '#22c55e' }} />
                 : <XCircle size={18} style={{ color: '#ef4444' }} />}
-              <span style={{ fontWeight: 700, color: '#f1f1f1', fontSize: '.95rem' }}>
+              <span style={{ fontWeight: 700, color: '#111827', fontSize: '.95rem' }}>
                 {modal.action === 'confirm' ? 'Confirm' : 'Cancel'} reservation for <em style={{ fontStyle: 'normal', color: '#E5B64E' }}>{modal.name}</em>?
               </span>
             </div>
 
             {modal.action === 'confirm' && (
               <div>
-                <label style={{ fontSize: '.75rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.05em', display: 'block', marginBottom: '.35rem' }}>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '.05em', display: 'block', marginBottom: '.35rem' }}>
                   Assign Table &nbsp;<span style={{ fontWeight: 400, textTransform: 'none', color: '#6b7280' }}>(optional)</span>
                 </label>
                 <input
@@ -312,7 +312,7 @@ function Detail({ label, value, color, mono, full }) {
   return (
     <div style={full ? { gridColumn: '1/-1' } : {}}>
       <p style={{ fontSize: '.72rem', color: '#6b7280', margin: '0 0 .2rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</p>
-      <p style={{ fontSize: '.85rem', color: color || '#d1d5db', margin: 0, fontFamily: mono ? 'monospace' : undefined }}>{value}</p>
+      <p style={{ fontSize: '.85rem', color: color || '#111827', margin: 0, fontFamily: mono ? 'monospace' : undefined }}>{value}</p>
     </div>
   );
 }

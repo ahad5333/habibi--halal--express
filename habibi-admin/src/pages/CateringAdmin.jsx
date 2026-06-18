@@ -110,18 +110,18 @@ export default function CateringAdmin() {
                 >
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'center',gap:'.5rem',flexWrap:'wrap'}}>
-                      <span style={{fontWeight:700,color:'#f1f1f1',fontSize:'.9rem'}}>{q.name}</span>
+                      <span style={{fontWeight:700,color:'#111827',fontSize:'.9rem'}}>{q.name}</span>
                       <span className={`badge ${badge.cls}`}>{badge.label}</span>
                       {q.invoice_sent && <span className="badge badge-muted">Invoice Sent</span>}
                     </div>
                     <div style={{display:'flex',gap:'1rem',marginTop:'.25rem',flexWrap:'wrap'}}>
-                      <span style={{fontSize:'.78rem',color:'#6b7280',display:'flex',alignItems:'center',gap:'.3rem'}}>
+                      <span style={{fontSize:'.78rem',color:'#374151',display:'flex',alignItems:'center',gap:'.3rem'}}>
                         <Users size={12}/> {q.party_size || q.guest_count} guests
                       </span>
-                      <span style={{fontSize:'.78rem',color:'#6b7280',display:'flex',alignItems:'center',gap:'.3rem'}}>
+                      <span style={{fontSize:'.78rem',color:'#374151',display:'flex',alignItems:'center',gap:'.3rem'}}>
                         <CalendarDays size={12}/> {fmtDateTime(q.scheduled_date)}
                       </span>
-                      <span style={{fontSize:'.78rem',color:'#E5B64E',fontWeight:700}}>
+                      <span style={{fontSize:'.78rem',color:'#2563eb',fontWeight:700}}>
                         Est. {fmt(q.estimated_total)}
                       </span>
                     </div>
@@ -142,7 +142,7 @@ export default function CateringAdmin() {
 
                 {/* Expanded detail */}
                 {isOpen && (
-                  <div style={{borderTop:'1px solid #1f1f1f',padding:'1rem 1.25rem',display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'.75rem 1.5rem'}}>
+                  <div style={{borderTop:'1px solid #e5e7eb',padding:'1rem 1.25rem',display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'.75rem 1.5rem'}}>
                     <Detail label="Email"        value={q.email} />
                     <Detail label="Phone"        value={q.phone || '—'} />
                     <Detail label="Event Type"   value={q.event_type || '—'} />
@@ -165,12 +165,12 @@ export default function CateringAdmin() {
           <div className="card" style={{width:'100%',maxWidth:'460px',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
             <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
               <Mail size={18} style={{color:'#E5B64E'}} />
-              <span style={{fontWeight:700,color:'#f1f1f1'}}>Send Invoice to {invoiceModal.name}</span>
+              <span style={{fontWeight:700,color:'#111827'}}>Send Invoice to {invoiceModal.name}</span>
             </div>
-            <p style={{fontSize:'.82rem',color:'#6b7280',margin:0}}>{invoiceModal.email}</p>
+            <p style={{fontSize:'.82rem',color:'#374151',margin:0}}>{invoiceModal.email}</p>
 
             <div>
-              <label style={{fontSize:'.75rem',fontWeight:600,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:'.35rem'}}>
+              <label style={{fontSize:'.75rem',fontWeight:600,color:'#374151',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:'.35rem'}}>
                 Quoted Price *
               </label>
               <input
@@ -185,7 +185,7 @@ export default function CateringAdmin() {
             </div>
 
             <div>
-              <label style={{fontSize:'.75rem',fontWeight:600,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:'.35rem'}}>
+              <label style={{fontSize:'.75rem',fontWeight:600,color:'#374151',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:'.35rem'}}>
                 Admin Notes / Invoice Details
               </label>
               <textarea
@@ -221,7 +221,7 @@ function Detail({ label, value, color, mono, full, style: extraStyle }) {
   return (
     <div style={full ? {gridColumn:'1/-1'} : {}}>
       <p style={{fontSize:'.72rem',color:'#6b7280',margin:'0 0 .2rem',textTransform:'uppercase',letterSpacing:'.05em'}}>{label}</p>
-      <p style={{fontSize:'.85rem',color:color||'#d1d5db',margin:0,fontFamily:mono?'monospace':undefined,...extraStyle}}>{value}</p>
+      <p style={{fontSize:'.85rem',color:color||'#111827',margin:0,fontFamily:mono?'monospace':undefined,...extraStyle}}>{value}</p>
     </div>
   );
 }
