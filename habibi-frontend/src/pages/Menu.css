@@ -1174,27 +1174,11 @@
   /* 3-line descriptions on mobile — better fills the wider card row */
   .menu-item-row-desc { -webkit-line-clamp: 3; }
 
-  /* ── Definitive overflow fix ──────────────────────────────────────────────
-     ROOT CAUSE 1: the global rule ".menu-item-row-img-wrap { overflow: visible
-       !important }" at the bottom of this file appears AFTER all media queries,
-       so it wins the specificity tie and overrides every overflow:hidden we set
-       inside a breakpoint. Fix: use a 3-class chain (specificity 0,3,0) which
-       beats the single-class global rule (0,1,0) regardless of source order.
-     ROOT CAUSE 2: filter:url(#smoke-warp) blur(7px) has a 200%×200% paint
-       region and creates compositing layers that Android Chrome/MIUI WebView
-       does NOT clip via ancestor clip-path. Removing filter entirely means
-       overflow:hidden becomes the reliable clip boundary it always should be.
-     ROOT CAUSE 3: rightmost puffs (s4 left:56%, s5 left:68%) exceed even a
-       68px img-wrap before any filter bleed; overflow:hidden clips them cleanly.
-  ─────────────────────────────────────────────────────────────────────────── */
-  .menu-item-row .menu-item-row-right .menu-item-row-img-wrap {
-    overflow: hidden !important;
-    clip-path: none !important;
-  }
-
-  /* Remove ALL CSS filter from mobile effects. No filter = no paint bleed =
-     overflow:hidden works on every browser and device. The radial-gradient
-     backgrounds still give smoke/frost a soft, layered look without filter. */
+  /* On mobile the global overflow:visible for img-wrap is now scoped to
+     @media (min-width:901px), so the base overflow:hidden (line ~529) applies
+     naturally here — no overrides needed.
+     Remove all CSS filter from effects so the contained smoke/frost/fire
+     animations have zero paint bleed outside the img-wrap. */
   .menu-item-row .item-fx-steam .smoke,
   .menu-item-row .item-fx-frost .frost-particle,
   .menu-item-row .item-fx-fire .flame,
@@ -1336,9 +1320,13 @@
   overflow: visible !important;
 }
 
-/* Allow smoke/frost effects to float above the image wrap */
-.menu-item-row-img-wrap {
-  overflow: visible !important;
+/* Allow smoke/frost effects to float above the image wrap — desktop only.
+   On mobile, the base overflow:hidden (line ~529) must stay active so effects
+   don't cause horizontal page overflow. */
+@media (min-width: 901px) {
+  .menu-item-row-img-wrap {
+    overflow: visible;
+  }
 }
 
 /* Ensure the img elements still clip to their borders properly */
