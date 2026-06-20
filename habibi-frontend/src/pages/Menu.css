@@ -1163,11 +1163,15 @@
   .menu-main-wrap { overflow-x: hidden; }
 
   .menu-item-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
     margin: 0;
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     gap: 0.625rem;
-    overflow: visible;
+    overflow: hidden;
+    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -1185,6 +1189,17 @@
   .menu-item-row .item-fx-fire .spark        { filter: none !important; }
   .menu-item-row .item-fx-fire::before,
   .menu-item-row .item-fx-steam::before      { filter: none !important; }
+
+  /* The global @keyframes smokeRiseA/B and sparkRiseHigh (defined later in this
+     file) override the mobile versions above because CSS @keyframes follow
+     source order — last definition wins. Those global versions use large
+     translateX drift (up to 12 px) and scale up to 2.20×, which causes the
+     smoke to overflow the img-wrap and bleed off-screen on mobile.
+     Disabling the animation entirely on mobile rows is the reliable fix:
+     smoke/spark elements already have opacity:0 as their base CSS property,
+     so they stay invisible with no animation — no visual change, no overflow. */
+  .menu-item-row .item-fx-steam .smoke,
+  .menu-item-row .item-fx-fire .spark        { animation: none !important; }
 
   .mf-img-wrap { overflow: visible !important; }
 
