@@ -395,7 +395,7 @@
 /* ── Hero text ───────────────────────────────────────────────── */
 .ot-hero-title {
   font-family: var(--font-serif);
-  font-size: 1.85rem;
+  font-size: 1.75rem;
   color: var(--color-text-main);
   line-height: 1.3;
   position: relative;
@@ -1204,7 +1204,7 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
 }
 .ot-map .leaflet-popup-tip { background: #141414; }
