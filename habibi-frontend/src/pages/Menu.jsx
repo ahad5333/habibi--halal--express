@@ -293,64 +293,6 @@ const Menu = () => {
     setBowlBase(''); setBowlProtein(''); setBowlTopping(''); setBowlSauce('');
   };
 
-  // ── Platter card (image on top, used only for Platter category) ──
-  const renderPlatterCard = (item, idx) => {
-    const locStatus = locAvailMap[item.id] || 'available';
-    if (locStatus === 'inactive') return null;
-    const imgSrc  = item.image || item.image_url || categoryFallback(item);
-    const name    = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
-    const price   = parseFloat(item.price || 0);
-    const isFav   = favoriteIds.has(item.id);
-    const isSoldOut = locStatus === 'sold_out';
-    return (
-      <div
-        key={item.id}
-        className={`menu-card${isSoldOut ? ' menu-item-sold-out' : ''}`}
-        onClick={() => !isSoldOut && handleCardClick(item)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && handleCardClick(item)}
-      >
-        <div className="menu-card-img-wrap">
-          <img
-            src={imgSrc}
-            alt={name}
-            className="menu-card-img"
-            loading="lazy"
-            decoding="async"
-            onError={e => { e.target.onerror = null; e.target.src = categoryFallback(item); }}
-          />
-          <span className="menu-card-cat">Platter</span>
-          {isLoggedIn && (
-            <button
-              className={`menu-fav-btn${isFav ? ' active' : ''}`}
-              onClick={e => toggleFavorite(e, item.id)}
-              aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
-            >
-              <Heart size={14} fill={isFav ? 'currentColor' : 'none'} />
-            </button>
-          )}
-          {isSoldOut && <div className="menu-item-sold-out-overlay">SOLD OUT</div>}
-        </div>
-        <div className="menu-card-body">
-          {item.is_spicy && <span className="menu-item-spicy-pill" style={{marginBottom:'0.3rem',display:'inline-block'}}>Spicy</span>}
-          <h3 className="menu-card-name">{name}</h3>
-          {item.description && <p className="menu-card-desc">{item.description}</p>}
-          <div className="menu-card-footer">
-            <span className="menu-card-price">${price.toFixed(2)}</span>
-            <button
-              className="menu-card-add"
-              onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
-              aria-label={`Add ${name}`}
-            >
-              <ShoppingCart size={13} style={{marginRight:'0.25rem'}} /> Add
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // ── Item row (UberEats-style horizontal) ───────────────────────
   const renderItemRow = (item, idx) => {
     const locStatus = locAvailMap[item.id] || 'available';
@@ -836,10 +778,6 @@ const Menu = () => {
             <button className="menu-empty-reset" onClick={() => { setSearch(''); handleCatClick('all'); }}>
               Show all items
             </button>
-          </div>
-        ) : activeCategory === 'platter' ? (
-          <div className="menu-grid menu-grid-platter">
-            {filtered.map((item, idx) => renderPlatterCard(item, idx))}
           </div>
         ) : activeCategory !== 'byo' ? (
           <div className="menu-list">
