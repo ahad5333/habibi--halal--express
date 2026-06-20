@@ -533,6 +533,7 @@
   min-width: 112px;
   border-radius: 10px;
   overflow: hidden;
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* iOS Safari overflow:hidden fix */
   background: linear-gradient(135deg, #2c2416 0%, #1e1a10 100%);
   border: 1px solid rgba(249,115,22,0.18);
   flex-shrink: 0;
@@ -1178,28 +1179,11 @@
   /* 3-line descriptions on mobile — better fills the wider card row */
   .menu-item-row-desc { -webkit-line-clamp: 3; }
 
-  /* On mobile the global overflow:visible for img-wrap is now scoped to
-     @media (min-width:901px), so the base overflow:hidden (line ~529) applies
-     naturally here — no overrides needed.
-     Remove all CSS filter from effects so the contained smoke/frost/fire
-     animations have zero paint bleed outside the img-wrap. */
-  .menu-item-row .item-fx-steam .smoke,
-  .menu-item-row .item-fx-frost .frost-particle,
-  .menu-item-row .item-fx-fire .flame,
-  .menu-item-row .item-fx-fire .spark        { filter: none !important; }
-  .menu-item-row .item-fx-fire::before,
-  .menu-item-row .item-fx-steam::before      { filter: none !important; }
-
-  /* The global @keyframes smokeRiseA/B and sparkRiseHigh (defined later in this
-     file) override the mobile versions above because CSS @keyframes follow
-     source order — last definition wins. Those global versions use large
-     translateX drift (up to 12 px) and scale up to 2.20×, which causes the
-     smoke to overflow the img-wrap and bleed off-screen on mobile.
-     Disabling the animation entirely on mobile rows is the reliable fix:
-     smoke/spark elements already have opacity:0 as their base CSS property,
-     so they stay invisible with no animation — no visual change, no overflow. */
-  .menu-item-row .item-fx-steam .smoke,
-  .menu-item-row .item-fx-fire .spark        { animation: none !important; }
+  /* Hide all visual effects (steam/frost/fire) on mobile item rows.
+     The global @keyframes smokeRiseA/B use translateX up to 12px and scale
+     up to 2.20×, which escape overflow:hidden on iOS Safari via GPU-layer
+     bypass. display:none is the only reliable fix — no element, no overflow. */
+  .menu-item-row .item-fx { display: none !important; }
 
   .mf-img-wrap { overflow: visible !important; }
 
