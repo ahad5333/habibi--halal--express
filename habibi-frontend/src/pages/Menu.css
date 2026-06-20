@@ -533,7 +533,8 @@
   min-width: 112px;
   border-radius: 10px;
   overflow: hidden;
-  -webkit-mask-image: -webkit-radial-gradient(white, black); /* iOS Safari overflow:hidden fix */
+  clip-path: inset(0 round 10px); /* iOS Safari: clip-path cannot be bypassed by GPU-composited animations unlike overflow:hidden */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   background: linear-gradient(135deg, #2c2416 0%, #1e1a10 100%);
   border: 1px solid rgba(249,115,22,0.18);
   flex-shrink: 0;
@@ -1195,12 +1196,6 @@
   /* 3-line descriptions on mobile */
   .menu-item-row-desc { -webkit-line-clamp: 3; }
 
-  /* Hide all visual effects (steam/frost/fire) on mobile item rows.
-     The global @keyframes smokeRiseA/B use translateX up to 12px and scale
-     up to 2.20×, which escape overflow:hidden on iOS Safari via GPU-layer
-     bypass. display:none is the only reliable fix — no element, no overflow. */
-  .menu-item-row .item-fx { display: none !important; }
-
   .mf-img-wrap { overflow: visible !important; }
 
   /* Smoke rises straight up, scale capped at 1.0 — contained within the
@@ -1516,6 +1511,7 @@
   animation-delay: 0.15s;
 }
 
+@media (min-width: 901px) {
 @keyframes sparkRiseHigh {
   0% {
     transform: translateY(0) translateX(0) scale(0.5);
@@ -1532,6 +1528,7 @@
     opacity: 0;
   }
 }
+} /* end @media (min-width: 901px) */
 
 /* ══════════════════════════════════════════════════════════════
    REALISTIC BILLOWING SMOKE — wide soft blobs, scale + drift
@@ -1665,6 +1662,12 @@
   animation-delay: 1.45s;
 }
 
+/* Desktop-only: full drifting smoke with translateX and large scale.
+   Scoped to ≥901px so the mobile-safe versions (inside max-width:900px above)
+   are not overridden by these — CSS @keyframes last-definition-wins globally
+   even across media queries, so this must come in a later desktop-only block. */
+@media (min-width: 901px) {
+
 /* Rise A — drifts right, crosses back left, expands */
 @keyframes smokeRiseA {
   0%   { transform: translateY(0)      translateX(0)     scale(0.35); opacity: 0;    }
@@ -1684,6 +1687,8 @@
   82%  { transform: translateY(-122px) translateX(-8px)  scale(1.85); opacity: 0.13; }
   100% { transform: translateY(-160px) translateX(-2px)  scale(2.25); opacity: 0;    }
 }
+
+} /* end @media (min-width: 901px) */
 
 /* ── FROST EFFECT (Cold Items) ── */
 .item-fx-frost {
