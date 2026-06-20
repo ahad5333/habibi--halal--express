@@ -151,7 +151,7 @@ function App() {
       <ScrollToTop />
       <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0a0a' }} />}>
         <Routes>
-          <Route path="/driver"  element={<InternalGuard><DriverView /></InternalGuard>} />
+          <Route path="/driver"  element={<DriverView />} />
           <Route path="/kitchen" element={<InternalGuard><KitchenDisplay /></InternalGuard>} />
           <Route path="*" element={<Layout />} />
         </Routes>

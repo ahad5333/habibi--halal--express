@@ -326,10 +326,6 @@ export const partnersAPI = {
     fetch(`${BASE_URL}/api/partners/apply`, {
       method: 'POST',
       body: formData, // FormData (multipart) — do NOT set Content-Type manually
-      headers: (() => {
-        const token = localStorage.getItem('habibi_token');
-        return token ? { Authorization: `Bearer ${token}` } : {};
-      })(),
       credentials: 'include',
     }).then(async (res) => {
       const data = await res.json().catch(() => ({}));
