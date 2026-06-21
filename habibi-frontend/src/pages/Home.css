@@ -1170,6 +1170,128 @@
 }
 
 
+/* ── Orbital decorations ── */
+
+.byo-orbit-ring {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(229,182,78,0.2);
+  animation: byoRingCCW 28s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes byoRingCCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+.byo-orbiter {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.byo-orbiter-1 {
+  width: 316px;
+  height: 316px;
+  animation: byoOrbit 10s linear infinite;
+}
+.byo-orbiter-1::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #F97316;
+  box-shadow: 0 0 14px rgba(249,115,22,0.95), 0 0 4px rgba(249,115,22,1);
+}
+.byo-orbiter-2 {
+  width: 298px;
+  height: 298px;
+  animation: byoOrbit 15s linear infinite reverse;
+  animation-delay: -5s;
+}
+.byo-orbiter-2::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px rgba(74,222,128,0.95);
+}
+.byo-orbiter-3 {
+  width: 328px;
+  height: 328px;
+  animation: byoOrbit 20s linear infinite;
+  animation-delay: -9s;
+}
+.byo-orbiter-3::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -4px;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e5b64e;
+  box-shadow: 0 0 9px rgba(229,182,78,1);
+}
+@keyframes byoOrbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.byo-chip {
+  position: absolute;
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(10,10,10,0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(229,182,78,0.28);
+  color: #f0ede8;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: 0.03em;
+  z-index: 3;
+}
+.byo-chip-1 { top: 62px;    left: -72px;  animation: byoChipFloat 3.4s ease-in-out infinite; }
+.byo-chip-2 { bottom: 68px; left: -78px;  animation: byoChipFloat 3.9s ease-in-out infinite; animation-delay: 1s; }
+.byo-chip-3 { top: 72px;    right: -76px; animation: byoChipFloat 3.6s ease-in-out infinite; animation-delay: 0.5s; }
+.byo-chip-4 { bottom: 78px; right: -82px; animation: byoChipFloat 4.1s ease-in-out infinite; animation-delay: 1.5s; }
+@keyframes byoChipFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+
+.byo-glint {
+  position: absolute;
+  font-size: 0.72rem;
+  color: rgba(229,182,78,0.7);
+  pointer-events: none;
+  z-index: 3;
+  line-height: 1;
+  animation: byoGlint 2.8s ease-in-out infinite;
+}
+.byo-glint-1 { top: 22px;    left: 42px;   animation-delay: 0s;    font-size: 0.9rem; }
+.byo-glint-2 { top: 38px;    right: 38px;  animation-delay: 0.9s; }
+.byo-glint-3 { bottom: 32px; left: 36px;   animation-delay: 1.8s; }
+.byo-glint-4 { bottom: 24px; right: 34px;  animation-delay: 2.5s; font-size: 0.9rem; }
+@keyframes byoGlint {
+  0%, 100% { opacity: 0;  transform: scale(0.4) rotate(0deg); }
+  50%       { opacity: 1; transform: scale(1.3) rotate(30deg); }
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .byo-strip-inner {
@@ -1186,6 +1308,11 @@
   .byo-strip-right { width: 260px; height: 260px; }
   .byo-bowl-crop { width: 200px; height: 200px; }
   .byo-strip-title { font-size: 2.8rem; }
+  .byo-chip { display: none; }
+  .byo-orbit-ring { width: 248px; height: 248px; }
+  .byo-orbiter-1 { width: 232px; height: 232px; }
+  .byo-orbiter-2 { width: 218px; height: 218px; }
+  .byo-orbiter-3 { width: 244px; height: 244px; }
 }
 
 @media (max-width: 540px) {
@@ -1194,6 +1321,9 @@
   .byo-strip-desc { font-size: 0.85rem; }
   .byo-strip-right { width: 200px; height: 200px; }
   .byo-bowl-crop { width: 160px; height: 160px; }
+  .byo-orbiter-1, .byo-orbiter-2, .byo-orbiter-3 { display: none; }
+  .byo-orbit-ring { width: 192px; height: 192px; }
+  .byo-glint { display: none; }
 }
 
 /* ── Personalized Bowls ───────────────────────────────────── */

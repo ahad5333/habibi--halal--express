@@ -427,9 +427,32 @@ const Home = () => {
             </Link>
           </div>
 
-          {/* Right — floating bowl image */}
+          {/* Right — floating bowl image with creative orbital decorations */}
           <div className="byo-strip-right">
             <div className="byo-bowl-glow" aria-hidden="true" />
+
+            {/* Counter-rotating dashed outer ring */}
+            <div className="byo-orbit-ring" aria-hidden="true" />
+
+            {/* Orbiting glow dots */}
+            <div className="byo-orbiter byo-orbiter-1" aria-hidden="true" />
+            <div className="byo-orbiter byo-orbiter-2" aria-hidden="true" />
+            <div className="byo-orbiter byo-orbiter-3" aria-hidden="true" />
+
+            {/* Floating ingredient chips — left side */}
+            <div className="byo-chip byo-chip-1" aria-hidden="true">🌿 Fresh Base</div>
+            <div className="byo-chip byo-chip-2" aria-hidden="true">🥩 Halal Protein</div>
+
+            {/* Floating ingredient chips — right side */}
+            <div className="byo-chip byo-chip-3" aria-hidden="true">🔥 Bold Flavour</div>
+            <div className="byo-chip byo-chip-4" aria-hidden="true">✨ 100+ Combos</div>
+
+            {/* Sparkle glints */}
+            <span className="byo-glint byo-glint-1" aria-hidden="true">✦</span>
+            <span className="byo-glint byo-glint-2" aria-hidden="true">✦</span>
+            <span className="byo-glint byo-glint-3" aria-hidden="true">✦</span>
+            <span className="byo-glint byo-glint-4" aria-hidden="true">✦</span>
+
             <div className="byo-bowl-crop">
               <img src="/images/byo-bowl-3d.webp" alt="Build Your Own Bowl" className="byo-strip-icon" />
             </div>
