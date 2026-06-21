@@ -978,7 +978,7 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #F97316;
+  color: #4ade80;
 }
 
 .byo-strip-eyebrow-dot {
@@ -986,7 +986,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #F97316;
+  background: #4ade80;
   animation: byo-dot-pulse 2s ease-in-out infinite;
 }
 
@@ -1074,7 +1074,7 @@
 .byo-step-label {
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.75);
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -1102,6 +1102,7 @@
 .byo-strip-btn:hover {
   transform: translateY(-2px);
   background: #ea6c00;
+  color: #000000;
   box-shadow: 0 8px 28px rgba(249,115,22,0.5);
 }
 
