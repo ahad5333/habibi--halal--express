@@ -70,7 +70,9 @@ function AssignModal({ drivers, onAssign, onClose }) {
                 <option value="">— Select driver —</option>
                 {drivers.map(d => (
                   <option key={d.id} value={d.id}>
-                    {d.name} {d.active_assignments > 0 ? `(${d.active_assignments} active)` : '(available)'}
+                    {d.name}
+                    {d.is_on_duty ? ' 🟢' : ' 🔴'}
+                    {d.active_assignments > 0 ? ` (${d.active_assignments} active)` : ' (available)'}
                   </option>
                 ))}
               </select>
@@ -155,13 +157,18 @@ function DDCard({ delivery, onDispatch, onCancel }) {
 
 // ── In-House Assignment Card ────────────────────────────────────────
 function AssignCard({ assignment, onStatusChange }) {
-  const badge = STATUS_COLORS[assignment.status] || 'dd-badge-muted';
+  const badge  = STATUS_COLORS[assignment.status] || 'dd-badge-muted';
   const hasGPS = assignment.current_lat && assignment.current_lng;
   const mapsUrl = hasGPS
     ? `https://www.google.com/maps?q=${assignment.current_lat},${assignment.current_lng}`
     : assignment.delivery_address
       ? `https://www.google.com/maps/search/${encodeURIComponent(assignment.delivery_address)}`
       : null;
+  const tip       = parseFloat(assignment.tip_amount || 0);
+  const proofUrl  = assignment.proof_photo_url
+    ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${assignment.proof_photo_url}`
+    : null;
+  const [proofOpen, setProofOpen] = useState(false);
 
   return (
     <div className="dd-card">
@@ -174,15 +181,40 @@ function AssignCard({ assignment, onStatusChange }) {
       </div>
 
       <div className="dd-card-body">
-        <div className="dd-info-row"><Navigation size={13}/> Driver: <strong>{assignment.driver_name}</strong></div>
+        <div className="dd-info-row"><Navigation size={13}/> Driver: <strong>{assignment.driver_name}</strong>
+          {assignment.accepted_at && <span className="dd-accepted-pill">✓ accepted</span>}
+        </div>
         {assignment.driver_phone_number && <div className="dd-info-row"><Phone size={13}/> {assignment.driver_phone_number}</div>}
         <div className="dd-info-row"><MapPin size={13}/> {assignment.delivery_address || '—'}</div>
-        {assignment.customer_name  && <div className="dd-info-row"><User size={13}/> {assignment.customer_name}</div>}
+        {assignment.customer_name && <div className="dd-info-row"><User size={13}/> {assignment.customer_name}</div>}
+        {tip > 0 && (
+          <div className="dd-info-row dd-tip-row">
+            💵 Tip: <strong style={{ color: '#4ade80' }}>${tip.toFixed(2)}</strong>
+          </div>
+        )}
+        {assignment.rejection_reason && (
+          <div className="dd-info-row dd-rejection-note">
+            ⚠ Rejected: {assignment.rejection_reason}
+          </div>
+        )}
         {hasGPS && (
           <div className="dd-info-row dd-gps-live">
             <span className="dd-gps-dot"/>
             GPS: {parseFloat(assignment.current_lat).toFixed(5)}, {parseFloat(assignment.current_lng).toFixed(5)}
             <span className="dd-gps-time">{assignment.last_location_update ? elapsed(assignment.last_location_update) : ''}</span>
+          </div>
+        )}
+        {proofUrl && (
+          <div className="dd-proof-row">
+            <button className="dd-btn-outline dd-btn-sm" onClick={() => setProofOpen(v => !v)}>
+              📷 {proofOpen ? 'Hide' : 'View'} Proof Photo
+            </button>
+            {proofOpen && (
+              <div className="dd-proof-img-wrap">
+                <img src={proofUrl} alt="Delivery proof" className="dd-proof-img" />
+                {assignment.proof_note && <p className="dd-proof-note">{assignment.proof_note}</p>}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -197,10 +229,7 @@ function AssignCard({ assignment, onStatusChange }) {
           Driver View
         </a>
         {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
-          <button
-            className="dd-btn-success dd-btn-sm"
-            onClick={() => onStatusChange(assignment.id, 'delivered')}
-          >
+          <button className="dd-btn-success dd-btn-sm" onClick={() => onStatusChange(assignment.id, 'delivered')}>
             <CheckCircle size={12}/> Mark Delivered
           </button>
         )}
@@ -322,6 +351,12 @@ export default function DeliveryDispatch() {
         a.id === assignment_id ? { ...a, current_lat: lat, current_lng: lng } : a
       ));
     });
+    // Driver went on/off duty — refresh driver list
+    socket.on('driver_duty_change', ({ driver_id, on_duty }) => {
+      setDrivers(prev => prev.map(d => d.id === driver_id ? { ...d, is_on_duty: on_duty } : d));
+    });
+    // Driver rejected assignment — reload so admin can reassign
+    socket.on('assignment_rejected', () => { load(); });
     return () => socket.disconnect();
   }, [load]);
 

@@ -1,6 +1,9 @@
-﻿const express   = require('express');
+const express   = require('express');
 const router    = express.Router();
 const rateLimit = require('express-rate-limit');
+const multer    = require('multer');
+const path      = require('path');
+const crypto    = require('crypto');
 const protect   = require('../middleware/authMiddleware');
 const admin     = require('../middleware/adminMiddleware');
 
@@ -12,25 +15,51 @@ const gpsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Multer for proof-of-delivery photos
+const proofStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../../public/uploads/proofs');
+    require('fs').mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `proof_${req.params.assignment_id}_${Date.now()}${ext}`);
+  },
+});
+const proofUpload = multer({
+  storage: proofStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only images allowed'));
+  },
+});
+
 const {
   getAssignments,
   assignDriver,
+  respondToAssignment,
   getDriverAssignment,
   getAssignmentForOrder,
   updateDriverGPS,
   updateAssignmentStatus,
+  uploadProof,
+  setDriverDuty,
   getDeliveryDrivers,
   calculateDeliveryFee,
 } = require('../controllers/dispatchController');
 
-// Driver-facing routes — require either admin JWT or a valid driver_secret token
-// Driver secret: sha256(DRIVER_SECRET_SALT + driver_id), passed as X-Driver-Token header
+// ── Driver auth middleware ──────────────────────────────────────────
+// Accepts admin/driver JWT (Bearer) OR HMAC token in X-Driver-Token header.
+// Token = HMAC-SHA256(DRIVER_SECRET_SALT, driver_id) — embedded in SMS link.
 function driverOrAdmin(req, res, next) {
-  // Allow if valid admin JWT
+  // 1. JWT Bearer token
   const authHeader = req.headers.authorization || '';
   if (authHeader.startsWith('Bearer ')) {
     try {
-      const jwt = require('jsonwebtoken');
+      const jwt     = require('jsonwebtoken');
       const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
       if (decoded.role === 'admin' || decoded.role === 'driver') {
         req.user = decoded;
@@ -38,34 +67,41 @@ function driverOrAdmin(req, res, next) {
       }
     } catch (_) {}
   }
-  // Allow if valid driver token: HMAC(DRIVER_SECRET_SALT, driver_id)
+
+  // 2. HMAC token from X-Driver-Token header
   const driverToken = req.headers['x-driver-token'] || '';
-  const driverId    = req.params.driver_id || req.body?.driver_id || '';
-  const salt        = process.env.DRIVER_SECRET_SALT;
-  if (salt && driverId && driverToken) {
-    const crypto   = require('crypto');
-    const expected = crypto.createHmac('sha256', salt).update(String(driverId)).digest('hex');
-    if (crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected))) {
-      return next();
-    }
+  const driverId    = req.params.driver_id || req.params.assignment_id
+                      ? (req.params.driver_id || req.body?.driver_id || '')
+                      : (req.body?.driver_id || '');
+  const salt        = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
+  if (driverId && driverToken) {
+    try {
+      const expected = crypto.createHmac('sha256', salt).update(String(driverId)).digest('hex');
+      if (crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected))) {
+        return next();
+      }
+    } catch (_) {}
   }
+
   return res.status(401).json({ message: 'Driver authentication required' });
 }
 
-router.get('/driver/:driver_id',                    driverOrAdmin, getDriverAssignment);
-router.patch('/assignments/:assignment_id/gps',     gpsLimiter, driverOrAdmin, updateDriverGPS);
-router.patch('/assignments/:assignment_id/status',  driverOrAdmin, updateAssignmentStatus);
+// ── Driver-facing routes ───────────────────────────────────────────
+router.get   ('/driver/:driver_id',                driverOrAdmin,              getDriverAssignment);
+router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  updateDriverGPS);
+router.patch ('/assignments/:id/status',           driverOrAdmin,              updateAssignmentStatus);
+router.patch ('/assignments/:id/respond',          driverOrAdmin,              respondToAssignment);
+router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.single('photo'), uploadProof);
+router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 
-// Public — checkout fee calculation
-router.post('/calculate-fee', calculateDeliveryFee);
+// ── Public routes ──────────────────────────────────────────────────
+router.post('/calculate-fee',         calculateDeliveryFee);
+router.get ('/order/:order_number',   getAssignmentForOrder);
 
-// Public — customer order tracking page
-router.get('/order/:order_number', getAssignmentForOrder);
-
-// Admin-protected
+// ── Admin-only routes ──────────────────────────────────────────────
 router.use(protect, admin);
-router.get('/assignments',   getAssignments);
-router.get('/drivers',       getDeliveryDrivers);
+router.get ('/assignments',  getAssignments);
+router.get ('/drivers',      getDeliveryDrivers);
 router.post('/assign',       assignDriver);
 
 // Scheduled orders waiting for dispatch
@@ -91,4 +127,3 @@ router.get('/scheduled', async (req, res) => {
 });
 
 module.exports = router;
-

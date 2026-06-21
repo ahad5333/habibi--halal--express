@@ -902,6 +902,21 @@ const createTables = async () => {
     await client.query("COMMIT");
     console.log("✅ All tables created/verified");
 
+    // ── delivery_assignments: new columns for proof, tip, GPS trail, accept/reject ──
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS tip_amount       NUMERIC(10,2)`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS gps_trail        JSONB        DEFAULT '[]'`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS accepted_at      TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS rejected_at      TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS rejection_reason TEXT`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS proof_photo_url  TEXT`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS proof_note       TEXT`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS delivery_note    TEXT`);
+    await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_status_check`);
+    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','delivered','cancelled'))`);
+
+    // ── staff_members: on-duty toggle for delivery drivers ─────────
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS is_on_duty BOOLEAN DEFAULT FALSE`);
+
     // ── Seed default data (only if tables are empty) ──────────────
     await seedDefaults();
 
