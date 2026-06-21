@@ -67,6 +67,7 @@ const optionalAuth = (req, res, next) => {
 };
 
 module.exports = protect;
+module.exports.protect = protect;
 module.exports.admin = admin;
 module.exports.optionalAuth = optionalAuth;
 module.exports.revokeToken = revokeToken;
