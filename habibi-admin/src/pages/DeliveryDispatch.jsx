@@ -292,11 +292,13 @@ export default function DeliveryDispatch() {
   const [scheduled, setScheduled] = useState([]);
   const [showAssign, setShowAssign] = useState(false);
   const [loading, setLoading]     = useState(true);
+  const [loadErr, setLoadErr]     = useState('');
   const [ddConfigured, setDDConf] = useState(false);
   const [newAlert, setNewAlert]   = useState(null); // { order_number, miles }
   const audioRef = useRef(null);
 
   const load = useCallback(async () => {
+    setLoadErr('');
     try {
       const [a, d, dr, sc] = await Promise.all([
         adminAPI.getAssignments(),
@@ -309,7 +311,7 @@ export default function DeliveryDispatch() {
       setDDConf(d.configured !== false);
       setDrivers(dr);
       setScheduled(Array.isArray(sc) ? sc : []);
-    } catch (_) {}
+    } catch (e) { setLoadErr(e.message || 'Failed to load dispatch data.'); }
     setLoading(false);
   }, []);
 
@@ -450,6 +452,8 @@ export default function DeliveryDispatch() {
           {scheduled.length > 0 && <span className="dd-tab-badge">{scheduled.length}</span>}
         </button>
       </div>
+
+      {loadErr && <div className="dd-err" style={{margin:'0.75rem 1rem'}}>⚠ {loadErr} — <button className="dd-link" onClick={load}>Retry</button></div>}
 
       {loading ? (
         <div className="dd-loading"><div className="dd-spinner-lg"/></div>

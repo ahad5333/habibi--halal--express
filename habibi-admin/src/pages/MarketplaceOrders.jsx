@@ -201,6 +201,7 @@ export default function MarketplaceOrders() {
   const [locations, setLocations]   = useState([]);
   const [mappings, setMappings]     = useState([]);
   const [loading, setLoading]       = useState(true);
+  const [loadErr, setLoadErr]       = useState('');
   const [showConfig, setShowConfig] = useState(false);
   const [newOrderAlert, setNewOrderAlert] = useState(null);
   const socketRef = useRef(null);
@@ -220,6 +221,7 @@ export default function MarketplaceOrders() {
   }, []);
 
   const load = useCallback(async () => {
+    setLoadErr('');
     try {
       const params = new URLSearchParams();
       if (platform    !== 'all') params.set('platform',    platform);
@@ -236,7 +238,7 @@ export default function MarketplaceOrders() {
       setStats(s || { platforms: [], locations: [] });
       setLocations(Array.isArray(locs) ? locs : []);
       setMappings(Array.isArray(maps) ? maps : []);
-    } catch (_) {}
+    } catch (e) { setLoadErr(e.message || 'Failed to load marketplace orders.'); }
     setLoading(false);
   }, [platform, locationFilter]);
 
@@ -341,6 +343,8 @@ export default function MarketplaceOrders() {
           </select>
         )}
       </div>
+
+      {loadErr && <div className="mp-err" style={{margin:'0.75rem 0'}}>⚠ {loadErr} — <button className="mp-link" onClick={load} style={{background:'none',border:'none',color:'inherit',cursor:'pointer',textDecoration:'underline'}}>Retry</button></div>}
 
       {loading ? (
         <div className="mp-loading"><div className="mp-spinner"/></div>

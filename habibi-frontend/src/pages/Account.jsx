@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI } from '../services/api';
+import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI } from '../services/api';
 import './Account.css';
 
 const TABS = [
@@ -17,7 +17,8 @@ const TABS = [
   { id: 'addresses',     label: 'Saved Addresses',   icon: <MapPin size={16} /> },
   { id: 'payment',       label: 'Payment Methods',   icon: <CreditCard size={16} /> },
   { id: 'notifications', label: 'Notifications',     icon: <Bell size={16} /> },
-  { id: 'favorites',     label: 'Saved Items',        icon: <Heart size={16} /> },
+  { id: 'favorites',     label: 'Saved Items',       icon: <Heart size={16} /> },
+  { id: 'referral',      label: 'Refer a Friend',    icon: <Gift size={16} /> },
 ];
 
 const STATUS_COLOR = {
@@ -1026,6 +1027,142 @@ function NotificationsTab() {
   );
 }
 
+// ── Referral Tab ──────────────────────────────────────────────────────────────
+function ReferralTab({ user }) {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [applyCode, setApplyCode] = useState('');
+  const [applying, setApplying]   = useState(false);
+  const [applyMsg, setApplyMsg]   = useState('');
+  const [applyErr, setApplyErr]   = useState('');
+  const [copied, setCopied]       = useState(false);
+
+  useEffect(() => {
+    referralAPI.getMe()
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const copyCode = () => {
+    if (!data?.code) return;
+    navigator.clipboard.writeText(data.code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleApply = async (e) => {
+    e.preventDefault();
+    if (!applyCode.trim()) return;
+    setApplying(true); setApplyErr(''); setApplyMsg('');
+    try {
+      const res = await referralAPI.apply(applyCode.trim().toUpperCase());
+      setApplyMsg(`Applied! You were referred by ${res.referrer_name}.`);
+      setApplyCode('');
+      const refreshed = await referralAPI.getMe().catch(() => null);
+      if (refreshed) setData(refreshed);
+    } catch (err) {
+      setApplyErr(err.message || 'Failed to apply referral code.');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading) return <div className="acct-empty"><div className="acct-spinner" /></div>;
+
+  return (
+    <div className="acct-referral">
+      <p className="acct-section-title">Refer a Friend</p>
+      <p className="acct-section-sub">Share your code and earn loyalty points when friends place their first order.</p>
+
+      {/* Your code */}
+      <div className="referral-code-card">
+        <p className="referral-code-label">YOUR REFERRAL CODE</p>
+        <div className="referral-code-row">
+          <span className="referral-code">{data?.code || '—'}</span>
+          <button className="btn btn-outline btn-sm" onClick={copyCode} disabled={!data?.code}>
+            {copied ? <><Check size={13} /> Copied!</> : 'Copy Code'}
+          </button>
+        </div>
+        <p className="referral-code-hint">Share this with friends so they can apply it at signup or in their account.</p>
+      </div>
+
+      {/* Stats */}
+      {data?.stats && (
+        <div className="referral-stats">
+          <div className="referral-stat">
+            <span className="rs-value">{data.stats.total_invited}</span>
+            <span className="rs-label">Invited</span>
+          </div>
+          <div className="referral-stat">
+            <span className="rs-value">{data.stats.total_completed}</span>
+            <span className="rs-label">Completed</span>
+          </div>
+          <div className="referral-stat">
+            <span className="rs-value">{data.stats.total_points}</span>
+            <span className="rs-label">Points Earned</span>
+          </div>
+        </div>
+      )}
+
+      {/* Applied by */}
+      {data?.my_referral && (
+        <div className="referral-applied-by">
+          <Check size={14} style={{ color: '#22c55e' }} />
+          <span>You were referred by <strong>{data.my_referral.referrer_name}</strong>.</span>
+        </div>
+      )}
+
+      {/* Apply a code */}
+      {!data?.my_referral && (
+        <div className="referral-apply-section">
+          <p className="referral-apply-label">Have a friend's code? Apply it here:</p>
+          <form onSubmit={handleApply} className="referral-apply-form">
+            <input
+              className="acct-input"
+              placeholder="e.g. HAB00042"
+              value={applyCode}
+              onChange={e => setApplyCode(e.target.value.toUpperCase())}
+              maxLength={8}
+              style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}
+            />
+            <button className="btn btn-primary btn-sm" type="submit" disabled={applying || !applyCode.trim()}>
+              {applying ? 'Applying…' : 'Apply'}
+            </button>
+          </form>
+          {applyMsg && <p className="referral-msg success">{applyMsg}</p>}
+          {applyErr && <p className="referral-msg error">{applyErr}</p>}
+        </div>
+      )}
+
+      {/* History */}
+      {data?.referrals?.length > 0 && (
+        <div className="referral-history">
+          <p className="referral-history-title">Referral History</p>
+          <table className="acct-table">
+            <thead>
+              <tr><th>Email</th><th>Status</th><th>Points</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {data.referrals.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.referee_name || r.referee_email}</td>
+                  <td><span style={{ color: r.status === 'completed' ? '#22c55e' : '#f59e0b', textTransform: 'capitalize' }}>{r.status}</span></td>
+                  <td>{r.points_awarded || '—'}</td>
+                  <td style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>
+                    {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Account Page ──────────────────────────────────────────────────────────
 const Account = () => {
   const { user, isLoggedIn, logout, loading, refreshUser } = useAuth();
@@ -1073,6 +1210,7 @@ const Account = () => {
             {activeTab === 'payment'       && <PaymentTab />}
             {activeTab === 'notifications' && <NotificationsTab />}
             {activeTab === 'favorites'     && <FavoritesTab />}
+            {activeTab === 'referral'      && <ReferralTab user={user} />}
           </div>
         </div>
       </section>

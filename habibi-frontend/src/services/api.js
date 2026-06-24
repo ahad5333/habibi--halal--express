@@ -317,6 +317,13 @@ export const reviewsAPI = {
   submit: (payload) => request('/api/reviews', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
+export const referralAPI = {
+  /** GET /api/referrals/me — code, stats, history */
+  getMe: () => request('/api/referrals/me'),
+  /** POST /api/referrals/apply — apply someone else's referral code */
+  apply: (code) => request('/api/referrals/apply', { method: 'POST', body: JSON.stringify({ code }) }),
+};
+
 export const partnersAPI = {
   /**
    * POST /api/partners/apply

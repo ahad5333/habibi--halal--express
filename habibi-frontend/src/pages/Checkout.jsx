@@ -291,7 +291,8 @@ const Checkout = () => {
       const orderNumber = `HAB-${Date.now()}`;
       setPendingOrderNum(orderNumber);
       const res = await paymentsAPI.createIntent(total, orderNumber, ['card']);
-      setClientSecret(res.clientSecret || '');
+      if (!res.clientSecret) throw new Error('Payment setup failed. Please try again.');
+      setClientSecret(res.clientSecret);
       setIntentReady(true);
     } catch (err) {
       setOrderError(err.message || 'Failed to initiate payment.');

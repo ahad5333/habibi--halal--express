@@ -70,6 +70,10 @@ const Signup = () => {
         setError('First name, last name, and email are required.');
         return false;
       }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError('Please enter a valid email address.');
+        return false;
+      }
     }
     if (step === 2) {
       if (!phone1.trim()) {
