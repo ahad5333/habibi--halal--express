@@ -359,9 +359,36 @@ const getUsers = async (req, res) => {
   }
 };
 
+// Cancel own pending order
+const cancelMyOrder = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const userId = req.user.id;
+
+    // Only allow cancellation of orders owned by this user that are still pending
+    const result = await pool.query(
+      `UPDATE guest_orders
+          SET order_status = 'cancelled', updated_at = NOW()
+        WHERE order_number = $1
+          AND order_status = 'pending'
+          AND (user_id = $2 OR customer_email = (SELECT email FROM users WHERE id = $2))
+        RETURNING order_number, order_status`,
+      [orderNumber, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Order not found, already processed, or cannot be cancelled.' });
+    }
+
+    res.json({ ok: true, order_number: result.rows[0].order_number });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getProfile, updateProfile, changePassword, deleteAccount,
-  getMyOrders, getLoyalty,
+  getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,

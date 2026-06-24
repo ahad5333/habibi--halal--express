@@ -532,6 +532,7 @@ function OrdersTab() {
   const [expandedOrder, setExpanded]   = useState(null);
   const [reviewOrder, setReviewOrder]   = useState(null);
   const [reviewedOrders, setReviewed]   = useState(new Set());
+  const [cancelling, setCancelling]     = useState(null);
 
   const load = useCallback(() => {
     setLoading(true); setError('');
@@ -544,6 +545,19 @@ function OrdersTab() {
   }, []);
 
   useEffect(() => { const ctrl = load(); return () => ctrl?.abort(); }, [load]);
+
+  const handleCancel = async (orderNumber) => {
+    if (!window.confirm('Cancel this order?')) return;
+    setCancelling(orderNumber);
+    try {
+      await userAPI.cancelOrder(orderNumber);
+      setOrders(prev => prev.map(o => o.order_number === orderNumber ? { ...o, order_status: 'cancelled' } : o));
+    } catch (err) {
+      alert(err.message || 'Could not cancel order.');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const handleReorder = (order) => {
     (order.items || []).forEach(item =>
@@ -598,6 +612,15 @@ function OrdersTab() {
                 <button className="acct-reorder-btn" onClick={() => handleReorder(o)}>
                   <RotateCcw size={12} /> Order Again
                 </button>
+                {o.order_status === 'pending' && (
+                  <button
+                    className="acct-cancel-btn"
+                    onClick={() => handleCancel(o.order_number)}
+                    disabled={cancelling === o.order_number}
+                  >
+                    <X size={11} /> {cancelling === o.order_number ? 'Cancelling…' : 'Cancel'}
+                  </button>
+                )}
                 {o.order_status === 'delivered' && !reviewedOrders.has(o.order_number) && (
                   <button className="acct-track-btn" style={{ color: '#E5B64E', borderColor: 'rgba(229,182,78,0.3)' }} onClick={() => setReviewOrder(o)}>
                     <Star size={12} /> Rate

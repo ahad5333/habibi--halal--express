@@ -4,7 +4,7 @@ const protect = require("../middleware/authMiddleware");
 const { handleValidation, rules, body } = require('../middleware/validate');
 const {
   getProfile, updateProfile, changePassword, deleteAccount,
-  getMyOrders, getLoyalty,
+  getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,
@@ -46,6 +46,7 @@ router.post("/me/device-token",
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 router.get("/me/orders",  getMyOrders);
+router.patch("/me/orders/:orderNumber/cancel", cancelMyOrder);
 router.get("/me/loyalty", getLoyalty);
 
 // ── Addresses ────────────────────────────────────────────────────────────────

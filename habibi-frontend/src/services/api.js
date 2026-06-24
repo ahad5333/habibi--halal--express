@@ -241,6 +241,10 @@ export const userAPI = {
   /** GET /api/users/me/orders */
   getOrders: () => request('/api/users/me/orders'),
 
+  /** PATCH /api/users/me/orders/:orderNumber/cancel */
+  cancelOrder: (orderNumber) =>
+    request(`/api/users/me/orders/${encodeURIComponent(orderNumber)}/cancel`, { method: 'PATCH' }),
+
   /** GET /api/users/me/addresses */
   getAddresses: () => request('/api/users/me/addresses'),
 

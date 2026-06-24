@@ -1138,3 +1138,147 @@
   .acct-hero-name { font-size: 1.3rem; }
   .acct-tab { font-size: 0.7rem; padding: 0.5rem 0.6rem; }
 }
+
+/* ── Referral Tab ─────────────────────────────────────────────── */
+.acct-referral { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.acct-section-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0.2rem 0 0;
+}
+
+.referral-code-card {
+  background: rgba(229,182,78,0.06);
+  border: 1px solid rgba(229,182,78,0.25);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.referral-code-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+.referral-code-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+.referral-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-primary);
+}
+.referral-code-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.referral-stats {
+  display: flex;
+  gap: 1rem;
+}
+.referral-stat {
+  flex: 1;
+  background: var(--color-surface-2, rgba(255,255,255,0.04));
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.rs-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.rs-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.referral-applied-by {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  background: rgba(34,197,94,0.07);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+}
+
+.referral-apply-section { display: flex; flex-direction: column; gap: 0.6rem; }
+.referral-apply-label { font-size: 0.82rem; color: var(--color-text-muted); margin: 0; }
+.referral-apply-form { display: flex; gap: 0.5rem; align-items: center; }
+.referral-apply-form .acct-input { max-width: 160px; }
+
+.referral-msg { font-size: 0.8rem; margin: 0; }
+.referral-msg.success { color: #22c55e; }
+.referral-msg.error   { color: #ef4444; }
+
+.referral-history { display: flex; flex-direction: column; gap: 0.75rem; }
+.referral-history-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.acct-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.acct-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  padding: 0.4rem 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.acct-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--color-text-main);
+}
+
+.btn-sm {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+}
+
+/* ── Cancel order button ──────────────────────────────────────── */
+.acct-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(239,68,68,0.35);
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--font-sans);
+}
+.acct-cancel-btn:hover { background: rgba(239,68,68,0.1); }
+.acct-cancel-btn:disabled { opacity: 0.45; cursor: not-allowed; }
