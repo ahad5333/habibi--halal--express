@@ -1,32 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, Phone, Clock, Navigation, Star, ChevronDown, Wifi } from 'lucide-react';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import './Locations.css';
 
 /* ── Helpers ──────────────────────────────────────────────── */
 const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const SHORT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
   if (t.includes('bedford'))                              return '/images/locations/bedford-park.jpg';
   if (t.includes('kingsbridge') || t.includes('king'))   return '/images/locations/kings-bridge.jpg';
   if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.jpg';
-  if (t.includes('lehman'))                              return '/images/hero_dining_ambiance.jpg';
-  if (t.includes('bronx') || t.includes('science'))     return '/images/chef-plating.jpg';
+  if (t.includes('lehman'))                              return '/images/locations/lehman.png';
+  if (t.includes('bronx') || t.includes('science'))     return '/images/locations/bronx-science.png';
   return '/images/mixed-platter.jpg';
 };
 
 const getShortTitle = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                            return 'BEDFORD PARK';
-  if (t.includes('lehman'))                             return 'LEHMAN';
-  if (t.includes('bronx') || t.includes('science'))    return 'BRONX SCIENCE';
-  if (t.includes('kingsbridge'))                        return 'KINGSBRIDGE';
-  if (t.includes('white plains'))                       return 'WHITE PLAINS';
-  return (title || '').toUpperCase().split(/\s+/).slice(0, 3).join(' ');
+  if (t.includes('bedford'))                            return 'Bedford Park';
+  if (t.includes('lehman'))                             return 'Lehman';
+  if (t.includes('bronx') || t.includes('science'))    return 'Bronx Science';
+  if (t.includes('kingsbridge'))                        return 'Kingsbridge';
+  if (t.includes('white plains'))                       return 'White Plains';
+  return (title || '').split(/\s+/).slice(0, 3).join(' ');
+};
+
+const getNeighborhood = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('bedford'))   return 'Jerome Ave · Bronx';
+  if (t.includes('lehman'))    return 'Bedford Park · Bronx';
+  if (t.includes('bronx') || t.includes('science')) return 'W 205th St · Bronx';
+  if (t.includes('kingsbridge')) return 'Kingsbridge · Bronx';
+  if (t.includes('white plains')) return 'White Plains · NY';
+  return 'Bronx, New York';
 };
 
 const isOpenNow = (hoursStr) => {
@@ -144,7 +153,7 @@ const FALLBACK_LOCATIONS = [
     phone_number: '(718) 367-7879',
     working_days_hours: 'Mon – Sun: 7AM – 11PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 4,
-    image_url: '/images/hero_dining_ambiance.jpg',
+    image_url: '/images/locations/lehman.png',
   },
   {
     id: 3, title: 'Bronx High School of Science',
@@ -152,7 +161,7 @@ const FALLBACK_LOCATIONS = [
     phone_number: '(718) 367-7880',
     working_days_hours: 'Mon – Fri: 6AM – 10PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 3,
-    image_url: '/images/chef-plating.jpg',
+    image_url: '/images/locations/bronx-science.png',
   },
 ];
 
@@ -166,18 +175,19 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 
 function getDeliveryTier(miles) {
   if (miles === undefined || miles === null) return null;
-  if (miles <= 3)   return { label: 'In-House Delivery', color: '#22c55e' };
-  if (miles <= 10)  return { label: 'Express Delivery',   color: '#3b82f6' };
-  if (miles <= 350) return { label: 'Long Distance',       color: '#f59e0b' };
-  return                   { label: 'Pickup Only',          color: '#6b7280' };
+  if (miles <= 3)   return { label: 'In-House Delivery', color: '#22c55e', icon: '🏠' };
+  if (miles <= 10)  return { label: 'Express Delivery',   color: '#3b82f6', icon: '⚡' };
+  if (miles <= 350) return { label: 'Long Distance',       color: '#f59e0b', icon: '🚀' };
+  return                   { label: 'Pickup Only',          color: '#6b7280', icon: '📦' };
 }
 
 /* ── Location Card ─────────────────────────────────────────── */
-function LocationCard({ loc, userCoords }) {
+function LocationCard({ loc, userCoords, index }) {
   const img        = loc.image_url || getLocationImage(loc.title);
   const open       = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
   const hoursTable = parseHoursTable(loc.working_days_hours);
+  const [flipped, setFlipped] = useState(false);
 
   const distKm    = (userCoords && loc.latitude && loc.longitude)
     ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(loc.latitude), parseFloat(loc.longitude))
@@ -186,86 +196,169 @@ function LocationCard({ loc, userCoords }) {
   const tier      = getDeliveryTier(distMiles);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`;
+  const shortTitle = getShortTitle(loc.title);
+  const neighborhood = getNeighborhood(loc.title);
 
   return (
-    <div id={anchorId} className="lcn-card">
-      {/* ── Photo ── */}
-      <div className="lcn-img-wrap">
+    <div
+      id={anchorId}
+      className="lcn-card"
+      style={{ animationDelay: `${index * 0.15}s` }}
+    >
+      {/* ── Photo Section ── */}
+      <div className="lcn-photo-section">
         <img
           src={img}
           alt={loc.title}
           className="lcn-img"
           onError={e => { e.target.src = '/images/food/background.png'; }}
         />
-        <div className="lcn-img-overlay" />
-        <div className="lcn-location-label">
-          <MapPin size={20} className="lcn-pin-icon" />
-          <div>
-            <p className="lcn-city">{getShortTitle(loc.title)}</p>
-            <p className="lcn-state">Bronx, New York</p>
-          </div>
-        </div>
+        <div className="lcn-img-gradient" />
+
+        {/* Floating status badge */}
         {open !== null && (
-          <span className={`lcn-status-pill ${open ? 'lcn-pill-open' : 'lcn-pill-closed'}`}>
+          <div className={`lcn-live-badge ${open ? 'lcn-live-open' : 'lcn-live-closed'}`}>
+            <span className="lcn-live-dot" />
             {open ? 'Open Now' : 'Closed'}
-          </span>
-        )}
-      </div>
-
-      {/* ── Body ── */}
-      <div className="lcn-body">
-        <div className="lcn-two-col">
-          {/* Left: Address + Phone */}
-          <div className="lcn-col-left">
-            <p className="lcn-col-label">Address</p>
-            <p className="lcn-address">{loc.brief_address}</p>
-
-            {loc.phone_number && (
-              <>
-                <p className="lcn-col-label lcn-label-mt">Phone</p>
-                <a href={`tel:${loc.phone_number}`} className="lcn-phone">{loc.phone_number}</a>
-              </>
-            )}
-
-            {tier && distMiles !== null && (
-              <span
-                className="lcn-tier-badge"
-                style={{ color: tier.color, borderColor: tier.color + '55', background: tier.color + '18' }}
-              >
-                {distMiles < 0.5 ? 'Nearby' : `${distMiles.toFixed(1)} mi`} · {tier.label}
-              </span>
-            )}
-            {!distMiles && loc.delivery_radius_miles && (
-              <span className="lcn-radius-info">{loc.delivery_radius_miles} mi delivery zone</span>
-            )}
           </div>
+        )}
 
-          {/* Right: Store Hours */}
-          <div className="lcn-col-right">
-            <p className="lcn-col-label">Store Hours</p>
-            <div className="lcn-hours">
-              {hoursTable.map(({ day, hours, isToday }) => (
-                <div key={day} className={`lcn-hr${isToday ? ' lcn-hr-today' : ''}`}>
-                  <span className="lcn-hr-day">{day.slice(0, 3)}</span>
-                  <span className="lcn-hr-time">{hours}</span>
-                  {isToday && (
-                    <span className={`lcn-hr-badge ${open ? 'lcn-badge-open' : 'lcn-badge-closed'}`}>
-                      {open ? 'OPEN' : 'CLOSED'}
-                    </span>
-                  )}
-                </div>
-              ))}
+        {/* Distance badge */}
+        {tier && distMiles !== null && (
+          <div className="lcn-dist-badge" style={{ borderColor: tier.color + '66', background: 'rgba(0,0,0,0.75)' }}>
+            <span style={{ color: tier.color }}>{tier.icon}</span>
+            <span style={{ color: tier.color }}>
+              {distMiles < 0.5 ? 'Nearby' : `${distMiles.toFixed(1)} mi`}
+            </span>
+          </div>
+        )}
+
+        {/* Bottom overlay info */}
+        <div className="lcn-photo-footer">
+          <div className="lcn-photo-footer-inner">
+            <MapPin size={16} className="lcn-pin-icon" />
+            <div>
+              <p className="lcn-location-name">{shortTitle}</p>
+              <p className="lcn-location-sub">{neighborhood}</p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Directions button */}
-        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="lcn-directions-btn">
-          Get Directions
-        </a>
+      {/* ── Card Body ── */}
+      <div className="lcn-body">
+
+        {/* Info tabs */}
+        <div className="lcn-tabs">
+          <button
+            className={`lcn-tab ${!flipped ? 'lcn-tab-active' : ''}`}
+            onClick={() => setFlipped(false)}
+          >
+            <MapPin size={12} /> Info
+          </button>
+          <button
+            className={`lcn-tab ${flipped ? 'lcn-tab-active' : ''}`}
+            onClick={() => setFlipped(true)}
+          >
+            <Clock size={12} /> Hours
+          </button>
+        </div>
+
+        {/* Info Panel */}
+        {!flipped ? (
+          <div className="lcn-info-panel">
+            <div className="lcn-info-row">
+              <MapPin size={14} className="lcn-info-icon" />
+              <div>
+                <p className="lcn-info-label">Address</p>
+                <p className="lcn-info-value">{loc.brief_address}</p>
+              </div>
+            </div>
+
+            {loc.phone_number && (
+              <div className="lcn-info-row">
+                <Phone size={14} className="lcn-info-icon" />
+                <div>
+                  <p className="lcn-info-label">Phone</p>
+                  <a href={`tel:${loc.phone_number}`} className="lcn-phone">{loc.phone_number}</a>
+                </div>
+              </div>
+            )}
+
+            <div className="lcn-info-row">
+              <Wifi size={14} className="lcn-info-icon" />
+              <div>
+                <p className="lcn-info-label">Delivery Zone</p>
+                <p className="lcn-info-value">
+                  {tier && distMiles !== null
+                    ? `${tier.icon} ${tier.label}`
+                    : loc.delivery_radius_miles
+                      ? `${loc.delivery_radius_miles} mile radius`
+                      : 'Contact for details'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="lcn-hours-panel">
+            {hoursTable.map(({ day, hours, isToday }) => (
+              <div key={day} className={`lcn-hr-row ${isToday ? 'lcn-hr-today' : ''}`}>
+                <span className="lcn-hr-day">{day.slice(0, 3)}</span>
+                <div className="lcn-hr-dots" />
+                <span className="lcn-hr-time">{hours}</span>
+                {isToday && (
+                  <span className={`lcn-today-badge ${open ? 'lcn-today-open' : 'lcn-today-closed'}`}>
+                    {open ? '● OPEN' : '● CLOSED'}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="lcn-actions">
+          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="lcn-btn-directions">
+            <Navigation size={14} />
+            Get Directions
+          </a>
+          <a href={`tel:${loc.phone_number}`} className="lcn-btn-call">
+            <Phone size={14} />
+            Call
+          </a>
+        </div>
       </div>
     </div>
   );
+}
+
+/* ── Animated Counter ── */
+function AnimatedCounter({ target, suffix = '' }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const end = parseInt(target, 10);
+        const duration = 1800;
+        const step = end / (duration / 16);
+        let current = 0;
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= end) { setCount(end); clearInterval(timer); }
+          else setCount(Math.floor(current));
+        }, 16);
+      }
+    }, { threshold: 0.3 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
 }
 
 /* ── Page ──────────────────────────────────────────────────── */
@@ -273,8 +366,10 @@ const Locations = () => {
   const [locations, setLocations] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [userCoords, setUserCoords] = useState(null);
+  const [heroVisible, setHeroVisible] = useState(false);
 
   useEffect(() => {
+    setTimeout(() => setHeroVisible(true), 100);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -316,11 +411,6 @@ const Locations = () => {
         "addressRegion": "NY",
         "addressCountry": "US"
       },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": parseFloat(loc.latitude) || 40.873426,
-        "longitude": parseFloat(loc.longitude) || -73.890060
-      },
       "openingHours": loc.working_days_hours || "Mo-Su 11:00-23:00",
       "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern"],
       "priceRange": "$$"
@@ -336,86 +426,166 @@ const Locations = () => {
         schema={locations.length > 0 ? locationsSchema : null}
       />
 
-      {/* ── Header ── */}
-      <div className="loc-header">
-        <div className="loc-header-overlay" />
-        <div className="loc-header-content">
-          <div className="loc-header-icon-ring">
-            <MapPin size={22} className="loc-header-icon" />
+      {/* ── Hero ── */}
+      <div className={`loc-hero ${heroVisible ? 'loc-hero-visible' : ''}`}>
+        <div className="loc-hero-bg">
+          <img src="/images/title/locations-hero.png" alt="Habibi Halal Express Locations" className="loc-hero-img" onError={e => { e.target.src = '/images/title/locations-hero.jpg'; }} />
+          <div className="loc-hero-overlay" />
+          {/* Animated bokeh particles */}
+          <div className="loc-bokeh">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="loc-bokeh-dot" style={{
+                '--bx': `${Math.random() * 100}%`,
+                '--by': `${Math.random() * 100}%`,
+                '--bs': `${4 + Math.random() * 8}px`,
+                '--bd': `${Math.random() * 4}s`,
+              }} />
+            ))}
           </div>
-          <h1 className="loc-header-title" style={{ color: '#ffffff' }}>Our Locations</h1>
-          <p className="loc-header-sub">Serving the Bronx with authentic Halal cuisine at 3 locations</p>
+        </div>
+
+        <div className="loc-hero-content">
+          <div className="loc-hero-badge">
+            <MapPin size={14} />
+            <span>3 Locations · Bronx, NY</span>
+          </div>
+          <h1 className="loc-hero-title">
+            Find Us <span className="loc-hero-accent">Near You</span>
+          </h1>
+          <p className="loc-hero-sub">
+            Serving authentic Halal cuisine across the Bronx — open early, close late, always fresh.
+          </p>
+          <a href="#locations-grid" className="loc-hero-scroll">
+            <span>Explore Locations</span>
+            <ChevronDown size={18} className="loc-scroll-arrow" />
+          </a>
+        </div>
+
+        {/* Stats bar */}
+        <div className="loc-hero-stats">
+          <div className="loc-hero-stat">
+            <span className="loc-hero-stat-num">3</span>
+            <span className="loc-hero-stat-label">Locations</span>
+          </div>
+          <div className="loc-hero-stat-divider" />
+          <div className="loc-hero-stat">
+            <span className="loc-hero-stat-num">365</span>
+            <span className="loc-hero-stat-label">Days / Year</span>
+          </div>
+          <div className="loc-hero-stat-divider" />
+          <div className="loc-hero-stat">
+            <span className="loc-hero-stat-num">300+</span>
+            <span className="loc-hero-stat-label">Mile Delivery</span>
+          </div>
+          <div className="loc-hero-stat-divider" />
+          <div className="loc-hero-stat">
+            <Star size={18} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
+            <span className="loc-hero-stat-num">4.9</span>
+            <span className="loc-hero-stat-label">Rating</span>
+          </div>
         </div>
       </div>
 
       <div className="container loc-body">
-        {/* Section header */}
-        <div className="loc-section-header">
-          <div>
-            <p className="loc-eyebrow">OUR NETWORK</p>
-            <h2 className="loc-section-title">All Locations</h2>
+
+        {/* ── Section Header ── */}
+        <div className="loc-section-header" id="locations-grid">
+          <div className="loc-section-label">
+            <span className="loc-eyebrow-dot" />
+            <span className="loc-eyebrow">OUR NETWORK</span>
           </div>
-          <div className="loc-stats">
-            <div className="loc-stat">
-              <span className="loc-stat-num">3</span>
-              <span className="loc-stat-label">Locations</span>
-            </div>
-            <div className="loc-stat">
-              <span className="loc-stat-num">365</span>
-              <span className="loc-stat-label">Days a Year</span>
-            </div>
-            <div className="loc-stat">
-              <span className="loc-stat-num">300+</span>
-              <span className="loc-stat-label">Mile Radius</span>
-            </div>
-          </div>
+          <h2 className="loc-section-title">All <span className="text-primary">Locations</span></h2>
+          <p className="loc-section-desc">
+            {userCoords ? 'Sorted by proximity to your location' : 'Tap a card to view hours or get directions'}
+          </p>
         </div>
 
+        {/* ── Cards Grid ── */}
         {loading ? (
           <div className="loc-loading">
-            <div className="loading-spinner" />
-            <p>Loading locations...</p>
+            <div className="loc-loading-ring">
+              <div className="loading-spinner" />
+            </div>
+            <p>Finding locations near you...</p>
           </div>
         ) : (
           <div className="lcn-grid">
-            {sortedLocations.map(loc => (
-              <LocationCard key={loc.id} loc={loc} userCoords={userCoords} />
+            {sortedLocations.map((loc, i) => (
+              <LocationCard key={loc.id} loc={loc} userCoords={userCoords} index={i} />
             ))}
           </div>
         )}
 
-        {/* Coverage section */}
+        {/* ── Coverage Section ── */}
         <div className="coverage-section" id="coverage">
-          <div className="coverage-rings-wrap">
-            <div className="rings">
-              <div className="ring r1" />
-              <div className="ring r2" />
-              <div className="ring r3" />
+
+          {/* Left: visual */}
+          <div className="coverage-visual">
+            <div className="coverage-map-bg">
+              <div className="cov-ring cov-r1" />
+              <div className="cov-ring cov-r2" />
+              <div className="cov-ring cov-r3" />
+              <div className="cov-ring cov-r4" />
+              {/* Center pulse */}
+              <div className="cov-center">
+                <div className="cov-pulse" />
+                <div className="cov-dot" />
+              </div>
+              {/* Orbiting dots */}
+              <div className="cov-orbit cov-orbit-1"><div className="cov-orbit-dot" /></div>
+              <div className="cov-orbit cov-orbit-2"><div className="cov-orbit-dot" /></div>
+              <div className="cov-orbit cov-orbit-3"><div className="cov-orbit-dot" /></div>
             </div>
-            <div className="coverage-rings-content">
-              <h2 className="coverage-num">300+</h2>
+            <div className="coverage-stat-center">
+              <p className="coverage-num"><AnimatedCounter target="300" suffix="+" /></p>
               <p className="coverage-unit">MILE RADIUS</p>
-              <p className="coverage-quote">"Redefining distance in culinary excellence."</p>
             </div>
           </div>
 
+          {/* Right: text */}
           <div className="coverage-text">
-            <p className="loc-eyebrow">DELIVERY COVERAGE</p>
+            <p className="loc-eyebrow">📦 DELIVERY COVERAGE</p>
             <h2 className="coverage-title">
-              Broadening the <br /><span className="text-primary">Halal Horizon</span>
+              Broadening the<br /><span className="text-primary">Halal Horizon</span>
             </h2>
             <p className="coverage-desc">
               We don't just deliver to your doorstep — we bridge the gap between premium Halal artistry
               and the tri-state area. Our long-distance logistics network ensures your feast arrives
               with the same precision it was crafted with.
             </p>
+
+            {/* Delivery tiers */}
+            <div className="coverage-tiers">
+              <div className="cov-tier">
+                <div className="cov-tier-dot" style={{ background: '#22c55e' }} />
+                <div>
+                  <p className="cov-tier-label">🏠 In-House Delivery</p>
+                  <p className="cov-tier-range">Up to 3 miles · ~25 min</p>
+                </div>
+              </div>
+              <div className="cov-tier">
+                <div className="cov-tier-dot" style={{ background: '#3b82f6' }} />
+                <div>
+                  <p className="cov-tier-label">⚡ Express Delivery</p>
+                  <p className="cov-tier-range">3–10 miles · ~45 min</p>
+                </div>
+              </div>
+              <div className="cov-tier">
+                <div className="cov-tier-dot" style={{ background: '#f59e0b' }} />
+                <div>
+                  <p className="cov-tier-label">🚀 Long Distance</p>
+                  <p className="cov-tier-range">10–350 miles · Scheduled</p>
+                </div>
+              </div>
+            </div>
+
             <div className="coverage-metrics">
               <div className="coverage-metric">
-                <span>25 min</span>
+                <span><AnimatedCounter target="25" suffix=" min" /></span>
                 <p>Avg. Delivery</p>
               </div>
               <div className="coverage-metric">
-                <span>10K+</span>
+                <span><AnimatedCounter target="10" suffix="K+" /></span>
                 <p>Orders Delivered</p>
               </div>
               <div className="coverage-metric">
@@ -423,7 +593,10 @@ const Locations = () => {
                 <p>Customer Rating</p>
               </div>
             </div>
-            <Link to="/menu" className="btn btn-primary loc-cta-btn">Order Now ➔</Link>
+
+            <Link to="/menu" className="btn btn-primary loc-cta-btn">
+              Order Now ➔
+            </Link>
           </div>
         </div>
       </div>

@@ -173,6 +173,7 @@ Features to test before submission:
 - Firebase Cloud Messaging push notifications (`fcmService.js`)
 - **DriverView.css** — driver GPS mobile screen fully styled (dark theme, gold accent, badge variants, spinner)
 - **`/driver` route** — registered in `habibi-frontend/src/App.jsx` outside Layout (no navbar/footer); accessible via URL param `?id=<driver_id>`
+- **Real-time driver notifications** — `DriverView.jsx` connects to Socket.IO on mount, emits `join_driver` to join personal `driver_<id>` room, listens for `assignment_created` and `assignment_status_update` to auto-reload without manual refresh; pulsing green "Live — you'll be notified automatically" indicator shown on waiting screen
 - **Live driver tracking map** — Leaflet (CDN, CartoDB Dark Matter tiles); restaurant pin (gold), customer pin (green, Nominatim geocoded), driver pin (🛵, live from Socket.IO `driver_location_update`)
 - **ETA from GPS** — Haversine distance driver→customer; updates live
 - **Assignment discovery** — `GET /api/dispatch/order/:order_number` public endpoint; tracking page fetches on load for GPS filtering
@@ -233,6 +234,8 @@ Features to test before submission:
 - **Business Menu admin UI** — `BusinessMenuAdmin.jsx` at `/wholesale-catalog`; full CRUD for wholesale catalog; tier pricing (tier_1/2/3), min_quantity, unit, image upload; table with thumbnails and active badge
 - **Partner order management** — `PartnerOrders.jsx` at `/partner-orders`; status filter tabs with counts; expandable rows with line items, totals, delivery address, notes; inline status dropdown; emails partner on status change
 
+- **Admin panel fully responsive** — `@media` queries added to all 12 admin CSS files: `Customers.css`, `UrgentRequests.css`, `Partners.css`, `MenuBuilder.css`, `Coupons.css`, `Inventory.css`, `Staff.css`, `Careers.css`, `RoadieDeliveries.css`, `Payments.css`, `TableManager.css`, `Locations.css`; side-panel layouts stack to column at ≤768px, form grids collapse to 1-col at ≤600px, modal actions stack at ≤480px
+
 ### ❌ Missing
 - None ✅
 
@@ -271,6 +274,8 @@ Features to test before submission:
 - **GrubHub webhook** — `/api/marketplace/webhook/grubhub`, same normalisation
 - **Caviar webhook** — `/api/marketplace/webhook/caviar` (DoorDash-backed format)
 - **In-house dispatch** — assign driver, GPS update via PATCH, Socket.IO live coordinates relay, admin DeliveryDispatch page, mark delivered
+- **Driver assignment notification** — `dispatchController.assignDriver` fetches driver's phone, emits `assignment_created` to targeted `driver_<id>` Socket.IO room (not broadcast), and fires SMS via `smsService.sendSMS()` with order number + address + deep link (`/driver?id=<id>`); SMS fires in background and fails silently if Twilio not configured
+- **Socket.IO `join_driver` event** — `socket/index.js` validates and joins driver to `driver_<id>` room; driver page emits this on connect so targeted assignment events work
 - **Distance Matrix** — `POST /api/dispatch/calculate-fee` calls Google Maps API, returns distance + tiered fee; admin fee calculator widget
 - **Admin pages** — DeliveryDispatch (in-house + DoorDash tabs, GPS live dot, fee calc) and MarketplaceOrders (UberEats / GrubHub / Caviar tabs, accept/decline, webhook guide)
 - **DriverView.css** — mobile-first dark theme created (see Phase 2)
@@ -289,7 +294,7 @@ Features to test before submission:
 ## Phase 8 — Notifications & Communication
 
 ### ✅ Done
-- **Twilio SMS** — `smsService.js` sends order confirmation + status updates; env vars `TWILIO_*`
+- **Twilio SMS** — `smsService.js` sends order confirmation + status updates + **driver assignment alerts** (order number, drop-off address, deep link); env vars `TWILIO_*`
 - **Email** — `emailService.js` sends order confirmation, status update, welcome, password reset, email verification, partner order update, partner password reset
 - **Firebase Cloud Messaging** — `fcmService.js` sends push on order placed + status change + broadcast
 - All three fire automatically from `createGuestOrder` and `updateGuestOrderStatus`

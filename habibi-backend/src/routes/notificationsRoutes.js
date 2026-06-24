@@ -52,7 +52,9 @@ router.patch('/:id/read', async (req, res) => {
 // POST /api/users/me/notifications/device-token
 // Registers or refreshes the browser FCM push token for this user.
 router.post('/device-token', async (req, res) => {
-  const { token, device_type = 'web' } = req.body;
+  // mobile sends device_token, some callers send token — accept both
+  const token = req.body.device_token || req.body.token;
+  const device_type = req.body.device_type || 'unknown';
   if (!token || typeof token !== 'string' || token.length > 512) {
     return res.status(400).json({ message: 'Invalid token.' });
   }

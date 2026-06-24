@@ -271,9 +271,20 @@ const Checkout = () => {
     navigate(`/order-confirmation?order=${orderNumber}&method=${methodParam}${extraParam}`);
   };
 
+  // Shared pre-flight validation — run before any payment path fires
+  const validateOrder = () => {
+    if (!receiverName.trim()) { setOrderError('Please enter your name.'); return false; }
+    if (!customerPhone.trim()) { setOrderError('Please enter a phone number.'); return false; }
+    if (!/^\+?[\d\s\-().]{7,20}$/.test(customerPhone.trim()) || (customerPhone.match(/\d/g) || []).length < 7) { setOrderError('Please enter a valid phone number.'); return false; }
+    if (deliveryMode === 'delivery' && !address.trim()) { setOrderError('Please enter a delivery address.'); return false; }
+    setOrderError('');
+    return true;
+  };
+
   // ── Card / Digital Wallet: prepare intent then show Stripe form ───────────
   const handlePrepareCardPayment = async () => {
     if (items.length === 0) return;
+    if (!validateOrder()) return;
     trackBeginCheckout(items, total);
     setPlacing(true); setOrderError('');
     try {
@@ -293,7 +304,8 @@ const Checkout = () => {
   const handleStripeSuccess = async (paymentIntent) => {
     setPlacing(true); setOrderError('');
     try {
-      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
+      await saveOrder(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order could not be saved. Contact support with: ' + (paymentIntent?.id || ''));
@@ -308,9 +320,9 @@ const Checkout = () => {
   const handlePayPalSuccess = async (details) => {
     setPlacing(true); setOrderError('');
     try {
-      const orderNumber = `HAB-${Date.now()}`;
-      await ordersAPI.createGuest(buildPayload(orderNumber));
-      await finishOrder(orderNumber);
+      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
+      await saveOrder(buildPayload(pendingOrderNum));
+      await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order save failed after PayPal payment.');
     } finally {
@@ -321,6 +333,7 @@ const Checkout = () => {
   // ── Offline / Cash / Zelle / CashApp ──────────────────────────────────────
   const handleOfflineClick = () => {
     if (items.length === 0) return;
+    if (!validateOrder()) return;
     trackBeginCheckout(items, total);
     const orderNumber = `HAB-${Date.now()}`;
     setPendingOrderNum(orderNumber);
@@ -331,7 +344,8 @@ const Checkout = () => {
     setShowOfflineModal(false);
     setPlacing(true); setOrderError('');
     try {
-      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
+      await saveOrder(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
@@ -530,7 +544,7 @@ const Checkout = () => {
                           <MapPin size={14} className="address-icon text-muted" />
                           <input ref={addressInputRef} type="text" className="form-input address-input" placeholder="Enter your full delivery address" value={address} onChange={e => setAddress(e.target.value)} autoComplete="street-address" />
                         </div>
-                        {!import.meta.env.VITE_GOOGLE_MAPS_KEY && (
+                        {!import.meta.env.VITE_GOOGLE_MAPS_KEY && import.meta.env.DEV && (
                           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
                             💡 Tip: Add <code>VITE_GOOGLE_MAPS_KEY</code> to .env for address autocomplete
                           </p>
@@ -690,7 +704,11 @@ const Checkout = () => {
                     <button
                       key={m.id}
                       className={`alt-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
-                      onClick={() => { setPaymentMethod(m.id); setIntentReady(false); }}
+                      onClick={() => {
+                        setPaymentMethod(m.id);
+                        setIntentReady(false);
+                        if (PAYPAL_METHODS.has(m.id)) setPendingOrderNum(`HAB-${Date.now()}`);
+                      }}
                     >
                       {m.img
                         ? <img src={m.img} alt={m.label} className="alt-pay-icon" onError={e => e.target.style.display='none'} />
@@ -715,7 +733,7 @@ const Checkout = () => {
                 {showPayPal && (
                   <PayPalButton
                     amount={total}
-                    orderNumber={`HAB-${Date.now()}`}
+                    orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
                     onSuccess={handlePayPalSuccess}
                     onError={(msg) => setOrderError(msg)}
                   />
@@ -869,7 +887,7 @@ const Checkout = () => {
             </p>
 
             <div className="halal-seal">
-              <img src="/images/logos/halal.png" alt="Halal Certified" className="halal-seal-img" />
+              <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="halal-seal-img" />
               <div>
                 <p className="halal-seal-title">HALAL CERTIFIED</p>
                 <p className="halal-seal-sub">Premium by 1000+ Halal endorsements.</p>

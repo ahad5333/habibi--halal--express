@@ -750,6 +750,94 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          RESTAURANT BANNER
+      ═══════════════════════════════════════════════════════ */}
+      <section className="restaurant-banner-section">
+        <div className="rb-bg">
+          <img src="/images/banners/restaurant-banner.png" alt="Habibi Halal Express Restaurant" className="rb-bg-img" />
+          <div className="rb-overlay" />
+          {/* Animated gradient sweep */}
+          <div className="rb-sweep" aria-hidden="true" />
+        </div>
+
+        <div className="rb-content container">
+          {/* Left column — main copy */}
+          <div className="rb-left">
+            <p className="rb-eyebrow">
+              <span className="rb-eyebrow-line" />
+              EST. 2018 · BRONX, NEW YORK
+            </p>
+            <h2 className="rb-title">
+              Where Every Meal<br />
+              Tells a <span className="rb-title-accent">Story</span>
+            </h2>
+            <p className="rb-desc">
+              Step into a world where ancient Halal traditions meet modern culinary artistry.
+              Our kitchen never sleeps — seasoning bold, serving fresh, crafting memories,
+              one plate at a time.
+            </p>
+
+            {/* Animated quote lines */}
+            <div className="rb-lines">
+              <div className="rb-line">
+                <span className="rb-line-icon">🔥</span>
+                <span>"Grilled fresh — never frozen, never rushed."</span>
+              </div>
+              <div className="rb-line">
+                <span className="rb-line-icon">🌿</span>
+                <span>"100% Zabiha Halal — certified, trusted, proud."</span>
+              </div>
+              <div className="rb-line">
+                <span className="rb-line-icon">❤️</span>
+                <span>"Family recipes, passed down through generations."</span>
+              </div>
+              <div className="rb-line">
+                <span className="rb-line-icon">🚀</span>
+                <span>"Delivering across 300+ miles — from Bronx to your door."</span>
+              </div>
+            </div>
+
+            <div className="rb-cta-row">
+              <Link to="/menu" className="rb-btn-primary">Order Now</Link>
+              <Link to="/about" className="rb-btn-ghost">Our Story ➔</Link>
+            </div>
+          </div>
+
+          {/* Right column — trust badges */}
+          <div className="rb-right">
+            <div className="rb-badges-grid">
+              <div className="rb-badge">
+                <span className="rb-badge-icon">🏆</span>
+                <p className="rb-badge-num">10K+</p>
+                <p className="rb-badge-label">Happy Customers</p>
+              </div>
+              <div className="rb-badge">
+                <span className="rb-badge-icon">⭐</span>
+                <p className="rb-badge-num">4.9</p>
+                <p className="rb-badge-label">Average Rating</p>
+              </div>
+              <div className="rb-badge">
+                <span className="rb-badge-icon">📍</span>
+                <p className="rb-badge-num">3</p>
+                <p className="rb-badge-label">Bronx Locations</p>
+              </div>
+              <div className="rb-badge">
+                <span className="rb-badge-icon">⏰</span>
+                <p className="rb-badge-num">24/7</p>
+                <p className="rb-badge-label">Bedford Park Open</p>
+              </div>
+            </div>
+
+            <div className="rb-pull-quote">
+              <span className="rb-pull-quote-mark">"</span>
+              <p>The Bronx's crown jewel of authentic Halal cuisine — bold flavors, perfect every single time.</p>
+              <p className="rb-pull-quote-author">— NY Foodie Magazine</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
           BOOK A TABLE
       ═══════════════════════════════════════════════════════ */}
       <section className="section book-table-section">

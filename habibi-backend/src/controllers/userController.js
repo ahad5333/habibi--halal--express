@@ -8,7 +8,7 @@ const crypto = require("crypto");
 const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, created_at FROM users WHERE id=$1",
+      "SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs, created_at FROM users WHERE id=$1",
       [req.user.id]
     );
     if (!result.rows[0]) return res.status(404).json({ message: "User not found." });
@@ -21,17 +21,34 @@ const getProfile = async (req, res) => {
 // ─── PUT /api/users/me ───────────────────────────────────────────────────────
 const updateProfile = async (req, res) => {
   try {
-    const { name, phone_number, avatar_url, date_of_birth } = req.body;
+    const { name, phone_number, avatar_url, date_of_birth, dietary_prefs } = req.body;
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ message: 'Name cannot be empty.' });
+      if (name.trim().length > 100) return res.status(400).json({ message: 'Name cannot exceed 100 characters.' });
+    }
+    if (phone_number !== undefined && phone_number) {
+      if (!/^\+?[\d\s\-().]{7,20}$/.test(phone_number)) return res.status(400).json({ message: 'Invalid phone number format.' });
+    }
+    if (avatar_url !== undefined && avatar_url) {
+      if (!/^https?:\/\//i.test(avatar_url) && !avatar_url.startsWith('/')) {
+        return res.status(400).json({ message: 'Avatar URL must be a valid http/https URL or server path.' });
+      }
+      if (avatar_url.length > 500) return res.status(400).json({ message: 'Avatar URL is too long.' });
+    }
+
+    const dietaryValue = dietary_prefs !== undefined ? JSON.stringify(dietary_prefs) : null;
     const result = await pool.query(
       `UPDATE users
           SET name=$1,
               phone_number=$2,
               avatar_url=COALESCE($3, avatar_url),
               date_of_birth=COALESCE($5::date, date_of_birth),
+              dietary_prefs=COALESCE($6::jsonb, dietary_prefs),
               updated_at=NOW()
         WHERE id=$4
-        RETURNING id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth`,
-      [name || null, phone_number || null, avatar_url || null, req.user.id, date_of_birth || null]
+        RETURNING id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs`,
+      [name?.trim() || null, phone_number || null, avatar_url || null, req.user.id, date_of_birth || null, dietaryValue]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -54,7 +71,9 @@ const changePassword = async (req, res) => {
 
     const hashed = await bcrypt.hash(new_password, 12);
     await pool.query("UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2", [hashed, req.user.id]);
-    res.json({ message: "Password updated successfully." });
+    // Invalidate existing session so all other logged-in devices are signed out
+    res.clearCookie('token', { httpOnly: true, sameSite: 'lax', path: '/' });
+    res.json({ message: "Password updated successfully. Please log in again." });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -84,6 +103,8 @@ const deleteAccount = async (req, res) => {
         WHERE id=$1`,
       [req.user.id, crypto.randomBytes(64).toString('hex')]
     );
+    // Clear the session cookie so the client is immediately signed out
+    res.clearCookie('token', { httpOnly: true, sameSite: 'lax', path: '/' });
     res.json({ message: "Account deleted. You have been signed out." });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -123,7 +144,7 @@ const getMyOrders = async (req, res) => {
     const rawOrders = result.rows.map(o => {
       let items = [];
       try { items = typeof o.items === "string" ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
-      items.forEach(it => { const id = parseInt(it.menu_item_id); if (!isNaN(id)) allMenuItemIds.add(id); });
+      items.forEach(it => { const id = parseInt(it.menu_item_id || it.id || it.menu_id); if (!isNaN(id)) allMenuItemIds.add(id); });
       return { ...o, items };
     });
 
@@ -141,8 +162,8 @@ const getMyOrders = async (req, res) => {
       ...o,
       items: o.items.map(it => ({
         ...it,
-        name: nameMap[it.menu_item_id]?.name || it.name || 'Item',
-        image_url: nameMap[it.menu_item_id]?.image_url || null,
+        name: nameMap[it.menu_item_id || it.id || it.menu_id]?.name || it.name || 'Item',
+        image_url: nameMap[it.menu_item_id || it.id || it.menu_id]?.image_url || null,
       })),
     }));
 
@@ -201,16 +222,25 @@ const addAddress = async (req, res) => {
 
 // ─── PUT /api/users/me/addresses/:id/default ─────────────────────────────────
 const setDefaultAddress = async (req, res) => {
+  const client = await pool.connect();
   try {
-    await pool.query("UPDATE addresses SET is_default=FALSE WHERE user_id=$1", [req.user.id]);
-    const result = await pool.query(
+    await client.query('BEGIN');
+    await client.query("UPDATE addresses SET is_default=FALSE WHERE user_id=$1", [req.user.id]);
+    const result = await client.query(
       "UPDATE addresses SET is_default=TRUE WHERE id=$1 AND user_id=$2 RETURNING *",
       [req.params.id, req.user.id]
     );
-    if (!result.rows[0]) return res.status(404).json({ message: "Address not found." });
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: "Address not found." });
+    }
+    await client.query('COMMIT');
     res.json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     res.status(500).json(safeError(err));
+  } finally {
+    client.release();
   }
 };
 
@@ -255,11 +285,14 @@ const getLoyalty = async (req, res) => {
 
     // Tier thresholds
     const tiers = [
-      { name: 'Bronze', min: 0,    max: 999,  next: 1000, color: '#CD7F32' },
-      { name: 'Silver', min: 1000, max: 2499, next: 2500, color: '#A8A9AD' },
-      { name: 'Gold',   min: 2500, max: Infinity, next: null, color: '#F2C94C' },
+      { name: 'Bronze',   min: 0,    max: 999,  next: 1000, color: '#CD7F32', multiplier: 1.0 },
+      { name: 'Silver',   min: 1000, max: 2499, next: 2500, color: '#A8A9AD', multiplier: 1.25 },
+      { name: 'Gold',     min: 2500, max: 4999, next: 5000, color: '#F2C94C', multiplier: 1.5 },
+      { name: 'Platinum', min: 5000, max: Infinity, next: null, color: '#B9F2FF', multiplier: 2.0 },
     ];
     const tier = tiers.find(t => pts >= t.min && pts <= t.max) || tiers[0];
+    const tierIdx = tiers.findIndex(t => t.name === tier.name);
+    const nextTierName = tierIdx < tiers.length - 1 ? tiers[tierIdx + 1].name : null;
 
     // Recent orders that earned points (delivered orders)
     const email = (await pool.query('SELECT email FROM users WHERE id=$1', [req.user.id])).rows[0]?.email;
@@ -286,7 +319,9 @@ const getLoyalty = async (req, res) => {
       points: pts,
       tier: tier.name,
       tier_color: tier.color,
+      tier_multiplier: tier.multiplier,
       next_tier: tier.next,
+      next_tier_name: nextTierName,
       next_tier_pts_needed: tier.next ? Math.max(0, tier.next - pts) : 0,
       progress_pct: tier.next ? Math.min(100, Math.round(((pts - tier.min) / (tier.next - tier.min)) * 100)) : 100,
       history,

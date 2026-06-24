@@ -258,7 +258,7 @@ function ProfileTab({ user, logout, refreshUser }) {
             type="password" className="acct-input" placeholder="Confirm new password"
             value={confirmPw} onChange={e => setConfirmPw(e.target.value)} required
           />
-          {pwMsg && <p className={`acct-inline-msg ${pwMsg.includes('!') ? 'ok' : 'err'}`}>{pwMsg}</p>}
+          {pwMsg && <p className={`acct-inline-msg ${pwMsg.startsWith('Password updated') ? 'ok' : 'err'}`}>{pwMsg}</p>}
           <button type="submit" className="btn btn-primary acct-save-btn" disabled={pwSaving}>
             {pwSaving ? 'Updating…' : 'Update Password'}
           </button>
@@ -534,20 +534,22 @@ function OrdersTab() {
 
   const load = useCallback(() => {
     setLoading(true); setError('');
+    const ctrl = new AbortController();
     userAPI.getOrders()
       .then(data => setOrders(Array.isArray(data) ? data : []))
-      .catch(err => setError(err.message || 'Could not load orders.'))
+      .catch(err => { if (err.name !== 'AbortError') setError(err.message || 'Could not load orders.'); })
       .finally(() => setLoading(false));
+    return ctrl;
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { const ctrl = load(); return () => ctrl?.abort(); }, [load]);
 
   const handleReorder = (order) => {
     (order.items || []).forEach(item =>
       addItem({ id: item.id || item.menuItemId || item.menu_item_id, name: item.name, price: parseFloat(item.price || item.unit_price) || 0, qty: item.qty || item.quantity || 1, img: item.img || null, tag: item.tag || '' })
     );
     setExpanded(null);
-    navigate('/cart');
+    navigate('/checkout');
   };
 
   if (loading) return <div className="acct-empty"><div className="acct-spinner" /></div>;
@@ -956,14 +958,17 @@ function NotificationsTab() {
   const [notifs, setNotifs]     = useState([]);
   const [loading, setLoading]   = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
+    let cancelled = false;
     setLoading(true);
-    try { setNotifs(await notificationsAPI.getAll()); }
-    catch (_) {}
-    finally { setLoading(false); }
+    notificationsAPI.getAll()
+      .then(data => { if (!cancelled) setNotifs(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { const cancel = load(); return cancel; }, [load]);
 
   const markRead = async (id) => {
     await notificationsAPI.markRead(id).catch(() => {});

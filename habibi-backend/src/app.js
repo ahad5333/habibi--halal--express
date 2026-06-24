@@ -132,6 +132,8 @@ const notificationsRoutes = require("./routes/notificationsRoutes");
 const careersRoutes = require("./routes/careersRoutes");
 const reviewsRoutes = require("./routes/reviewsRoutes");
 const favoritesRoutes = require("./routes/favoritesRoutes");
+const groupOrderRoutes = require("./routes/groupOrderRoutes");
+const referralRoutes   = require("./routes/referralRoutes");
 const { getPaymentSettings, getCheckoutSettings } = require("./controllers/settingsController");
 
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
@@ -158,7 +160,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
-app.use(express.json({ limit: '50kb' }))
+app.use(express.json({ limit: '500kb' }))
 const staticOpts = { maxAge: '1y', etag: true, lastModified: true }
 app.use(express.static("public", staticOpts))
 app.use("/uploads", express.static("public/uploads", staticOpts))
@@ -192,6 +194,8 @@ app.use("/api/roadie", roadieRoutes);
 app.use("/api/careers", careersRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/favorites", favoritesRoutes);
+app.use("/api/group-orders", groupOrderRoutes);
+app.use("/api/referrals",   referralRoutes);
 app.get("/api/settings/payments", getPaymentSettings);
 app.get("/api/settings/checkout", getCheckoutSettings);
 app.use("/", seoRoutes);
@@ -220,8 +224,9 @@ app.get("/", (req, res)=>{
 });
 
 // ── Sentry error handler (must be after all routes, before other error handlers) ──
-const Sentry = require("@sentry/node");
 if (process.env.SENTRY_DSN) {
+  const Sentry = require("@sentry/node");
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
   Sentry.setupExpressErrorHandler(app);
 }
 
@@ -246,6 +251,102 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     error: isProd ? "Internal server error." : err.message,
   });
+});
+
+// ── Re-engagement push notifications ─────────────────────────────────────────
+// Runs daily at 12:00 noon. Finds users who haven't ordered in 5-7 days and
+// sends a personalised push nudge. Skips users with no push token.
+const cron       = require('node-cron');
+const fcmService = require('./services/fcmService');
+
+cron.schedule('0 12 * * *', async () => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT DISTINCT u.id, u.name
+        FROM users u
+        JOIN guest_orders go ON go.customer_email = u.email
+       WHERE go.placed_at >= NOW() - INTERVAL '7 days'
+         AND go.placed_at <  NOW() - INTERVAL '5 days'
+         AND u.email NOT IN (
+               SELECT customer_email FROM guest_orders
+                WHERE placed_at > NOW() - INTERVAL '5 days'
+             )
+         AND EXISTS (
+               SELECT 1 FROM user_device_tokens udt WHERE udt.user_id = u.id
+             )
+    `);
+
+    const messages = [
+      { title: "We miss you, {name}! 🍽️",       body: "Your next halal craving is one tap away. Come back for something delicious." },
+      { title: "Habibi calling, {name}! 📞",     body: "It's been a few days. Treat yourself to something amazing today." },
+      { title: "Hungry, {name}? 🥙",             body: "Your favourite platters and burgers are waiting. Order now!" },
+    ];
+
+    for (const user of rows) {
+      const msg = messages[user.id % messages.length];
+      const firstName = (user.name || 'Habibi').split(' ')[0];
+      await fcmService.sendPushToUser(
+        user.id,
+        msg.title.replace('{name}', firstName),
+        msg.body,
+        { screen: 'MainTabs', channelId: 'promotions' }
+      ).catch(() => {});
+    }
+
+    if (rows.length > 0) {
+      console.log(`[Cron] Re-engagement: sent nudge to ${rows.length} user(s)`);
+    }
+  } catch (err) {
+    console.error('[Cron] Re-engagement error:', err.message);
+  }
+});
+
+// ── Order abandonment cleanup ─────────────────────────────────────────────────
+// Runs every 5 minutes. Cancels orders stuck in 'pending' for over 30 minutes
+// — these are unpaid sessions where the customer closed the browser.
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const { rowCount } = await pool.query(`
+      UPDATE guest_orders
+         SET order_status = 'cancelled', updated_at = NOW()
+       WHERE order_status = 'pending'
+         AND created_at < NOW() - INTERVAL '30 minutes'
+    `);
+    if (rowCount > 0) {
+      console.log(`[Cron] Abandoned orders cancelled: ${rowCount}`);
+    }
+  } catch (err) {
+    console.error('[Cron] Abandonment cleanup error:', err.message);
+  }
+});
+
+// ── Expired revoked-token cleanup ────────────────────────────────────────────
+// Runs daily. Removes rows whose token has naturally expired — keeps the table lean.
+cron.schedule('0 3 * * *', async () => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM revoked_tokens WHERE expires_at < NOW()');
+    if (rowCount > 0) console.log(`[Cron] Purged ${rowCount} expired revoked token(s)`);
+  } catch (err) {
+    console.error('[Cron] Revoked-token cleanup error:', err.message);
+  }
+});
+
+// ── Expired group order session cleanup ───────────────────────────────────────
+// Runs every hour. Closes open sessions past their expires_at timestamp.
+cron.schedule('0 * * * *', async () => {
+  try {
+    const { rowCount } = await pool.query(`
+      UPDATE group_order_sessions
+         SET status = 'closed'
+       WHERE status = 'open'
+         AND expires_at < NOW()
+    `);
+    if (rowCount > 0) {
+      console.log(`[Cron] Expired group sessions closed: ${rowCount}`);
+    }
+  } catch (err) {
+    console.error('[Cron] Group session cleanup error:', err.message);
+  }
 });
 
 module.exports = app;

@@ -7,6 +7,7 @@ const {
   validateCoupon,
   getCoupons,
   createCoupon,
+  updateCoupon,
   toggleCouponStatus,
   deleteCoupon,
 } = require("../controllers/couponController");
@@ -32,6 +33,7 @@ router.post("/",         protect, admin,
   createCoupon
 );
 
+router.patch("/:id",     protect, admin, updateCoupon);
 router.put("/:id/toggle",protect, admin, toggleCouponStatus);
 router.delete("/:id",    protect, admin, deleteCoupon);
 

@@ -52,9 +52,9 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  /* Consent checkboxes — pre-checked by default */
-  const [agreeTerms, setAgreeTerms] = useState(true);
-  const [agreeSms, setAgreeSms] = useState(true);
+  /* Consent checkboxes — unchecked by default (TCPA requires affirmative opt-in) */
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeSms, setAgreeSms] = useState(false);
   const [legalModal, setLegalModal] = useState(null);
 
   const STEPS = [
@@ -182,7 +182,7 @@ const Signup = () => {
           </ul>
 
           <div className="sp-halal-badge">
-            <img src="/images/logos/halal.png" alt="Halal Certified" className="sp-halal-img" />
+            <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="sp-halal-img" />
             <div>
               <p className="sp-halal-title">Zabiha Halal Certified</p>
               <p className="sp-halal-sub">All items verified since 2002</p>

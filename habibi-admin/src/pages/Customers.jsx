@@ -1,23 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, X, Mail, Phone, MapPin, ShoppingBag } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Customers.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
+const PAGE_SIZE = 50;
+
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
+  const [total, setTotal]         = useState(0);
+  const [page, setPage]           = useState(1);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
   const [selected, setSelected]   = useState(null);
   const [detail, setDetail]       = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const searchTimer = useRef(null);
 
-  useEffect(() => {
-    adminAPI.customers()
-      .then(d => setCustomers(d))
+  const load = useCallback((q, p) => {
+    setLoading(true);
+    adminAPI.customers(q, p, PAGE_SIZE)
+      .then(d => { setCustomers(d.customers || []); setTotal(d.total || 0); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load('', 1); }, [load]);
+
+  const handleSearch = (e) => {
+    const q = e.target.value;
+    setSearch(q);
+    setPage(1);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => load(q, 1), 350);
+  };
+
+  const goPage = (p) => { setPage(p); load(search, p); };
 
   const openCustomer = async (c) => {
     setSelected(c);
@@ -28,20 +46,17 @@ export default function Customers() {
     finally { setDetailLoading(false); }
   };
 
-  const visible = customers.filter(c => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (c.name + c.email + c.phone).toLowerCase().includes(q);
-  });
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const visible = customers;
 
   return (
     <div className="customers-page">
       <div className="page-hdr">
         <div>
           <p className="page-title">Customers</p>
-          <p className="page-sub">{customers.length} registered accounts</p>
+          <p className="page-sub">{total.toLocaleString()} registered accounts</p>
         </div>
-        <input className="input" style={{width:240}} placeholder="Search customers..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="input" style={{width:240}} placeholder="Search name, email, phone…" value={search} onChange={handleSearch} />
       </div>
 
       <div className="customers-layout">
@@ -86,6 +101,14 @@ export default function Customers() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'0.5rem',padding:'0.75rem',borderTop:'1px solid var(--border)'}}>
+              <button className="btn btn-sm btn-secondary" disabled={page<=1} onClick={() => goPage(page-1)}>← Prev</button>
+              <span style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>Page {page} of {totalPages}</span>
+              <button className="btn btn-sm btn-secondary" disabled={page>=totalPages} onClick={() => goPage(page+1)}>Next →</button>
             </div>
           )}
         </div>

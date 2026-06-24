@@ -5,6 +5,12 @@
 .env.*
 !.env.example
 
+# Credentials handover — NEVER commit this
+CREDENTIALS.txt
+CREDENTIALS.md
+*-credentials.*
+*-handover.*
+
 # Dependencies
 node_modules/
 

@@ -39,11 +39,11 @@ export default function Reports() {
   const [loading, setLoading]   = useState(false);
   const [err, setErr]           = useState('');
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (overrideStart, overrideEnd) => {
     setLoading(true); setErr('');
     try {
-      const qs = `?start=${start}&end=${end}`;
-      const [rev, tx, byCat, byLoc, tax, coupon] = await Promise.all([
+      const qs = `?start=${overrideStart || start}&end=${overrideEnd || end}`;
+      const results = await Promise.allSettled([
         adminAPI.reportRevenue(qs),
         adminAPI.reportTransactions(qs),
         adminAPI.reportByCategory(qs),
@@ -51,6 +51,10 @@ export default function Reports() {
         adminAPI.reportTax(qs),
         adminAPI.reportCouponUsage(qs),
       ]);
+      const [rev, tx, byCat, byLoc, tax, coupon] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length === results.length) throw new Error(failed[0].reason?.message || 'All report endpoints failed');
+      if (failed.length) setErr(`${failed.length} report section(s) failed to load.`);
       setData({ rev, tx, byCat, byLoc, tax, coupon });
     } catch (e) {
       setErr(e.message);
@@ -104,6 +108,7 @@ export default function Reports() {
                 if (p==='90d') s = new Date(Date.now()-90*864e5).toISOString().split('T')[0];
                 if (p==='ytd') s = `${now.getFullYear()}-01-01`;
                 setStart(s); setEnd(e);
+                run(s, e);
               }}>{p.toUpperCase()}</button>
             ))}
           </div>

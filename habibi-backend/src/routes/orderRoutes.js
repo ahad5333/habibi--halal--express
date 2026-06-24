@@ -79,8 +79,8 @@ router.get("/track/:orderNumber", async (req, res) => {
                 delivery_method, delivery_city,
                 sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
-                order_status, items, placed_at, expected_time,
-                table_number
+                order_status, items, placed_at, updated_at, expected_time,
+                table_number, estimated_minutes
            FROM guest_orders
           WHERE order_number = $1`,
         [orderNumber]

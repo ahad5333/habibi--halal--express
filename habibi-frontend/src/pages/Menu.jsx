@@ -85,7 +85,7 @@ const Menu = () => {
   const sectionRefs = useRef({});
   const [activeSidebarCat, setActiveSidebarCat] = useState('');
 
-  const [ratingStats, setRatingStats] = useState({ avg: '4.8', count: 170 });
+  const [ratingStats, setRatingStats] = useState(null);
 
   const [bowlBase,    setBowlBase]    = useState('');
   const [bowlProtein, setBowlProtein] = useState('');
@@ -214,7 +214,7 @@ const Menu = () => {
       (i.category || '').toLowerCase().includes('breakfast')
     );
     // If we have enough breakfast items use those, otherwise fall back to sort_order
-    const pool = breakfast.length >= 4 ? breakfast : available.sort((a, b) => {
+    const pool = breakfast.length >= 4 ? breakfast : [...available].sort((a, b) => {
       const sa = a.sort_order ?? 9999;
       const sb = b.sort_order ?? 9999;
       return sa !== sb ? sa - sb : a.id - b.id;
@@ -339,10 +339,12 @@ const Menu = () => {
           )}
           <div className="menu-item-row-footer">
             <span className="menu-item-row-price">${price.toFixed(2)}</span>
+            {ratingStats && (
             <span className="menu-item-row-rating">
               <Star size={11} fill="#F97316" color="#F97316" />
               {ratingStats.avg}
             </span>
+            )}
           </div>
         </div>
 
@@ -442,10 +444,12 @@ const Menu = () => {
       {/* ── Restaurant info strip ──────────────────────────── */}
       <div className="menu-info-strip">
         <div className="menu-info-strip-inner">
+          {ratingStats && (
           <div className="menu-info-item">
             <Star size={13} fill="#F97316" color="#F97316" />
             <span><strong>{ratingStats.avg}</strong> ({ratingStats.count >= 100 ? `${ratingStats.count}+` : ratingStats.count} ratings)</span>
           </div>
+          )}
           <span className="menu-info-dot" />
           <div className="menu-info-item">
             <span>100% Zabiha Halal</span>

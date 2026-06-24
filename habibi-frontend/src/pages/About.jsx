@@ -217,7 +217,7 @@ const About = () => (
             onError={e => { e.target.src = '/images/food/food-8.jpg'; }}
           />
           <div className="about-story-badge">
-            <img src="/images/logos/halal.png" alt="Halal Certified" className="story-badge-halal" />
+            <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="story-badge-halal" />
             <div>
               <p className="story-badge-line1" style={{ color: '#ffffff' }}>Zabiha Halal</p>
               <p className="story-badge-line2" style={{ color: '#ffffff' }}>Certified</p>

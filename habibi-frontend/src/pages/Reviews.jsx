@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Star, StarOff, Send, CheckCircle, ChevronDown, Award } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { reviewsAPI } from '../services/api';
 import SEO from '../components/SEO';
@@ -62,11 +63,11 @@ function ReviewCard({ review }) {
   );
 }
 
-function SubmitForm({ user, onSuccess, onCancel }) {
+function SubmitForm({ user, onSuccess, onCancel, initialOrderNumber = '' }) {
   const [rating, setRating] = useState(0);
   const [name, setName] = useState(user?.name || '');
   const [comment, setComment] = useState('');
-  const [orderNumber, setOrderNumber] = useState('');
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -166,6 +167,8 @@ function SuccessMessage({ onDone }) {
 
 export default function Reviews() {
   const { user } = useAuth();
+  const [params] = useSearchParams();
+  const orderFromUrl = params.get('order') || '';
 
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState(null);
@@ -175,7 +178,8 @@ export default function Reviews() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [formState, setFormState] = useState('idle'); // idle | form | success
+  // Auto-open form when arriving from "Rate Your Order" link
+  const [formState, setFormState] = useState(orderFromUrl ? 'form' : 'idle');
 
   const PAGE_SIZE = 12;
 
@@ -288,6 +292,7 @@ export default function Reviews() {
               user={user}
               onSuccess={() => setFormState('success')}
               onCancel={() => setFormState('idle')}
+              initialOrderNumber={orderFromUrl}
             />
           )}
           {formState === 'success' && (

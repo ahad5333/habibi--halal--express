@@ -1,4 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -70,7 +71,12 @@ function Layout() {
     <>
       {!isFullscreen && <Navbar />}
       <main>
-        <Suspense fallback={<div style={{ minHeight: '60vh' }} />}>
+        <ErrorBoundary>
+        <Suspense fallback={
+          <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 40, height: 40, border: '3px solid #d97706', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          </div>
+        }>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
@@ -112,6 +118,7 @@ function Layout() {
           <Route path="/sms-terms"      element={<SmsTerms />} />
           <Route path="/accessibility"  element={<Accessibility />} />
           <Route path="/reviews"           element={<Reviews />} />
+          <Route path="/reviews/new"       element={<Reviews />} />
           <Route path="/unsubscribe"       element={<Unsubscribe />} />
           <Route path="/delivery-coverage" element={<DeliveryCoverage />} />
           <Route path="/where-we-deliver"  element={<DeliveryCoverage />} />
@@ -120,6 +127,7 @@ function Layout() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
       {!isFullscreen && <Footer />}
     </>
@@ -129,7 +137,7 @@ function Layout() {
 function InternalGuard({ children, requireAdmin = false }) {
   // Read from AuthContext (populated via /api/auth/me on load) — no localStorage token needed
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 32, height: 32, border: '3px solid #d97706', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (requireAdmin && !['admin', 'superadmin'].includes(user.role)) return <Navigate to="/" replace />;
   return children;

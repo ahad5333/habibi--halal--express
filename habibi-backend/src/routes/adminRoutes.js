@@ -157,9 +157,10 @@ const { refundOrder } = require("../controllers/paymentController");
 router.post("/payments/:orderNumber/refund", refundOrder);
 
 // Payment Method Settings (enable/disable)
-const { getAdminPaymentSettings, updatePaymentSetting } = require("../controllers/settingsController");
+const { getAdminPaymentSettings, updatePaymentSetting, getIntegrationStatus } = require("../controllers/settingsController");
 router.get("/payment-settings", getAdminPaymentSettings);
 router.patch("/payment-settings/:id", updatePaymentSetting);
+router.get("/integration-status", getIntegrationStatus);
 
 // Coupons
 const couponRoutes = require("./couponRoutes");

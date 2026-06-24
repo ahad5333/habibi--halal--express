@@ -134,7 +134,7 @@ const loginUser = async (req, res) => {
       [user.id]
     );
 
-    // VULN-05: block unverified emails (admin accounts are exempt)
+    // Email verification gate — enforced for all non-admin users
     if (!user.email_verified && user.role !== 'admin') {
       return res.status(403).json({
         message: "Please verify your email address before logging in.",
@@ -143,17 +143,13 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // VULN-11: admin login requires email OTP second factor
-    // MFA is only enforced when SMTP/SendGrid is configured — skipped otherwise so
-    // admin can still log in before email credentials are set up.
+    // Admin MFA — TODO: enforce once SMTP/SendGrid is configured (VULN-01)
     if (user.role === 'admin') {
       const smtpConfigured = !!(
         process.env.SENDGRID_API_KEY ||
         (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
       if (smtpConfigured) {
-        // Prevent OTP reset if a prior session already hit the attempt limit and hasn't expired.
-        // Without this check an attacker could get unlimited 5-guess windows per 10 minutes.
         if (
           user.admin_otp_attempts >= 5 &&
           user.admin_otp_expires &&
@@ -163,9 +159,8 @@ const loginUser = async (req, res) => {
             message: 'Too many failed MFA attempts. Please wait a few minutes and try again.',
           });
         }
-
-        const otp        = String(crypto.randomInt(100000, 1000000)); // 6 digits
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);     // 10 min
+        const otp        = String(crypto.randomInt(100000, 1000000));
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
         const otpHash    = await bcrypt.hash(otp, 12);
         await pool.query(
           `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
@@ -174,7 +169,6 @@ const loginUser = async (req, res) => {
         sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
         return res.json({ mfa_required: true, email: user.email });
       }
-      console.warn('[Auth] Admin MFA skipped — SMTP not configured. Set SENDGRID_API_KEY or SMTP_HOST+SMTP_USER+SMTP_PASS to enable.');
     }
 
     const token = jwt.sign(
@@ -378,9 +372,7 @@ const forgotPassword = async (req, res) => {
       [token, expires, email]
     );
 
-    // In production this would send an email. For now return the token in dev.
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
-    console.log(`[DEV] Password reset link for ${email}: ${resetUrl}`);
 
     const user = result.rows[0];
     if (user.is_partner) {
@@ -393,7 +385,6 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // In dev, log the URL to server console only — never expose tokens in API responses
     if (process.env.NODE_ENV?.toLowerCase() !== 'production') {
       console.log('[DEV] Password reset URL:', resetUrl);
     }
@@ -446,8 +437,8 @@ const sendSmsRecoveryCode = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, sms_code_expires FROM users WHERE phone_number LIKE $1`,
-      [`%${cleaned.slice(-10)}`]
+      `SELECT id, name, sms_code_expires FROM users WHERE phone_number = $1 OR phone_number = $2`,
+      [cleaned, `+1${cleaned.slice(-10)}`]
     );
     // Always respond success to avoid user enumeration
     if (result.rows.length === 0) {
@@ -491,8 +482,8 @@ const verifySmsRecoveryCode = async (req, res) => {
     const cleaned = phone.replace(/\D/g, '');
     const result  = await pool.query(
       `SELECT id, name, email, role, is_partner, sms_code_hash, sms_code_expires, sms_code_attempts
-       FROM users WHERE phone_number LIKE $1`,
-      [`%${cleaned.slice(-10)}`]
+       FROM users WHERE phone_number = $1 OR phone_number = $2`,
+      [cleaned, `+1${cleaned.slice(-10)}`]
     );
 
     if (result.rows.length === 0) {

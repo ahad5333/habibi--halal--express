@@ -1,5 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package } from 'lucide-react';
+import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package, Download } from 'lucide-react';
+
+function exportOrdersCsv(orders) {
+  const header = ['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Delivery', 'Payment', 'Status', 'Date'];
+  const rows = orders.map(o => [
+    o.id,
+    o.user_name || '',
+    o.user_phone || '',
+    (o.items || []).map(i => i.name).join('; '),
+    parseFloat(o.total_amount || 0).toFixed(2),
+    o.delivery_method || '',
+    o.payment_method || '',
+    o.status || '',
+    o.created_at ? new Date(o.created_at).toLocaleDateString() : '',
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 import { adminAPI } from '../services/api';
 import './Orders.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -182,10 +203,14 @@ function OrderRow({ order, onUpdate }) {
   );
 }
 
+const TODAY = new Date().toISOString().split('T')[0];
+
 export default function Orders() {
   const [orders, setOrders]       = useState([]);
   const [filter, setFilter]       = useState('all');
   const [search, setSearch]       = useState('');
+  const [dateFrom, setDateFrom]   = useState('');
+  const [dateTo, setDateTo]       = useState('');
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -223,8 +248,10 @@ export default function Orders() {
     if (filter !== 'all' && o.status !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (o.id + o.user_name + o.user_phone + o.user_email).toLowerCase().includes(q);
+      if (!(o.id + o.user_name + o.user_phone + (o.user_email || '')).toLowerCase().includes(q)) return false;
     }
+    if (dateFrom && o.created_at && new Date(o.created_at) < new Date(dateFrom)) return false;
+    if (dateTo   && o.created_at && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false;
     return true;
   });
 
@@ -248,12 +275,18 @@ export default function Orders() {
           ))}
         </div>
         <div className="orders-right">
+          <input type="date" className="input" style={{width:140}} max={TODAY} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+          <input type="date" className="input" style={{width:140}} max={TODAY} value={dateTo}   onChange={e => setDateTo(e.target.value)}   title="To date" />
+          {(dateFrom || dateTo) && <button className="btn btn-sm btn-secondary" onClick={() => { setDateFrom(''); setDateTo(''); }}>Clear</button>}
           <input
             className="input orders-search"
             placeholder="Search orders, customers..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          <button className="btn btn-secondary btn-icon" onClick={() => exportOrdersCsv(visible)} title="Export CSV" disabled={!visible.length}>
+            <Download size={14} />
+          </button>
           <button className="btn btn-secondary btn-icon" onClick={() => fetchOrders(true)} title="Refresh">
             <RefreshCw size={14} className={refreshing ? 'spin-once' : ''} />
           </button>

@@ -40,8 +40,8 @@
     <link rel="preload" as="image" href="/images/logos/logo-badge.webp" />
     <title>Habibi Halal Express | Authentic Mediterranean Street Food</title>
 
-    <!-- JSON-LD: LocalBusiness / Restaurant structured data -->
-    <script type="application/ld+json">
+    <!-- JSON-LD: LocalBusiness / Restaurant structured data (id matched by SEO.jsx to prevent duplicates) -->
+    <script id="json-ld-schema" type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Restaurant",
@@ -81,6 +81,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="font-family:sans-serif;text-align:center;padding:3rem;">
+        <h2>Habibi Halal Express</h2>
+        <p>Please enable JavaScript to use this site, or <a href="tel:+19290000000">call us</a> to place an order.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

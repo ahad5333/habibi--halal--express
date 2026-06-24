@@ -39,37 +39,42 @@ export function CartProvider({ children }) {
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data || !data.items || data.items.length === 0) return;
-        // Server returns { id (cart_item_id), menu_id, quantity, name, price }
-        // Map to frontend shape; keep img/tag from localStorage match if available
         const local = (() => {
           try { return JSON.parse(localStorage.getItem('habibi_cart') || '[]'); } catch (_) { return []; }
         })();
-        const merged = data.items.map(si => {
-          const local_match = local.find(l => l.id === si.menu_id);
-          return {
-            id: si.menu_id,
-            name: si.name,
-            price: parseFloat(si.price),
-            qty: si.quantity,
-            img: local_match?.img || null,
-            tag: local_match?.tag || '',
-            note: local_match?.note || '',
-          };
-        });
+        if (!data || !data.items || data.items.length === 0) {
+          // Server cart is empty — keep local (guest) items as-is
+          return;
+        }
+        // Merge: local items are the base; server quantity wins on overlap; server-only items appended
+        const merged = [...local];
+        for (const si of data.items) {
+          const idx = merged.findIndex(l => l.id === si.menu_id);
+          if (idx >= 0) {
+            merged[idx] = { ...merged[idx], qty: si.quantity };
+          } else {
+            merged.push({ id: si.menu_id, name: si.name, price: parseFloat(si.price), qty: si.quantity, img: null, tag: '', note: '' });
+          }
+        }
         setItems(merged);
         localStorage.setItem('habibi_cart', JSON.stringify(merged));
       })
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync to server after every items change (outside state updater — safe for React Strict Mode)
+  const isMounted = useRef(false);
+  useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; } // skip initial mount
+    scheduleSyncToServer(items);
+  }, [items, scheduleSyncToServer]);
+
   const persist = (newItems) => {
     setItems(newItems);
     localStorage.setItem('habibi_cart', JSON.stringify(newItems));
-    scheduleSyncToServer(newItems);
   };
 
-  const addItem = (item) => {
+  const addItem = useCallback((item) => {
     trackAddToCart(item);
     setItems(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -77,10 +82,9 @@ export function CartProvider({ children }) {
         ? prev.map(i => i.id === item.id ? { ...i, qty: i.qty + (item.qty || 1) } : i)
         : [...prev, { ...item, qty: item.qty || 1 }];
       localStorage.setItem('habibi_cart', JSON.stringify(updated));
-      scheduleSyncToServer(updated);
       return updated;
     });
-  };
+  }, []);
 
   const removeItem = (id) => {
     const updated = items.filter(i => i.id !== id);

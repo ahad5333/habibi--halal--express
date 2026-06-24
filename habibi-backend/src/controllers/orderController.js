@@ -155,67 +155,11 @@ const createGuestOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
 
-    // 2. Verify item prices against the database so clients cannot lower individual prices
-    if (Array.isArray(items) && items.length > 0) {
-      const itemIds = items.map(i => parseInt(i.id || i.menu_id, 10)).filter(Boolean);
-      if (itemIds.length > 0) {
-        const priceRows = await pool.query(
-          `SELECT id, price FROM menus WHERE id = ANY($1) AND is_available = TRUE`,
-          [itemIds]
-        );
-        const priceMap = {};
-        priceRows.rows.forEach(r => { priceMap[r.id] = parseFloat(r.price); });
-
-        // Fetch modifier JSONB alongside prices in one round trip
-        const modRows = await pool.query(
-          'SELECT id, choices, addons FROM menus WHERE id = ANY($1)',
-          [itemIds]
-        );
-        const modMap = {};
-        modRows.rows.forEach(r => { modMap[r.id] = { choices: r.choices || [], addons: r.addons || [] }; });
-
-        // Per-item: verify client price >= dbBasePrice + selected modifier extras
-        let recalcSubtotal = 0;
-        for (const item of items) {
-          const menuId = parseInt(item.id || item.menu_id, 10);
-          if (!menuId || menuId < 0) continue; // skip zero/NaN/negative (themed/special items)
-          const dbPrice = priceMap[menuId];
-          if (dbPrice === undefined) {
-            return res.status(400).json({ message: 'One or more items are no longer available. Please refresh your cart.' });
-          }
-
-          const { choices, addons } = modMap[menuId] || { choices: [], addons: [] };
-          const selChoices = item.selectedChoices || {};
-          const selAddons  = item.selectedAddons  || {};
-          let modifierExtra = 0;
-
-          for (const [cgId, optId] of Object.entries(selChoices)) {
-            const cg  = choices.find(c => c.id === parseInt(cgId));
-            const opt = (cg?.options || []).find(o => o.id === parseInt(optId));
-            modifierExtra += parseFloat(opt?.extra_price || 0);
-          }
-          for (const [optId, addonQty] of Object.entries(selAddons)) {
-            for (const ag of addons) {
-              const opt = (ag?.options || []).find(o => o.id === parseInt(optId));
-              if (opt) modifierExtra += parseFloat(opt.price || 0) * parseInt(addonQty, 10);
-            }
-          }
-
-          const expectedUnit = parseFloat(dbPrice) + modifierExtra;
-          const clientUnit   = parseFloat(item.price || item.unit_price || 0);
-          if (clientUnit < expectedUnit - 0.02) {
-            return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
-          }
-
-          const qty = parseInt(item.qty || item.quantity || 1, 10);
-          recalcSubtotal += clientUnit * qty;
-        }
-
-        if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.50) {
-          return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
-        }
-      }
-    }
+    // 2. Collect item IDs for price validation — actual validation runs inside the DB
+    //    transaction below with FOR UPDATE to prevent TOCTOU race conditions.
+    const itemIds = Array.isArray(items)
+      ? items.map(i => parseInt(i.id || i.menu_id, 10)).filter(id => id > 0)
+      : [];
 
     // 3. Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
@@ -235,7 +179,7 @@ const createGuestOrder = async (req, res) => {
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }
-          if (clientDelFee < serverDelFee - 0.50) {
+          if (clientDelFee < serverDelFee - 0.10) {
             return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
           }
         }
@@ -255,19 +199,24 @@ const createGuestOrder = async (req, res) => {
       return res.status(400).json({ message: 'Service fee is incorrect. Please refresh and retry.' });
     }
 
-    // 5. Birthday coupon validation — verify server-side so the client cannot self-grant
-    if (coupon_code && coupon_code.toUpperCase() === 'BIRTHDAY10' && clientDiscount > 0) {
+    // 5. Birthday coupon validation — codes are issued as BDAY-{userId}-{year}
+    const BIRTHDAY_COUPON_RE = /^BDAY-(\d+)-(\d{4})$/i;
+    const bdayMatch = coupon_code && BIRTHDAY_COUPON_RE.exec(coupon_code.trim());
+    if (bdayMatch && clientDiscount > 0) {
+      const bdayUserId = parseInt(bdayMatch[1]);
+      const bdayYear   = parseInt(bdayMatch[2]);
+      const now = new Date();
       let birthdayValid = false;
-      if (customer_email) {
+      if (customer_email && bdayYear === now.getFullYear()) {
         try {
           const uRes = await pool.query(
-            'SELECT date_of_birth FROM users WHERE LOWER(email) = LOWER($1) AND date_of_birth IS NOT NULL',
-            [customer_email]
+            `SELECT date_of_birth FROM users
+              WHERE LOWER(email) = LOWER($1) AND id = $2 AND date_of_birth IS NOT NULL`,
+            [customer_email, bdayUserId]
           );
           if (uRes.rows.length) {
             const dob = new Date(uRes.rows[0].date_of_birth);
-            const now = new Date();
-            birthdayValid = dob.getUTCMonth() === now.getMonth() && dob.getUTCDate() === now.getDate();
+            birthdayValid = dob.getMonth() === now.getMonth() && dob.getDate() === now.getDate();
           }
         } catch (_) { /* non-fatal */ }
       }
@@ -299,6 +248,61 @@ const createGuestOrder = async (req, res) => {
     try {
       await client.query('BEGIN');
 
+      // Price validation inside transaction with FOR UPDATE — prevents TOCTOU race
+      if (itemIds.length > 0) {
+        const priceRows = await client.query(
+          `SELECT id, price, choices, addons FROM menus WHERE id = ANY($1) AND is_available = TRUE FOR UPDATE`,
+          [itemIds]
+        );
+        const dbMap = {};
+        priceRows.rows.forEach(r => { dbMap[r.id] = r; });
+
+        let recalcSubtotal = 0;
+        for (const item of items) {
+          const menuId = parseInt(item.id || item.menu_id, 10);
+          if (!menuId || menuId < 0) continue;
+          const row = dbMap[menuId];
+          if (!row) {
+            await client.query('ROLLBACK');
+            client.release();
+            return res.status(400).json({ message: 'One or more items are no longer available. Please refresh your cart.' });
+          }
+
+          const dbPrice = parseFloat(row.price);
+          const choices = row.choices || [];
+          const addons  = row.addons  || [];
+          const selChoices = item.selectedChoices || {};
+          const selAddons  = item.selectedAddons  || {};
+          let modifierExtra = 0;
+          for (const [cgId, optId] of Object.entries(selChoices)) {
+            const cg  = choices.find(c => c.id === parseInt(cgId));
+            const opt = (cg?.options || []).find(o => o.id === parseInt(optId));
+            modifierExtra += parseFloat(opt?.extra_price || 0);
+          }
+          for (const [optId, addonQty] of Object.entries(selAddons)) {
+            for (const ag of addons) {
+              const opt = (ag?.options || []).find(o => o.id === parseInt(optId));
+              if (opt) modifierExtra += parseFloat(opt.price || 0) * parseInt(addonQty, 10);
+            }
+          }
+
+          const expectedUnit = dbPrice + modifierExtra;
+          const clientUnit   = parseFloat(item.price || item.unit_price || 0);
+          if (clientUnit < expectedUnit - 0.02) {
+            await client.query('ROLLBACK');
+            client.release();
+            return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
+          }
+          recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
+        }
+
+        if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.02) {
+          await client.query('ROLLBACK');
+          client.release();
+          return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
+        }
+      }
+
       if (loyalty_points_redeemed > 0 && customer_email) {
         const userRes = await client.query(
           'SELECT loyalty_points FROM users WHERE email = $1 FOR UPDATE',
@@ -307,6 +311,7 @@ const createGuestOrder = async (req, res) => {
         const availablePoints = userRes.rows[0]?.loyalty_points || 0;
         if (loyalty_points_redeemed > availablePoints) {
           await client.query('ROLLBACK');
+          client.release();
           return res.status(400).json({ message: 'Insufficient loyalty points.' });
         }
       }
@@ -526,12 +531,17 @@ const createGuestOrder = async (req, res) => {
 /* ── Admin: get all orders ── */
 const getAdminOrders = async (req, res) => {
   try {
+    const limit  = Math.min(parseInt(req.query.limit  || '200', 10), 500);
+    const offset = Math.max(parseInt(req.query.offset || '0',   10), 0);
     const result = await pool.query(
       `SELECT *,
               order_status  AS status,
               placed_at     AS created_at
        FROM guest_orders
-       ORDER BY placed_at DESC`
+       WHERE deleted_at IS NULL
+       ORDER BY placed_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     );
     res.json(result.rows);
   } catch (err) {
@@ -555,9 +565,13 @@ const updateGuestOrderStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid order status.' });
     }
 
+    // Capture previous status in the same UPDATE so we can guard loyalty award below
     const updated = await pool.query(
-      `UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2
-       RETURNING customer_phone, customer_email, order_number, total`,
+      `WITH prev AS (SELECT order_status FROM guest_orders WHERE id = $2)
+       UPDATE guest_orders SET order_status = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING customer_phone, customer_email, order_number, total,
+                 (SELECT order_status FROM prev) AS previous_status`,
       [status, id]
     );
 
@@ -611,7 +625,8 @@ const updateGuestOrderStatus = async (req, res) => {
       }
 
       // 4. Award loyalty points on delivery: 1 pt per $1 spent
-      if (status === 'delivered' && customer_email && row.total) {
+      // Guard: only award if we're transitioning INTO delivered, not re-setting it
+      if (status === 'delivered' && row.previous_status !== 'delivered' && customer_email && row.total) {
         const pts = Math.floor(parseFloat(row.total) || 0);
         if (pts > 0) {
           pool.query(
@@ -657,11 +672,11 @@ const updateGuestOrderStatus = async (req, res) => {
   }
 };
 
-/* ── Admin: delete order ── */
+/* ── Admin: soft-delete order (preserves financial record) ── */
 const deleteGuestOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query("DELETE FROM guest_orders WHERE id=$1", [id]);
+    await pool.query("UPDATE guest_orders SET deleted_at=NOW() WHERE id=$1 AND deleted_at IS NULL", [id]);
     logAudit(pool, req.user?.id, req.user?.name, 'delete_order', 'order', String(id), {}, req.ip);
     res.json({ success: true });
   } catch (err) {
@@ -670,12 +685,15 @@ const deleteGuestOrder = async (req, res) => {
   }
 };
 
-/* ── Admin: clear all completed orders ── */
+/* ── Admin: archive completed orders (soft-delete, not hard-delete) ── */
 const clearCompletedOrders = async (req, res) => {
   try {
-    await pool.query("DELETE FROM guest_orders WHERE order_status='completed'");
-    logAudit(pool, req.user?.id, req.user?.name, 'clear_completed_orders', 'order', 'bulk', {}, req.ip);
-    res.json({ success: true });
+    const { rowCount } = await pool.query(
+      `UPDATE guest_orders SET deleted_at=NOW()
+        WHERE order_status='completed' AND deleted_at IS NULL`
+    );
+    logAudit(pool, req.user?.id, req.user?.name, 'archive_completed_orders', 'order', 'bulk', { count: rowCount }, req.ip);
+    res.json({ success: true, archived: rowCount });
   } catch (err) {
     console.error("clearCompletedOrders error:", err.message);
     res.status(500).json(safeError(err));
@@ -741,23 +759,21 @@ const getOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const order = await pool.query("SELECT * FROM orders WHERE id=$1", [id]);
+    const order = await pool.query("SELECT * FROM guest_orders WHERE id=$1", [id]);
     if (!order.rows[0]) return res.status(404).json({ message: 'Order not found' });
 
     // Enforce ownership — non-admin users can only read their own orders
     const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
     if (!isAdmin) {
-      const ownerId = order.rows[0].user_id;
-      if (!ownerId || ownerId !== req.user?.id) {
+      const ownerEmail = order.rows[0].customer_email;
+      if (!ownerEmail || ownerEmail !== req.user?.email) {
         return res.status(403).json({ message: 'Access denied' });
       }
     }
 
-    const items = await pool.query(
-      "SELECT oi.*, m.name FROM order_items oi JOIN menus m ON oi.menu_id = m.id WHERE oi.order_id=$1",
-      [id]
-    );
-    res.json({ order: order.rows[0], items: items.rows });
+    // Items are stored as JSONB in guest_orders
+    const storedItems = order.rows[0].items || [];
+    res.json({ order: order.rows[0], items: storedItems });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -775,7 +791,7 @@ const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid order status.' });
     }
 
-    await pool.query("UPDATE orders SET status=$1 WHERE id=$2", [status, id]);
+    await pool.query("UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2", [status, id]);
     res.json({ message: "Order status updated" });
   } catch (err) {
     res.status(500).json(safeError(err));

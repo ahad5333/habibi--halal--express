@@ -147,7 +147,8 @@ export default function LiveBoard() {
   const [fullscreen, setFullscreen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [newAlert, setNewAlert]     = useState(false);
-  const [soundOn, setSoundOn]       = useState(false);
+  const [pollErr, setPollErr]       = useState(false);
+  const [soundOn, setSoundOn]       = useState(() => localStorage.getItem('habibi_sound_on') === '1');
   const timerRef = useRef(null);
   const knownIds = useRef(null);
 
@@ -162,6 +163,7 @@ export default function LiveBoard() {
   const handleEnableSound = () => {
     unlockAudio();
     setSoundOn(true);
+    localStorage.setItem('habibi_sound_on', '1');
     // Play test ring so admin hears it immediately
     setTimeout(() => { startContinuousRing(); setTimeout(stopContinuousRing, 1400); }, 100);
   };
@@ -201,7 +203,11 @@ export default function LiveBoard() {
 
       setOrders(live);
       setLastUpdate(new Date());
-    } catch (_) {}
+      setPollErr(false);
+    } catch (e) {
+      console.error('[LiveBoard] Poll failed:', e.message);
+      setPollErr(true);
+    }
     setLoading(false);
   }, []);
 
@@ -234,7 +240,8 @@ export default function LiveBoard() {
           </h1>
           <p className="page-sub">
             {orders.filter(o=>o.status!=='delivered').length} active order{orders.filter(o=>o.status!=='delivered').length!==1?'s':''} · auto-refreshes every 5s
-            {lastUpdate && <span> · updated {lastUpdate.toLocaleTimeString()}</span>}
+            {lastUpdate && !pollErr && <span> · updated {lastUpdate.toLocaleTimeString()}</span>}
+            {pollErr && <span style={{color:'var(--color-danger)'}}> · ⚠ Connection lost — showing stale data</span>}
           </p>
         </div>
         <div style={{display:'flex',gap:'0.5rem'}}>

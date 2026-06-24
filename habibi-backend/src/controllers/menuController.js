@@ -8,9 +8,9 @@ const getMenus = async (req, res) => {
       SELECT id, name, description, price, partner_price,
              image_url AS image, category, is_available,
              choices, addons, dietary_info,
-             is_spicy, is_vegetarian, is_gluten_free
+             is_spicy, is_vegetarian, is_gluten_free, is_featured
       FROM menus
-      WHERE is_available IS NOT FALSE AND is_active IS NOT FALSE
+      WHERE is_available = TRUE AND is_active = TRUE
       ORDER BY category, sort_order, id
     `);
     res.json(result.rows);
@@ -42,10 +42,26 @@ function parseJsonField(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+const VALID_CATEGORIES = new Set([
+  'Breakfast','Platter','Sandwich','Tacos','Build Your Own','Extras',
+  'Drinks','Sides','Desserts','Catering','Specials',
+]);
+
 const createMenu = async (req, res) => {
   try {
     const { name, description, category, price, partner_price, sort_order, notes,
-            is_spicy, is_vegetarian, is_gluten_free, choices, addons } = req.body;
+            is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required.' });
+    }
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0 || parsedPrice > 9999) {
+      return res.status(400).json({ error: 'price must be a number between 0 and 9999.' });
+    }
+    if (category && !VALID_CATEGORIES.has(category)) {
+      return res.status(400).json({ error: `Invalid category. Valid: ${[...VALID_CATEGORIES].join(', ')}.` });
+    }
 
     let image_url = req.body.image_url || "";
     if (req.file) {
@@ -54,13 +70,14 @@ const createMenu = async (req, res) => {
 
     const parsedChoices = parseJsonField(choices);
     const parsedAddons  = parseJsonField(addons);
+    const parsedAddonsMax = addons_max ? parseInt(addons_max) : null;
 
     const result = await pool.query(
       `INSERT INTO menus (name, description, category, price, partner_price, image_url, sort_order, notes,
-                          is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, choices, addons)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, true, $9, $10, $11, $12, $13)
+                          is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, true, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id, name, description, category, price, partner_price, image_url, sort_order, notes,
-                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, choices, addons`,
+                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max`,
       [
         name,
         description || null,
@@ -73,8 +90,10 @@ const createMenu = async (req, res) => {
         is_spicy === 'true' || is_spicy === true,
         is_vegetarian === 'true' || is_vegetarian === true,
         is_gluten_free === 'true' || is_gluten_free === true,
+        is_featured === 'true' || is_featured === true,
         parsedChoices ? JSON.stringify(parsedChoices) : null,
         parsedAddons  ? JSON.stringify(parsedAddons)  : null,
+        parsedAddonsMax,
       ]
     );
 
@@ -89,48 +108,67 @@ const updateMenu = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, category, price, partner_price, sort_order, notes, is_active,
-            is_spicy, is_vegetarian, is_gluten_free, choices, addons } = req.body;
+            is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max } = req.body;
 
-    const current = await pool.query("SELECT image_url FROM menus WHERE id = $1", [id]);
-    if (current.rows.length === 0) return res.status(404).json({ message: "Menu item not found" });
-
-    let image_url = req.body.image_url || current.rows[0].image_url;
-    if (req.file) {
-      image_url = `/uploads/menus/${req.file.filename}`;
+    if (name !== undefined && (!name || typeof name !== 'string' || !name.trim())) {
+      return res.status(400).json({ error: 'name cannot be empty.' });
+    }
+    if (price !== undefined) {
+      const p = parseFloat(price);
+      if (isNaN(p) || p < 0 || p > 9999) {
+        return res.status(400).json({ error: 'price must be a number between 0 and 9999.' });
+      }
+    }
+    if (category !== undefined && category && !VALID_CATEGORIES.has(category)) {
+      return res.status(400).json({ error: `Invalid category. Valid: ${[...VALID_CATEGORIES].join(', ')}.` });
     }
 
-    const parsedChoices = parseJsonField(choices);
-    const parsedAddons  = parseJsonField(addons);
+    // Fetch current row so PATCH-style updates don't overwrite fields not in the request
+    const current = await pool.query(
+      `SELECT name, description, category, price, partner_price, image_url, sort_order, notes,
+              is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max
+       FROM menus WHERE id = $1`, [id]
+    );
+    if (current.rows.length === 0) return res.status(404).json({ message: "Menu item not found" });
+    const cur = current.rows[0];
+
+    let image_url = req.body.image_url || cur.image_url;
+    if (req.file) image_url = `/uploads/menus/${req.file.filename}`;
+
+    const parsedChoices = choices !== undefined ? parseJsonField(choices) : parseJsonField(cur.choices);
+    const parsedAddons  = addons  !== undefined ? parseJsonField(addons)  : parseJsonField(cur.addons);
 
     const result = await pool.query(
       `UPDATE menus
        SET name=$1, description=$2, category=$3, price=$4, partner_price=$5,
            image_url=$6, sort_order=$7, notes=$8, is_active=$9,
-           is_spicy=$10, is_vegetarian=$11, is_gluten_free=$12,
-           choices=$13, addons=$14
-       WHERE id=$15
+           is_spicy=$10, is_vegetarian=$11, is_gluten_free=$12, is_featured=$13,
+           choices=$14, addons=$15, addons_max=$16
+       WHERE id=$17
        RETURNING id, name, description, category, price, partner_price, image_url, sort_order, notes,
-                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, choices, addons`,
+                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max`,
       [
-        name,
-        description || null,
-        category || 'Uncategorized',
-        parseFloat(price) || 0,
-        parseFloat(partner_price || price) || 0,
+        name       !== undefined ? name.trim()                              : cur.name,
+        description !== undefined ? (description || null)                  : cur.description,
+        category   !== undefined ? (category || cur.category)              : cur.category,
+        price      !== undefined ? parseFloat(price)                       : parseFloat(cur.price),
+        partner_price !== undefined ? parseFloat(partner_price || price)   : parseFloat(cur.partner_price),
         image_url,
-        parseInt(sort_order) || 0,
-        notes || null,
-        is_active !== false,
-        is_spicy === 'true' || is_spicy === true,
-        is_vegetarian === 'true' || is_vegetarian === true,
-        is_gluten_free === 'true' || is_gluten_free === true,
+        sort_order !== undefined ? parseInt(sort_order) : parseInt(cur.sort_order || 0),
+        notes      !== undefined ? (notes || null)                         : cur.notes,
+        is_active  !== undefined ? (is_active !== false && is_active !== 'false') : cur.is_active,
+        is_spicy     !== undefined ? (is_spicy === 'true'     || is_spicy === true)     : cur.is_spicy,
+        is_vegetarian !== undefined ? (is_vegetarian === 'true' || is_vegetarian === true) : cur.is_vegetarian,
+        is_gluten_free !== undefined ? (is_gluten_free === 'true' || is_gluten_free === true) : cur.is_gluten_free,
+        is_featured !== undefined ? (is_featured === 'true'   || is_featured === true)   : cur.is_featured,
         parsedChoices ? JSON.stringify(parsedChoices) : null,
         parsedAddons  ? JSON.stringify(parsedAddons)  : null,
+        addons_max !== undefined ? (addons_max || null) : cur.addons_max,
         id,
       ]
     );
 
-    logAudit(pool, req.user?.id, req.user?.name, 'update_menu_item', 'menu_item', String(id), { name }, req.ip);
+    logAudit(pool, req.user?.id, req.user?.name, 'update_menu_item', 'menu_item', String(id), { name: result.rows[0]?.name }, req.ip);
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json(safeError(error));

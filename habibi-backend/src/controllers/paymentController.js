@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
-const pool = require("../config/db");
+const pool      = require("../config/db");
+const crypto    = require("crypto");
 
 // ─── Processor selection ────────��───────────────────────────────────────────
 const PROCESSOR = (process.env.PAYMENT_PROCESSOR || "stripe").toLowerCase();
@@ -142,8 +143,20 @@ const stripeWebhook = async (req, res) => {
   res.json({ received: true });
 };
 
-// ─── Square Webhook ─────────────────────────────────────────��────────────────
+// ─── Square Webhook ──────────────────────────────────────────────────────────
 const squareWebhook = async (req, res) => {
+  // Verify Square HMAC-SHA256 signature before processing any event
+  const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+  if (sigKey) {
+    const sig      = req.headers['x-square-hmacsha256-signature'];
+    const notifUrl = `${process.env.FRONTEND_URL || ''}/api/payments/webhook/square`;
+    const body     = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const expected = crypto.createHmac('sha256', sigKey).update(notifUrl + body).digest('base64');
+    if (!sig || sig !== expected) {
+      return res.status(401).json({ error: 'Invalid Square webhook signature.' });
+    }
+  }
+
   try {
     const event = req.body;
     if (event.type === "payment.completed") {

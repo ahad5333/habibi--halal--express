@@ -3,6 +3,84 @@ import { Save, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Settings.css';
 
+function IntegrationsSection() {
+  const [integrations, setIntegrations] = useState([]);
+  const [loading, setLoading]           = useState(true);
+
+  useEffect(() => {
+    adminAPI.integrationStatus()
+      .then(d => setIntegrations(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-hdr">
+        <p className="settings-section-title">Integrations</p>
+        <p className="settings-section-sub">Third-party service connection status — derived from server environment variables.</p>
+      </div>
+      <div className="integrations-list">
+        {loading ? (
+          <div className="empty"><div className="spinner" /></div>
+        ) : integrations.map(int => (
+          <div key={int.name} className="integration-row card">
+            <div>
+              <p style={{fontWeight:600,fontSize:'0.88rem'}}>{int.name}</p>
+              <p className="text-muted" style={{fontSize:'0.72rem'}}>{int.detail}</p>
+            </div>
+            <span className={`badge ${int.status === 'configured' ? 'badge-success' : 'badge-warning'}`}>
+              {int.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SystemSettingsSection() {
+  const [cfg, setCfg] = useState(null);
+  useEffect(() => {
+    fetch('/api/settings/checkout', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setCfg(d))
+      .catch(() => {});
+  }, []);
+
+  const rows = cfg ? [
+    { label: 'Tax Rate',              value: `${(cfg.tax_rate * 100).toFixed(3)}%` },
+    { label: 'Service Fee',           value: `${(cfg.service_fee_rate * 100).toFixed(3)}%` },
+    { label: 'Base Delivery Fee',     value: `$${parseFloat(cfg.delivery_fee).toFixed(2)}` },
+    { label: 'Free Delivery Threshold', value: `$${parseFloat(cfg.free_delivery_threshold).toFixed(2)}` },
+  ] : [];
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-hdr">
+        <p className="settings-section-title">System Settings</p>
+        <p className="settings-section-sub">Read-only — update TAX_RATE, SERVICE_FEE_RATE, DELIVERY_FEE, FREE_DELIVERY_THRESHOLD in your server .env to change these values.</p>
+      </div>
+      {!cfg ? (
+        <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
+      ) : (
+        <div className="card" style={{padding:'0.75rem 1rem'}}>
+          <table className="table" style={{marginBottom:0}}>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.label}>
+                  <td style={{fontWeight:600,fontSize:'0.85rem',width:220}}>{r.label}</td>
+                  <td className="mono" style={{fontSize:'0.85rem'}}>{r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Settings() {
   const [tiers, setTiers]               = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -154,30 +232,10 @@ export default function Settings() {
       </section>
 
       {/* Integrations info */}
-      <section className="settings-section">
-        <div className="settings-section-hdr">
-          <p className="settings-section-title">Integrations</p>
-          <p className="settings-section-sub">Third-party service connection status.</p>
-        </div>
-        <div className="integrations-list">
-          {[
-            { name: 'DoorDash Drive', status: 'configured', detail: 'Webhook active at /api/webhooks/doordash' },
-            { name: 'Uber Eats',      status: 'configured', detail: 'Webhook active at /api/webhooks/uber' },
-            { name: 'Square Payments',status: 'pending',    detail: 'API keys not yet configured in .env' },
-            { name: 'Twilio SMS',     status: 'pending',    detail: 'Add TWILIO_* credentials to .env' },
-          ].map(int => (
-            <div key={int.name} className="integration-row card">
-              <div>
-                <p style={{fontWeight:600,fontSize:'0.88rem'}}>{int.name}</p>
-                <p className="text-muted" style={{fontSize:'0.72rem'}}>{int.detail}</p>
-              </div>
-              <span className={`badge ${int.status==='configured'?'badge-success':'badge-warning'}`}>
-                {int.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <IntegrationsSection />
+
+      {/* System Settings (read-only — sourced from env vars) */}
+      <SystemSettingsSection />
     </div>
   );
 }

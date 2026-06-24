@@ -30,15 +30,24 @@ export default function Dashboard() {
   const [stats, setStats]     = useState(null);
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr]         = useState('');
+
+  const load = () => Promise.allSettled([adminAPI.stats(), adminAPI.orders()])
+    .then(([sr, or]) => {
+      if (sr.status === 'fulfilled') setStats(sr.value);
+      else setErr('Failed to load stats.');
+      if (or.status === 'fulfilled') setOrders(or.value.slice(0, 8));
+    })
+    .finally(() => setLoading(false));
 
   useEffect(() => {
-    Promise.all([adminAPI.stats(), adminAPI.orders()])
-      .then(([s, o]) => { setStats(s); setOrders(o.slice(0, 8)); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="empty"><div className="spinner" /></div>;
+  if (err && !stats) return <div className="empty"><p style={{ color: 'var(--color-danger)' }}>{err}</p></div>;
 
   return (
     <div className="dashboard">

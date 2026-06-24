@@ -1,4 +1,5 @@
-﻿const pool = require('../config/db');
+﻿const pool      = require('../config/db');
+const safeError = require('../utils/safeError');
 
 // Public: GET /api/reviews
 const getReviews = async (req, res) => {

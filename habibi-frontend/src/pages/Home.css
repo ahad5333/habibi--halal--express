@@ -3418,3 +3418,324 @@
   .booking-modal { padding: 1.5rem; border-radius: 16px; }
   .book-table-perks { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RESTAURANT BANNER SECTION  (rb-*)
+   ═══════════════════════════════════════════════════════════ */
+
+.restaurant-banner-section {
+  position: relative;
+  min-height: 580px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ── Background ── */
+.rb-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.rb-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.04);
+  animation: rb-slow-zoom 18s ease-in-out infinite alternate;
+}
+
+@keyframes rb-slow-zoom {
+  from { transform: scale(1.04); }
+  to   { transform: scale(1.10); }
+}
+
+.rb-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(0,0,0,0.92) 0%,
+    rgba(0,0,0,0.80) 45%,
+    rgba(249,115,22,0.08) 80%,
+    rgba(0,0,0,0.70) 100%
+  );
+}
+
+/* Animated shimmer sweep */
+.rb-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(249,115,22,0.04) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: rb-sweep 6s ease-in-out infinite;
+}
+
+@keyframes rb-sweep {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Content layout ── */
+.rb-content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* ── LEFT column ── */
+.rb-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.rb-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f97316;
+}
+
+.rb-eyebrow-line {
+  display: inline-block;
+  width: 36px;
+  height: 2px;
+  background: #f97316;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.rb-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 4vw, 3.6rem);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.rb-title-accent {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rb-desc {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.75;
+  max-width: 480px;
+}
+
+/* Animated quote lines */
+.rb-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-left: 2px solid rgba(249,115,22,0.35);
+  padding-left: 1.25rem;
+}
+
+.rb-line {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+  font-style: italic;
+  animation: rb-line-in 0.6s ease both;
+}
+
+.rb-line:nth-child(1) { animation-delay: 0.1s; }
+.rb-line:nth-child(2) { animation-delay: 0.2s; }
+.rb-line:nth-child(3) { animation-delay: 0.3s; }
+.rb-line:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes rb-line-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.rb-line-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(249,115,22,0.5));
+}
+
+/* CTA row */
+.rb-cta-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+}
+
+.rb-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  background: #f97316;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 2rem;
+  border-radius: 50px;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.rb-btn-primary:hover {
+  background: #ea6c00;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(249,115,22,0.55);
+  color: #fff;
+}
+
+.rb-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.85rem 1.75rem;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.rb-btn-ghost:hover {
+  border-color: #f97316;
+  color: #f97316;
+  background: rgba(249,115,22,0.08);
+}
+
+/* ── RIGHT column ── */
+.rb-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 2×2 badge grid */
+.rb-badges-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rb-badge {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(249,115,22,0.2);
+  border-radius: 16px;
+  padding: 1.25rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s;
+}
+
+.rb-badge:hover {
+  border-color: rgba(249,115,22,0.5);
+  background: rgba(249,115,22,0.06);
+  transform: translateY(-3px);
+}
+
+.rb-badge-icon {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 0.4rem;
+  filter: drop-shadow(0 0 6px rgba(249,115,22,0.4));
+}
+
+.rb-badge-num {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #f97316;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.rb-badge-label {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Pull quote */
+.rb-pull-quote {
+  position: relative;
+  background: rgba(249,115,22,0.07);
+  border: 1px solid rgba(249,115,22,0.22);
+  border-radius: 14px;
+  padding: 1.5rem 1.5rem 1.5rem 2.5rem;
+}
+
+.rb-pull-quote-mark {
+  position: absolute;
+  top: -0.5rem;
+  left: 1rem;
+  font-size: 4rem;
+  color: #f97316;
+  font-family: Georgia, serif;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+.rb-pull-quote p {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.rb-pull-quote-author {
+  font-size: 0.7rem !important;
+  font-weight: 700;
+  color: #f97316 !important;
+  font-style: normal !important;
+  letter-spacing: 0.08em;
+  margin-top: 0.6rem;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+  .rb-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  .rb-desc { max-width: 100%; }
+  .restaurant-banner-section { min-height: auto; }
+}
+
+@media (max-width: 500px) {
+  .rb-title { font-size: 2rem; }
+  .rb-badges-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .rb-badge-num { font-size: 1.35rem; }
+  .rb-cta-row { flex-direction: column; }
+  .rb-btn-primary, .rb-btn-ghost { width: 100%; justify-content: center; }
+}
+

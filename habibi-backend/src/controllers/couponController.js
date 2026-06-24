@@ -265,6 +265,61 @@ const toggleCouponStatus = async (req, res) => {
   }
 };
 
+// Admin: Update coupon
+const updateCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      discount_type, discount_value,
+      min_order, min_order_amount,
+      max_uses, usage_limit,
+      expires_at, expiry_date, valid_until,
+      valid_from, starts_at,
+      title, description,
+      customer_email, location_id, free_item_category,
+    } = req.body;
+
+    const cur = await pool.query('SELECT * FROM coupons WHERE id=$1', [id]);
+    if (cur.rows.length === 0) return res.status(404).json({ message: 'Coupon not found.' });
+    const c = cur.rows[0];
+
+    const minOrder = parseFloat(min_order || min_order_amount || 0);
+    const conditionType  = minOrder > 0 ? 'min_order' : null;
+    const conditionValue = minOrder > 0 ? minOrder : null;
+    const usageLimit     = parseInt(max_uses || usage_limit || 0) || null;
+    const validUntil     = expires_at || expiry_date || valid_until || c.valid_until || null;
+    const validFrom      = valid_from || starts_at || c.valid_from || null;
+    const parsedValue    = discount_value !== undefined ? (parseFloat(discount_value) || 0) : parseFloat(c.discount_value);
+    const dtype          = discount_type || c.discount_type;
+
+    if (dtype === 'percentage' && parsedValue > 100) {
+      return res.status(400).json({ message: 'Percentage discount cannot exceed 100%.' });
+    }
+
+    const result = await pool.query(
+      `UPDATE coupons
+       SET discount_type=$1, discount_value=$2, condition_type=$3, condition_value=$4,
+           usage_limit=$5, valid_from=$6, valid_until=$7,
+           title=$8, description=$9, customer_email=$10, location_id=$11, free_item_category=$12
+       WHERE id=$13 RETURNING *`,
+      [
+        dtype, parsedValue, conditionType, conditionValue, usageLimit,
+        validFrom, validUntil,
+        title !== undefined ? (title || null) : c.title,
+        description !== undefined ? (description || null) : c.description,
+        customer_email !== undefined ? (customer_email || null) : c.customer_email,
+        location_id !== undefined ? (location_id ? parseInt(location_id) : null) : c.location_id,
+        free_item_category !== undefined ? (free_item_category || null) : c.free_item_category,
+        id,
+      ]
+    );
+    logAudit(pool, req.user?.id, req.user?.name, 'update_coupon', 'coupon', String(id), { code: result.rows[0].code }, req.ip);
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 // Admin: Delete coupon
 const deleteCoupon = async (req, res) => {
   try {
@@ -281,6 +336,7 @@ module.exports = {
   validateCoupon,
   getCoupons,
   createCoupon,
+  updateCoupon,
   toggleCouponStatus,
   deleteCoupon
 };

@@ -17,7 +17,7 @@ const handleDoorDashWebhook = async (req, res) => {
       const { delivery_id, dasher_location, status } = data;
       // Update order status and driver location in DB
       await pool.query(
-        "UPDATE orders SET status = $1, driver_lat = $2, driver_lng = $3 WHERE external_order_id = $4",
+        "UPDATE guest_orders SET order_status = $1, driver_lat = $2, driver_lng = $3 WHERE external_order_id = $4",
         [status, dasher_location?.lat, dasher_location?.lng, delivery_id]
       );
 
@@ -63,8 +63,8 @@ const handleOrderIngest = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO orders 
-       (order_number, delivery_partner, partner_order_id, sub_total, total, special_notes, order_status, created_at, updated_at) 
+      `INSERT INTO marketplace_orders
+       (order_number, delivery_partner, partner_order_id, sub_total, total, special_notes, order_status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *`,
       [
         `PARTNER-${Date.now()}`,

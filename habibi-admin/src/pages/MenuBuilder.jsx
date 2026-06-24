@@ -61,6 +61,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('is_vegetarian', form.is_vegetarian);
       fd.append('is_gluten_free', form.is_gluten_free);
       fd.append('is_featured', form.is_featured);
+      fd.append('addons_max', form.addons_max || '');
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -254,7 +255,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
 }
 
 const AVAIL_LABELS = { available: 'Available', sold_out: 'Sold Out', inactive: 'Inactive' };
-const AVAIL_BADGE  = { available: 'badge-success', sold_out: 'badge-warning', inactive: 'badge-danger' };
+const AVAIL_BADGE  = { available: 'badge-success', sold_out: 'badge-warning', inactive: 'badge-error' };
 
 /* ── Main Page ────────────────────────────────────────────────── */
 export default function MenuBuilder() {
@@ -264,6 +265,8 @@ export default function MenuBuilder() {
   const [loading, setLoading]   = useState(true);
   const [modal, setModal]       = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [toast, setToast]       = useState('');
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 4000); };
 
   // Location availability mode
   const [locView, setLocView]       = useState(false);
@@ -300,7 +303,7 @@ export default function MenuBuilder() {
     try {
       await adminAPI.setLocationMenuAvailability({ menu_id: menuId, location_id: parseInt(selectedLoc), status });
       setLocAvailMap(prev => ({ ...prev, [menuId]: status }));
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message || 'Action failed.'); }
     finally { setSavingAvail(null); }
   };
 
@@ -325,9 +328,14 @@ export default function MenuBuilder() {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
     setDeleting(id);
-    try { await adminAPI.deleteMenu(id); setItems(prev => prev.filter(i => i.id !== id)); }
-    catch (_) {}
-    finally { setDeleting(null); }
+    try {
+      await adminAPI.deleteMenu(id);
+      setItems(prev => prev.filter(i => i.id !== id));
+    } catch (e) {
+      showToast(e.message || 'Delete failed — item was not removed.');
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const handleToggleAvailability = async (item) => {
@@ -335,7 +343,7 @@ export default function MenuBuilder() {
     try {
       await adminAPI.toggleMenuAvailability({ ids: [item.id], is_available: nextVal });
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: nextVal } : i));
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message || 'Action failed.'); }
   };
 
   const handleBulkToggle = async (category, enable) => {
@@ -344,11 +352,16 @@ export default function MenuBuilder() {
       setItems(prev => prev.map(i =>
         i.category === category ? { ...i, is_available: enable } : i
       ));
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message || 'Action failed.'); }
   };
 
   return (
     <div className="mb-page">
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: 'var(--color-danger, #ef4444)', color: '#fff', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+          {toast}
+        </div>
+      )}
       {/* Header */}
       <div className="page-hdr">
         <div>

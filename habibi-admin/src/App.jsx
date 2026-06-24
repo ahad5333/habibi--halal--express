@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
@@ -19,44 +19,52 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
+
+// Eagerly loaded — needed before auth resolves
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Orders from './pages/Orders';
-import MenuBuilder from './pages/MenuBuilder';
-import Customers from './pages/Customers';
-import Coupons from './pages/Coupons';
-import Partners from './pages/Partners';
-import Analytics from './pages/Analytics';
-import UrgentRequests from './pages/UrgentRequests';
-import Settings from './pages/Settings';
-import Payments from './pages/Payments';
-import Staff from './pages/Staff';
-import Inventory from './pages/Inventory';
-import Locations from './pages/Locations';
-import DeliveryZones from './pages/DeliveryZones';
-import Reports from './pages/Reports';
-import LiveBoard from './pages/LiveBoard';
-import Broadcasts from './pages/Broadcasts';
-import DeliveryDispatch from './pages/DeliveryDispatch';
-import MarketplaceOrders from './pages/MarketplaceOrders';
-import RoadieDeliveries from './pages/RoadieDeliveries';
-import DriverView from './pages/Driver';
-import BusinessMenuAdmin from './pages/BusinessMenuAdmin';
-import PartnerOrders from './pages/PartnerOrders';
-import TableManager from './pages/TableManager';
-import CateringAdmin from './pages/CateringAdmin';
-import TableReservations from './pages/TableReservations';
-import CareersAdmin from './pages/Careers';
-import Reviews from './pages/Reviews';
-import Integrations from './pages/Integrations';
-import PlatformCredentials from './pages/PlatformCredentials';
-import AuditLog from './pages/AuditLog';
-import ChatInbox from './pages/ChatInbox';
-import LoyaltyProgram from './pages/LoyaltyProgram';
+
+// Lazy-loaded — split into separate chunks
+const Orders           = lazy(() => import('./pages/Orders'));
+const MenuBuilder      = lazy(() => import('./pages/MenuBuilder'));
+const Customers        = lazy(() => import('./pages/Customers'));
+const Coupons          = lazy(() => import('./pages/Coupons'));
+const Partners         = lazy(() => import('./pages/Partners'));
+const Analytics        = lazy(() => import('./pages/Analytics'));
+const UrgentRequests   = lazy(() => import('./pages/UrgentRequests'));
+const Settings         = lazy(() => import('./pages/Settings'));
+const Payments         = lazy(() => import('./pages/Payments'));
+const Staff            = lazy(() => import('./pages/Staff'));
+const Inventory        = lazy(() => import('./pages/Inventory'));
+const Locations        = lazy(() => import('./pages/Locations'));
+const DeliveryZones    = lazy(() => import('./pages/DeliveryZones'));
+const Reports          = lazy(() => import('./pages/Reports'));
+const LiveBoard        = lazy(() => import('./pages/LiveBoard'));
+const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
+const DeliveryDispatch = lazy(() => import('./pages/DeliveryDispatch'));
+const MarketplaceOrders= lazy(() => import('./pages/MarketplaceOrders'));
+const RoadieDeliveries = lazy(() => import('./pages/RoadieDeliveries'));
+const DriverView       = lazy(() => import('./pages/Driver'));
+const BusinessMenuAdmin= lazy(() => import('./pages/BusinessMenuAdmin'));
+const PartnerOrders    = lazy(() => import('./pages/PartnerOrders'));
+const TableManager     = lazy(() => import('./pages/TableManager'));
+const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
+const TableReservations= lazy(() => import('./pages/TableReservations'));
+const CareersAdmin     = lazy(() => import('./pages/Careers'));
+const Reviews          = lazy(() => import('./pages/Reviews'));
+const Integrations     = lazy(() => import('./pages/Integrations'));
+const PlatformCredentials = lazy(() => import('./pages/PlatformCredentials'));
+const AuditLog         = lazy(() => import('./pages/AuditLog'));
+const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
+const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
+
 import './App.css';
+
+const PageLoader = () => <div className="admin-loading"><div className="spinner" aria-label="Loading" role="status" /></div>;
 
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -67,6 +75,7 @@ function AdminLayout() {
       <div className="admin-main">
         <TopBar onMenuToggle={() => setSidebarOpen(o => !o)} />
         <div className="admin-content">
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/"          element={<Dashboard />} />
             <Route path="/orders"    element={<Orders />} />
@@ -102,6 +111,7 @@ function AdminLayout() {
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
             <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </div>
       </div>
     </div>
@@ -119,7 +129,7 @@ function DriverGuard() {
   const { isAdmin, loading } = useAdminAuth();
   if (loading) return <div className="admin-loading"><div className="spinner" aria-label="Loading" role="status" /></div>;
   if (!isAdmin) return <Navigate to="/" replace />;
-  return <DriverView />;
+  return <Suspense fallback={<PageLoader />}><DriverView /></Suspense>;
 }
 
 export default function App() {

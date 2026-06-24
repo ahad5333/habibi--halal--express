@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ToggleLeft, ToggleRight, X, Tag } from 'lucide-react';
+import { Plus, Trash2, ToggleLeft, ToggleRight, X, Tag, Edit2 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Coupons.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -16,8 +16,20 @@ const DISCOUNT_TYPES = [
 
 const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'' };
 
-function CouponModal({ onClose, onCreate }) {
-  const [form, setForm]       = useState({ ...EMPTY });
+function CouponModal({ onClose, onCreate, onUpdate, editData }) {
+  const isEdit = !!editData;
+  const [form, setForm]       = useState(editData ? {
+    code: editData.code || '',
+    discount_type: editData.discount_type || 'percentage',
+    discount_value: editData.discount_value || '',
+    min_order: editData.condition_value || '',
+    max_uses: editData.usage_limit || '',
+    valid_from: editData.valid_from ? editData.valid_from.slice(0,10) : '',
+    expires_at: (editData.valid_until || editData.expiry_date) ? (editData.valid_until || editData.expiry_date).slice(0,10) : '',
+    customer_email: editData.customer_email || '',
+    location_id: editData.location_id || '',
+    free_item_category: editData.free_item_category || '',
+  } : { ...EMPTY });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
   const [locations, setLocations] = useState([]);
@@ -30,11 +42,15 @@ function CouponModal({ onClose, onCreate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const needsValue = DISCOUNT_TYPES.find(dt => dt.value === form.discount_type)?.needsValue;
-    if (!form.code.trim()) { setError('Coupon code is required.'); return; }
+    if (!isEdit && !form.code.trim()) { setError('Coupon code is required.'); return; }
     if (needsValue && !form.discount_value) { setError('Discount value is required for this type.'); return; }
     setSaving(true); setError('');
-    try { await onCreate(form); onClose(); }
-    catch (err) { setError(err.message || 'Failed to create coupon.'); }
+    try {
+      if (isEdit) { await onUpdate(editData.id, form); }
+      else        { await onCreate(form); }
+      onClose();
+    }
+    catch (err) { setError(err.message || `Failed to ${isEdit ? 'update' : 'create'} coupon.`); }
     finally { setSaving(false); }
   };
 
@@ -42,7 +58,7 @@ function CouponModal({ onClose, onCreate }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-hdr">
-          <h3 className="modal-title">Create Coupon</h3>
+          <h3 className="modal-title">{isEdit ? 'Edit Coupon' : 'Create Coupon'}</h3>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -50,7 +66,7 @@ function CouponModal({ onClose, onCreate }) {
             {error && <div className="menu-error">⚠ {error}</div>}
             <div className="field">
               <label>Coupon Code *</label>
-              <input className="input" style={{textTransform:'uppercase',letterSpacing:'0.1em'}} placeholder="HABIBI20" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required />
+              <input className="input" style={{textTransform:'uppercase',letterSpacing:'0.1em'}} placeholder="HABIBI20" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required disabled={isEdit} />
             </div>
             <div className="coupon-row">
               <div className="field">
@@ -116,7 +132,7 @@ function CouponModal({ onClose, onCreate }) {
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <span className="spinner" style={{width:14,height:14}} /> : 'Create Coupon'}
+              {saving ? <span className="spinner" style={{width:14,height:14}} /> : isEdit ? 'Save Changes' : 'Create Coupon'}
             </button>
           </div>
         </form>
@@ -129,6 +145,7 @@ export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal]     = useState(false);
+  const [editCoupon, setEditCoupon] = useState(null);
 
   useEffect(() => {
     // Use coupon-stats endpoint for usage data; fall back to plain coupons
@@ -141,6 +158,11 @@ export default function Coupons() {
   const handleCreate = async (form) => {
     const created = await adminAPI.createCoupon(form);
     setCoupons(prev => [created, ...prev]);
+  };
+
+  const handleUpdate = async (id, form) => {
+    const updated = await adminAPI.updateCoupon(id, form);
+    setCoupons(prev => prev.map(c => c.id === id ? updated : c));
   };
 
   const handleToggle = async (id) => {
@@ -163,7 +185,7 @@ export default function Coupons() {
           <p className="page-title">Coupons</p>
           <p className="page-sub">{coupons.length} codes · {coupons.filter(c=>c.is_active).length} active</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}><Plus size={15} /> Create Coupon</button>
+        <button className="btn btn-primary" onClick={() => { setEditCoupon(null); setModal(true); }}><Plus size={15} /> Create Coupon</button>
       </div>
 
       <div className="card" style={{padding:0,overflow:'hidden'}}>
@@ -224,6 +246,9 @@ export default function Coupons() {
                         <button className="btn btn-ghost btn-icon" onClick={() => handleToggle(c.id)} title={c.is_active ? 'Disable' : 'Enable'}>
                           {c.is_active ? <ToggleRight size={16} style={{color:'var(--color-success)'}} /> : <ToggleLeft size={16} />}
                         </button>
+                        <button className="btn btn-ghost btn-icon" onClick={() => { setEditCoupon(c); setModal(true); }} title="Edit">
+                          <Edit2 size={14} />
+                        </button>
                         <button className="btn btn-danger btn-icon" onClick={() => handleDelete(c.id)} title="Delete">
                           <Trash2 size={14} />
                         </button>
@@ -237,7 +262,14 @@ export default function Coupons() {
         )}
       </div>
 
-      {modal && <CouponModal onClose={() => setModal(false)} onCreate={handleCreate} />}
+      {modal && (
+        <CouponModal
+          onClose={() => { setModal(false); setEditCoupon(null); }}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+          editData={editCoupon}
+        />
+      )}
     </div>
   );
 }

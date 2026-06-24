@@ -1,5 +1,15 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+function handle401(res) {
+  if (res.status === 401) {
+    // Session expired — clear local storage and redirect to login
+    localStorage.removeItem('habibi_admin_user');
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
+  }
+}
+
 async function req(path, opts = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
@@ -9,6 +19,7 @@ async function req(path, opts = {}) {
       ...(opts.headers || {}),
     },
   });
+  if (res.status === 401) handle401(res);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
   return data;
@@ -20,6 +31,7 @@ async function upload(path, formData) {
     body: formData,
     credentials: 'include',
   });
+  if (res.status === 401) handle401(res);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
   return data;
@@ -31,6 +43,7 @@ async function uploadPatch(path, formData) {
     body: formData,
     credentials: 'include',
   });
+  if (res.status === 401) handle401(res);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
   return data;
@@ -68,11 +81,13 @@ export const adminAPI = {
   updateModifier:  (id, body)   => req(`/api/admin/modifiers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteModifier:  (id, type)   => req(`/api/admin/modifiers/${id}?type=${type}`, { method: 'DELETE' }),
 
-  customers:   () => req('/api/admin/customers'),
+  customers:   (search = '', page = 1, limit = 50) => req(`/api/admin/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
   customer:    (id) => req(`/api/admin/customers/${id}`),
+  integrationStatus: () => req('/api/admin/integration-status'),
 
   coupons:     () => req('/api/admin/coupons'),
   createCoupon:(body) => req('/api/admin/coupons', { method: 'POST', body: JSON.stringify(body) }),
+  updateCoupon:(id, body) => req(`/api/admin/coupons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   toggleCoupon:(id) => req(`/api/admin/coupons/${id}/toggle`, { method: 'PUT' }),
   deleteCoupon:(id) => req(`/api/admin/coupons/${id}`, { method: 'DELETE' }),
 
@@ -84,8 +99,6 @@ export const adminAPI = {
 
   revenue:     () => req('/api/admin/analytics/revenue'),
   growth:      () => req('/api/admin/analytics/growth'),
-  reportTx:    () => req('/api/admin/reports/transactions'),
-  reportRev:   () => req('/api/admin/reports/revenue'),
 
   tiers:       () => req('/api/admin/delivery-tiers'),
   updateTier:  (id, body) => req(`/api/admin/delivery-tiers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

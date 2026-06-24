@@ -221,26 +221,38 @@ const getSidebarItems = async (req, res) => {
 const getAllCustomers = async (req, res) => {
   try {
     const page   = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
     const offset = (page - 1) * limit;
-    const result = await pool.query(`
-      SELECT
-        u.id,
-        u.name,
-        u.email,
-        u.phone_number  AS phone,
-        u.role,
-        u.loyalty_points,
-        u.created_at,
-        COUNT(o.id)::int                         AS total_orders,
-        COALESCE(SUM(o.total), 0)::numeric       AS total_spent
-      FROM users u
-      LEFT JOIN guest_orders o ON o.customer_email = u.email
-      GROUP BY u.id
-      ORDER BY u.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    res.json(result.rows);
+    const search = (req.query.search || '').trim();
+
+    const params = [limit, offset];
+    let whereClause = '';
+    if (search) {
+      params.push(`%${search.toLowerCase()}%`);
+      whereClause = `WHERE LOWER(u.name) LIKE $3 OR LOWER(u.email) LIKE $3 OR u.phone_number LIKE $3`;
+    }
+
+    const [result, countResult] = await Promise.all([
+      pool.query(`
+        SELECT
+          u.id, u.name, u.email, u.phone_number AS phone, u.role, u.loyalty_points, u.created_at,
+          COUNT(o.id)::int AS total_orders,
+          COALESCE(SUM(o.total), 0)::numeric AS total_spent
+        FROM users u
+        LEFT JOIN guest_orders o ON o.customer_email = u.email
+        ${whereClause}
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+        LIMIT $1 OFFSET $2
+      `, params),
+      pool.query(
+        search
+          ? `SELECT COUNT(*)::int FROM users WHERE LOWER(name) LIKE $1 OR LOWER(email) LIKE $1 OR phone_number LIKE $1`
+          : `SELECT COUNT(*)::int FROM users`,
+        search ? [`%${search.toLowerCase()}%`] : []
+      ),
+    ]);
+    res.json({ customers: result.rows, total: countResult.rows[0].count, page, limit });
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -271,11 +283,17 @@ const getCustomerDetails = async (req, res) => {
       LIMIT 50
     `, [customer.email]);
 
+    const addressesRes = await pool.query(
+      `SELECT id, receiver_name, street_address, second_line, city, state, zip_code, is_default
+       FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC`,
+      [customer.id]
+    );
+
     res.json({
       ...customer,
       orders: ordersRes.rows,
+      addresses: addressesRes.rows,
       payment_methods: [],
-      addresses: [],
     });
   } catch (error) {
     res.status(500).json(safeError(error));
@@ -346,7 +364,7 @@ const updateAdminLocation = async (req, res) => {
     // Only hash tablet password if a new one was provided
     let tabletPasswordHash;
     if (tablet_password) {
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       tabletPasswordHash = await bcrypt.hash(tablet_password, 10);
     }
 
@@ -615,7 +633,7 @@ const adjustLoyaltyPoints = async (req, res) => {
       [delta, user_id]
     );
     if (!result.rows.length) return res.status(404).json({ message: 'User not found' });
-    await logAudit(req.user?.id, 'adjust_loyalty', 'user', user_id, { delta, reason });
+    await logAudit(pool, req.user?.id, req.user?.name || 'admin', 'adjust_loyalty', 'user', String(user_id), { delta, reason }, req.ip);
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json(safeError(err)); }
 };

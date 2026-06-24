@@ -38,7 +38,6 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth         DATE`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider             VARCHAR(20)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id          VARCHAR(255)`);
-    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified       BOOLEAN DEFAULT FALSE`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_hash           VARCHAR(255)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_expires        TIMESTAMPTZ`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_code_attempts       INTEGER DEFAULT 0`);
@@ -69,6 +68,30 @@ const createTables = async () => {
     // ── Marketplace orders: add location tracking ─────────────────
     await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS platform_store_id VARCHAR(255)`);
+
+    // ── Soft-delete for guest_orders ──────────────────────────────
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_guest_orders_deleted_at ON guest_orders(deleted_at) WHERE deleted_at IS NOT NULL`);
+
+    // ── User search indexes (ILIKE performance) ───────────────────
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_users_name_lower  ON users(LOWER(name))`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email))`);
+
+    // ── JWT revocation (durable across restarts) ──────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS revoked_tokens (
+        jti        TEXT PRIMARY KEY,
+        expires_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_revoked_tokens_exp ON revoked_tokens(expires_at)`);
+
+    // ── Addresses: user ownership column ──────────────────────────
+    await client.query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id)`);
+
+    // ── Group orders: host ownership ──────────────────────────────
+    await client.query(`ALTER TABLE group_order_sessions ADD COLUMN IF NOT EXISTS host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
 
     // ── Per-location menu item availability ───────────────────────
     await client.query(`
@@ -1007,6 +1030,7 @@ const seedDefaults = async () => {
       session_id   VARCHAR(20)  UNIQUE NOT NULL,
       join_code    VARCHAR(8)   UNIQUE NOT NULL,
       host_name    VARCHAR(100) NOT NULL,
+      host_user_id INTEGER      REFERENCES users(id) ON DELETE SET NULL,
       status       VARCHAR(20)  DEFAULT 'open' CHECK (status IN ('open', 'locked', 'closed')),
       expires_at   TIMESTAMPTZ  NOT NULL,
       created_at   TIMESTAMPTZ  DEFAULT NOW()

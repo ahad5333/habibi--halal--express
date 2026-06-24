@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Phone, MessageSquare, Check, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw } from 'lucide-react';
 import { ordersAPI } from '../services/api';
@@ -114,6 +114,7 @@ async function geocodeAddress(addr) {
 
 export default function OrderTracking() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const urlOrder = params.get('order') || '';
 
   const [searchInput, setSearchInput]   = useState(urlOrder || localStorage.getItem('last_order_number') || '');
@@ -122,7 +123,7 @@ export default function OrderTracking() {
   const [loading, setLoading]           = useState(false);
   const [notFound, setNotFound]         = useState(false);
   const [currentStep, setCurrentStep]   = useState(1);
-  const [etaSeconds, setEtaSeconds]     = useState(22 * 60 + 37);
+  const [etaSeconds, setEtaSeconds]     = useState(30 * 60);
   const [etaFromGPS, setEtaFromGPS]     = useState(null); // recalculated from live GPS
   const [showItems, setShowItems]       = useState(false);
   const [driverProgress, setDriverProgress] = useState(0);
@@ -575,7 +576,7 @@ export default function OrderTracking() {
                   {isDelivered && (
                     <div className="ot-delivered-actions">
                       <Link to="/menu" className="btn btn-primary">Order Again</Link>
-                      <button className="btn btn-outline">Rate Your Order</button>
+                      <button className="btn btn-outline" onClick={() => navigate(`/reviews/new?order=${orderNum}`)}>Rate Your Order</button>
                     </div>
                   )}
                 </div>

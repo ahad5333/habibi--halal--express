@@ -7,12 +7,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Only persist non-sensitive display fields — never store roles, email, or loyalty balance in localStorage
+  const safePersist = (userData) => {
+    if (!userData) { localStorage.removeItem('habibi_user'); return; }
+    const safe = { id: userData.id, name: userData.name, avatar_url: userData.avatar_url || null };
+    localStorage.setItem('habibi_user', JSON.stringify(safe));
+  };
+
   useEffect(() => {
-    // Validate session via httpOnly cookie — avoids reading JWT from localStorage
+    // Validate session via httpOnly cookie — source of truth is always the server
     authAPI.me()
       .then(userData => {
         setUser(userData);
-        localStorage.setItem('habibi_user', JSON.stringify(userData));
+        safePersist(userData);
       })
       .catch(() => {
         localStorage.removeItem('habibi_user');
@@ -22,10 +29,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
-    // Token lives in httpOnly cookie set by the server — do NOT store in localStorage
     if (data.user) {
-      localStorage.setItem('habibi_user', JSON.stringify(data.user));
       setUser(data.user);
+      safePersist(data.user);
     }
     return data;
   };
@@ -36,8 +42,8 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const logout = () => {
-    authAPI.logout(); // calls POST /api/auth/logout → revokes JTI + clears cookie
+  const logout = async () => {
+    try { await authAPI.logout(); } catch (_) { /* server unreachable — proceed with local cleanup */ }
     localStorage.removeItem('habibi_user');
     setUser(null);
   };
@@ -46,7 +52,7 @@ export function AuthProvider({ children }) {
   const refreshUser = (updatedFields) => {
     setUser(prev => {
       const next = { ...prev, ...updatedFields };
-      localStorage.setItem('habibi_user', JSON.stringify(next));
+      safePersist(next);
       return next;
     });
   };
