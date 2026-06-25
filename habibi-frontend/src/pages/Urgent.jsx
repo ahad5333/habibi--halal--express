@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Phone, Utensils, PackageX, Stethoscope, ShieldAlert, Clock, CheckCircle } from 'lucide-react';
 import { contactAPI } from '../services/api';
+import SEO from '../components/SEO';
 import './Urgent.css';
 
 const URGENT_TYPES = [
@@ -111,6 +112,11 @@ const Urgent = () => {
 
   return (
     <div className="urgent-page">
+      <SEO
+        title="Urgent Support | Habibi Halal Express"
+        description="Need urgent help with your Habibi Halal Express order? Contact our support team immediately."
+        keywords="habibi halal support, order help, urgent contact"
+      />
 
       {/* ── Alert banner ── */}
       <div className="urg-banner">
@@ -118,7 +124,7 @@ const Urgent = () => {
         <span>Life-threatening emergency? <strong>Call 911 immediately.</strong></span>
         <span className="urg-banner-sep">|</span>
         <span>Habibi Emergency Line:</span>
-        <a href="tel:+17185550000" className="urg-banner-phone">(718) 555-0000</a>
+        <a href="tel:+17184000443" className="urg-banner-phone">(718) 400-0443</a>
       </div>
 
       {/* ── Hero ── */}
@@ -173,8 +179,8 @@ const Urgent = () => {
             <div className="urg-call-card">
               <p className="urg-call-label">PREFER TO CALL?</p>
               <p className="urg-call-text">Reach a manager directly, any time.</p>
-              <a href="tel:+17185550000" className="urg-call-number">
-                <Phone size={14} /> (718) 555-0000
+              <a href="tel:+17184000443" className="urg-call-number">
+                <Phone size={14} /> (718) 400-0443
               </a>
             </div>
           </div>

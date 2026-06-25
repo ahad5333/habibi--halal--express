@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { io } from 'socket.io-client';
 import { menuAPI, cartAPI, groupOrderAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO';
 import './GroupOrder.css';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -58,6 +59,11 @@ function GroupLanding({ prefillCode }) {
 
   return (
     <div className="go-landing">
+      <SEO
+        title="Group Order | Habibi Halal Express"
+        description="Start or join a group order at Habibi Halal Express. Everyone picks their own items, one checkout."
+        keywords="halal group order bronx, share food order, habibi group"
+      />
       <div className="go-hero">
         <div className="go-hero-icon">👥</div>
         <h1 className="go-hero-title">Group Order</h1>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Film, Clock, Eye } from 'lucide-react';
+import SEO from '../components/SEO';
 import './Videos.css';
 
 const IGIcon = ({ size = 14 }) => (
@@ -172,6 +173,11 @@ const Videos = () => {
 
   return (
     <div className="videos-page">
+      <SEO
+        title="Videos | Habibi Halal Express"
+        description="Watch Habibi Halal Express cooking videos, behind-the-scenes content, and food stories. Fresh halal food made with love."
+        keywords="halal food videos, habibi halal bronx, halal cooking, food stories"
+      />
 
       {/* ── Hero ── */}
       <section className="vid-hero">

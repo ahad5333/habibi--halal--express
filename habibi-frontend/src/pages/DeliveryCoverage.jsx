@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 import { MapPin, Clock, Phone, Truck, ChevronRight, CheckCircle } from 'lucide-react';
 import { locationsAPI } from '../services/api';
 import './DeliveryCoverage.css';
@@ -28,6 +29,11 @@ export default function DeliveryCoverage() {
 
   return (
     <div className="dc-page">
+      <SEO
+        title="Delivery Coverage | Habibi Halal Express"
+        description="Check if Habibi Halal Express delivers to your area in the Bronx. See our delivery zones and estimated times."
+        keywords="halal food delivery bronx, habibi delivery zone, halal delivery near me"
+      />
       {/* Hero */}
       <div className="dc-hero">
         <div className="dc-hero-overlay" />

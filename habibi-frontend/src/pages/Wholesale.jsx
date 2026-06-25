@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { partnersAPI } from '../services/api';
+import SEO from '../components/SEO';
 import './Wholesale.css';
 
 const steps = ['Business Details', 'Operations', 'Logistics'];
@@ -46,6 +47,11 @@ const Wholesale = () => {
 
   return (
     <div className="wholesale-page page-watermark">
+      <SEO
+        title="Wholesale & Business Partners | Habibi Halal Express"
+        description="Partner with Habibi Halal Express for wholesale halal meat and food supply. Apply for a business account and get volume pricing."
+        keywords="halal wholesale bronx, halal meat supplier, halal food distributor, business catering"
+      />
       {/* Hero */}
       <section className="wholesale-hero text-center">
         <div className="container">

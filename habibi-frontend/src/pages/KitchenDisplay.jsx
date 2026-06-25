@@ -23,18 +23,23 @@ function elapsed(placedAt) {
 export default function KitchenDisplay() {
   const [orders, setOrders]     = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
   const [lastSync, setLastSync] = useState(null);
   const [tick, setTick]         = useState(0);
 
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/dine-in/kitchen`);
-      if (!res.ok) throw new Error('fetch failed');
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
       setLastSync(new Date());
-    } catch (_) {}
-    finally { setLoading(false); }
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Initial fetch + poll
@@ -50,8 +55,24 @@ export default function KitchenDisplay() {
     return () => clearInterval(t);
   }, []);
 
+  if (error && orders.length === 0) return (
+    <div className="kd-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', gap: '1rem', color: '#ef4444' }}>
+      <UtensilsCrossed size={32} />
+      <p style={{ fontWeight: 600 }}>Kitchen display unavailable</p>
+      <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>{error}</p>
+      <button className="kd-refresh" onClick={fetchOrders} style={{ marginTop: '0.5rem' }}>
+        <RefreshCw size={14} /> Retry
+      </button>
+    </div>
+  );
+
   return (
     <div className="kd-root">
+      {error && (
+        <div style={{ background: '#ef4444', color: '#fff', padding: '0.5rem 1rem', fontSize: '0.8rem', textAlign: 'center' }}>
+          Warning: last refresh failed — {error}. Showing cached data.
+        </div>
+      )}
       {/* Header */}
       <header className="kd-header">
         <div className="kd-header-left">

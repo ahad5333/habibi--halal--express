@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SEO from '../components/SEO';
 import './Careers.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -114,6 +115,11 @@ const Careers = () => {
 
   return (
     <div className="careers-page">
+      <SEO
+        title="Careers | Join the Habibi Halal Express Team"
+        description="Explore open positions at Habibi Halal Express. Join our team delivering authentic halal food in the Bronx."
+        keywords="halal restaurant jobs bronx, food delivery careers, habibi halal employment"
+      />
 
       {/* Hero */}
       <section className="careers-hero">
