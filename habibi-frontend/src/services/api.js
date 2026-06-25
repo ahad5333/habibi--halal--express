@@ -328,6 +328,21 @@ export const referralAPI = {
   apply: (code) => request('/api/referrals/apply', { method: 'POST', body: JSON.stringify({ code }) }),
 };
 
+export const groupOrderAPI = {
+  create: (host_name) =>
+    request('/api/group-orders', { method: 'POST', body: JSON.stringify({ host_name }) }),
+  join: (join_code, participant_id, name) =>
+    request('/api/group-orders/join', { method: 'POST', body: JSON.stringify({ join_code, participant_id, name }) }),
+  getSession: (sessionId) =>
+    request(`/api/group-orders/${sessionId}`),
+  registerParticipant: (sessionId, participant_id, name) =>
+    request(`/api/group-orders/${sessionId}/participants`, { method: 'POST', body: JSON.stringify({ participant_id, name }) }),
+  syncItems: (sessionId, participant_id, items) =>
+    request(`/api/group-orders/${sessionId}/items`, { method: 'POST', body: JSON.stringify({ participant_id, items }) }),
+  closeSession: (sessionId) =>
+    request(`/api/group-orders/${sessionId}`, { method: 'DELETE' }),
+};
+
 export const partnersAPI = {
   /**
    * POST /api/partners/apply

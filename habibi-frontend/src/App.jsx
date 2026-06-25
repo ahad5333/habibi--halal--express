@@ -44,6 +44,7 @@ const Legal            = lazy(() => import('./pages/Legal'));
 const Reviews             = lazy(() => import('./pages/Reviews'));
 const Unsubscribe         = lazy(() => import('./pages/Unsubscribe'));
 const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
+const GroupOrder          = lazy(() => import('./pages/GroupOrder'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -122,6 +123,10 @@ function Layout() {
           <Route path="/unsubscribe"       element={<Unsubscribe />} />
           <Route path="/delivery-coverage" element={<DeliveryCoverage />} />
           <Route path="/where-we-deliver"  element={<DeliveryCoverage />} />
+
+          {/* Group Orders */}
+          <Route path="/group-order"              element={<GroupOrder />} />
+          <Route path="/group-order/:sessionId"   element={<GroupOrder />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

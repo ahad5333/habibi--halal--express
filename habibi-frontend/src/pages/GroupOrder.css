@@ -1,0 +1,426 @@
+/* ── Group Order page ──────────────────────────────────────────────────── */
+
+/* ─ Shared ─ */
+.go-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+  text-decoration: none;
+}
+.go-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.go-btn:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
+
+.go-btn-gold   { background: #E5B64E; color: #0a0a0a; }
+.go-btn-outline { background: transparent; color: #E5B64E; border: 1.5px solid #E5B64E; }
+.go-btn-ghost  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.12); }
+
+.go-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.go-input:focus { border-color: #E5B64E; }
+.go-input::placeholder { color: rgba(255,255,255,0.35); }
+
+.go-err {
+  color: #f87171;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.go-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.go-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E5B64E;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: go-spin 0.8s linear infinite;
+}
+@keyframes go-spin { to { transform: rotate(360deg); } }
+
+.go-error {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+/* ─ Landing ─ */
+.go-landing {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+.go-hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.go-hero-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.go-hero-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+.go-hero-sub {
+  color: rgba(255,255,255,0.6);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.go-landing-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.go-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.go-card-icon { font-size: 2rem; }
+.go-card h2 { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
+.go-card p  { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin: 0; }
+
+.go-note {
+  color: rgba(255,255,255,0.45);
+  font-size: 0.8rem;
+  text-align: center;
+}
+.go-note a { color: #E5B64E; }
+
+.go-divider-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 4rem;
+}
+.go-divider {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  color: rgba(255,255,255,0.25);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  padding: 1rem 0;
+}
+
+.go-code-input { text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; font-size: 1.1rem; }
+
+@media (max-width: 640px) {
+  .go-landing-grid { grid-template-columns: 1fr; }
+  .go-divider-wrap { padding-top: 0; }
+  .go-divider { writing-mode: horizontal-tb; padding: 0.25rem 2rem; }
+}
+
+/* ─ Session ─ */
+.go-session {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.go-session-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.go-session-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.25rem;
+}
+
+.go-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.go-status-badge.open   { background: rgba(34,197,94,0.15); color: #4ade80; }
+.go-status-badge.closed { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+.go-expiry {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.85rem;
+}
+.go-expiry-icon { font-size: 0.9rem; }
+
+/* Join code card */
+.go-code-card {
+  background: linear-gradient(135deg, #1a1209 0%, #0d0d0d 100%);
+  border: 1px solid rgba(229,182,78,0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+.go-code-label {
+  color: rgba(255,255,255,0.55);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.go-code-display {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 0.35em;
+  color: #E5B64E;
+  font-family: 'Courier New', monospace;
+}
+.go-copy-btn {
+  background: rgba(229,182,78,0.12);
+  border: 1px solid rgba(229,182,78,0.3);
+  color: #E5B64E;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.go-copy-btn:hover { background: rgba(229,182,78,0.22); }
+
+/* Participants */
+.go-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.45);
+  margin: 0 0 0.75rem;
+}
+
+.go-participants { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.go-participant {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s;
+}
+.go-participant.go-me {
+  border-color: rgba(229,182,78,0.25);
+  background: rgba(229,182,78,0.04);
+}
+
+.go-participant-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.go-participant-name {
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.go-participant-sub { color: rgba(255,255,255,0.5); font-size: 0.85rem; }
+
+.go-badge {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.go-badge-host { background: rgba(229,182,78,0.18); color: #E5B64E; }
+.go-badge-you  { background: rgba(99,179,237,0.15);  color: #93c5fd; }
+
+.go-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.go-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.75);
+}
+.go-item-name { flex: 1; }
+.go-item-qty  { color: rgba(255,255,255,0.4); min-width: 2.5rem; text-align: right; }
+.go-item-price { font-weight: 600; color: rgba(255,255,255,0.9); min-width: 3.5rem; text-align: right; }
+
+/* Total bar */
+.go-total-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  font-size: 1rem;
+}
+.go-total-amount { font-size: 1.4rem; color: #E5B64E; }
+
+/* Actions */
+.go-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Item picker */
+.go-picker-wrap {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+.go-picker-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 1rem;
+}
+
+.go-picker {}
+.go-picker-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.go-picker-top .go-input { margin: 0; }
+
+.go-syncing { color: rgba(255,255,255,0.4); font-size: 0.8rem; white-space: nowrap; }
+
+.go-picker-list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.go-picker-list::-webkit-scrollbar { width: 4px; }
+.go-picker-list::-webkit-scrollbar-track { background: transparent; }
+.go-picker-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.go-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  gap: 0.75rem;
+}
+.go-picker-row:hover { background: rgba(255,255,255,0.06); }
+
+.go-picker-info { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
+.go-picker-name  { font-size: 0.9rem; color: #fff; font-weight: 500; }
+.go-picker-price { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+.go-picker-ctrl { display: flex; align-items: center; gap: 0.5rem; }
+
+.go-qty-btn {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.go-qty-btn:hover { background: rgba(255,255,255,0.15); }
+
+.go-qty-num {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.go-add-btn {
+  background: rgba(229,182,78,0.15);
+  border: 1px solid rgba(229,182,78,0.3);
+  color: #E5B64E;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.go-add-btn:hover { background: rgba(229,182,78,0.25); }
+
+.go-picker-loading { color: rgba(255,255,255,0.5); padding: 1rem; font-size: 0.9rem; }
+.go-picker-empty   { color: rgba(255,255,255,0.4); font-size: 0.88rem; text-align: center; padding: 1rem 0; }
+
+.go-err-session { margin-top: 0; }
+
+.go-host-note {
+  text-align: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
