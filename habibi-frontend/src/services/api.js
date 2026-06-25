@@ -101,6 +101,9 @@ export const locationsAPI = {
 
   /** GET /api/locations/:id */
   getById: (id) => request(`/api/locations/${id}`),
+
+  /** GET /api/locations/status — lightweight open/closed check */
+  getStatus: () => request('/api/locations/status'),
 };
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────

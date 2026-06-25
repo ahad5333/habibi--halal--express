@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
+const { isOpenNow } = require('../utils/businessHours');
 
 // Helper for distance calculation (Haversine)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -156,6 +157,29 @@ const findBestLocation = async (req, res) => {
   }
 };
 
+// GET /api/locations/status — lightweight open/closed check for frontend gate
+const getStatus = async (req, res) => {
+  try {
+    const locs = await pool.query(
+      `SELECT accepting_orders, working_days_hours FROM locations WHERE is_active = true`
+    );
+
+    if (locs.rows.length === 0) {
+      return res.json({ open: false, reason: 'No active locations.' });
+    }
+
+    const open = locs.rows.some(l => {
+      if (l.accepting_orders === false) return false;
+      const auto = isOpenNow(l.working_days_hours);
+      return auto === true || auto === null; // null = unparseable, defer to accepting_orders
+    });
+
+    res.json({ open });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getAllLocations,
   getLocationById,
@@ -163,5 +187,6 @@ module.exports = {
   updateLocation,
   deleteLocation,
   findBestLocation,
-  calculateDistance
+  calculateDistance,
+  getStatus,
 };

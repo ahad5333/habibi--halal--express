@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
+const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
@@ -109,6 +110,19 @@ async function autoDispatchRoadie(order_id, order) {
 /* ── Guest order (no auth) ── */
 const createGuestOrder = async (req, res) => {
   try {
+    // ── Business hours gate ────────────────────────────────────────────────
+    const locsRes = await pool.query(
+      `SELECT accepting_orders, working_days_hours FROM locations WHERE is_active = true`
+    );
+    const anyOpen = locsRes.rows.length === 0 || locsRes.rows.some(l => {
+      if (l.accepting_orders === false) return false;
+      const auto = isOpenNow(l.working_days_hours);
+      return auto === true || auto === null;
+    });
+    if (!anyOpen) {
+      return res.status(503).json({ message: "We're currently closed. Please check our hours and try again." });
+    }
+
     const {
       customer_name, customer_phone, customer_email,
       delivery_method, delivery_address, delivery_city, delivery_zip,

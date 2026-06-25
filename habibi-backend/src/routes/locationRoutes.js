@@ -5,6 +5,7 @@ const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
 
 // Public Routes
+router.get('/status', locationController.getStatus);
 router.get('/', locationController.getAllLocations);
 router.get('/:id', locationController.getLocationById);
 

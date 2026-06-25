@@ -68,6 +68,7 @@ const Checkout = () => {
   const [useRewards, setUseRewards]             = useState(false);
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [storeOpen, setStoreOpen]               = useState(true);
   const feeTimerRef = useRef(null);
   const addressInputRef = useRef(null);
 
@@ -86,6 +87,13 @@ const Checkout = () => {
   const redeemablePts   = Math.floor(loyaltyPoints / 100) * 100; // e.g. 350 pts → 300 redeemable
   const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / 100 : 0;
   const total           = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
+
+  // Check if store is currently open
+  useEffect(() => {
+    locationsAPI.getStatus()
+      .then(s => setStoreOpen(s.open !== false))
+      .catch(() => {}); // fail open — don't block checkout on a network error
+  }, []);
 
   // Pre-fill contact details + loyalty points for logged-in users
   useEffect(() => {
@@ -379,6 +387,19 @@ const Checkout = () => {
   return (
     <div className="checkout-page">
       <div className="container checkout-container py-12">
+
+        {/* Closed banner */}
+        {!storeOpen && (
+          <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>🔒</span>
+            <div>
+              <p style={{ color: '#f87171', fontWeight: 700, margin: '0 0 0.2rem', fontSize: '0.95rem' }}>We're currently closed</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '0.85rem' }}>
+                We are not accepting orders right now. Please check our <a href="/locations" style={{ color: '#E5B64E' }}>hours</a> and try again when we open.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Dine-in mode banner */}
         {isDineIn && (
@@ -875,9 +896,10 @@ const Checkout = () => {
               <button
                 className="btn btn-primary place-order-btn"
                 onClick={handlePlaceOrder}
-                disabled={placing || items.length === 0}
+                disabled={placing || items.length === 0 || !storeOpen}
+                title={!storeOpen ? "We're currently closed" : undefined}
               >
-                {ctaLabel()}
+                {!storeOpen ? "Currently Closed" : ctaLabel()}
               </button>
             )}
 
