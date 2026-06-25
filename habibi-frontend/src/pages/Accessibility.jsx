@@ -12,7 +12,7 @@ const Accessibility = () => (
 
     {/* Hero */}
     <div className="legal-hero accessibility-hero">
-      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal/accessibility-hero.jpg')", opacity: 0.18 }} />
+      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.18 }} />
       <div className="legal-hero-content">
         <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
         <h1 className="legal-title">Accessibility Statement</h1>

@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
       />
 
       <div className="legal-hero">
-        <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal/privacy-hero.jpg')", opacity: 0.15 }} />
+        <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.15 }} />
         <div className="legal-hero-content">
           <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
           <h1 className="legal-title">Privacy Policy</h1>

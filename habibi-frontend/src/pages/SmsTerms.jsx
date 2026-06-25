@@ -83,7 +83,7 @@ const SmsTerms = () => (
     />
 
     <div className="legal-hero sms-hero">
-      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal/sms-terms-hero.jpg')", opacity: 0.18 }} />
+      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.18 }} />
       <div className="legal-hero-content">
         <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
         <h1 className="legal-title">SMS Terms &amp; Conditions</h1>
