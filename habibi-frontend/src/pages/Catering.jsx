@@ -100,7 +100,7 @@ export default function Catering() {
           <h1>Quote Request Sent!</h1>
           <p>Thank you, <strong>{form.name}</strong>. We've received your inquiry for <strong>{form.guest_count} guests</strong> and will send you a custom quote within 24–48 hours.</p>
           <div className="cat-success-ref">
-            Quote reference: <strong>#CAT-{String(done.data?.id || '—').padStart(4,'0')}</strong>
+            Quote reference: <strong>#CAT-{String(done?.id || '—').padStart(4,'0')}</strong>
           </div>
           <p className="cat-success-sub">Check your inbox at <strong>{form.email}</strong> for a confirmation. For urgent bookings call us at (347) 703-3731.</p>
           <a href="/menu" className="cat-back-btn">Browse Our Menu</a>

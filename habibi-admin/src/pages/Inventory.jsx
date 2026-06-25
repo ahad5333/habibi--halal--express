@@ -20,14 +20,18 @@ export default function Inventory() {
   const [restockQty, setRestockQty] = useState('');
   const [restockNote, setRestockNote] = useState('');
   const [filterCat, setFilterCat] = useState('all');
+  const [loadErr, setLoadErr]     = useState('');
 
   const load = async () => {
     setLoading(true);
+    setLoadErr('');
     try {
       const [inv, lg] = await Promise.all([adminAPI.getInventory(), adminAPI.getRestockLog()]);
       setItems(inv);
       setLog(lg);
-    } catch (_) {}
+    } catch (e) {
+      setLoadErr(e.message || 'Failed to load inventory.');
+    }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -81,6 +85,14 @@ export default function Inventory() {
           <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Item</button>
         </div>
       </div>
+
+      {loadErr && (
+        <div className="inv-alert" style={{background:'var(--danger-light,#fee2e2)',color:'var(--danger,#dc2626)'}}>
+          <AlertTriangle size={16} />
+          <span>{loadErr}</span>
+          <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={load}>Retry</button>
+        </div>
+      )}
 
       {/* Low stock alert */}
       {lowStock.length > 0 && (

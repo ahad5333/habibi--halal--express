@@ -163,13 +163,23 @@ const updateDriverGPS = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('driver_location_update', {
+      // Fetch order_number so we can emit only to the tracking room for that order
+      const asgn = await pool.query(
+        `SELECT order_number FROM delivery_assignments WHERE id=$1`,
+        [assignment_id]
+      );
+      const orderNumber = asgn.rows[0]?.order_number;
+      const payload = {
         assignment_id: parseInt(assignment_id),
         driver_id,
         lat: parseFloat(lat),
         lng: parseFloat(lng),
         timestamp: new Date().toISOString(),
-      });
+      };
+      if (orderNumber) {
+        io.to(`order_${orderNumber}`).emit('driver_location_update', payload);
+      }
+      io.to('admins').emit('driver_location_update', payload);
     }
 
     res.json({ success: true });
