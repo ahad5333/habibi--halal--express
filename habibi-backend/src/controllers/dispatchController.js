@@ -3,7 +3,8 @@ const path      = require('path');
 const fs        = require('fs');
 const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
-const { getDistance, feeFromMiles } = require('../utils/googleMaps');
+const { getDistance } = require('../utils/googleMaps');
+const { getFeeForDistance } = require('../utils/deliveryFee');
 const { sendSMS } = require('../services/smsService');
 
 // Generate HMAC token for a driver — used in SMS links and X-Driver-Token header
@@ -334,7 +335,7 @@ const calculateDeliveryFee = async (req, res) => {
     const dist = await getDistance(origin, customer_address);
     if (!dist) return res.json({ fee: null, message: 'Could not calculate distance' });
 
-    const fee = feeFromMiles(dist.miles);
+    const fee = await getFeeForDistance(dist.miles, location_id || null);
     res.json({
       distance_miles: dist.miles,
       distance_text:  dist.text,

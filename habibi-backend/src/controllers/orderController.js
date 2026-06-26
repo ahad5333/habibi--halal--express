@@ -5,7 +5,8 @@ const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance, feeFromMiles } = require("../utils/googleMaps");
+const { getDistance } = require("../utils/googleMaps");
+const { getFeeForDistance } = require("../utils/deliveryFee");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -189,7 +190,7 @@ const createGuestOrder = async (req, res) => {
           .filter(Boolean).join(', ');
         const dist = await getDistance(RESTAURANT_ADDRESS, addrStr);
         if (dist) {
-          const serverDelFee = feeFromMiles(dist.miles);
+          const serverDelFee = await getFeeForDistance(dist.miles);
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }
