@@ -388,8 +388,8 @@ function resolveModifiers(name, category) {
   const choices = [];
   const addons  = [];
 
-  // ── Breakfast at YOUR OWN TIME ───────────────────────────────────────────
-  if (category === 'Breakfast at YOUR OWN TIME') {
+  // ── Breakfast ────────────────────────────────────────────────────────────
+  if (category === 'Breakfast' || category === 'Breakfast at YOUR OWN TIME') {
 
     // Sandwiches that use Burger Bun
     if (n.includes('berger') && n.includes('egg') && n.includes('sandwich')) {
@@ -473,7 +473,7 @@ function resolveModifiers(name, category) {
       addons.push(WINGS_EXTRAS);
     }
     // Tuna / Turkey plates get Extra Meat
-    if (n.includes('tuna') || (n.includes('turkey') && !n.includes('bacon'))) {
+    if (n.includes('tuna') || n.includes('turkey')) {
       addons.push(EXTRA_MEAT);
     }
     // Egg salad plates
@@ -512,26 +512,33 @@ function resolveModifiers(name, category) {
       addons.push(MAKE_MEAL);
     } else if (n.includes('chopped cheese')) {
       choices.push(BREAD_CHOPPED_CHEESE);
+    } else if (n.includes('falafel')) {
+      choices.push(BREAD_PITA_HERO);
+    } else if (n.includes('hot dog') || (n.includes('sausage') && !n.includes('italian'))) {
+      choices.push(BREAD_HOTDOG);
+    } else if (n.includes('italian sausage')) {
+      choices.push(BREAD_PITA_HERO);
+    } else if (n.includes('shish kebab')) {
+      choices.push({ title: 'Choose Your Bread', options: [
+        { title: 'Pita Bread', extra_price: 0.00, is_default: true },
+        { title: 'Hero',       extra_price: 1.50 },
+      ]});
     } else if (n.includes('bagel') || n.includes('roll') || n.includes('cream') || n.includes('chesse') || n.includes('butter') || n.includes('better')) {
       choices.push(BREAD_STANDARD);
-    } else if (n.includes('shish kebab') || n.includes('shish kebab')) {
-      if (n.includes('double') || n.includes('pita')) {
-        choices.push({ title: 'Choose Your Bread', options: [
-          { title: 'Pita Bread', extra_price: 0.00, is_default: true },
-          { title: 'Hero',       extra_price: 1.50 },
-        ]});
-      }
     }
   }
 
-  // ── Bergers (Burgers) ────────────────────────────────────────────────────
-  else if (category === 'Bergers') {
+  // ── Burgers ──────────────────────────────────────────────────────────────
+  else if (category === 'Burgers' || category === 'Bergers') {
     addons.push(SAUCE);
-    if (n.includes('egg') && (n.includes('sandwich') || n.includes('berger')) && !n.includes('salad')) {
+    if (n.includes('egg') && !n.includes('salad')) {
       choices.push(BREAD_BURGER, NUM_EGGS);
       addons.push(DOUBLE_MEAT_3);
     } else if (n.includes('egg') && (n.includes('salad') || n.includes('plate'))) {
       addons.push(EXTRA_EGG_MEAT_3);
+    } else {
+      // Plain burgers — offer bun choice
+      choices.push(BREAD_BURGER);
     }
   }
 
@@ -542,10 +549,15 @@ function resolveModifiers(name, category) {
     else if (n.includes('gatorade'))    choices.push(GATORADE_FLAVOR);
     else if (n.includes('juice') && !n.includes('mix')) choices.push(JUICE_SIZE);
     else if (n.includes('mix juice'))   choices.push(JUICE_SIZE);
-    else if (n.includes('ice coffee'))  choices.push(COFFEE_SUGAR, COFFEE_MILK, COFFEE_ICE, COFFEE_SIZE);
+    else if (n.includes('iced coffee') || n.includes('ice coffee'))  choices.push(COFFEE_SUGAR, COFFEE_MILK, COFFEE_ICE, COFFEE_SIZE);
     else if (n.includes('hot coffee'))  choices.push(COFFEE_SUGAR, COFFEE_MILK, COFFEE_SIZE);
     else if (n.includes('hot chocolate')) choices.push(COFFEE_SUGAR);
     else if (n === 'tea')               choices.push(TEA_SWEETNESS, TEA_SIZE);
+  }
+
+  // ── Tacos ─────────────────────────────────────────────────────────────────
+  else if (category === 'Tacos') {
+    addons.push(SAUCE);
   }
 
   // ── Extras ───────────────────────────────────────────────────────────────
@@ -554,7 +566,10 @@ function resolveModifiers(name, category) {
     else if (n.includes('dozen donuts'))             choices.push(DONUT_TYPE);
     else if (n.startsWith('muffin') || n === 'muffin') choices.push(MUFFIN_TYPE);
     else if (n.startsWith('danish') || n === 'danish') choices.push(DANISH_TYPE);
-    else                                             addons.push(SAUCE);
+    else if (n.includes('cake') || n.includes('croissant') || n.includes('turnover') || n.includes('pastry')) {
+      // No sauce addon for desserts/pastries
+    }
+    else addons.push(SAUCE);
   }
 
   // ── Family Tray ──────────────────────────────────────────────────────────

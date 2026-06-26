@@ -59,6 +59,9 @@ const ITEMS = [
   { category: 'Platter', name: 'Plain Chicken Wings with Salad',             price:  9.99, image_url: '/images/menu/8.jpg',    description: 'Six fresh fried wings served with vegetable salad and the sauce of your choice.' },
   { category: 'Platter', name: 'Buffalo Chicken Wings with Salad',           price:  9.99, image_url: '/images/menu/12.jpg',   description: 'Six spicy fried wings in special buffalo sauce served with vegetable salad.' },
   { category: 'Platter', name: 'BBQ Chicken Wings with Salad',               price:  9.99, image_url: '/images/menu/13.jpg',   description: 'Six BBQ fried wings in special BBQ sauce served with vegetable salad.' },
+  { category: 'Platter', name: 'Plain Chicken Wings with Fries',             price:  9.99, image_url: '/images/menu/8.jpg',    description: 'Six fresh fried wings with special French seasoned fries and the sauce of your choice.' },
+  { category: 'Platter', name: 'Buffalo Chicken Wings with Fries',           price:  9.99, image_url: '/images/menu/12.jpg',   description: 'Six spicy fried wings in special buffalo sauce with French seasoned fries.' },
+  { category: 'Platter', name: 'BBQ Chicken Wings with Fries',               price:  9.99, image_url: '/images/menu/13.jpg',   description: 'Six BBQ fried wings in special BBQ sauce with French seasoned fries.' },
   { category: 'Platter', name: 'Falafel over Rice',                          price:  9.99, image_url: '/images/menu/14.jpg',   description: 'Eight homemade crispy fresh falafel over rice with vegetable salad and the sauce of your choice.' },
   { category: 'Platter', name: 'Falafel Salad',                              price:  8.99, image_url: '/images/menu/15.jpg',   description: 'Eight homemade crispy fresh falafel with lettuce, tomatoes, cucumber, and the sauce of your choice.' },
   { category: 'Platter', name: 'Empanadas over Rice and Salad',              price: 10.99, image_url: '/images/menu/15b.jpg',  description: 'Two baby fried beef potato patties in Latin style served with rice and vegetable salad.' },
@@ -78,14 +81,17 @@ const ITEMS = [
   { category: 'Sandwich', name: 'Lamb Gyro',                                 price:  7.99, image_url: '/images/menu/26.jpg',   description: 'Lamb gyro slices off the rotating gyro machine with vegetable salad wrapped in pita bread.' },
   { category: 'Sandwich', name: 'Combo (Lamb & Chicken) Sandwich',           price:  8.99, image_url: '/images/menu/27.jpg',   description: 'Grilled chicken and lamb gyro with vegetable salad wrapped in pita bread with sauce.' },
   { category: 'Sandwich', name: 'Jumbo Shrimp Sandwich',                     price:  8.99, image_url: '/images/menu/27b.jpg',  description: 'Grilled fresh jumbo shrimp with special charcoal flavor in your choice of bread and sauce.' },
-  { category: 'Sandwich', name: 'Philly Cheesesteak',                        price:  9.99, image_url: '/images/menu/28.jpg',   description: 'Halal beef steak with sautéed peppers, onions, and melted cheese in a hoagie roll.' },
+  { category: 'Sandwich', name: 'Philly Cheesesteak',                        price:  6.99, image_url: '/images/menu/28.jpg',   description: 'Halal beef steak with sautéed peppers, onions, and melted cheese in a hoagie roll.' },
   { category: 'Sandwich', name: 'Chicken Philly',                            price:  9.99, image_url: '/images/menu/29.jpg',   description: 'Halal chicken with sautéed peppers, onions, and melted cheese in a hoagie roll.' },
-  { category: 'Sandwich', name: 'Falafel Sandwich',                          price:  6.99, image_url: '/images/menu/30.jpg',   description: 'Eight homemade crispy fresh falafel with vegetable salad wrapped in pita bread with sauce.' },
+  { category: 'Sandwich', name: 'Falafel Sandwich',                          price:  7.99, image_url: '/images/menu/30.jpg',   description: 'Eight homemade crispy fresh falafel with vegetable salad wrapped in pita bread with sauce.' },
   { category: 'Sandwich', name: 'Hot Dog',                                   price:  2.50, image_url: '/images/menu/31.jpg',   description: 'Grilled beef hot dog in a bun with the sauce of your choice.' },
   { category: 'Sandwich', name: 'Hot Sausage',                               price:  3.50, image_url: '/images/menu/31.jpg',   description: 'Grilled seasoned beef hot sausage in a bun with the sauce of your choice.' },
   { category: 'Sandwich', name: 'Italian Sausage Sandwich',                  price:  6.99, image_url: '/images/menu/32.jpg',   description: 'Extra large seasoned beef Italian hot sausage with vegetable salad wrapped in pita bread.' },
+  { category: 'Sandwich', name: 'Fish Fillet Sandwich',                      price:  7.99, image_url: '/images/menu/27b.jpg',  description: 'Large specially breaded white fillet fish with vegetable salad in your choice of bread and sauce.' },
   { category: 'Sandwich', name: 'Chicken Shish Kebab Sandwich',              price:  5.99, image_url: '/images/menu/33.jpg',   description: 'Charcoal grilled chicken chunks off a shish kebab stick with vegetable salad in pita bread.' },
   { category: 'Sandwich', name: 'Beef Shish Kebab Sandwich',                 price:  6.99, image_url: '/images/menu/34b.jpg',  description: 'Charcoal grilled beef chunks off a shish kebab stick with vegetable salad in pita bread.' },
+  { category: 'Sandwich', name: 'Double Chicken Shish Kebab Sandwich',       price:  8.99, image_url: '/images/menu/33.jpg',   description: 'Charcoal grilled chicken chunks off two shish kebab sticks with vegetable salad in pita bread.' },
+  { category: 'Sandwich', name: 'Double Beef Shish Kebab Sandwich',          price:  9.99, image_url: '/images/menu/34b.jpg',  description: 'Charcoal grilled beef chunks off two shish kebab sticks with vegetable salad in pita bread.' },
 
   // ── Burgers ──────────────────────────────────────────────────────────────
   { category: 'Burgers', name: 'Beef Burger',                                price:  6.49, image_url: '/images/menu/35.jpg',   description: 'Grilled halal juicy beef burger with vegetable salad in a sandwich with the sauce of your choice.' },
@@ -94,6 +100,9 @@ const ITEMS = [
   { category: 'Burgers', name: 'Cheese Chicken Burger',                      price:  6.99, image_url: '/images/menu/35b2.jpg', description: 'Grilled halal juicy chicken burger with American cheese and vegetable salad.' },
   { category: 'Burgers', name: 'Eggs & Beef Burger Sandwich',                price:  7.99, image_url: '/images/menu/38.jpg',   description: 'Two grilled eggs and beef burger with vegetable salad in your choice of bread.' },
   { category: 'Burgers', name: 'Eggs & Chicken Burger Sandwich',             price:  7.99, image_url: '/images/menu/38b.jpg',  description: 'Two grilled eggs and chicken burger with vegetable salad in your choice of bread.' },
+
+  // ── Habibi Specials ───────────────────────────────────────────────────────
+  { category: 'Habibi Specials', name: 'Habibi Jerk Plate',                  price:  4.99, image_url: '/images/menu/1.jpg',    description: 'Habibi signature jerk-seasoned plate served with rice and vegetable salad.' },
 
   // ── Tacos ─────────────────────────────────────────────────────────────────
   { category: 'Tacos', name: 'Chicken Taco',                                 price:  3.99, image_url: '/images/menu/41.jpg',   description: 'Fried folded tortilla with halal grilled chicken chunks and mixed vegetables with your choice of sauce.' },
