@@ -1,10 +1,20 @@
 import { useEffect } from 'react';
 
-const SEO = ({ title, description, keywords, image, url, type = 'website', schema }) => {
+const SEO = ({ title, description, keywords, image, url, type = 'website', schema, noindex = false }) => {
   useEffect(() => {
     // 1. Title
     const defaultTitle = 'Habibi Halal Express | Authentic Halal Dining';
     document.title = title ? `${title} | Habibi Halal Express` : defaultTitle;
+
+    // 1b. noindex
+    let robotsEl = document.querySelector('meta[name="robots"]');
+    if (!robotsEl) {
+      robotsEl = document.createElement('meta');
+      robotsEl.setAttribute('name', 'robots');
+      document.head.appendChild(robotsEl);
+    }
+    robotsEl.setAttribute('content', noindex ? 'noindex, nofollow' : 'index, follow');
+    if (noindex) return; // skip OG/canonical for non-indexed pages
 
     // Helper to get or create meta tag
     const setMetaTag = (attrName, attrValue, content) => {
@@ -66,7 +76,7 @@ const SEO = ({ title, description, keywords, image, url, type = 'website', schem
         scriptTag.remove();
       }
     }
-  }, [title, description, keywords, image, url, type, schema]);
+  }, [title, description, keywords, image, url, type, schema, noindex]);
 
   return null;
 };

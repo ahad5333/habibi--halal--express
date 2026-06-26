@@ -1,4 +1,20 @@
 User-agent: *
 Allow: /
 
+# Private / functional pages — no crawl
+Disallow: /checkout
+Disallow: /payment
+Disallow: /account
+Disallow: /order-confirmation
+Disallow: /order-tracking
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /driver
+Disallow: /kitchen
+Disallow: /dine-in/
+Disallow: /admin/
+Disallow: /partner
+Disallow: /partner/login
+
 Sitemap: https://habibihe.com/sitemap.xml

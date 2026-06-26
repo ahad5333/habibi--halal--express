@@ -51,6 +51,20 @@ import { initGA, initPixel, trackPageView } from './utils/analytics';
 
 const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen'];
 
+// Routes that must never appear in search results
+const NOINDEX_PATHS = new Set([
+  '/login', '/signup', '/register', '/forgot-password', '/reset-password',
+  '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver',
+  '/checkout', '/payment', '/account', '/order-confirmation',
+  '/order-tracking', '/admin/broadcasts',
+]);
+function isNoIndexPath(pathname) {
+  if (NOINDEX_PATHS.has(pathname)) return true;
+  if (pathname.startsWith('/dine-in/')) return true;
+  if (pathname === '*' || !pathname) return true;
+  return false;
+}
+
 function Layout() {
   const location = useLocation();
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname);
@@ -153,6 +167,11 @@ function ScrollToTop() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Set robots meta — noindex for private/functional pages
+    const robots = document.querySelector('meta[name="robots"]');
+    if (robots) {
+      robots.setAttribute('content', isNoIndexPath(pathname) ? 'noindex, nofollow' : 'index, follow');
+    }
   }, [pathname]);
 
   return null;
