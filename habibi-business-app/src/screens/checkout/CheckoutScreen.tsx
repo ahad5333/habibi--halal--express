@@ -60,6 +60,8 @@ export default function CheckoutScreen() {
         notes:            notes.trim() || undefined,
         payment_method:   payMethod,
         pay_now:          payNow && payMethod !== 'invoice',
+        sub_total:        subtotal,
+        total,
       });
       clear();
       Alert.alert(

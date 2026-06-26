@@ -40,9 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await authAPI.login(identifier, password);
     if (!data.token) throw new Error('Login failed — no token returned.');
     const u: BusinessUser = data.user ?? { email: identifier };
-    // Restrict to business / partner roles only
-    if (!['business', 'admin', 'customer'].includes(u.role)) {
-      throw new Error('Access denied. Business accounts only.');
+    const isPartner = (data.user as any)?.is_partner === true;
+    if (!isPartner && u.role !== 'admin') {
+      throw new Error('Access denied. Business partner accounts only.');
     }
     await Storage.setToken(data.token);
     await Storage.setUser(u);

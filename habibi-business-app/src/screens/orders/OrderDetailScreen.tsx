@@ -208,12 +208,7 @@ export default function OrderDetailScreen() {
         {/* Financials */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Financials</Text>
-          <Row label="Subtotal"     value={formatCurrency(order.sub_total)} />
-          <Row label="Service Fee"  value={formatCurrency(order.service_fee)} />
-          <Row label="Delivery Fee" value={formatCurrency(order.delivery_fee)} />
-          {order.credit_applied > 0 && (
-            <Row label="Credit Applied" value={`-${formatCurrency(order.credit_applied)}`} valueColor={Colors.success} />
-          )}
+          <Row label="Subtotal" value={formatCurrency(order.sub_total)} />
           <View style={styles.divider} />
           <Row label="TOTAL"  value={formatCurrency(order.total)} bold />
           <Row

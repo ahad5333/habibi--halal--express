@@ -25,9 +25,6 @@ export interface BusinessOrder {
   payment_method?: string;
   items: BusinessOrderItem[];
   sub_total: number;
-  delivery_fee: number;
-  service_fee: number;
-  credit_applied: number;
   total: number;
   delivery_address?: string;
   notes?: string;
@@ -41,6 +38,8 @@ export interface PlaceOrderPayload {
   notes?: string;
   payment_method: string;
   pay_now: boolean;
+  sub_total: number;
+  total: number;
 }
 
 export const ordersAPI = {
