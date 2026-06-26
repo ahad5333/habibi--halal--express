@@ -67,19 +67,22 @@
   align-items: flex-start;
   max-width: 1400px;
   margin: 0 auto;
+  padding-left: 240px; /* push content past the fixed sidebar */
 }
 
-/* ── Sticky left sidebar ── */
+/* ── Fixed left sidebar — always visible on desktop ── */
 .menu-sidebar {
   width: 240px;
   flex-shrink: 0;
-  position: sticky;
-  top: 68px; /* below sticky search bar only (no top tabs on desktop) */
-  max-height: calc(100vh - 68px);
+  position: fixed;
+  top: 68px;
+  left: max(0px, calc(50vw - 700px)); /* stays aligned with centered max-width container */
+  height: calc(100vh - 68px);
   overflow-y: auto;
   scrollbar-width: none;
   padding: 1.5rem 0 2rem 0;
   border-right: 1px solid rgba(255,255,255,0.06);
+  z-index: 50;
 }
 
 .menu-sidebar::-webkit-scrollbar { display: none; }
@@ -1149,6 +1152,7 @@
 /* Tablet / iPad Pro (901px – 1200px): single-column items, slimmer sidebar */
 @media (max-width: 1200px) and (min-width: 901px) {
   .menu-sidebar   { width: 180px; }
+  .menu-layout    { padding-left: 180px; }
   .menu-list      { grid-template-columns: 1fr; }
   .menu-main-wrap { padding: 1.5rem 1.25rem 5rem; }
 
@@ -1205,7 +1209,7 @@
   .menu-cat-emoji { font-size: 1.15rem; }
   .menu-cat-tab--byo { grid-column: span 2; }
 
-  .menu-layout    { display: block; }
+  .menu-layout    { display: block; padding-left: 0; }
   .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }
   .menu-main-wrap { overflow-x: hidden; }
 
