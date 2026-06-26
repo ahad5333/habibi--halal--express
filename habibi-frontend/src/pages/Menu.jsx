@@ -418,10 +418,12 @@ const Menu = () => {
               className="menu-item-row-img"
               loading="lazy"
               decoding="async"
+              onLoad={e => e.target.closest('.menu-item-row-img-wrap')?.classList.add('img-loaded')}
               onError={e => {
                 const t = e.target;
                 t.onerror = null;
                 t.src = categoryFallback(item);
+                t.closest('.menu-item-row-img-wrap')?.classList.add('img-loaded');
               }}
             />
             {isSoldOut && <div className="menu-item-sold-out-overlay">SOLD OUT</div>}
