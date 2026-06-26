@@ -91,8 +91,6 @@ const Menu = () => {
   const tabsRef    = useRef(null);
   const sectionRefs = useRef({});
   const [activeSidebarCat, setActiveSidebarCat] = useState('');
-  const layoutRef   = useRef(null);
-  const [sidebarStuck, setSidebarStuck] = useState(false);
 
   const [ratingStats, setRatingStats] = useState(null);
 
@@ -316,23 +314,6 @@ const Menu = () => {
     return () => observer.disconnect();
   }, [categoryGroups, activeCategory, search]);
 
-  // Once the layout scrolls past the navbar, lock the sidebar to fixed permanently.
-  // We never un-stick: clicking Breakfast (near top) would re-trigger the threshold
-  // and cause the sidebar to jump back to sticky position.
-  useEffect(() => {
-    const NAVBAR = 68;
-    const onScroll = () => {
-      if (!layoutRef.current) return;
-      if (layoutRef.current.getBoundingClientRect().top <= NAVBAR) {
-        setSidebarStuck(true);
-        // Once stuck, remove the listener — no reason to keep firing
-        window.removeEventListener('scroll', onScroll);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const scrollToSection = cat => {
     const el = sectionRefs.current[cat];
@@ -619,13 +600,12 @@ const Menu = () => {
 
       {/* ── Two-column layout: sidebar + content ─────────── */}
       <div
-        className={`menu-layout${sidebarStuck ? ' menu-layout--stuck' : ''}`}
-        ref={layoutRef}
+        className="menu-layout"
         style={{ paddingBottom: cartItems.length > 0 ? '8.5rem' : '5rem' }}
       >
 
       {/* Sticky left sidebar — always visible on desktop */}
-      <aside className={`menu-sidebar${sidebarStuck ? ' menu-sidebar--stuck' : ''}`}>
+      <aside className="menu-sidebar">
         <div className="menu-sidebar-inner">
           <p className="menu-sidebar-heading">Categories</p>
           {CATEGORIES.map(cat => {
