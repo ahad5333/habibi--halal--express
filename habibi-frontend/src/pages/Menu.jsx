@@ -316,13 +316,18 @@ const Menu = () => {
     return () => observer.disconnect();
   }, [categoryGroups, activeCategory, search]);
 
-  // Switch sidebar from sticky → fixed once the layout top passes the navbar,
-  // so clicking a category never causes the sidebar to scroll back up.
+  // Once the layout scrolls past the navbar, lock the sidebar to fixed permanently.
+  // We never un-stick: clicking Breakfast (near top) would re-trigger the threshold
+  // and cause the sidebar to jump back to sticky position.
   useEffect(() => {
     const NAVBAR = 68;
     const onScroll = () => {
       if (!layoutRef.current) return;
-      setSidebarStuck(layoutRef.current.getBoundingClientRect().top <= NAVBAR);
+      if (layoutRef.current.getBoundingClientRect().top <= NAVBAR) {
+        setSidebarStuck(true);
+        // Once stuck, remove the listener — no reason to keep firing
+        window.removeEventListener('scroll', onScroll);
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
