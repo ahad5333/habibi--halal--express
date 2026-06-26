@@ -28,8 +28,10 @@
 | `NODE_ENV` | `development` | `production` | We change it |
 | `FRONTEND_URL` | `http://localhost:5175` | `https://habibihe.com` | We change it |
 | `CORS_ORIGINS` | localhost only | `https://habibihe.com,https://www.habibihe.com` | We change it |
-| `STRIPE_SECRET_KEY` | `sk_test_REPLACE_ME` | `sk_live_...` | Client — dashboard.stripe.com |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_REPLACE_ME` | Real secret after adding webhook endpoint | Client — Stripe Dashboard → Webhooks |
+| ~~`STRIPE_SECRET_KEY`~~ | ~~removed~~ | ~~Not needed — replaced by Authorize.net~~ | — |
+| `AUTHNET_API_LOGIN_ID` | *(not set)* | From VAR sheet — add via admin CPanel Payment Accounts page | Client — VAR sheet from merchant processor |
+| `AUTHNET_TRANSACTION_KEY` | *(not set)* | From VAR sheet — add via admin CPanel | Client — VAR sheet |
+| `AUTHNET_CLIENT_KEY` | *(not set)* | From merchant portal → Account → Manage Public Client Key | Client — Authorize.net merchant portal |
 | `PAYPAL_CLIENT_ID` | `REPLACE_ME` | Real production ID | Client — developer.paypal.com |
 | `PAYPAL_CLIENT_SECRET` | `REPLACE_ME` | Real production secret | Client — same page |
 | `PAYPAL_MODE` | `sandbox` | `production` | We change it once PayPal keys arrive |
@@ -44,7 +46,7 @@
 
 | Env Var | Current Value | What's Needed |
 |---|---|---|
-| `VITE_STRIPE_PUBLISHABLE_KEY` | `pk_test_REPLACE_ME` | `pk_live_...` |
+| ~~`VITE_STRIPE_PUBLISHABLE_KEY`~~ | ~~removed~~ | ~~Not needed — replaced by Authorize.net Accept.js~~ |
 | `VITE_PAYPAL_CLIENT_ID` | `REPLACE_ME` | Real PayPal client ID |
 | `VITE_GOOGLE_MAPS_KEY` | *(missing)* | Same Google Maps key as backend |
 | `VITE_GA_MEASUREMENT_ID` | `G-MOCKTRACKER` | Real GA4 ID from analytics.google.com |
@@ -186,14 +188,23 @@ Features to test before submission:
 ## Phase 3 — Website: Payments
 
 ### ✅ Done
-- **Stripe Payment Element** — unified component (`StripeCardForm.jsx`) handling card + Apple Pay + Google Pay via `PaymentElement`; dark appearance config; `redirect: 'if_required'` for SPA safety; mock fallback when key absent
+- **Authorize.net card payments** *(replaced Stripe — 2026-06-27)* — `AuthNetForm.jsx` loads Accept.js from Authorize.net CDN; card tokenized client-side (PCI compliant, card details never touch our server); opaqueData token sent to `POST /api/payments/authnet/charge`; backend charges via active merchant account credentials
+- **Authorize.net multi-account manager** — `authorize_net_accounts` DB table stores multiple VAR sheet credentials; admin CPanel → Payment Accounts page lets admin add/edit/delete/activate accounts; only one account active at a time; switching accounts takes effect instantly with no code change; `GET /api/payments/authnet/config` returns public apiLoginId + clientKey for Accept.js
+- **Authorize.net refund** — `POST /api/payments/authnet/refund/:orderNumber` admin endpoint; reads transactionId from order, refunds via active account
 - **PayPal server-side capture** — `POST /api/payments/paypal/capture` verifies transaction with PayPal OAuth2 + REST API before marking order paid; frontend no longer calls `actions.order.capture()` directly
 - **Zelle / CashApp instructions modal** — `OfflinePayModal.jsx` reads `ZELLE_EMAIL`, `ZELLE_NAME`, `CASHAPP_CASHTAG` from backend `GET /api/payments/offline-info`; shows payment handle + "I've sent the payment" confirm button
 - **Square** — real charge via `squareCharge()` with `SQUARE_ACCESS_TOKEN`; mocks when absent
 - **Refund handling** — admin `POST /api/admin/payments/:orderNumber/refund` endpoint
 
-### 🔶 Partial
-- **Stripe webhooks** — handler exists in `webhookRoutes.js`; `STRIPE_WEBHOOK_SECRET` still a placeholder in `.env` — must be set in production via Stripe dashboard CLI
+### ❌ Removed
+- **Stripe** — removed entirely (client uses Authorize.net). `StripeCardForm.jsx` no longer used in checkout. Apple Pay / Google Pay removed (were Stripe-specific). Stripe env vars (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY`) no longer needed.
+
+### 📋 What's needed to activate Authorize.net
+From the VAR sheet, add one account in admin CPanel → Payment Accounts:
+- API Login ID
+- Transaction Key
+- Client Key (merchant portal → Account → Manage Public Client Key)
+- Environment: `production` or `sandbox`
 
 ### ❌ Missing
 - None for core payment flows ✅
