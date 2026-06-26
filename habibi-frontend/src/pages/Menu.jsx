@@ -10,19 +10,24 @@ import SEO from '../components/SEO';
 import './Menu.css';
 
 const CATEGORIES = [
-  { label: 'All',            value: 'all',       match: null,                         emoji: '🍽️' },
-  { label: 'Breakfast',      value: 'breakfast', match: 'Breakfast at YOUR OWN TIME', emoji: '🌅' },
-  { label: 'Platter',        value: 'platter',   match: 'Platter',                    emoji: '🥗' },
-  { label: 'Sandwich',       value: 'sandwich',  match: 'Sandwich',                   emoji: '🥙' },
-  { label: 'Burgers',        value: 'burgers',   match: 'Burgers',                    emoji: '🍔' },
-  { label: 'Drinks',         value: 'drinks',    match: 'Drinks',                     emoji: '🥤' },
-  { label: 'Family Tray',    value: 'family',    match: 'Family Tray',                emoji: '🍽️' },
-  { label: 'Extras',         value: 'extras',    match: 'Extras',                     emoji: '➕' },
-  { label: 'Specials',       value: 'specials',  match: 'Habibi Specials',            emoji: '⭐' },
-  { label: 'Build Your Own', value: 'byo',       match: 'Build Your Own',             emoji: '🏗️' },
+  { label: 'All',             value: 'all',       match: null,             emoji: '🍽️' },
+  { label: 'Breakfast',       value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
+  { label: 'Platter',         value: 'platter',   match: 'Platter',        emoji: '🥗' },
+  { label: 'Sandwiches',      value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
+  { label: 'Burgers',         value: 'burgers',   match: 'Burgers',        emoji: '🍔' },
+  { label: 'Tacos',           value: 'tacos',     match: 'Taco',           emoji: '🌮' },
+  { label: 'Habibi Specials', value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
+  { label: 'Extras',          value: 'extras',    match: 'Extras',         emoji: '➕' },
+  { label: 'Drinks',          value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
+  { label: 'Family Tray',     value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
+  { label: 'Build Your Own!', value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
 ];
 
-const CAT_ORDER = CATEGORIES.map(c => c.match).filter(Boolean);
+// Ordered list of DB category strings for section sorting
+const CAT_ORDER = [
+  'Breakfast','Platter','Sandwich','Burgers','Taco','Tacos',
+  'Habibi Specials','Specials','Extras','Drinks','Family Tray','Build Your Own',
+];
 
 const BOWL_BASE_OPTIONS = [
   { id: 'rice',   label: 'Rice',   image: '/images/builder/base_rice.webp' },
@@ -78,6 +83,8 @@ const Menu = () => {
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const { addItem, items: cartItems, subtotal } = useCart();
   const { isLoggedIn } = useAuth();
@@ -190,25 +197,29 @@ const Menu = () => {
 
     // All other categories: stay in 'all' view and scroll to the section
     const catObj = CATEGORIES.find(c => c.value === val);
-    const sectionKey = catObj?.match; // raw DB category string used as section key
+    const sectionKey = catObj?.match;
 
-    if (activeCategory !== 'all') {
-      // Switch back to 'all' first, then scroll after re-render
-      setActiveCategory('all');
-      if (sectionKey) {
-        setTimeout(() => {
-          const el = sectionRefs.current[sectionKey];
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          setActiveSidebarCat(sectionKey);
-        }, 80);
-      }
-    } else {
-      // Already in 'all' — just scroll
-      if (sectionKey) {
-        const el = sectionRefs.current[sectionKey];
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const doScroll = () => {
+      if (!sectionKey) return;
+      // Exact match first, then fuzzy (handles 'Taco' matching 'Tacos' in DB)
+      const keyL = sectionKey.toLowerCase();
+      let el = sectionRefs.current[sectionKey];
+      if (!el) {
+        const entry = Object.entries(sectionRefs.current).find(([k]) =>
+          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL) || keyL.includes(k.toLowerCase())
+        );
+        if (entry) { el = entry[1]; setActiveSidebarCat(entry[0]); }
+      } else {
         setActiveSidebarCat(sectionKey);
       }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    if (activeCategory !== 'all') {
+      setActiveCategory('all');
+      setTimeout(doScroll, 80);
+    } else {
+      doScroll();
     }
 
     // Scroll the active tab into view on mobile
@@ -258,18 +269,26 @@ const Menu = () => {
     return pool.slice(0, 8);
   }, [items]);
 
-  // Group items by category for "All" view
+  // Group items by category for "All" view — items can appear in multiple sections
   const categoryGroups = useMemo(() => {
     if (activeCategory !== 'all') return [];
     const groups = {};
     filtered.forEach(item => {
-      const cat = item.category || 'Other';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(item);
+      // Collect all categories this item belongs to
+      const allCats = new Set([
+        ...(Array.isArray(item.categories) ? item.categories : []),
+        item.category,
+      ].filter(Boolean));
+      allCats.forEach(cat => {
+        if (!groups[cat]) groups[cat] = [];
+        if (!groups[cat].find(i => i.id === item.id)) groups[cat].push(item);
+      });
     });
     return Object.entries(groups).sort(([a], [b]) => {
-      const ia = CAT_ORDER.indexOf(a);
-      const ib = CAT_ORDER.indexOf(b);
+      const aL = a.toLowerCase();
+      const bL = b.toLowerCase();
+      const ia = CAT_ORDER.findIndex(m => aL === m.toLowerCase() || aL.includes(m.toLowerCase()));
+      const ib = CAT_ORDER.findIndex(m => bL === m.toLowerCase() || bL.includes(m.toLowerCase()));
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   }, [filtered, activeCategory]);
@@ -507,21 +526,48 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* ── Search bar ────────────────────────────────────── */}
-      <div className="menu-search-bar">
+      {/* ── Search bar with autocomplete ──────────────────── */}
+      <div className="menu-search-bar" ref={searchRef}>
         <div className="menu-search-inner">
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Search menu items..."
+            placeholder="Type to search items…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             className="menu-search-input"
+            autoComplete="off"
           />
           {search && (
-            <button className="search-clear" onClick={() => setSearch('')}>✕</button>
+            <button className="search-clear" onClick={() => { setSearch(''); setShowSuggestions(false); }}>✕</button>
           )}
         </div>
+        {showSuggestions && search.length >= 1 && (() => {
+          const q = search.toLowerCase();
+          const matches = items
+            .filter(i => (i.name || i.title || '').toLowerCase().includes(q) && i.is_available !== false)
+            .slice(0, 6);
+          return matches.length > 0 ? (
+            <ul className="menu-search-suggestions">
+              {matches.map(item => (
+                <li
+                  key={item.id}
+                  className="menu-search-suggestion-item"
+                  onMouseDown={() => {
+                    setSearch(item.name || item.title);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  <Search size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
+                  <span>{item.name || item.title}</span>
+                  <span className="menu-suggestion-cat">{item.category}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null;
+        })()}
       </div>
 
       {/* ── Category tabs — mobile only (hidden on desktop via CSS) ── */}
@@ -537,7 +583,7 @@ const Menu = () => {
               <button
                 key={cat.value}
                 data-val={cat.value}
-                className={`menu-cat-tab${isActive ? ' active' : ''}`}
+                className={`menu-cat-tab${isActive ? ' active' : ''}${cat.special ? ' menu-cat-tab--byo' : ''}`}
                 onClick={() => handleCatClick(cat.value)}
               >
                 <span className="menu-cat-emoji">{cat.emoji}</span>
@@ -564,7 +610,7 @@ const Menu = () => {
             return (
               <button
                 key={cat.value}
-                className={`menu-sidebar-item${isActive ? ' active' : ''}`}
+                className={`menu-sidebar-item${isActive ? ' active' : ''}${cat.special ? ' menu-sidebar-item--byo' : ''}`}
                 onClick={() => handleCatClick(cat.value)}
               >
                 <span className="menu-sidebar-emoji">{cat.emoji}</span>

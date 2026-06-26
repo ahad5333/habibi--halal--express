@@ -4,7 +4,12 @@ import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', category: '', notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '' };
+const ALL_CATEGORIES = [
+  'Breakfast','Platter','Sandwich','Burgers','Taco','Habibi Specials',
+  'Extras','Drinks','Family Tray','Build Your Own',
+];
+
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '' };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -22,7 +27,10 @@ function MenuModal({ item, categories, onClose, onSave }) {
   const [form, setForm] = useState(item ? {
     name: item.name || '', description: item.description || '',
     price: item.price || '', partner_price: item.partner_price || '',
-    category: item.category || '', notes: item.notes || '',
+    categories: Array.isArray(item.categories) && item.categories.length
+      ? item.categories
+      : (item.category ? [item.category] : []),
+    notes: item.notes || '',
     is_active: item.is_active !== false,
     is_spicy: !!item.is_spicy,
     is_vegetarian: !!item.is_vegetarian,
@@ -54,7 +62,8 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('description', form.description);
       fd.append('price', form.price);
       fd.append('partner_price', form.partner_price || form.price);
-      fd.append('category', form.category);
+      fd.append('category', form.categories[0] || '');
+      fd.append('categories', JSON.stringify(form.categories));
       fd.append('notes', form.notes);
       fd.append('is_active', form.is_active);
       fd.append('is_spicy', form.is_spicy);
@@ -118,16 +127,27 @@ function MenuModal({ item, categories, onClose, onSave }) {
             </div>
 
             <div className="field">
-              <label>Category</label>
-              <input
-                className="input" list="cat-list"
-                placeholder="e.g. Platter, Sandwich, Drinks"
-                value={form.category}
-                onChange={e => set('category', e.target.value)}
-              />
-              <datalist id="cat-list">
-                {categories.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
-              </datalist>
+              <label>Categories <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(select all that apply)</span></label>
+              <div className="mb-cat-checkboxes">
+                {ALL_CATEGORIES.map(cat => (
+                  <label key={cat} className={`mb-cat-checkbox${form.categories.includes(cat) ? ' checked' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.categories.includes(cat)}
+                      onChange={e => {
+                        const next = e.target.checked
+                          ? [...form.categories, cat]
+                          : form.categories.filter(c => c !== cat);
+                        set('categories', next);
+                      }}
+                    />
+                    {cat}
+                  </label>
+                ))}
+              </div>
+              {form.categories.length === 0 && (
+                <p style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '0.25rem' }}>Select at least one category</p>
+              )}
             </div>
 
             <div className="field">

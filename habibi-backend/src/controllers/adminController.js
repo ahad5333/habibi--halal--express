@@ -86,7 +86,9 @@ const getAllMenus = async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, name, description, price, partner_price,
-             image_url, category, sort_order, notes,
+             image_url, category,
+             COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
+             sort_order, notes,
              is_active, is_available, is_featured,
              is_spicy, is_vegetarian, is_gluten_free,
              choices, addons, dietary_info

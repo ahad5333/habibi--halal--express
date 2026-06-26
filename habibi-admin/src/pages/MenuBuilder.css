@@ -306,3 +306,38 @@
   .mb-row { grid-template-columns: 1fr; }
   .mb-loc-select { max-width: 100%; }
 }
+
+/* ── Multi-category checkboxes ─────────────────────────── */
+.mb-cat-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.mb-cat-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.mb-cat-checkbox:hover {
+  border-color: rgba(229,182,78,0.5);
+  color: rgba(255,255,255,0.85);
+}
+.mb-cat-checkbox.checked {
+  background: rgba(229,182,78,0.15);
+  border-color: #E5B64E;
+  color: #E5B64E;
+  font-weight: 600;
+}
+.mb-cat-checkbox input[type="checkbox"] {
+  display: none;
+}

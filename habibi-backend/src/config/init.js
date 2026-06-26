@@ -737,6 +737,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS available_until TIME`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS is_featured     BOOLEAN        DEFAULT FALSE`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS addons_max      INTEGER`);
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS categories      TEXT[]         DEFAULT '{}'`);
 
     // ── Addresses: ensure user_id column exists (bridge column) ────
     await client.query(`
