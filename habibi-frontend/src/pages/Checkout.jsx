@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, paymentsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
@@ -64,6 +64,7 @@ const Checkout = () => {
   const [feeLoading, setFeeLoading]             = useState(false);
   const [feeMsg, setFeeMsg]                     = useState('');
   const [upsellItems, setUpsellItems]           = useState([]);
+  const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
   const [useRewards, setUseRewards]             = useState(false);
   const [locations, setLocations]               = useState([]);
@@ -466,27 +467,33 @@ const Checkout = () => {
             {/* Upsell — "Add to your order" */}
             {upsellItems.length > 0 && items.length > 0 && (
               <div className="checkout-section">
-                <h2 className="checkout-section-title mb-4" style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Add to Your Order</h2>
-                <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                <div className="upsell-header">
+                  <h2 className="checkout-section-title upsell-title">Add to Your Order</h2>
+                  <div className="upsell-arrows">
+                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => upsellRef.current?.scrollBy({ left: -170, behavior: 'smooth' })}><ChevronLeft size={16} /></button>
+                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => upsellRef.current?.scrollBy({ left: 170, behavior: 'smooth' })}><ChevronRight size={16} /></button>
+                  </div>
+                </div>
+                <div className="upsell-track" ref={upsellRef}>
                   {upsellItems.filter(u => !items.find(i => i.id === u.id)).map(u => {
                     const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
                     return (
-                      <div key={u.id} style={{ minWidth: 150, background: 'var(--color-surface-2, #f9fafb)', border: '1px solid var(--color-border, #e5e7eb)', borderRadius: 10, padding: '0.75rem', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div key={u.id} className="upsell-card">
                         <div>
-                          <div style={{ width: '100%', height: 80, borderRadius: 8, overflow: 'hidden', marginBottom: '0.5rem', background: '#eaeaea' }}>
+                          <div className="upsell-img-wrap">
                             <img
                               src={imgSrc}
                               alt={u.name || u.title}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              className="upsell-img"
                               onError={e => { e.target.src = getFoodPhoto(u.id + 7); }}
                             />
                           </div>
-                          <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--color-text-main, #111827)', lineHeight: 1.3 }}>{u.name || u.title}</p>
+                          <p className="upsell-name">{u.name || u.title}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--color-gold, #b45309)', fontWeight: 700, marginBottom: '0.5rem' }}>${parseFloat(u.price || 0).toFixed(2)}</p>
+                          <p className="upsell-price">${parseFloat(u.price || 0).toFixed(2)}</p>
                           <button
-                            style={{ width: '100%', padding: '0.375rem', background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #d1d5db)', borderRadius: 6, color: 'var(--color-text-main, #374151)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                            className="upsell-add-btn"
                             onClick={() => addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: u.category || 'Add-on', note: '', qty: 1 })}
                           >
                             <Plus size={12} /> Add
