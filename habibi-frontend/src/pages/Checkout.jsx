@@ -114,16 +114,27 @@ const Checkout = () => {
       });
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch upsell items once on mount
+  // Fetch upsell items once on mount — 4 drinks, 4 juices, 4 salads (12 total, 4 visible at a time)
   useEffect(() => {
     menuAPI.getAll()
       .then(data => {
         const all = Array.isArray(data) ? data : (data.menus || data.items || []);
-        const addons = all.filter(i => {
-          const cat = (i.category || '').toLowerCase();
-          return cat.includes('drink') || cat.includes('extras') || cat.includes('extra');
-        });
-        setUpsellItems(addons.slice(0, 4));
+        const getName = i => (i.name || i.title || '').toLowerCase();
+        const getCat  = i => (i.category || '').toLowerCase();
+
+        const drinks = all
+          .filter(i => getCat(i).includes('drink') && !getName(i).includes('juice') && !getName(i).includes('coffee') && !getName(i).includes('tea') && !getName(i).includes('chocolate'))
+          .slice(0, 4);
+
+        const juices = all
+          .filter(i => getCat(i).includes('drink') && getName(i).includes('juice'))
+          .slice(0, 4);
+
+        const salads = all
+          .filter(i => getCat(i).includes('platter') && getName(i).includes('salad'))
+          .slice(0, 4);
+
+        setUpsellItems([...drinks, ...juices, ...salads]);
       })
       .catch(() => {});
   }, []);
