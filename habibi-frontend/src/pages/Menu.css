@@ -397,6 +397,11 @@
   padding: 0.5rem 0;
 }
 
+@keyframes itemFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .menu-item-row {
   display: flex;
   align-items: flex-start;
@@ -406,11 +411,15 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+              box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+              transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: visible;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
   position: relative;
+  animation: itemFadeUp 0.35s ease-out both;
 }
 
 .menu-item-row:hover {
@@ -735,7 +744,9 @@
    HORIZONTAL CATEGORY TABS
    ══════════════════════════════════════════════ */
 .menu-cats-wrap {
-  background: #000000;
+  background: rgba(0,0,0,0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
 }
@@ -1159,7 +1170,12 @@
 /* Mobile: hide sidebar, show top tabs */
 @media (max-width: 900px) {
   .menu-sidebar   { display: none; }
-  .menu-cats-wrap { display: block; }
+  .menu-cats-wrap {
+    display: block;
+    position: sticky;
+    top: 68px;
+    z-index: 100;
+  }
   .menu-layout    { display: block; }
   .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }
   .menu-main-wrap { overflow-x: hidden; }

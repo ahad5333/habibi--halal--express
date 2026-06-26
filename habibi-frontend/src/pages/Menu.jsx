@@ -381,6 +381,7 @@ const Menu = () => {
       <div
         key={item.id}
         className={`menu-item-row${isSoldOut ? ' menu-item-sold-out' : ''}`}
+        style={{ animationDelay: `${Math.min(idx, 10) * 50}ms` }}
         onClick={() => !isSoldOut && handleCardClick(item)}
         role="button"
         tabIndex={0}
