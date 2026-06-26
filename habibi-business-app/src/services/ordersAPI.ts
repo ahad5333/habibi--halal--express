@@ -72,4 +72,10 @@ export const ordersAPI = {
       method: 'POST',
       body: JSON.stringify({ payment_method }),
     }),
+
+  addItems: (id: number, items: BusinessOrderItem[]): Promise<{ sub_total: number; total: number; items: BusinessOrderItem[] }> =>
+    request(`/api/partner/orders/${id}/items`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items }),
+    }),
 };

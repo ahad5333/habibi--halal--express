@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, FlatList, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ordersAPI, BusinessOrder } from '../../services/ordersAPI';
+import { ordersAPI, BusinessOrder, BusinessOrderItem } from '../../services/ordersAPI';
+import { menuAPI, BusinessMenuItem } from '../../services/menuAPI';
 import { Colors } from '../../theme/colors';
 import { Spacing, Radius } from '../../theme/spacing';
 import { FontSize, FontWeight } from '../../theme/typography';
@@ -58,10 +59,17 @@ export default function OrderDetailScreen() {
   const [loading,     setLoading]     = useState(true);
   const [showPay,     setShowPay]     = useState(false);
   const [showCancel,  setShowCancel]  = useState(false);
+  const [showAddItems,setShowAddItems]= useState(false);
   const [payMethod,   setPayMethod]   = useState('Invoice');
   const [cancelReason,setCancelReason]= useState('');
   const [customReason,setCustomReason]= useState('');
   const [submitting,  setSubmitting]  = useState(false);
+
+  // Add Items state
+  const [catalog,    setCatalog]    = useState<BusinessMenuItem[]>([]);
+  const [catLoading, setCatLoading] = useState(false);
+  const [search,     setSearch]     = useState('');
+  const [selection,  setSelection]  = useState<Record<number, number>>({});  // id → qty
 
   const load = useCallback(async () => {
     try {
@@ -123,6 +131,69 @@ export default function OrderDetailScreen() {
       setSubmitting(false);
     }
   };
+
+  const openAddItems = async () => {
+    setSelection({});
+    setSearch('');
+    setShowAddItems(true);
+    if (catalog.length) return;
+    setCatLoading(true);
+    try {
+      const items = await menuAPI.getCatalog();
+      setCatalog(items);
+    } catch {
+      Alert.alert('Error', 'Could not load catalog.');
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const adjustQty = (itemId: number, delta: number) => {
+    setSelection(prev => {
+      const current = prev[itemId] ?? 0;
+      const next = Math.max(0, current + delta);
+      if (next === 0) {
+        const { [itemId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [itemId]: next };
+    });
+  };
+
+  const selectedCount = Object.values(selection).reduce((s, q) => s + q, 0);
+  const selectedTotal = useMemo(() => {
+    return Object.entries(selection).reduce((s, [id, qty]) => {
+      const item = catalog.find(c => c.id === Number(id));
+      return s + (item ? item.price * qty : 0);
+    }, 0);
+  }, [selection, catalog]);
+
+  const handleAddItems = async () => {
+    if (!order || !selectedCount) return;
+    const newItems: BusinessOrderItem[] = Object.entries(selection)
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const item = catalog.find(c => c.id === Number(id))!;
+        return { menu_item_id: item.id, name: item.name, quantity: qty, unit_price: item.price };
+      });
+    setSubmitting(true);
+    try {
+      await ordersAPI.addItems(order.id, newItems);
+      setShowAddItems(false);
+      await load();
+      Alert.alert('Items Added', `${selectedCount} item(s) added to order #${order.order_number}.`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not add items.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredCatalog = useMemo(() => {
+    if (!search.trim()) return catalog;
+    const q = search.toLowerCase();
+    return catalog.filter(i => i.name.toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q));
+  }, [catalog, search]);
 
   if (loading || !order) {
     return (
@@ -245,6 +316,12 @@ export default function OrderDetailScreen() {
               <Text style={styles.actionBtnText}>Pay Now / Change Method</Text>
             </TouchableOpacity>
           )}
+          {order.status === 'created' && (
+            <TouchableOpacity style={styles.actionBtn} onPress={openAddItems}>
+              <Feather name="plus-circle" size={16} color={Colors.gold} />
+              <Text style={styles.actionBtnText}>Add Items to Order</Text>
+            </TouchableOpacity>
+          )}
           {canCancel && (
             <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} onPress={() => { setCancelReason(''); setCustomReason(''); setShowCancel(true); }}>
               <Feather name="x-circle" size={16} color={Colors.error} />
@@ -289,6 +366,89 @@ export default function OrderDetailScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Add Items Modal */}
+      <Modal visible={showAddItems} animationType="slide" onRequestClose={() => setShowAddItems(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }}>
+          {/* Header */}
+          <View style={aiStyles.header}>
+            <TouchableOpacity onPress={() => setShowAddItems(false)} style={styles.backBtn}>
+              <Feather name="x" size={22} color={Colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Add Items</Text>
+            <View style={{ width: 36 }} />
+          </View>
+
+          {/* Search */}
+          <View style={aiStyles.searchWrap}>
+            <Feather name="search" size={16} color={Colors.textMuted} style={{ marginRight: 8 }} />
+            <TextInput
+              style={aiStyles.searchInput}
+              placeholder="Search menu…"
+              placeholderTextColor={Colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Feather name="x-circle" size={16} color={Colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {catLoading ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color={Colors.gold} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredCatalog}
+              keyExtractor={i => String(i.id)}
+              contentContainerStyle={{ padding: Spacing.md, paddingBottom: 120 }}
+              renderItem={({ item }) => {
+                const qty = selection[item.id] ?? 0;
+                return (
+                  <View style={aiStyles.itemRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={aiStyles.itemName}>{item.name}</Text>
+                      <Text style={aiStyles.itemMeta}>{item.category} · {formatCurrency(item.price)}</Text>
+                    </View>
+                    <View style={aiStyles.qtyRow}>
+                      <TouchableOpacity style={aiStyles.qtyBtn} onPress={() => adjustQty(item.id, -1)} disabled={qty === 0}>
+                        <Feather name="minus" size={14} color={qty === 0 ? Colors.textMuted : Colors.gold} />
+                      </TouchableOpacity>
+                      <Text style={[aiStyles.qtyText, qty > 0 && { color: Colors.gold }]}>{qty}</Text>
+                      <TouchableOpacity style={aiStyles.qtyBtn} onPress={() => adjustQty(item.id, 1)}>
+                        <Feather name="plus" size={14} color={Colors.gold} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
+              ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: Colors.border }} />}
+              ListEmptyComponent={<Text style={{ color: Colors.textMuted, textAlign: 'center', marginTop: 40 }}>No items found.</Text>}
+            />
+          )}
+
+          {/* Footer */}
+          {selectedCount > 0 && (
+            <View style={aiStyles.footer}>
+              <TouchableOpacity
+                style={[aiStyles.addBtn, submitting && { opacity: 0.6 }]}
+                onPress={handleAddItems}
+                disabled={submitting}
+              >
+                {submitting ? <ActivityIndicator size="small" color="#000" /> : (
+                  <Text style={aiStyles.addBtnText}>
+                    Add {selectedCount} item{selectedCount > 1 ? 's' : ''} — {formatCurrency(selectedTotal)}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </SafeAreaView>
       </Modal>
 
       {/* Cancel Modal */}
@@ -413,4 +573,43 @@ const styles = StyleSheet.create({
   modalBtnSecondary: { flex: 1, padding: 14, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   modalBtnPrimary:   { flex: 1, padding: 14, borderRadius: Radius.full, backgroundColor: Colors.gold, alignItems: 'center' },
   modalBtnDanger:    { flex: 1, padding: 14, borderRadius: Radius.full, backgroundColor: Colors.error, alignItems: 'center' },
+});
+
+const aiStyles = StyleSheet.create({
+  header:      {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  searchWrap:  {
+    flexDirection: 'row', alignItems: 'center',
+    margin: Spacing.md, paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.surface, borderRadius: Radius.full,
+    borderWidth: 1, borderColor: Colors.border,
+    height: 44,
+  },
+  searchInput: { flex: 1, color: Colors.text, fontSize: FontSize.base },
+  itemRow:     {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: Spacing.sm, backgroundColor: Colors.surface,
+    borderRadius: Radius.md, paddingHorizontal: Spacing.md,
+    marginBottom: 2,
+  },
+  itemName:    { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text },
+  itemMeta:    { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
+  qtyRow:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  qtyBtn:      {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  qtyText:     { minWidth: 20, textAlign: 'center', fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textSub },
+  footer:      {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: Spacing.md, backgroundColor: Colors.surface,
+    borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  addBtn:      { backgroundColor: Colors.gold, borderRadius: Radius.full, padding: 16, alignItems: 'center' },
+  addBtnText:  { color: '#000', fontWeight: FontWeight.black, fontSize: FontSize.base },
 });
