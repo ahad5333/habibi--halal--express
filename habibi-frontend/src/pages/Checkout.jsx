@@ -122,7 +122,7 @@ const Checkout = () => {
           const cat = (i.category || '').toLowerCase();
           return cat.includes('drink') || cat.includes('extras') || cat.includes('extra');
         });
-        setUpsellItems(addons.slice(0, 4));
+        setUpsellItems(addons);
       })
       .catch(() => {});
   }, []);
@@ -468,7 +468,7 @@ const Checkout = () => {
               <div className="checkout-section">
                 <h2 className="checkout-section-title mb-4" style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Add to Your Order</h2>
                 <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                  {upsellItems.filter(u => !items.find(i => i.id === u.id)).slice(0, 4).map(u => {
+                  {upsellItems.filter(u => !items.find(i => i.id === u.id)).map(u => {
                     const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
                     return (
                       <div key={u.id} style={{ minWidth: 150, background: 'var(--color-surface-2, #f9fafb)', border: '1px solid var(--color-border, #e5e7eb)', borderRadius: 10, padding: '0.75rem', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
