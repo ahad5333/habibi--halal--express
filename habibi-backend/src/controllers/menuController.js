@@ -4,16 +4,31 @@ const { logAudit } = require('./auditController');
 
 const getMenus = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT id, name, description, price, partner_price,
-             image_url AS image, category,
-             COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
-             is_available, choices, addons, dietary_info,
-             is_spicy, is_vegetarian, is_gluten_free, is_featured
-      FROM menus
-      WHERE is_available = TRUE AND is_active = TRUE
-      ORDER BY category, sort_order, id
-    `);
+    let result;
+    try {
+      result = await pool.query(`
+        SELECT id, name, description, price, partner_price,
+               image_url AS image, category,
+               COALESCE(categories, '{}'::TEXT[]) AS categories,
+               is_available, choices, addons, dietary_info,
+               is_spicy, is_vegetarian, is_gluten_free, is_featured
+        FROM menus
+        WHERE is_available = TRUE AND is_active = TRUE
+        ORDER BY category, sort_order, id
+      `);
+    } catch {
+      // categories column not yet migrated — fall back without it
+      result = await pool.query(`
+        SELECT id, name, description, price, partner_price,
+               image_url AS image, category,
+               '{}'::TEXT[] AS categories,
+               is_available, choices, addons, dietary_info,
+               is_spicy, is_vegetarian, is_gluten_free, is_featured
+        FROM menus
+        WHERE is_available = TRUE AND is_active = TRUE
+        ORDER BY category, sort_order, id
+      `);
+    }
     res.json(result.rows);
   } catch (error) {
     res.status(500).json(safeError(error));
