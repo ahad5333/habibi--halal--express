@@ -123,7 +123,7 @@ const Checkout = () => {
           const cat = (i.category || '').toLowerCase();
           return cat.includes('drink') || cat.includes('extras') || cat.includes('extra');
         });
-        setUpsellItems(addons);
+        setUpsellItems(addons.slice(0, 10));
       })
       .catch(() => {});
   }, []);
