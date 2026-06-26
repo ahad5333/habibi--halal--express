@@ -1,86 +1,179 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Clock, UtensilsCrossed, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag } from 'lucide-react';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const POLL_MS  = 30000;
+const POLL_MS  = 15000;
 
-const STATUS_META = {
-  pending:    { label: 'Pending',   cls: 'kd-status--pending'   },
-  confirmed:  { label: 'Confirmed', cls: 'kd-status--confirmed' },
-  preparing:  { label: 'Preparing', cls: 'kd-status--preparing' },
-  on_the_way: { label: 'Ready',     cls: 'kd-status--ready'     },
-  ready:      { label: 'Ready',     cls: 'kd-status--ready'     },
+// Status → kanban column
+const COLUMN_MAP = {
+  pending:   'new',
+  confirmed: 'new',
+  preparing: 'preparing',
+  cooking:   'preparing',
+  ready:     'ready',
 };
 
-function elapsed(placedAt) {
-  const diff = Math.floor((Date.now() - new Date(placedAt)) / 60000);
-  if (diff < 1) return 'just now';
-  if (diff === 1) return '1 min ago';
-  return `${diff} min ago`;
+// What the bump button does for each status
+const BUMP_NEXT = {
+  pending:   'preparing',
+  confirmed: 'preparing',
+  preparing: 'ready',
+  cooking:   'ready',
+  ready:     'delivered',
+};
+
+const DELIVERY_ICON = {
+  dine_in:  <UtensilsCrossed size={12} />,
+  pickup:   <ShoppingBag size={12} />,
+  delivery: <Truck size={12} />,
+};
+const DELIVERY_LABEL = {
+  dine_in:  'Dine-In',
+  pickup:   'Pickup',
+  delivery: 'Delivery',
+};
+
+function minutesOld(placedAt) {
+  return Math.floor((Date.now() - new Date(placedAt)) / 60000);
+}
+
+function elapsedLabel(placedAt) {
+  const diff = minutesOld(placedAt);
+  if (diff < 1) return 'Just now';
+  if (diff === 1) return '1 min';
+  return `${diff} min`;
+}
+
+// Simple Web Audio API beep — no external files needed
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (_) {}
 }
 
 export default function KitchenDisplay() {
-  const [orders, setOrders]     = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const [lastSync, setLastSync] = useState(null);
-  const [tick, setTick]         = useState(0);
+  const [orders,    setOrders]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [lastSync,  setLastSync]  = useState(null);
+  const [tick,      setTick]      = useState(0);
+  const [scope,     setScope]     = useState('all');   // 'all' | 'dine_in'
+  const [bumping,   setBumping]   = useState({});       // id → true
+  const prevIds = useRef(new Set());
+
+  const endpoint = scope === 'dine_in' ? '/api/dine-in/kitchen' : '/api/dine-in/kitchen-all';
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/dine-in/kitchen`);
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const res = await fetch(`${API_BASE}${endpoint}`);
+      if (!res.ok) throw new Error(`Server ${res.status}`);
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      // Detect new orders and beep
+      const newIds = new Set(list.map(o => o.id));
+      const hasNew = list.some(o => !prevIds.current.has(o.id));
+      if (hasNew && prevIds.current.size > 0) beep();
+      prevIds.current = newIds;
+      setOrders(list);
       setLastSync(new Date());
       setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || 'Fetch failed');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [endpoint]);
 
-  // Initial fetch + poll
   useEffect(() => {
+    setLoading(true);
+    setOrders([]);
     fetchOrders();
     const poll = setInterval(fetchOrders, POLL_MS);
     return () => clearInterval(poll);
   }, [fetchOrders]);
 
-  // Re-render elapsed times every minute
+  // Re-render elapsed times every 30 s
   useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 60000);
+    const t = setInterval(() => setTick(n => n + 1), 30000);
     return () => clearInterval(t);
   }, []);
 
+  const bumpOrder = async (order) => {
+    const next = BUMP_NEXT[order.order_status];
+    if (!next) return;
+    setBumping(p => ({ ...p, [order.id]: true }));
+    try {
+      const res = await fetch(`${API_BASE}/api/dine-in/kitchen/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) throw new Error();
+      // Optimistic update
+      setOrders(prev => next === 'delivered'
+        ? prev.filter(o => o.id !== order.id)
+        : prev.map(o => o.id === order.id ? { ...o, order_status: next } : o)
+      );
+    } catch {
+      // Refresh on failure
+      fetchOrders();
+    } finally {
+      setBumping(p => { const { [order.id]: _, ...rest } = p; return rest; });
+    }
+  };
+
+  const filtered = scope === 'dine_in'
+    ? orders.filter(o => o.delivery_method === 'dine_in')
+    : orders;
+
+  const cols = {
+    new:       filtered.filter(o => COLUMN_MAP[o.order_status] === 'new'),
+    preparing: filtered.filter(o => COLUMN_MAP[o.order_status] === 'preparing'),
+    ready:     filtered.filter(o => COLUMN_MAP[o.order_status] === 'ready'),
+  };
+
   if (error && orders.length === 0) return (
-    <div className="kd-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', gap: '1rem', color: '#ef4444' }}>
-      <UtensilsCrossed size={32} />
-      <p style={{ fontWeight: 600 }}>Kitchen display unavailable</p>
-      <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>{error}</p>
-      <button className="kd-refresh" onClick={fetchOrders} style={{ marginTop: '0.5rem' }}>
-        <RefreshCw size={14} /> Retry
-      </button>
+    <div className="kd-root kd-center">
+      <UtensilsCrossed size={36} />
+      <p className="kd-err-title">Kitchen display unavailable</p>
+      <p className="kd-err-sub">{error}</p>
+      <button className="kd-retry-btn" onClick={fetchOrders}><RefreshCw size={14} /> Retry</button>
     </div>
   );
 
   return (
     <div className="kd-root">
-      {error && (
-        <div style={{ background: '#ef4444', color: '#fff', padding: '0.5rem 1rem', fontSize: '0.8rem', textAlign: 'center' }}>
-          Warning: last refresh failed — {error}. Showing cached data.
-        </div>
-      )}
+      {error && <div className="kd-warn-bar">Warning: last refresh failed — {error}</div>}
+
       {/* Header */}
       <header className="kd-header">
         <div className="kd-header-left">
           <UtensilsCrossed size={22} />
           <span className="kd-header-title">Kitchen Display</span>
-          <span className="kd-header-sub">Dine-In Orders</span>
+          <button
+            className={`kd-scope-btn${scope === 'all' ? ' kd-scope-active' : ''}`}
+            onClick={() => setScope('all')}
+          >All Orders</button>
+          <button
+            className={`kd-scope-btn${scope === 'dine_in' ? ' kd-scope-active' : ''}`}
+            onClick={() => setScope('dine_in')}
+          >Dine-In</button>
         </div>
         <div className="kd-header-right">
+          <button className="kd-manual-refresh" onClick={fetchOrders}>
+            <RefreshCw size={13} />
+          </button>
           {lastSync && (
             <span className="kd-sync-time">
               <RefreshCw size={13} />
@@ -92,62 +185,131 @@ export default function KitchenDisplay() {
         </div>
       </header>
 
-      {/* Body */}
-      <main className="kd-main">
-        {loading && (
-          <div className="kd-empty">
-            <div className="kd-spinner" />
-            <p>Loading orders…</p>
+      {/* Kanban */}
+      {loading ? (
+        <div className="kd-center" style={{ flex: 1 }}>
+          <div className="kd-spinner" />
+          <p style={{ color: '#6b7280', marginTop: '1rem' }}>Loading orders…</p>
+        </div>
+      ) : (
+        <div className="kd-kanban">
+          <KanbanColumn
+            title="New Orders"
+            count={cols.new.length}
+            accent="#ca8a04"
+            orders={cols.new}
+            bumpLabel="Start"
+            onBump={bumpOrder}
+            bumping={bumping}
+            tick={tick}
+          />
+          <KanbanColumn
+            title="Preparing"
+            count={cols.preparing.length}
+            accent="#ea580c"
+            orders={cols.preparing}
+            bumpLabel="Mark Ready"
+            onBump={bumpOrder}
+            bumping={bumping}
+            tick={tick}
+          />
+          <KanbanColumn
+            title="Ready"
+            count={cols.ready.length}
+            accent="#16a34a"
+            orders={cols.ready}
+            bumpLabel="Done / Bump"
+            onBump={bumpOrder}
+            bumping={bumping}
+            tick={tick}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping, tick }) {
+  return (
+    <div className="kd-col">
+      <div className="kd-col-header" style={{ borderBottomColor: accent }}>
+        <span className="kd-col-title">{title}</span>
+        {count > 0 && <span className="kd-col-count" style={{ background: accent }}>{count}</span>}
+      </div>
+      <div className="kd-col-body">
+        {orders.length === 0 && (
+          <div className="kd-col-empty">
+            <CheckCircle size={32} strokeWidth={1} style={{ color: '#2a2a2a' }} />
+            <span>All clear</span>
           </div>
         )}
+        {orders.map(order => (
+          <OrderCard
+            key={order.id}
+            order={order}
+            bumpLabel={bumpLabel}
+            onBump={onBump}
+            bumping={bumping[order.id]}
+            tick={tick}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        {!loading && orders.length === 0 && (
-          <div className="kd-empty">
-            <UtensilsCrossed size={52} strokeWidth={1} />
-            <p>No active dine-in orders</p>
-            <span>New orders will appear here automatically</span>
-          </div>
-        )}
+function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
+  const mins = minutesOld(order.placed_at);
+  const urgency = mins >= 20 ? 'urgent' : mins >= 10 ? 'warn' : '';
 
-        {!loading && orders.length > 0 && (
-          <div className="kd-grid">
-            {orders.map(order => {
-              const meta = STATUS_META[order.order_status] || { label: order.order_status, cls: '' };
-              return (
-                <div key={order.id} className={`kd-card ${meta.cls}`}>
-                  <div className="kd-card-header">
-                    <div>
-                      <p className="kd-order-num">#{order.order_number}</p>
-                      <p className="kd-table-name">
-                        <UtensilsCrossed size={13} />
-                        {order.table_number || 'Dine-In'}
-                      </p>
-                    </div>
-                    <span className={`kd-badge ${meta.cls}`}>{meta.label}</span>
-                  </div>
+  return (
+    <div className={`kd-card kd-status--${order.order_status} ${urgency ? `kd-urgency--${urgency}` : ''}`}>
+      <div className="kd-card-header">
+        <div>
+          <p className="kd-order-num">#{order.order_number}</p>
+          <p className="kd-table-name">
+            {DELIVERY_ICON[order.delivery_method] || <UtensilsCrossed size={12} />}
+            {order.table_number
+              ? `Table ${order.table_number}`
+              : DELIVERY_LABEL[order.delivery_method] || 'Order'}
+            {order.customer_name ? ` · ${order.customer_name}` : ''}
+          </p>
+        </div>
+        <div className="kd-card-badges">
+          <span className={`kd-badge kd-status--${order.order_status}`}>
+            {order.order_status?.replace('_', ' ')}
+          </span>
+        </div>
+      </div>
 
-                  <ul className="kd-items">
-                    {(order.items || []).map((item, i) => (
-                      <li key={i} className="kd-item">
-                        <span className="kd-item-qty">×{item.quantity || item.qty || 1}</span>
-                        <span className="kd-item-name">{item.name}</span>
-                      </li>
-                    ))}
-                  </ul>
+      <ul className="kd-items">
+        {(order.items || []).map((item, i) => (
+          <li key={i} className="kd-item">
+            <span className="kd-item-qty">×{item.quantity || item.qty || 1}</span>
+            <span className="kd-item-name">{item.name}</span>
+          </li>
+        ))}
+      </ul>
 
-                  <div className="kd-card-footer">
-                    <span className="kd-elapsed">
-                      <Clock size={12} />
-                      {elapsed(order.placed_at)}
-                    </span>
-                    <span className="kd-total">${parseFloat(order.total || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
+      {order.special_instructions && (
+        <p className="kd-special">📝 {order.special_instructions}</p>
+      )}
+
+      <div className="kd-card-footer">
+        <span className={`kd-elapsed ${urgency ? `kd-elapsed--${urgency}` : ''}`}>
+          <Clock size={12} />
+          {elapsedLabel(order.placed_at)}
+          {urgency === 'urgent' && ' ⚠'}
+        </span>
+        <button
+          className="kd-bump-btn"
+          onClick={() => onBump(order)}
+          disabled={bumping}
+        >
+          {bumping ? '…' : bumpLabel}
+          {!bumping && <ChevronRight size={13} />}
+        </button>
+      </div>
     </div>
   );
 }

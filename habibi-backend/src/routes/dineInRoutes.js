@@ -50,7 +50,56 @@ router.get('/kitchen', kitchenAuth, async (req, res) => {
   }
 });
 
-// â”€â”€ Admin: list all tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Kitchen all-orders view (all delivery_methods, excludes delivered/cancelled) ─
+router.get('/kitchen-all', kitchenAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, order_number, customer_name, table_number, delivery_method, items,
+              sub_total, total, order_status, placed_at, updated_at, special_instructions
+       FROM guest_orders
+       WHERE order_status NOT IN ('delivered', 'cancelled', 'refunded')
+       ORDER BY placed_at ASC`
+    );
+    const orders = result.rows.map(o => {
+      let items = [];
+      try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
+      return { ...o, items };
+    });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
+// ── Kitchen bump: advance order status ────────────────────────────────────────
+const KITCHEN_STATUS_FLOW = {
+  pending:    'preparing',
+  confirmed:  'preparing',
+  preparing:  'ready',
+  ready:      'delivered',
+};
+router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    // Validate that the requested status is a valid forward transition
+    const current = await pool.query('SELECT order_status FROM guest_orders WHERE id=$1', [req.params.id]);
+    if (!current.rows.length) return res.status(404).json({ message: 'Order not found.' });
+    const currentStatus = current.rows[0].order_status;
+    const allowed = KITCHEN_STATUS_FLOW[currentStatus];
+    if (!status || status !== allowed) {
+      return res.status(400).json({ message: `Cannot transition from '${currentStatus}' to '${status}'. Expected: '${allowed}'.` });
+    }
+    await pool.query(
+      `UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2`,
+      [status, req.params.id]
+    );
+    res.json({ id: Number(req.params.id), order_status: status });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
+// ── Admin: list all tables ────────────────────────────────────────────────────
 router.get('/tables', protect, admin, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM dine_in_tables ORDER BY table_name ASC`);
