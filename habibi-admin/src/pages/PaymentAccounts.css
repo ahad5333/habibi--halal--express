@@ -1,0 +1,90 @@
+.an-active-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #86efac;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+.an-warn-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.an-list { display: flex; flex-direction: column; gap: 0.875rem; }
+
+.an-card { padding: 1.25rem 1.5rem; }
+.an-card.an-active {
+  border-color: rgba(34,197,94,0.4);
+  box-shadow: 0 0 0 1px rgba(34,197,94,0.15);
+}
+
+.an-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.an-card-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  color: rgba(255,255,255,0.7);
+}
+.an-nickname {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 0.3rem;
+}
+.an-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+.an-meta code {
+  background: rgba(255,255,255,0.08);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.75);
+}
+.an-env-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.an-env-badge.production { background: rgba(34,197,94,0.15); color: #86efac; }
+.an-env-badge.sandbox    { background: rgba(234,179,8,0.15);  color: #fde047; }
+
+.an-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+
+/* Modal */
+.an-modal { max-width: 520px; }
+.an-err {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5; padding: 0.625rem 0.875rem; border-radius: 8px;
+  font-size: 0.83rem; margin-bottom: 1rem;
+}
+.an-hint { font-weight: 400; color: rgba(255,255,255,0.4); font-size: 0.78rem; }
+.an-field-note { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 0.35rem; }
+.spinner-sm { width: 14px; height: 14px; border-width: 2px; }

@@ -343,5 +343,19 @@ router.post("/loyalty/adjust",           adjustLoyaltyPoints);
 router.get("/loyalty/config",            getLoyaltyConfig);
 router.put("/loyalty/config",            updateLoyaltyConfig);
 
+// ── Authorize.net merchant accounts ──────────────────────────────────────
+const {
+  listAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  setActiveAccount,
+} = require('../controllers/authNetController');
+router.get("/authnet/accounts",            listAccounts);
+router.post("/authnet/accounts",           createAccount);
+router.put("/authnet/accounts/:id",        updateAccount);
+router.delete("/authnet/accounts/:id",     deleteAccount);
+router.post("/authnet/accounts/:id/activate", setActiveAccount);
+
 module.exports = router;
 

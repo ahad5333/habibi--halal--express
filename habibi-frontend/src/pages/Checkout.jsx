@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, couponsAPI, paymentsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
+import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { useDineIn } from '../context/DineInContext';
-import StripeCardForm from '../components/StripeCardForm';
+import AuthNetForm from '../components/AuthNetForm';
+import '../components/AuthNetForm.css';
 import PayPalButton from '../components/PayPalButton';
 import OfflinePayModal from '../components/OfflinePayModal';
 import './Checkout.css';
@@ -15,20 +16,16 @@ const TIP_OPTIONS = ['None', '5%', '10%', '15%', '20%', 'Custom'];
 const TIP_PCTS    = [0, 0.05, 0.1, 0.15, 0.2, 'custom'];
 
 const ALT_PAYMENTS = [
-  { id: 'apple',   label: 'Apple Pay',        img: '/images/partners/apple-pay.png' },
-  { id: 'google',  label: 'Google Pay',       img: '/images/partners/google-pay.png' },
   { id: 'paypal',  label: 'PayPal',           img: '/images/partners/paypal.png' },
   { id: 'zelle',   label: 'Zelle',            emoji: '💙' },
   { id: 'cashapp', label: 'Cash App',         emoji: '💚' },
   { id: 'cash',    label: 'Cash on Delivery', emoji: '💵' },
 ];
 
-// Methods that skip Stripe and go through an offline/modal flow
+// Methods that go through an offline/modal flow
 const OFFLINE_METHODS = new Set(['cash', 'zelle', 'cashapp']);
 // Methods served by PayPal SDK
-const PAYPAL_METHODS = new Set(['paypal']);
-// Apple/Google Pay are served by Stripe Payment Request Button (inside StripeCardForm)
-const DIGITAL_WALLET_METHODS = new Set(['apple', 'google']);
+const PAYPAL_METHODS  = new Set(['paypal']);
 
 const getFoodPhoto = (itemId) => {
   const n = ((itemId || 1) % 70) + 1;
@@ -56,7 +53,7 @@ const Checkout = () => {
   const [couponLoading, setCouponLoading]   = useState(false);
   const [placing, setPlacing]               = useState(false);
   const [orderError, setOrderError]         = useState('');
-  const [clientSecret, setClientSecret]     = useState('');
+  const [authNetConfig, setAuthNetConfig]   = useState(null);
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
@@ -301,7 +298,7 @@ const Checkout = () => {
     return true;
   };
 
-  // ── Card / Digital Wallet: prepare intent then show Stripe form ───────────
+  // ── Card: fetch Authorize.net config then show card form ─────────────────
   const handlePrepareCardPayment = async () => {
     if (items.length === 0) return;
     if (!validateOrder()) return;
@@ -310,9 +307,11 @@ const Checkout = () => {
     try {
       const orderNumber = `HAB-${Date.now()}`;
       setPendingOrderNum(orderNumber);
-      const res = await paymentsAPI.createIntent(total, orderNumber, ['card']);
-      if (!res.clientSecret) throw new Error('Payment setup failed. Please try again.');
-      setClientSecret(res.clientSecret);
+      const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const res  = await fetch(`${BASE}/api/payments/authnet/config`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Payment setup failed.');
+      setAuthNetConfig(data);
       setIntentReady(true);
     } catch (err) {
       setOrderError(err.message || 'Failed to initiate payment.');
@@ -321,20 +320,20 @@ const Checkout = () => {
     }
   };
 
-  // Called by StripeCardForm on success
-  const handleStripeSuccess = async (paymentIntent) => {
+  // Called by AuthNetForm on successful charge
+  const handleAuthNetSuccess = async (transactionId) => {
     setPlacing(true); setOrderError('');
     try {
       await ordersAPI.createGuest(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
-      setOrderError(err.message || 'Order could not be saved. Contact support with: ' + (paymentIntent?.id || ''));
+      setOrderError(err.message || 'Order could not be saved. Contact support.');
     } finally {
       setPlacing(false);
     }
   };
 
-  const handleStripeError = (msg) => setOrderError(msg || 'Payment failed. Please try again.');
+  const handleCardError = (msg) => setOrderError(msg || 'Payment failed. Please try again.');
 
   // ── PayPal success ─────────────────────────────────────────────────────────
   const handlePayPalSuccess = async (details) => {
@@ -377,12 +376,12 @@ const Checkout = () => {
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
     // PayPal is rendered inline — "Place Order" shouldn't fire for it
     if (PAYPAL_METHODS.has(paymentMethod)) return;
-    // card / apple / google
+    // card
     if (!intentReady) { handlePrepareCardPayment(); return; }
-    // intent already ready — Stripe form handles the rest
+    // AuthNetForm has its own submit button
   };
 
-  const showCardForm = (paymentMethod === 'card' || DIGITAL_WALLET_METHODS.has(paymentMethod)) && intentReady;
+  const showCardForm = paymentMethod === 'card' && intentReady;
   const showPayPal   = PAYPAL_METHODS.has(paymentMethod);
   const showCTABtn   = !PAYPAL_METHODS.has(paymentMethod);
 
@@ -390,7 +389,7 @@ const Checkout = () => {
     if (placing) return 'Please wait…';
     if (OFFLINE_METHODS.has(paymentMethod)) return 'PLACE YOUR ORDER';
     if (!intentReady) return 'CONTINUE TO PAYMENT';
-    return null; // Stripe form has its own button
+    return null; // AuthNetForm has its own submit button
   };
 
   return (
@@ -758,13 +757,14 @@ const Checkout = () => {
                   ))}
                 </div>
 
-                {/* Stripe card / Apple Pay / Google Pay form */}
+                {/* Authorize.net card form */}
                 {showCardForm && (
-                  <StripeCardForm
-                    clientSecret={clientSecret}
-                    onSuccess={handleStripeSuccess}
-                    onError={handleStripeError}
-                    disabled={placing}
+                  <AuthNetForm
+                    config={authNetConfig}
+                    amount={total}
+                    orderNumber={pendingOrderNum}
+                    onSuccess={handleAuthNetSuccess}
+                    onError={handleCardError}
                   />
                 )}
 

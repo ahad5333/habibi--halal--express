@@ -57,6 +57,7 @@ const TableReservations= lazy(() => import('./pages/TableReservations'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
 const Integrations     = lazy(() => import('./pages/Integrations'));
+const PaymentAccounts  = lazy(() => import('./pages/PaymentAccounts'));
 const PlatformCredentials = lazy(() => import('./pages/PlatformCredentials'));
 const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
@@ -105,6 +106,7 @@ function AdminLayout() {
             <Route path="/marketplace"   element={<MarketplaceOrders />} />
             <Route path="/roadie"   element={<RoadieDeliveries />} />
             <Route path="/integrations"   element={<Integrations />} />
+            <Route path="/payment-accounts" element={<PaymentAccounts />} />
             <Route path="/credentials"    element={<PlatformCredentials />} />
             <Route path="/audit-log"      element={<AuditLog />} />
             <Route path="/chat"           element={<ChatInbox />} />

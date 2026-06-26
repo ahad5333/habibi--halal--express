@@ -150,6 +150,13 @@ export const adminAPI = {
   // Audit log
   getAuditLog: (params = '') => req(`/api/admin/audit-log${params}`),
 
+  // Authorize.net merchant accounts
+  listAuthNetAccounts:    () => req('/api/admin/authnet/accounts'),
+  createAuthNetAccount:   (body) => req('/api/admin/authnet/accounts', { method: 'POST', body: JSON.stringify(body) }),
+  updateAuthNetAccount:   (id, body) => req(`/api/admin/authnet/accounts/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteAuthNetAccount:   (id) => req(`/api/admin/authnet/accounts/${id}`, { method: 'DELETE' }),
+  activateAuthNetAccount: (id) => req(`/api/admin/authnet/accounts/${id}/activate`, { method: 'POST' }),
+
   // Reports
   reportRevenue:      (qs = '') => req(`/api/admin/reports/revenue${qs}`),
   reportTransactions: (qs = '') => req(`/api/admin/reports/transactions${qs}`),

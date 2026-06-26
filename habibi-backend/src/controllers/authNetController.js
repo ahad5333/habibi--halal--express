@@ -1,0 +1,196 @@
+const pool = require('../config/db');
+const safeError = require('../utils/safeError');
+const { chargeCard, refundTransaction } = require('../services/authNetService');
+
+// ── Helper — fetch the currently active account ───────────────────────────
+async function getActiveAccount() {
+  const res = await pool.query(
+    `SELECT * FROM authorize_net_accounts WHERE is_active = TRUE LIMIT 1`
+  );
+  return res.rows[0] || null;
+}
+
+// ── Public: return apiLoginId + clientKey for Accept.js (no secret key) ──
+const getPublicConfig = async (req, res) => {
+  try {
+    const account = await getActiveAccount();
+    if (!account) {
+      return res.status(503).json({ error: 'Payment processor not configured.' });
+    }
+    res.json({
+      apiLoginId:  account.api_login_id,
+      clientKey:   account.client_key,
+      environment: account.environment,
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Public: charge card using opaqueData token from Accept.js ─────────────
+const chargeCardEndpoint = async (req, res) => {
+  const { opaqueData, amount, orderNumber } = req.body;
+  if (!opaqueData?.dataDescriptor || !opaqueData?.dataValue) {
+    return res.status(400).json({ error: 'Invalid payment token.' });
+  }
+  if (!amount || parseFloat(amount) <= 0) {
+    return res.status(400).json({ error: 'Invalid amount.' });
+  }
+
+  try {
+    const account = await getActiveAccount();
+    if (!account) {
+      return res.status(503).json({ error: 'Payment processor not configured.' });
+    }
+
+    const result = await chargeCard({
+      opaqueData,
+      amount,
+      orderNumber,
+      apiLoginId:     account.api_login_id,
+      transactionKey: account.transaction_key,
+      environment:    account.environment,
+    });
+
+    // Update order payment status if orderNumber provided
+    if (orderNumber) {
+      await pool.query(
+        `UPDATE guest_orders
+            SET payment_status = 'paid',
+                payment_intent_id = $1,
+                updated_at = NOW()
+          WHERE order_number = $2`,
+        [result.transactionId, orderNumber]
+      );
+    }
+
+    res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
+  } catch (err) {
+    res.status(402).json({ error: err.message || 'Payment failed.' });
+  }
+};
+
+// ── Admin: refund via Authorize.net ────────────────────────────────────────
+const refundEndpoint = async (req, res) => {
+  const { orderNumber } = req.params;
+  try {
+    const orderRes = await pool.query(
+      `SELECT payment_intent_id, total FROM guest_orders WHERE order_number = $1`,
+      [orderNumber]
+    );
+    if (!orderRes.rows.length) return res.status(404).json({ error: 'Order not found.' });
+
+    const { payment_intent_id: transactionId, total } = orderRes.rows[0];
+    if (!transactionId) return res.status(400).json({ error: 'No transaction ID on this order.' });
+
+    const account = await getActiveAccount();
+    if (!account) return res.status(503).json({ error: 'Payment processor not configured.' });
+
+    await refundTransaction({
+      transactionId,
+      amount:         total,
+      cardLastFour:   '0000',
+      apiLoginId:     account.api_login_id,
+      transactionKey: account.transaction_key,
+      environment:    account.environment,
+    });
+
+    await pool.query(
+      `UPDATE guest_orders SET payment_status = 'refunded', updated_at = NOW() WHERE order_number = $1`,
+      [orderNumber]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Refund failed.' });
+  }
+};
+
+// ── Admin CRUD for merchant accounts ─────────────────────────────────────
+const listAccounts = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, nickname, api_login_id, client_key, environment, is_active, created_at
+         FROM authorize_net_accounts
+        ORDER BY is_active DESC, created_at ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const createAccount = async (req, res) => {
+  const { nickname, api_login_id, transaction_key, client_key, environment } = req.body;
+  if (!nickname || !api_login_id || !transaction_key) {
+    return res.status(400).json({ error: 'nickname, api_login_id, and transaction_key are required.' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO authorize_net_accounts (nickname, api_login_id, transaction_key, client_key, environment)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [nickname, api_login_id, transaction_key, client_key || null, environment || 'production']
+    );
+    res.status(201).json({ id: result.rows[0].id });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const updateAccount = async (req, res) => {
+  const { id } = req.params;
+  const { nickname, api_login_id, transaction_key, client_key, environment } = req.body;
+  try {
+    await pool.query(
+      `UPDATE authorize_net_accounts
+          SET nickname        = COALESCE($1, nickname),
+              api_login_id    = COALESCE($2, api_login_id),
+              transaction_key = COALESCE($3, transaction_key),
+              client_key      = COALESCE($4, client_key),
+              environment     = COALESCE($5, environment)
+        WHERE id = $6`,
+      [nickname, api_login_id, transaction_key, client_key, environment, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const deleteAccount = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(`DELETE FROM authorize_net_accounts WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const setActiveAccount = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`UPDATE authorize_net_accounts SET is_active = FALSE`);
+    await client.query(`UPDATE authorize_net_accounts SET is_active = TRUE WHERE id = $1`, [id]);
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json(safeError(err));
+  } finally {
+    client.release();
+  }
+};
+
+module.exports = {
+  getPublicConfig,
+  chargeCardEndpoint,
+  refundEndpoint,
+  listAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  setActiveAccount,
+};

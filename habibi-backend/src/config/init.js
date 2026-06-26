@@ -1103,6 +1103,21 @@ const seedDefaults = async () => {
     console.log("✅ Default payment settings seeded");
   }
 
+  // ── Authorize.net merchant accounts ────────────────────────────────────────
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS authorize_net_accounts (
+      id              SERIAL PRIMARY KEY,
+      nickname        VARCHAR(100) NOT NULL,
+      api_login_id    VARCHAR(100) NOT NULL,
+      transaction_key VARCHAR(100) NOT NULL,
+      client_key      VARCHAR(255),
+      environment     VARCHAR(20) DEFAULT 'production'
+                        CHECK (environment IN ('sandbox', 'production')),
+      is_active       BOOLEAN DEFAULT FALSE,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);
   if (adminCheck.rows.length === 0) {

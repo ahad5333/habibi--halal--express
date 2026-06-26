@@ -13,6 +13,11 @@ const {
   paypalCapture,
   verifyPayment,
 } = require("../controllers/paymentController");
+const {
+  getPublicConfig,
+  chargeCardEndpoint,
+  refundEndpoint,
+} = require("../controllers/authNetController");
 
 // ── Public ──────────────────────────────────────────────────────────────────
 
@@ -43,8 +48,15 @@ router.post(
 
 router.post("/webhook/square", squareWebhook);
 
+// ── Authorize.net ─────────────────────────────────────────────────────────
+// Public config — apiLoginId + clientKey for Accept.js (no secret key exposed)
+router.get("/authnet/config", getPublicConfig);
+// Charge card using Accept.js opaqueData token
+router.post("/authnet/charge", chargeCardEndpoint);
+
 // ── Admin only ───────────────────────────────────────────────────────────────
 router.post("/refund/:orderNumber", protect, admin, refundOrder);
+router.post("/authnet/refund/:orderNumber", protect, admin, refundEndpoint);
 
 // ── Legacy ───────────────────────────────────────────────────────────────────
 router.use(protect);
