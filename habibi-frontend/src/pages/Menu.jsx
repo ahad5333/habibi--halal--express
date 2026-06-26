@@ -79,7 +79,9 @@ const categoryFallback = (item) => {
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState(searchParams.get('cat') || 'all');
+  const initialCat = searchParams.get('cat') || 'all';
+  const [activeCategory, setActiveCategory] = useState(initialCat === 'byo' ? 'byo' : 'all');
+  const pendingScrollCat = useRef(initialCat !== 'all' && initialCat !== 'byo' ? initialCat : null);
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
@@ -125,6 +127,16 @@ const Menu = () => {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, []);
+
+  // After items load, scroll to the category from the navbar ?cat= query param
+  useEffect(() => {
+    if (loading || !pendingScrollCat.current) return;
+    const cat = pendingScrollCat.current;
+    pendingScrollCat.current = null;
+    // Wait one frame for sections to render, then scroll
+    setTimeout(() => handleCatClick(cat), 150);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     reviewsAPI.getApproved({ limit: 1 })
