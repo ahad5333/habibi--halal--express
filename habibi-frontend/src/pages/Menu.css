@@ -1093,7 +1093,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  z-index: 100;
+  z-index: 101;
 }
 
 .menu-cart-strip-left {
@@ -1167,14 +1167,19 @@
   .menu-item-row-desc { -webkit-line-clamp: 2; }
 }
 
-/* Mobile: hide sidebar, show top tabs */
+/* Mobile: hide sidebar, show BOTTOM tab bar */
 @media (max-width: 900px) {
   .menu-sidebar   { display: none; }
   .menu-cats-wrap {
     display: block;
-    position: sticky;
-    top: 68px;
-    z-index: 100;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    z-index: 99;
+    border-bottom: none;
+    border-top: 1px solid rgba(255,255,255,0.08);
   }
   .menu-layout    { display: block; }
   .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }

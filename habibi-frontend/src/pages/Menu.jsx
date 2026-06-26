@@ -571,8 +571,11 @@ const Menu = () => {
         })()}
       </div>
 
-      {/* ── Category tabs — mobile only (hidden on desktop via CSS) ── */}
-      <div className="menu-cats-wrap">
+      {/* ── Category tabs — bottom bar on mobile, hidden on desktop ── */}
+      <div
+        className="menu-cats-wrap"
+        style={cartItems.length > 0 ? { bottom: '62px' } : {}}
+      >
         <div className="menu-cats-track" ref={tabsRef}>
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
@@ -596,7 +599,10 @@ const Menu = () => {
       </div>
 
       {/* ── Two-column layout: sidebar + content ─────────── */}
-      <div className="menu-layout">
+      <div
+        className="menu-layout"
+        style={{ paddingBottom: cartItems.length > 0 ? '8.5rem' : '5rem' }}
+      >
 
       {/* Sticky left sidebar — always visible on desktop */}
       <aside className="menu-sidebar">
