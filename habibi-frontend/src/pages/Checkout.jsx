@@ -325,8 +325,7 @@ const Checkout = () => {
   const handleStripeSuccess = async (paymentIntent) => {
     setPlacing(true); setOrderError('');
     try {
-      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
-      await saveOrder(buildPayload(pendingOrderNum));
+      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order could not be saved. Contact support with: ' + (paymentIntent?.id || ''));
@@ -341,8 +340,7 @@ const Checkout = () => {
   const handlePayPalSuccess = async (details) => {
     setPlacing(true); setOrderError('');
     try {
-      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
-      await saveOrder(buildPayload(pendingOrderNum));
+      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order save failed after PayPal payment.');
@@ -365,8 +363,7 @@ const Checkout = () => {
     setShowOfflineModal(false);
     setPlacing(true); setOrderError('');
     try {
-      const saveOrder = isLoggedIn ? ordersAPI.create : ordersAPI.createGuest;
-      await saveOrder(buildPayload(pendingOrderNum));
+      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
       await finishOrder(pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
