@@ -1105,7 +1105,7 @@ const seedDefaults = async () => {
   }
 
   // ── Authorize.net merchant accounts ────────────────────────────────────────
-  await client.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS authorize_net_accounts (
       id              SERIAL PRIMARY KEY,
       nickname        VARCHAR(100) NOT NULL,
