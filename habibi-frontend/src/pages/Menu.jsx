@@ -79,9 +79,7 @@ const categoryFallback = (item) => {
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const initialCat = searchParams.get('cat') || 'all';
-  const [activeCategory, setActiveCategory] = useState(initialCat === 'byo' ? 'byo' : 'all');
-  const pendingScrollCat = useRef(initialCat !== 'all' && initialCat !== 'byo' ? initialCat : null);
+  const [activeCategory, setActiveCategory] = useState('all');
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
@@ -128,15 +126,16 @@ const Menu = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // After items load, scroll to the category from the navbar ?cat= query param
+  // React to ?cat= query param — works both on first load and when already on the page
   useEffect(() => {
-    if (loading || !pendingScrollCat.current) return;
-    const cat = pendingScrollCat.current;
-    pendingScrollCat.current = null;
-    // Wait one frame for sections to render, then scroll
-    setTimeout(() => handleCatClick(cat), 150);
+    const cat = searchParams.get('cat');
+    if (!cat || cat === 'all') return;
+    if (loading) return; // re-fires when loading flips to false
+    if (cat === 'byo') { setActiveCategory('byo'); return; }
+    setActiveCategory('all');
+    setTimeout(() => handleCatClick(cat), 120);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+  }, [searchParams.toString(), loading]);
 
   useEffect(() => {
     reviewsAPI.getApproved({ limit: 1 })
