@@ -188,10 +188,9 @@ const Menu = () => {
       return;
     }
 
-    // "All" → reset to top of full menu
+    // "All" → show full menu, stay at current scroll position
     if (val === 'all') {
       setActiveCategory('all');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
