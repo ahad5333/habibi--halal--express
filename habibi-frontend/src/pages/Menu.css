@@ -1181,6 +1181,30 @@
     border-bottom: none;
     border-top: 1px solid rgba(255,255,255,0.08);
   }
+
+  /* 4-column grid — all categories visible, no scrolling */
+  .menu-cats-track {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow: visible;
+    padding: 0.35rem 0.4rem;
+    gap: 0.2rem;
+  }
+  .menu-cat-tab {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.3rem 0.15rem;
+    border-radius: 8px;
+    font-size: 0.55rem;
+    gap: 0.12rem;
+    white-space: normal;
+    text-align: center;
+    letter-spacing: 0;
+    flex-shrink: unset;
+  }
+  .menu-cat-emoji { font-size: 1.15rem; }
+  .menu-cat-tab--byo { grid-column: span 2; }
+
   .menu-layout    { display: block; }
   .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }
   .menu-main-wrap { overflow-x: hidden; }

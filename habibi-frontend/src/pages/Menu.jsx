@@ -10,17 +10,17 @@ import SEO from '../components/SEO';
 import './Menu.css';
 
 const CATEGORIES = [
-  { label: 'All',             value: 'all',       match: null,             emoji: '🍽️' },
-  { label: 'Breakfast',       value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
-  { label: 'Platter',         value: 'platter',   match: 'Platter',        emoji: '🥗' },
-  { label: 'Sandwiches',      value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
-  { label: 'Burgers',         value: 'burgers',   match: 'Burgers',        emoji: '🍔' },
-  { label: 'Tacos',           value: 'tacos',     match: 'Taco',           emoji: '🌮' },
-  { label: 'Habibi Specials', value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
-  { label: 'Extras',          value: 'extras',    match: 'Extras',         emoji: '➕' },
-  { label: 'Drinks',          value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
-  { label: 'Family Tray',     value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
-  { label: 'Build Your Own!', value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
+  { label: 'All',             shortLabel: 'All',      value: 'all',       match: null,             emoji: '🍽️' },
+  { label: 'Breakfast',       shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
+  { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
+  { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
+  { label: 'Burgers',         shortLabel: 'Burgers',   value: 'burgers',   match: 'Burgers',        emoji: '🍔' },
+  { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Taco',           emoji: '🌮' },
+  { label: 'Habibi Specials', shortLabel: 'Specials',  value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
+  { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕' },
+  { label: 'Drinks',          shortLabel: 'Drinks',    value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
+  { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
+  { label: 'Build Your Own!', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
 ];
 
 // Ordered list of DB category strings for section sorting
@@ -591,7 +591,7 @@ const Menu = () => {
                 onClick={() => handleCatClick(cat.value)}
               >
                 <span className="menu-cat-emoji">{cat.emoji}</span>
-                <span>{cat.label}</span>
+                <span className="menu-cat-label-mobile">{cat.shortLabel || cat.label}</span>
               </button>
             );
           })}
