@@ -175,11 +175,47 @@ const Menu = () => {
   };
 
   const handleCatClick = val => {
-    setActiveCategory(val);
-    const next = new URLSearchParams(searchParams);
-    if (val === 'all') next.delete('cat');
-    else next.set('cat', val);
-    setSearchParams(next, { replace: true });
+    // BYO is a special builder — show its own view
+    if (val === 'byo') {
+      setActiveCategory('byo');
+      return;
+    }
+
+    // "All" → reset to top of full menu
+    if (val === 'all') {
+      setActiveCategory('all');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // All other categories: stay in 'all' view and scroll to the section
+    const catObj = CATEGORIES.find(c => c.value === val);
+    const sectionKey = catObj?.match; // raw DB category string used as section key
+
+    if (activeCategory !== 'all') {
+      // Switch back to 'all' first, then scroll after re-render
+      setActiveCategory('all');
+      if (sectionKey) {
+        setTimeout(() => {
+          const el = sectionRefs.current[sectionKey];
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActiveSidebarCat(sectionKey);
+        }, 80);
+      }
+    } else {
+      // Already in 'all' — just scroll
+      if (sectionKey) {
+        const el = sectionRefs.current[sectionKey];
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActiveSidebarCat(sectionKey);
+      }
+    }
+
+    // Scroll the active tab into view on mobile
+    if (tabsRef.current) {
+      const activeBtn = tabsRef.current.querySelector(`[data-val="${val}"]`);
+      if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
   };
 
   const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
@@ -238,18 +274,23 @@ const Menu = () => {
     });
   }, [filtered, activeCategory]);
 
-  // Scroll spy — highlight sidebar item matching the section in view
+  // Scroll spy — highlight sidebar/tab matching the section currently in view
   useEffect(() => {
-    if (activeCategory !== 'all' || search) return;
+    if (activeCategory !== 'all' || search) {
+      setActiveSidebarCat('');
+      return;
+    }
     const observer = new IntersectionObserver(
       entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setActiveSidebarCat(entry.target.dataset.category || '');
-          }
-        });
+        // Find the topmost intersecting section
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActiveSidebarCat(visible[0].target.dataset.category || '');
+        }
       },
-      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+      { rootMargin: '-10% 0px -60% 0px', threshold: 0 }
     );
     Object.values(sectionRefs.current).forEach(el => el && observer.observe(el));
     return () => observer.disconnect();
@@ -486,16 +527,24 @@ const Menu = () => {
       {/* ── Category tabs — mobile only (hidden on desktop via CSS) ── */}
       <div className="menu-cats-wrap">
         <div className="menu-cats-track" ref={tabsRef}>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.value}
-              className={`menu-cat-tab${activeCategory === cat.value ? ' active' : ''}`}
-              onClick={() => handleCatClick(cat.value)}
-            >
-              <span className="menu-cat-emoji">{cat.emoji}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
+          {CATEGORIES.map(cat => {
+            const isActive = cat.value === 'byo'
+              ? activeCategory === 'byo'
+              : cat.value === 'all'
+                ? activeCategory === 'all' && !activeSidebarCat
+                : activeSidebarCat === cat.match;
+            return (
+              <button
+                key={cat.value}
+                data-val={cat.value}
+                className={`menu-cat-tab${isActive ? ' active' : ''}`}
+                onClick={() => handleCatClick(cat.value)}
+              >
+                <span className="menu-cat-emoji">{cat.emoji}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -506,16 +555,23 @@ const Menu = () => {
       <aside className="menu-sidebar">
         <div className="menu-sidebar-inner">
           <p className="menu-sidebar-heading">Categories</p>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.value}
-              className={`menu-sidebar-item${activeCategory === cat.value ? ' active' : ''}`}
-              onClick={() => handleCatClick(cat.value)}
-            >
-              <span className="menu-sidebar-emoji">{cat.emoji}</span>
-              <span className="menu-sidebar-label">{cat.label}</span>
-            </button>
-          ))}
+          {CATEGORIES.map(cat => {
+            const isActive = cat.value === 'byo'
+              ? activeCategory === 'byo'
+              : cat.value === 'all'
+                ? activeCategory === 'all' && !activeSidebarCat
+                : activeSidebarCat === cat.match;
+            return (
+              <button
+                key={cat.value}
+                className={`menu-sidebar-item${isActive ? ' active' : ''}`}
+                onClick={() => handleCatClick(cat.value)}
+              >
+                <span className="menu-sidebar-emoji">{cat.emoji}</span>
+                <span className="menu-sidebar-label">{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
       </aside>
 
