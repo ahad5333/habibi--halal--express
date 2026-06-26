@@ -481,10 +481,11 @@ const Checkout = () => {
                 <div className="upsell-header">
                   <h2 className="checkout-section-title upsell-title">Add to Your Order</h2>
                   <div className="upsell-arrows">
-                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => upsellRef.current?.scrollBy({ left: -170, behavior: 'smooth' })}><ChevronLeft size={16} /></button>
-                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => upsellRef.current?.scrollBy({ left: 170, behavior: 'smooth' })}><ChevronRight size={16} /></button>
+                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: -el.offsetWidth, behavior: 'smooth' }); }}><ChevronLeft size={16} /></button>
+                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: el.offsetWidth, behavior: 'smooth' }); }}><ChevronRight size={16} /></button>
                   </div>
                 </div>
+                <div className="upsell-clip">
                 <div className="upsell-track" ref={upsellRef}>
                   {upsellItems.filter(u => !items.find(i => i.id === u.id)).map(u => {
                     const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
@@ -513,6 +514,7 @@ const Checkout = () => {
                       </div>
                     );
                   })}
+                </div>
                 </div>
               </div>
             )}
