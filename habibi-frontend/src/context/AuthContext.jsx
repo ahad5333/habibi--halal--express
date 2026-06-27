@@ -38,7 +38,10 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password, extra = {}) => {
     const data = await authAPI.register(name, email, password, extra);
-    // Never auto-login after registration — user must log in explicitly
+    if (data?.user) {
+      setUser(data.user);
+      safePersist(data.user);
+    }
     return data;
   };
 

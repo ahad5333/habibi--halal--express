@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Phone, MapPin, Calendar, Building2, Lock, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
@@ -56,6 +56,23 @@ const Signup = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreeSms, setAgreeSms] = useState(false);
   const [legalModal, setLegalModal] = useState(null);
+
+  const resetForm = useCallback(() => {
+    setStep(1); setError(''); setLoading(false); setVerificationSent(false); setVerifyEmail('');
+    setFirstName(''); setLastName(''); setBusinessName(''); setEmail(''); setDob('');
+    setPhone1(''); setPhone2(''); setPhone3('');
+    setBillStreet(''); setBillCity(''); setBillState('NY'); setBillZip('');
+    setSameAsBilling(true); setDelStreet(''); setDelCity(''); setDelState('NY'); setDelZip('');
+    setDeliveryPref('delivery'); setPassword(''); setConfirmPassword('');
+    setAgreeTerms(false); setAgreeSms(false);
+  }, []);
+
+  // Reset form when the page is restored from browser BFCache (back button)
+  useEffect(() => {
+    const handler = (e) => { if (e.persisted) resetForm(); };
+    window.addEventListener('pageshow', handler);
+    return () => window.removeEventListener('pageshow', handler);
+  }, [resetForm]);
 
   const STEPS = [
     { num: 1, label: 'Personal' },
@@ -132,14 +149,8 @@ const Signup = () => {
         delivery_address: deliveryAddr,
         delivery_preference: deliveryPref,
       });
-      if (result?.needs_verification) {
-        setVerifyEmail(email);
-        setVerificationSent(true);
-        return;
-      }
-      // After signup always go to login so the user signs in explicitly
-      const dest = redirectTo !== '/' ? `/login?redirect=${encodeURIComponent(redirectTo)}&registered=1` : '/login?registered=1';
-      navigate(dest);
+      // Account created + auto-logged-in — go straight to the destination
+      navigate(redirectTo !== '/' ? redirectTo : '/');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

@@ -55,24 +55,31 @@ const registerUser = async (req, res) => {
     const phoneValue = phone ? String(phone).trim().slice(0, 20) : null;
 
     const result = await pool.query(
-      `INSERT INTO users(name, email, password_hash, verification_token, verification_token_expires, phone_number, date_of_birth)
-       VALUES($1,$2,$3,$4,$5,$6,$7)
+      `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified)
+       VALUES($1,$2,$3,$4,$5,TRUE)
        RETURNING id, name, email, role`,
-      [name, email, hashedPassword, verificationToken, verificationExpires, phoneValue, dobValue]
+      [name, email, hashedPassword, phoneValue, dobValue]
     );
 
     const user = result.rows[0];
 
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
-    if (process.env.NODE_ENV?.toLowerCase() !== 'production') {
-      console.log(`[DEV] Email verification link for ${email}: ${verifyUrl}`);
-    }
+    // Issue JWT immediately so the user is logged in right after signup
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: false, jti: crypto.randomUUID() },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    setAuthCookie(res, token, 24 * 60 * 60 * 1000);
 
-    emailService.sendEmailVerification(email, name, verifyUrl).catch(err => {
-      console.error('Failed to send verification email:', err.message);
+    // Send welcome email (non-blocking — login is NOT gated on this)
+    emailService.sendEmailVerification(email, name, `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu`).catch(err => {
+      console.error('Failed to send welcome email:', err.message);
     });
 
-    res.status(201).json({ needs_verification: true, email: user.email });
+    res.status(201).json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -133,15 +140,6 @@ const loginUser = async (req, res) => {
       `UPDATE users SET login_attempts=0, login_lockout_until=NULL WHERE id=$1`,
       [user.id]
     );
-
-    // Email verification gate — enforced for all non-admin users
-    if (!user.email_verified && user.role !== 'admin') {
-      return res.status(403).json({
-        message: "Please verify your email address before logging in.",
-        needs_verification: true,
-        email: user.email,
-      });
-    }
 
     // Admin MFA — TODO: enforce once SMTP/SendGrid is configured (VULN-01)
     if (user.role === 'admin') {
