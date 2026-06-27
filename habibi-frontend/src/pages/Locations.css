@@ -10,8 +10,10 @@
   max-height: 780px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-left: max(6vw, 60px);
+  padding-right: max(6vw, 60px);
   overflow: hidden;
   opacity: 0;
   transform: scale(1.02);
@@ -40,10 +42,10 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    160deg,
-    rgba(0,0,0,0.82) 0%,
-    rgba(0,0,0,0.55) 50%,
-    rgba(249,115,22,0.08) 100%
+    90deg,
+    rgba(0,0,0,0.22) 0%,
+    rgba(0,0,0,0.06) 55%,
+    transparent 100%
   );
 }
 
@@ -71,18 +73,18 @@
 .loc-hero-content {
   position: relative;
   z-index: 3;
-  text-align: center;
+  text-align: left;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 1.1rem;
   padding: 2rem 2.5rem;
-  max-width: 660px;
+  max-width: 580px;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
   border: 1px solid rgba(249,115,22,0.3);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(249,115,22,0.07);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(249,115,22,0.07);
 }
 
 .loc-hero-badge {
@@ -121,7 +123,6 @@
 .loc-hero-sub {
   font-size: 1.05rem;
   color: rgba(255,255,255,0.7);
-  max-width: 500px;
   line-height: 1.65;
   font-style: italic;
 }
@@ -927,7 +928,13 @@
   .cov-orbit-3 { width: 255px; height: 255px; margin: -127.5px 0 0 -127.5px; }
 }
 
+/* Tablet */
 @media (max-width: 860px) {
+  .loc-hero {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+  .loc-hero-content { max-width: 500px; }
   .loc-hero-stats { gap: 0; flex-wrap: wrap; }
   .loc-hero-stat  { padding: 0.75rem 1.5rem; }
 
@@ -946,12 +953,21 @@
   .loc-section-header { margin-bottom: 2rem; }
 }
 
+/* Mobile */
 @media (max-width: 680px) {
   .lcn-grid { grid-template-columns: 1fr; }
   .lcn-photo-section { height: 220px; }
-  .loc-hero { min-height: 500px; max-height: 620px; }
-  .loc-hero-title { font-size: 2.6rem; }
+  .loc-hero {
+    min-height: 500px;
+    max-height: 640px;
+    align-items: center;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .loc-hero-title { font-size: 2.4rem; }
   .loc-hero-content {
+    text-align: center;
+    align-items: center;
     padding: 1.5rem 1.25rem;
     width: calc(100% - 2rem);
     max-width: 100%;
