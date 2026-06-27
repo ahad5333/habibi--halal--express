@@ -5,7 +5,7 @@ import './MenuBuilder.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const ALL_CATEGORIES = [
-  'Breakfast','Platter','Sandwich','Burgers','Taco','Habibi Specials',
+  'Breakfast','Platter','Sandwich','Burgers','Tacos','Habibi Specials',
   'Extras','Drinks','Family Tray','Build Your Own',
 ];
 

@@ -15,7 +15,7 @@ const CATEGORIES = [
   { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
   { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
   { label: 'Burgers',         shortLabel: 'Burgers',   value: 'burgers',   match: 'Burgers',        emoji: '🍔' },
-  { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Taco',           emoji: '🌮' },
+  { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Tacos',          emoji: '🌮' },
   { label: 'Habibi Specials', shortLabel: 'Specials',  value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
   { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕' },
   { label: 'Drinks',          shortLabel: 'Drinks',    value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
@@ -255,7 +255,9 @@ const Menu = () => {
       catMatch = cat === 'burgers' || cat.includes('berger') ||
                  (cat === 'sandwich' && (name.includes('burger') || name.includes('berger')));
     } else {
-      catMatch = item.category === activeCatObj?.match;
+      const m = activeCatObj?.match;
+      catMatch = item.category === m ||
+        (Array.isArray(item.categories) && !!m && item.categories.includes(m));
     }
     const words = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
     const searchMatch = words.length === 0 || words.every(w =>
