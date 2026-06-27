@@ -232,8 +232,9 @@ const Menu = () => {
       doScroll();
     }
 
-    // Scroll the active tab into view on mobile
-    if (tabsRef.current) {
+    // Scroll the active tab into view — only when the track is actually
+    // horizontally scrollable (hidden on desktop, fixed grid on mobile).
+    if (tabsRef.current && tabsRef.current.scrollWidth > tabsRef.current.clientWidth) {
       const activeBtn = tabsRef.current.querySelector(`[data-val="${val}"]`);
       if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
