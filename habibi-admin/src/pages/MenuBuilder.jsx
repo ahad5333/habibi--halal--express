@@ -9,7 +9,7 @@ const ALL_CATEGORIES = [
   'Extras','Drinks','Family Tray','Build Your Own',
 ];
 
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot' };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -37,9 +37,10 @@ function MenuModal({ item, categories, onClose, onSave }) {
     is_gluten_free: !!item.is_gluten_free,
     is_featured: !!item.is_featured,
     image: null,
-    choices:    parseJsonSafe(item.choices),
-    addons:     parseJsonSafe(item.addons),
-    addons_max: item.addons_max || '',
+    choices:     parseJsonSafe(item.choices),
+    addons:      parseJsonSafe(item.addons),
+    addons_max:  item.addons_max || '',
+    temperature: item.temperature || 'hot',
   } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -71,6 +72,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('is_gluten_free', form.is_gluten_free);
       fd.append('is_featured', form.is_featured);
       fd.append('addons_max', form.addons_max || '');
+      fd.append('temperature', form.temperature || 'hot');
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -182,6 +184,29 @@ function MenuModal({ item, categories, onClose, onSave }) {
               <button type="button" className={`mb-dietary-pill${form.is_featured ? ' active' : ''}`} onClick={() => set('is_featured', !form.is_featured)}>
                 ⭐ Featured
               </button>
+            </div>
+
+            <div className="field">
+              <label>Serving Temperature <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400, fontSize: '0.78rem' }}>(controls visual effect on menu)</span></label>
+              <div className="mb-temp-row">
+                {[
+                  { val: 'hot',    label: '🔥 Hot',    hint: 'Steam / smoke effect' },
+                  { val: 'cold',   label: '🧊 Cold',   hint: 'No effect (e.g. salad)' },
+                  { val: 'frozen', label: '❄️ Frozen',  hint: 'Ice crystal effect (drinks)' },
+                  { val: 'none',   label: '🚫 None',   hint: 'No effect at all' },
+                ].map(({ val, label, hint }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    className={`mb-temp-btn${form.temperature === val ? ' active' : ''}`}
+                    onClick={() => set('temperature', val)}
+                    title={hint}
+                  >
+                    {label}
+                    <span className="mb-temp-hint">{hint}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* ── Choices (one must be selected) ── */}

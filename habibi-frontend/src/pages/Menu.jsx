@@ -76,6 +76,28 @@ const categoryFallback = (item) => {
   return '/images/food/food-7.jpg';
 };
 
+// Determine the serving temperature for visual effect.
+// Uses the admin-set `item.temperature` field when available;
+// falls back to a category/name heuristic for legacy items.
+const getItemTemp = (item, resolvedName) => {
+  if (item.temperature && item.temperature !== 'hot') return item.temperature;
+  const validSet = new Set(['hot', 'cold', 'frozen', 'none']);
+  if (validSet.has(item.temperature)) return item.temperature;
+  // Heuristic fallback
+  const cat   = (item.category || '').toLowerCase();
+  const lname = (resolvedName || item.name || item.title || '').toLowerCase();
+  const isHotDrink = lname.includes('hot ') || lname.includes('coffee') || lname.includes('hot chocolate');
+  if (!isHotDrink && (cat.includes('drink') || cat.includes('beverage'))) return 'frozen';
+  const isNoEffect = cat.includes('bakery') || cat.includes('dessert') ||
+    lname.includes('donut') || lname.includes('croissant') || lname.includes('muffin') ||
+    lname.includes('danish') || lname.includes('turnover') || lname.includes('pastry') ||
+    lname.includes('bagel') || lname.includes('waffle') || lname.includes('pancake') ||
+    lname.includes('cake') || lname.includes('tuna');
+  if (isNoEffect) return 'none';
+  if (lname.includes('salad')) return 'cold';
+  return 'hot';
+};
+
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -376,19 +398,11 @@ const Menu = () => {
     const name     = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
     const price    = parseFloat(item.price || 0);
     const isFav    = favoriteIds.has(item.id);
-    const cat      = (item.category || '').toLowerCase();
-    const lname    = name.toLowerCase();
-    const isHotDrink = lname.includes('hot ') || lname.includes('coffee') || lname.includes('hot chocolate');
-    const isCold   = !isHotDrink && (cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || lname.includes(' salad'));
     const isSpicy  = !!item.is_spicy;
-    const isTuna   = lname.includes('tuna');
-    const isRoom   = cat.includes('bakery') || cat.includes('dessert') ||
-                     lname.includes('donut') || lname.includes('croissant') ||
-                     lname.includes('muffin') || lname.includes('danish') ||
-                     lname.includes('turnover') || lname.includes('pastry') ||
-                     lname.includes('bagel') || lname.includes('waffle') ||
-                     lname.includes('pancake') || lname.includes('cake');
-    const fxClass  = (isTuna || isRoom) ? '' : (isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam'));
+    const temp     = getItemTemp(item, name);
+    const fxClass  = temp === 'none' || temp === 'cold' ? '' :
+                     temp === 'frozen' ? 'item-fx item-fx-frost' :
+                     (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
     const isSoldOut = locStatus === 'sold_out';
 
     return (
@@ -663,18 +677,11 @@ const Menu = () => {
                 const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
                 const price  = parseFloat(item.price || 0);
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
-                const cat     = (item.category || '').toLowerCase();
-                const lname2     = name.toLowerCase();
-                const isHotDrink2 = lname2.includes('hot ') || lname2.includes('coffee') || lname2.includes('hot chocolate');
-                const isCold  = !isHotDrink2 && (cat.includes('drink') || cat.includes('beverage') || cat.includes('salad') || lname2.includes(' salad'));
                 const isSpicy = !!item.is_spicy;
-                const isRoom2 = cat.includes('bakery') || cat.includes('dessert') ||
-                                lname2.includes('donut') || lname2.includes('croissant') ||
-                                lname2.includes('muffin') || lname2.includes('danish') ||
-                                lname2.includes('turnover') || lname2.includes('pastry') ||
-                                lname2.includes('bagel') || lname2.includes('waffle') ||
-                                lname2.includes('pancake') || lname2.includes('cake');
-                const fxClass = isRoom2 ? '' : (isCold ? 'item-fx item-fx-frost' : (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam'));
+                const temp2   = getItemTemp(item, name);
+                const fxClass = temp2 === 'none' || temp2 === 'cold' ? '' :
+                                temp2 === 'frozen' ? 'item-fx item-fx-frost' :
+                                (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
                 return (
                   <div
                     key={item.id}
