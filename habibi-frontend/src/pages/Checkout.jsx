@@ -448,25 +448,36 @@ const Checkout = () => {
                 </div>
               ) : (
                 <div className="cart-items">
-                  {items.map(item => (
-                    <div key={item.id} className="cart-item">
-                      <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
-                      <div className="cart-item-info">
-                        <h4 className="cart-item-name">{item.name}</h4>
-                        <span className="cart-item-tag">{item.tag}</span>
-                        {item.note && <p className="cart-item-modifiers">{item.note}</p>}
-                      </div>
-                      <div className="cart-item-controls">
-                        <div className="qty-control">
-                          <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
-                          <span>{item.qty}</span>
-                          <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                  {items.map(item => {
+                    const mainPrice = item.baseItemPrice ?? item.price;
+                    const addons = item.addons || [];
+                    return (
+                      <React.Fragment key={item.id}>
+                        <div className="cart-item">
+                          <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
+                          <div className="cart-item-info">
+                            <h4 className="cart-item-name">{item.name}</h4>
+                            {item.note && <p className="cart-item-modifiers">{item.note}</p>}
+                          </div>
+                          <div className="cart-item-controls">
+                            <div className="qty-control">
+                              <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
+                              <span>{item.qty}</span>
+                              <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                            </div>
+                            <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
+                            <button className="cart-delete-btn" onClick={() => removeItem(item.id)}><Trash2 size={14} /></button>
+                          </div>
                         </div>
-                        <span className="cart-item-price text-primary font-bold">${(item.price * item.qty).toFixed(2)}</span>
-                        <button className="cart-delete-btn" onClick={() => removeItem(item.id)}><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                  ))}
+                        {addons.map((addon, idx) => (
+                          <div key={`${item.id}-addon-${idx}`} className="cart-addon-row">
+                            <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>
+                            <span className="cart-addon-price">${(addon.price * addon.qty * item.qty).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -795,130 +806,153 @@ const Checkout = () => {
           {/* ── Right — Order Summary ── */}
           <div className="order-summary-card">
             <h3 className="summary-title">Order Summary</h3>
-            <div className="summary-lines">
-              <div className="summary-line"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-              <div className="summary-line"><span>Tax (8.875%)</span><span>${tax.toFixed(2)}</span></div>
-              <div className="summary-line"><span>Service Fee (4.273%)</span><span>${serviceFee.toFixed(2)}</span></div>
-              <div className="summary-line">
-                <span>{isDineIn ? 'Delivery Fee (Dine-In)' : `Delivery Fee${deliveryMode === 'pickup' ? ' (Pickup)' : ''}`}</span>
-                {isDineIn || deliveryMode === 'pickup' ? (
-                  <span className="text-primary font-bold">FREE</span>
-                ) : feeLoading ? (
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Calculating…</span>
-                ) : deliveryFee > 0 ? (
-                  <span className="text-primary font-bold">${deliveryFee.toFixed(2)}</span>
-                ) : (
-                  <span className="text-primary font-bold">FREE</span>
-                )}
-              </div>
-              {feeMsg && <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'rgba(255,255,255,0.4)', margin: '-0.25rem 0 0.25rem', lineHeight: 1.4 }}>{feeMsg}</p>}
-              {couponDiscount > 0 && (
-                <div className="summary-line" style={{ color: '#34d399' }}>
-                  <span>Coupon ({couponCode})</span><span>−${couponDiscount.toFixed(2)}</span>
-                </div>
-              )}
-              {loyaltyDiscount > 0 && (
-                <div className="summary-line" style={{ color: '#E5B64E' }}>
-                  <span>🏅 Rewards ({redeemablePts} pts)</span><span>−${loyaltyDiscount.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
 
-            {/* Coupon */}
-            <div className="coupon-row">
-              <div className="coupon-input-wrap">
-                <Tag size={13} className="coupon-icon" />
-                <input
-                  type="text" className="coupon-input" placeholder="Coupon code"
-                  value={couponCode}
-                  onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
-                  disabled={couponApplied}
-                />
-              </div>
-              <button
-                className={`coupon-apply-btn${couponApplied ? ' applied' : ''}`}
-                onClick={handleApplyCoupon}
-                disabled={couponApplied || !couponCode.trim() || couponLoading}
-              >
-                {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
-              </button>
-            </div>
-            {couponMsg && <p style={{ fontSize: '0.75rem', color: '#34d399', margin: '-0.25rem 0 0.25rem' }}>✓ {couponMsg}</p>}
-            {couponErr && <p style={{ fontSize: '0.75rem', color: '#f87171', margin: '-0.25rem 0 0.25rem' }}>⚠ {couponErr}</p>}
-
-            {/* Loyalty rewards redemption */}
-            {isLoggedIn && redeemablePts > 0 && (
-              <div className="loyalty-redeem-row">
-                <div className="loyalty-redeem-info">
-                  <span className="loyalty-redeem-icon">🏅</span>
-                  <div>
-                    <p className="loyalty-redeem-label">Habibi Rewards</p>
-                    <p className="loyalty-redeem-sub">
-                      {loyaltyPoints.toLocaleString()} pts available · Redeem {redeemablePts} pts for <strong>${loyaltyDiscount > 0 ? loyaltyDiscount.toFixed(2) : (redeemablePts / 100).toFixed(2)} off</strong>
+            {(() => {
+              const summaryReady = isLoggedIn && (isDineIn || deliveryMode === 'pickup' || !!address.trim());
+              if (!summaryReady) {
+                return (
+                  <div className="summary-locked">
+                    <MapPin size={28} style={{ color: 'var(--color-primary)', marginBottom: '0.75rem' }} />
+                    <p className="summary-locked-title">
+                      {!isLoggedIn ? 'Sign in to see your total' : 'Enter your delivery address'}
                     </p>
+                    <p className="summary-locked-sub">
+                      {!isLoggedIn
+                        ? 'Log in or create an account, then enter your address so we can calculate the delivery fee and show your full order total.'
+                        : 'Enter your delivery address above so we can calculate the delivery fee and show your full order total.'}
+                    </p>
+                    {!isLoggedIn && items.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+                        <Link to="/login?redirect=/checkout" className="btn btn-primary place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
+                          Log In
+                        </Link>
+                        <Link to="/signup?redirect=/checkout" className="btn btn-outline place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
+                          Sign Up
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <button
-                  type="button"
-                  className={`loyalty-redeem-btn${useRewards ? ' active' : ''}`}
-                  onClick={() => setUseRewards(v => !v)}
-                >
-                  {useRewards ? '✓ Applied' : 'Redeem'}
-                </button>
-              </div>
-            )}
+                );
+              }
+              return (
+                <>
+                  <div className="summary-lines">
+                    <div className="summary-line"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                    <div className="summary-line"><span>Tax (8.875%)</span><span>${tax.toFixed(2)}</span></div>
+                    <div className="summary-line"><span>Service Fee (4.273%)</span><span>${serviceFee.toFixed(2)}</span></div>
+                    <div className="summary-line">
+                      <span>{isDineIn ? 'Delivery Fee (Dine-In)' : `Delivery Fee${deliveryMode === 'pickup' ? ' (Pickup)' : ''}`}</span>
+                      {isDineIn || deliveryMode === 'pickup' ? (
+                        <span className="text-primary font-bold">FREE</span>
+                      ) : feeLoading ? (
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Calculating…</span>
+                      ) : deliveryFee > 0 ? (
+                        <span className="text-primary font-bold">${deliveryFee.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-primary font-bold">FREE</span>
+                      )}
+                    </div>
+                    {feeMsg && <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'rgba(255,255,255,0.4)', margin: '-0.25rem 0 0.25rem', lineHeight: 1.4 }}>{feeMsg}</p>}
+                    {couponDiscount > 0 && (
+                      <div className="summary-line" style={{ color: '#34d399' }}>
+                        <span>Coupon ({couponCode})</span><span>−${couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                      <div className="summary-line" style={{ color: '#E5B64E' }}>
+                        <span>🏅 Rewards ({redeemablePts} pts)</span><span>−${loyaltyDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
 
-            {/* Tip */}
-            <div className="tip-section">
-              <p className="text-xs text-muted uppercase tracking-wider mb-3">ADD A TIP</p>
-              <div className="tip-options flex gap-2">
-                {TIP_OPTIONS.map((t, i) => (
-                  <button key={t} className={`tip-btn ${tipIndex === i ? 'active' : ''}`} onClick={() => setTipIndex(i)}>{t}</button>
-                ))}
-              </div>
-              {TIP_PCTS[tipIndex] === 'custom' && (
-                <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Enter tip amount"
-                    value={customTip}
-                    onChange={e => setCustomTip(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', flex: 1, minWidth: 0 }}
-                  />
-                </div>
-              )}
-            </div>
+                  {/* Coupon */}
+                  <div className="coupon-row">
+                    <div className="coupon-input-wrap">
+                      <Tag size={13} className="coupon-icon" />
+                      <input
+                        type="text" className="coupon-input" placeholder="Coupon code"
+                        value={couponCode}
+                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
+                        disabled={couponApplied}
+                      />
+                    </div>
+                    <button
+                      className={`coupon-apply-btn${couponApplied ? ' applied' : ''}`}
+                      onClick={handleApplyCoupon}
+                      disabled={couponApplied || !couponCode.trim() || couponLoading}
+                    >
+                      {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
+                    </button>
+                  </div>
+                  {couponMsg && <p style={{ fontSize: '0.75rem', color: '#34d399', margin: '-0.25rem 0 0.25rem' }}>✓ {couponMsg}</p>}
+                  {couponErr && <p style={{ fontSize: '0.75rem', color: '#f87171', margin: '-0.25rem 0 0.25rem' }}>⚠ {couponErr}</p>}
 
-            <div className="summary-total">
-              <span className="text-muted text-sm">Total</span>
-              <span className="total-amount text-primary">${total.toFixed(2)}</span>
-            </div>
+                  {/* Loyalty rewards redemption */}
+                  {isLoggedIn && redeemablePts > 0 && (
+                    <div className="loyalty-redeem-row">
+                      <div className="loyalty-redeem-info">
+                        <span className="loyalty-redeem-icon">🏅</span>
+                        <div>
+                          <p className="loyalty-redeem-label">Habibi Rewards</p>
+                          <p className="loyalty-redeem-sub">
+                            {loyaltyPoints.toLocaleString()} pts available · Redeem {redeemablePts} pts for <strong>${loyaltyDiscount > 0 ? loyaltyDiscount.toFixed(2) : (redeemablePts / 100).toFixed(2)} off</strong>
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`loyalty-redeem-btn${useRewards ? ' active' : ''}`}
+                        onClick={() => setUseRewards(v => !v)}
+                      >
+                        {useRewards ? '✓ Applied' : 'Redeem'}
+                      </button>
+                    </div>
+                  )}
 
-            {orderError && <div className="order-error">⚠ {orderError}</div>}
+                  {/* Tip */}
+                  <div className="tip-section">
+                    <p className="text-xs text-muted uppercase tracking-wider mb-3">ADD A TIP</p>
+                    <div className="tip-options flex gap-2">
+                      {TIP_OPTIONS.map((t, i) => (
+                        <button key={t} className={`tip-btn ${tipIndex === i ? 'active' : ''}`} onClick={() => setTipIndex(i)}>{t}</button>
+                      ))}
+                    </div>
+                    {TIP_PCTS[tipIndex] === 'custom' && (
+                      <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter tip amount"
+                          value={customTip}
+                          onChange={e => setCustomTip(e.target.value)}
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', flex: 1, minWidth: 0 }}
+                        />
+                      </div>
+                    )}
+                  </div>
 
-            {!isLoggedIn && items.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <Link to="/login?redirect=/checkout" className="btn btn-primary place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                  Log In to Place Order
-                </Link>
-                <Link to="/signup?redirect=/checkout" className="btn btn-outline place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                  Sign Up
-                </Link>
-              </div>
-            )}
-            {isLoggedIn && showCTABtn && ctaLabel() && (
-              <button
-                className="btn btn-primary place-order-btn"
-                onClick={handlePlaceOrder}
-                disabled={placing || items.length === 0 || !storeOpen}
-                title={!storeOpen ? "We're currently closed" : undefined}
-              >
-                {!storeOpen ? "Currently Closed" : ctaLabel()}
-              </button>
-            )}
+                  <div className="summary-total">
+                    <span className="text-muted text-sm">Total</span>
+                    <span className="total-amount text-primary">${total.toFixed(2)}</span>
+                  </div>
+
+                  {orderError && <div className="order-error">⚠ {orderError}</div>}
+
+                  {isLoggedIn && showCTABtn && ctaLabel() && (
+                    <button
+                      className="btn btn-primary place-order-btn"
+                      onClick={handlePlaceOrder}
+                      disabled={placing || items.length === 0 || !storeOpen}
+                      title={!storeOpen ? "We're currently closed" : undefined}
+                    >
+                      {!storeOpen ? "Currently Closed" : ctaLabel()}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
 
             <p className="text-center text-xs text-muted mt-4">
               By placing this order you agree to our{' '}

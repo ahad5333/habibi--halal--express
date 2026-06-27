@@ -141,24 +141,28 @@ export default function MenuItemModal({ itemId, onClose }) {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
         return opt ? `${cg.title}: ${opt.title}` : null;
       }).filter(Boolean).join(' | ');
-    const addonNote = Object.entries(addonSel)
+
+    const addonsList = Object.entries(addonSel)
       .filter(([, q]) => q > 0)
       .map(([optId, q]) => {
-        let label = '';
+        let name = '', price = 0;
         (modifiers.addon_groups || []).forEach(ag => {
           const opt = ag.options?.find(o => o.id === parseInt(optId));
-          if (opt) label = q > 1 ? `${opt.title} ×${q}` : opt.title;
+          if (opt) { name = opt.title; price = parseFloat(opt.price || 0); }
         });
-        return label;
-      }).filter(Boolean).join(', ');
-    const fullNote = [choiceNote, addonNote, note].filter(Boolean).join('\n');
+        return { name, price, qty: q };
+      }).filter(a => a.name);
+
+    const itemNote = [choiceNote, note.trim()].filter(Boolean).join('\n');
     addItem({
-      id:    item.id,
-      name:  cleanName,
-      price: unitPrice,
-      img:   item.image || item.image_url || categoryFallback(item),
-      tag:   item.category || 'Item',
-      note:  fullNote,
+      id:            item.id,
+      name:          cleanName,
+      price:         unitPrice,
+      baseItemPrice: basePrice + choiceExtra,
+      addons:        addonsList,
+      img:           item.image || item.image_url || categoryFallback(item),
+      tag:           item.category || 'Item',
+      note:          itemNote,
       qty,
       selectedChoices: choiceSel,
       selectedAddons:  addonSel,

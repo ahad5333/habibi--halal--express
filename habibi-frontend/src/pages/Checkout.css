@@ -79,13 +79,55 @@
 
 .cart-item-modifiers {
   font-size: 0.72rem;
-  color: #666;
+  color: rgba(255,255,255,0.45);
   margin-top: 0.2rem;
   line-height: 1.4;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: pre-line;
+}
+
+.cart-addon-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0.5rem 0.3rem 4.2rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.cart-addon-name {
+  font-style: italic;
+}
+
+.cart-addon-price {
+  color: var(--color-primary);
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.summary-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  gap: 0.25rem;
+}
+
+.summary-locked-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.summary-locked-sub {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.55;
 }
 
 .order-error {
