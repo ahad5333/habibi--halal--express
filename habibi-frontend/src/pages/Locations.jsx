@@ -464,7 +464,7 @@ const Locations = () => {
             Find Us <span className="loc-hero-accent">Near You</span>
           </h1>
           <p className="loc-hero-sub">
-            Serving authentic Halal cuisine across the Bronx — open early, close late, always fresh.
+            Serving authentic Halal cuisine across the Bronx, open early, close late, always fresh.
           </p>
           <a href="#locations-grid" className="loc-hero-scroll">
             <span>Explore Locations</span>
@@ -560,7 +560,7 @@ const Locations = () => {
               Broadening the<br /><span className="text-primary">Halal Horizon</span>
             </h2>
             <p className="coverage-desc">
-              We don't just deliver to your doorstep — we bridge the gap between premium Halal artistry
+              We don't just deliver to your doorstep, we bridge the gap between premium Halal artistry
               and the tri-state area. Our long-distance logistics network ensures your feast arrives
               with the same precision it was crafted with.
             </p>

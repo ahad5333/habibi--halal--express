@@ -211,7 +211,7 @@ const Contact = () => {
             Concierge <span style={{ color: '#FF3B30' }}>&amp; Contact</span>
           </h1>
           <p className="ct-hero-sub" style={{ color: '#dddddd' }}>
-            Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry — our team is available 24 hours a day.
+            Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.
           </p>
           <div className="ct-hero-pills">
             <span className="ct-pill" style={{ color: '#ffb300' }}><Phone size={12} /> 24 / 7 Support</span>

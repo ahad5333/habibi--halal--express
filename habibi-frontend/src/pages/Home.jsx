@@ -322,10 +322,10 @@ const Home = () => {
             </div>
             
             <p className="hero-bottom-desc-exact">
-              100% certified halal, cooked fresh to order — never frozen, never rushed.<br />
+              100% certified halal, cooked fresh to order, never frozen, never rushed.<br />
               Rooted in the Bronx and built on family recipes passed down through generations,<br />
               every dish carries the bold flavors of authentic halal cuisine. Juicy burgers,<br />
-              seasoned grilled chicken, loaded rice platters — delivered straight to your door.
+              seasoned grilled chicken, loaded rice platters, delivered straight to your door.
             </p>
 
             <div className="hero-divider-exact">
@@ -659,7 +659,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Master Craftsmanship</h4>
                 <p className="feature-desc">
-                  We believe great food is born from love, passion, and an unwavering dedication to quality — never cut corners, never compromised.
+                  We believe great food is born from love, passion, and an unwavering dedication to quality, never cut corners, never compromised.
                 </p>
               </div>
             </div>
@@ -671,7 +671,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Uncompromised Excellence</h4>
                 <p className="feature-desc">
-                  From our kitchen to your table, every plate is a showcase of true craftsmanship — built with the finest halal ingredients available.
+                  From our kitchen to your table, every plate is a showcase of true craftsmanship, built with the finest halal ingredients available.
                 </p>
               </div>
             </div>
@@ -683,7 +683,7 @@ const Home = () => {
               <div className="feature-text">
                 <h4 className="feature-title">Seamless Presentation</h4>
                 <p className="feature-desc">
-                  Great food is more than taste — it's a full experience. We obsess over every detail, from the first look to the very last bite.
+                  Great food is more than taste, it's a full experience. We obsess over every detail, from the first look to the very last bite.
                 </p>
               </div>
             </div>
@@ -746,7 +746,7 @@ const Home = () => {
             </h2>
             <p className="rb-desc">
               Step into a world where ancient Halal traditions meet modern culinary artistry.
-              Our kitchen never sleeps — seasoning bold, serving fresh, crafting memories,
+              Our kitchen never sleeps, seasoning bold, serving fresh, crafting memories,
               one plate at a time.
             </p>
 
@@ -754,11 +754,11 @@ const Home = () => {
             <div className="rb-lines">
               <div className="rb-line">
                 <span className="rb-line-icon">🔥</span>
-                <span>"Grilled fresh — never frozen, never rushed."</span>
+                <span>"Grilled fresh, never frozen, never rushed."</span>
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">🌿</span>
-                <span>"100% Zabiha Halal — certified, trusted, proud."</span>
+                <span>"100% Zabiha Halal, certified, trusted, proud."</span>
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">❤️</span>
@@ -766,7 +766,7 @@ const Home = () => {
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">🚀</span>
-                <span>"Delivering across 300+ miles — from Bronx to your door."</span>
+                <span>"Delivering across 300+ miles, from Bronx to your door."</span>
               </div>
             </div>
 
@@ -818,7 +818,7 @@ const Home = () => {
           <p className="section-eyebrow text-gold">THE BRONX, NY</p>
           <h2 className="heading-2">Find Your Habibi</h2>
           <p className="section-desc mx-auto mt-3">
-            Three locations across the Bronx — all open, all serving the same fresh halal you love.
+            Several locations across New York City, all open, all serving the same fresh halal you love.
           </p>
 
           <div className="locations-grid mt-5">

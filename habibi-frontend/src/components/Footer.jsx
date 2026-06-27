@@ -29,7 +29,7 @@ const Footer = () => {
             <img src="/images/logos/logo-full.jpg" alt="Habibi Halal Express" className="footer-logo-img" />
           </Link>
           <p className="footer-tagline">
-            Authentic Halal Dining. Every dish crafted with tradition, precision, and passion — 365 days a year.
+            Authentic Halal Dining. Every dish crafted with tradition, precision, and passion, 365 days a year.
           </p>
           <div className="social-icons mt-4">
             <a href="https://facebook.com/habibihalalexpress" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook" className="social-fb">

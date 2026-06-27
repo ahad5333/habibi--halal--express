@@ -25,7 +25,7 @@ const WHY_US = [
     bgImg: '/images/food/kitchen.jpg',
     icon: <SprayCan size={20} />,
     title: 'Uncompromising Hygiene',
-    desc: 'Our sanctuary of flavor maintains the highest standards of cleanliness. Sanitized workstations, meticulously groomed professionals — your safety is our silent promise.',
+    desc: 'Our sanctuary of flavor maintains the highest standards of cleanliness. Sanitized workstations, meticulously groomed professionals, your safety is our silent promise.',
   },
   {
     type: 'img-top',
@@ -198,14 +198,14 @@ const About = () => (
             Born in the Bronx,<br /><span className="text-primary">Raised on Tradition</span>
           </h2>
           <p className="about-body-text">
-            Habibi Halal Express began as a dream — to serve the Bronx community with food that honors
+            Habibi Halal Express began as a dream, to serve the Bronx community with food that honors
             both culture and craft. Since 2002, our founders have been guided by one principle: never
             compromise on quality, tradition, or hospitality.
           </p>
           <p className="about-body-text">
             Every dish on our menu carries the weight of generational wisdom. From our 24-hour marinated
             proteins to our house-blended spice mixes, the soul of the Middle East lives in every bite.
-            We are not just a restaurant — we are a cultural anchor for communities across the five boroughs.
+            We are not just a restaurant, we are a cultural anchor for communities across the five boroughs.
           </p>
           <Link to="/menu" className="btn btn-primary about-cta-inline">Explore Our Menu ➔</Link>
         </div>
@@ -298,7 +298,7 @@ const About = () => (
       <div className="about-cta-content">
         <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="about-cta-logo" />
         <h2 className="about-cta-title">Ready to taste the excellence?</h2>
-        <p className="about-cta-sub">Order online or visit one of our 5 Bronx locations today.</p>
+        <p className="about-cta-sub">Order online or visit one of our several locations in New York City today.</p>
         <div className="about-cta-btns">
           <Link to="/menu" className="btn btn-primary">Order Now ➔</Link>
           <Link to="/locations" className="btn btn-outline">Our Locations</Link>

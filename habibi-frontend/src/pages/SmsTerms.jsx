@@ -88,7 +88,7 @@ const SmsTerms = () => (
         <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
         <h1 className="legal-title">SMS Terms &amp; Conditions</h1>
         <p className="legal-subtitle">
-          Everything you need to know about our text message program — how it works, how to opt out, and your rights.
+          Everything you need to know about our text message program, how it works, how to opt out, and your rights.
         </p>
       </div>
     </div>

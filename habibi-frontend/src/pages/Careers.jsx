@@ -220,7 +220,7 @@ const Careers = () => {
             </div>
           ) : vacancies.length === 0 ? (
             <div className="roles-empty">
-              <p>No open positions right now. Check back soon or submit your resume — we keep strong candidates on file.</p>
+              <p>No open positions right now. Check back soon or submit your resume, we keep strong candidates on file.</p>
               <button className="btn btn-primary" onClick={() => openModal()}>Submit Resume Anyway</button>
             </div>
           ) : (

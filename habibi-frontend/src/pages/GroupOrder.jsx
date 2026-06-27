@@ -67,7 +67,7 @@ function GroupLanding({ prefillCode }) {
       <div className="go-hero">
         <div className="go-hero-icon">👥</div>
         <h1 className="go-hero-title">Group Order</h1>
-        <p className="go-hero-sub">Everyone picks their own — one checkout, one delivery.</p>
+        <p className="go-hero-sub">Everyone picks their own, one checkout, one delivery.</p>
       </div>
 
       <div className="go-landing-grid">

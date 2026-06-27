@@ -7,7 +7,7 @@ const sections = [
   {
     title: 'Halal Certification',
     icon: '🕌',
-    content: `Every item on our menu is prepared exclusively with hand-slaughtered Zabiha Halal meat. Our suppliers are certified by recognised Halal certification bodies and audited annually. No pork, no alcohol, no cross-contamination — guaranteed.`,
+    content: `Every item on our menu is prepared exclusively with hand-slaughtered Zabiha Halal meat. Our suppliers are certified by recognised Halal certification bodies and audited annually. No pork, no alcohol, no cross-contamination, guaranteed.`,
   },
   {
     title: 'Food Safety Standards',
@@ -17,7 +17,7 @@ const sections = [
   {
     title: 'Allergen Information',
     icon: '⚠️',
-    content: `Our kitchen handles gluten, dairy, sesame, tree nuts, and soy. While we take precautions, we cannot guarantee a completely allergen-free environment. Items marked 🌾 Gluten Free and 🥗 Vegetarian are prepared with additional care. Please notify us of any allergies when placing your order — we will do our utmost to accommodate you safely.`,
+    content: `Our kitchen handles gluten, dairy, sesame, tree nuts, and soy. While we take precautions, we cannot guarantee a completely allergen-free environment. Items marked 🌾 Gluten Free and 🥗 Vegetarian are prepared with additional care. Please notify us of any allergies when placing your order, we will do our utmost to accommodate you safely.`,
   },
   {
     title: 'Kitchen Hygiene',

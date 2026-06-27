@@ -184,7 +184,7 @@ export default function OrderConfirmation() {
           <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" />
           <div>
             <p className="orc-halal-title">100% Halal Certified</p>
-            <p className="orc-halal-sub">Every ingredient — hand-slaughtered Zabiha Halal</p>
+            <p className="orc-halal-sub">Every ingredient, hand-slaughtered Zabiha Halal</p>
           </div>
         </div>
 

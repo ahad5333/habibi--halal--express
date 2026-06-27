@@ -43,7 +43,7 @@ export default function DeliveryCoverage() {
           <p className="dc-sub">Fresh, hot Halal food delivered across the Bronx and surrounding areas. Check if your neighborhood is in range.</p>
           <div className="dc-hero-badges">
             <span className="dc-badge"><Truck size={14} /> Fast Delivery</span>
-            <span className="dc-badge"><CheckCircle size={14} /> All 5 Bronx Locations</span>
+            <span className="dc-badge"><CheckCircle size={14} /> All NYC Locations</span>
             <span className="dc-badge"><MapPin size={14} /> 30+ Neighborhoods</span>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function DeliveryCoverage() {
         <section className="dc-map-section">
           <div className="dc-map-hdr">
             <h2 className="dc-section-title">Coverage Map</h2>
-            <p className="dc-section-sub">Our 5 Bronx locations cover the entire borough and parts of Westchester & Manhattan.</p>
+            <p className="dc-section-sub">Our several locations in New York City cover the entire borough and parts of Westchester & Manhattan.</p>
           </div>
           <div className="dc-map-wrap">
             <iframe

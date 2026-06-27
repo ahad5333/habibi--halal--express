@@ -141,7 +141,7 @@ function SubmitForm({ user, onSuccess, onCancel, initialOrderNumber = '' }) {
       {error && <p className="rv-form-error">{error}</p>}
 
       <p className="rv-moderation-note">
-        Reviews are moderated and will appear after approval — usually within 24 hours.
+        Reviews are moderated and will appear after approval, usually within 24 hours.
       </p>
 
       <div className="rv-form-actions">

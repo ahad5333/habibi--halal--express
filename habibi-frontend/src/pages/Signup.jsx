@@ -187,7 +187,7 @@ const Signup = () => {
         <div className="signup-panel-content">
           <p className="sp-eyebrow">JOIN THE FAMILY</p>
           <h2 className="sp-headline">Become a<br /><span className="text-primary">Habibi Member</span></h2>
-          <p className="sp-sub">Get exclusive access to member-only deals, order history, saved addresses, and priority service at all 5 Bronx locations.</p>
+          <p className="sp-sub">Get exclusive access to member-only deals, order history, saved addresses, and priority service at all our New York City locations.</p>
 
           <ul className="sp-benefits">
             <li><span className="sp-check"><Check size={13} /></span> 10% off every order for members</li>

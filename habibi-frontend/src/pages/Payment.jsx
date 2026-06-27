@@ -164,7 +164,7 @@ const Payment = () => {
             Just Make a <span className="text-primary">Payment</span>
           </h1>
           <p className="pay-hero-sub">
-            Pay an outstanding order balance, catering deposit, or wholesale invoice — no account required.
+            Pay an outstanding order balance, catering deposit, or wholesale invoice, no account required.
           </p>
           <div className="pay-hero-tags">
             <span className="pay-tag"><Lock size={12} /> Secure &amp; Encrypted</span>
