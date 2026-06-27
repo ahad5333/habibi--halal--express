@@ -220,8 +220,9 @@ const Careers = () => {
             </div>
           ) : vacancies.length === 0 ? (
             <div className="roles-empty">
-              <p>No open positions right now. Check back soon or submit your resume, we keep strong candidates on file.</p>
-              <button className="btn btn-primary" onClick={() => openModal()}>Submit Resume Anyway</button>
+              <p>We're always interested in meeting motivated individuals who are passionate about delivering outstanding customer service and quality food.</p>
+              <p style={{ marginTop: '0.75rem' }}>While opportunities vary based on our business needs, we welcome qualified candidates to submit their resume for future consideration. If a position matching your qualifications becomes available, we will gladly contact you.</p>
+              <button className="btn btn-primary" style={{ marginTop: '1.25rem' }} onClick={() => openModal()}>Submit Resume</button>
             </div>
           ) : (
             <div className="roles-list">
