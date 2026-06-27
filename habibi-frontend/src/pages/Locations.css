@@ -76,7 +76,13 @@
   flex-direction: column;
   align-items: center;
   gap: 1.1rem;
-  padding: 0 1.5rem;
+  padding: 2rem 2.5rem;
+  max-width: 660px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(249,115,22,0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(249,115,22,0.07);
 }
 
 .loc-hero-badge {
@@ -936,12 +942,19 @@
   .lcn-photo-section { height: 220px; }
   .loc-hero { min-height: 500px; max-height: 620px; }
   .loc-hero-title { font-size: 2.6rem; }
+  .loc-hero-content {
+    padding: 1.5rem 1.25rem;
+    width: calc(100% - 2rem);
+    max-width: 100%;
+    border-radius: 12px;
+  }
 }
 
 @media (max-width: 560px) {
   .loc-hero-stats { display: grid; grid-template-columns: 1fr 1fr; }
   .loc-hero-stat-divider { display: none; }
   .loc-hero-stat { justify-content: center; padding: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .loc-hero-content { padding: 1.25rem 1rem; }
 
   .coverage-section { padding: 2rem 1.25rem; }
   .coverage-visual { width: 220px; height: 220px; }
