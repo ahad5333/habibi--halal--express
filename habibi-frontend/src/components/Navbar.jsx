@@ -378,7 +378,7 @@ const Navbar = () => {
             ) : (
               <div className="auth-btns">
                 <Link to="/login" className="btn-nav-login">Login</Link>
-                <Link to="/signup" className="btn-nav-signup">Sign Up Free</Link>
+                <Link to="/signup" className="btn-nav-signup">Sign Up</Link>
               </div>
             )}
 

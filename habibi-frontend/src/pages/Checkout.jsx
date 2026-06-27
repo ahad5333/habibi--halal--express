@@ -525,14 +525,14 @@ const Checkout = () => {
                   <div className="checkout-auth-gate-icon">🔐</div>
                   <h3 className="checkout-auth-gate-title">Sign in to continue</h3>
                   <p className="checkout-auth-gate-sub">
-                    Create a free account or log in to place your order and track it in real time.
+                    Create an account or log in to place your order and track it in real time.
                   </p>
                   <div className="checkout-auth-gate-btns">
                     <Link to={`/login?redirect=/checkout`} className="btn btn-primary checkout-auth-btn">
                       Log In
                     </Link>
                     <Link to={`/signup?redirect=/checkout`} className="btn btn-outline checkout-auth-btn">
-                      Sign Up Free
+                      Sign Up
                     </Link>
                   </div>
                 </div>
@@ -905,7 +905,7 @@ const Checkout = () => {
                   Log In to Place Order
                 </Link>
                 <Link to="/signup?redirect=/checkout" className="btn btn-outline place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                  Sign Up Free
+                  Sign Up
                 </Link>
               </div>
             )}
