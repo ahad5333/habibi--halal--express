@@ -429,7 +429,7 @@ const Locations = () => {
       {/* ── Hero ── */}
       <div className={`loc-hero ${heroVisible ? 'loc-hero-visible' : ''}`}>
         <div className="loc-hero-bg">
-          <img src="/images/title/locations-hero.png" alt="Habibi Halal Express Locations" className="loc-hero-img" onError={e => { e.target.src = '/images/title/locations-hero.jpg'; }} />
+          <img src="/images/title/locations-hero.jpg" alt="Habibi Halal Express Locations" className="loc-hero-img" />
           <div className="loc-hero-overlay" />
           {/* Animated bokeh particles */}
           <div className="loc-bokeh">

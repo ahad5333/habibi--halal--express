@@ -727,7 +727,7 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="restaurant-banner-section">
         <div className="rb-bg">
-          <img src="/images/banners/restaurant-banner.png" alt="Habibi Halal Express Restaurant" className="rb-bg-img" />
+          <img src="/images/banners/restaurant-banner.jpg" alt="Habibi Halal Express Restaurant" className="rb-bg-img" />
           <div className="rb-overlay" />
           {/* Animated gradient sweep */}
           <div className="rb-sweep" aria-hidden="true" />
