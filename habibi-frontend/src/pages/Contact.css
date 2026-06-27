@@ -6,9 +6,10 @@
 .ct-hero {
   position: relative;
   min-height: 520px;
-  background: url('/images/title/contact-hero-v2.jpg') center/cover no-repeat;
+  background: url('/images/title/contact-hero-v2.jpg') center top/cover no-repeat;
   display: flex;
   align-items: center;
+  padding-top: 60px;
 }
 
 .ct-hero-overlay {
