@@ -8,14 +8,15 @@ import './Locations.css';
 /* ── Helpers ──────────────────────────────────────────────── */
 const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-const getLocationImage = (title) => {
+const getLocationImage = (title, lat, lng) => {
+  if (lat && lng) {
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=16&size=600x300&maptype=osm&markers=${lat},${lng},red-pushpin`;
+  }
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                              return '/images/locations/bedford-park.jpg';
-  if (t.includes('kingsbridge') || t.includes('king'))   return '/images/locations/kings-bridge.jpg';
+  if (t.includes('bedford'))                                    return '/images/locations/bedford-park.jpg';
+  if (t.includes('kingsbridge') || t.includes('king'))         return '/images/locations/kings-bridge.jpg';
   if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.jpg';
-  if (t.includes('lehman'))                              return '/images/locations/lehman.png';
-  if (t.includes('bronx') || t.includes('science'))     return '/images/locations/bronx-science.png';
-  return '/images/mixed-platter.jpg';
+  return '/images/locations/bedford-park.jpg';
 };
 
 const getShortTitle = (title) => {
@@ -145,7 +146,7 @@ const FALLBACK_LOCATIONS = [
     phone_number: '(718) 367-7878',
     working_days_hours: 'Open 24 Hours · 365 Days a Year',
     delivery_radius_miles: 5, is_active: true, preference_level: 5,
-    image_url: '/images/locations/bedford-park.jpg',
+    latitude: 40.8726, longitude: -73.8901,
   },
   {
     id: 2, title: 'Lehman College Area',
@@ -153,7 +154,7 @@ const FALLBACK_LOCATIONS = [
     phone_number: '(718) 367-7879',
     working_days_hours: 'Mon – Sun: 7AM – 11PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 4,
-    image_url: '/images/locations/lehman.png',
+    latitude: 40.8731, longitude: -73.8967,
   },
   {
     id: 3, title: 'Bronx High School of Science',
@@ -161,7 +162,7 @@ const FALLBACK_LOCATIONS = [
     phone_number: '(718) 367-7880',
     working_days_hours: 'Mon – Fri: 6AM – 10PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 3,
-    image_url: '/images/locations/bronx-science.png',
+    latitude: 40.8744, longitude: -73.8989,
   },
 ];
 
@@ -183,7 +184,7 @@ function getDeliveryTier(miles) {
 
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
-  const img        = loc.image_url || getLocationImage(loc.title);
+  const img        = getLocationImage(loc.title, loc.latitude, loc.longitude);
   const open       = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
   const hoursTable = parseHoursTable(loc.working_days_hours);
