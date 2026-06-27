@@ -410,7 +410,7 @@ const Navbar = () => {
             onMouseLeave={() => setOpenId(null)}
           >
             <Link to={CENTER_ITEM.path} className="nav-order-label">
-              ORDER EXPRESS
+              ORDER NOW
               <span className="nav-order-arrow"><ArrowUpRight size={14} /></span>
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
