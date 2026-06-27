@@ -554,7 +554,7 @@ const Home = () => {
 
             {/* Halal Salad */}
             <div className="curated-card wide">
-              <img src="/images/halal-salad.jpg" alt="Halal Salad" className="curated-img" loading="lazy" />
+              <img src="/images/halal-salad-v2.jpg" alt="Halal Salad" className="curated-img" loading="lazy" />
             </div>
           </div>
         </div>
@@ -727,7 +727,7 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="restaurant-banner-section">
         <div className="rb-bg">
-          <img src="/images/banners/restaurant-banner.jpg" alt="Habibi Halal Express Restaurant" className="rb-bg-img" />
+          <img src="/images/banners/restaurant-banner-v2.jpg" alt="Habibi Halal Express Restaurant" className="rb-bg-img" />
           <div className="rb-overlay" />
           {/* Animated gradient sweep */}
           <div className="rb-sweep" aria-hidden="true" />

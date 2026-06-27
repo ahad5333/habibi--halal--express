@@ -13,8 +13,8 @@ const CATEGORY_FALLBACKS = {
   taco:          '/images/food/food-2.jpg',
   drink:         '/images/food/food-6.jpg',
   beverage:      '/images/food/food-6.jpg',
-  extra:         '/images/halal-salad.jpg',
-  salad:         '/images/halal-salad.jpg',
+  extra:         '/images/halal-salad-v2.jpg',
+  salad:         '/images/halal-salad-v2.jpg',
   'build your':  '/images/personalized-bowls.jpg',
   special:       '/images/art-of-the-feast.jpg',
 };
