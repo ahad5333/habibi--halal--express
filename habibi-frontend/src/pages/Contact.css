@@ -6,7 +6,7 @@
 .ct-hero {
   position: relative;
   min-height: 380px;
-  background: url('/images/title/contact-hero.jpg') center/cover no-repeat;
+  background: url('/images/our_story_kitchen.jpg') center/cover no-repeat;
   display: flex;
   align-items: center;
 }
