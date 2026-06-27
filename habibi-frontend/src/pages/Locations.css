@@ -340,6 +340,15 @@
 
 .lcn-card:hover .lcn-img { transform: scale(1.08); }
 
+.lcn-map-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
 .lcn-img-gradient {
   position: absolute;
   inset: 0;

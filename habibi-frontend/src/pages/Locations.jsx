@@ -8,10 +8,7 @@ import './Locations.css';
 /* ── Helpers ──────────────────────────────────────────────── */
 const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-const getLocationImage = (title, lat, lng) => {
-  if (lat && lng) {
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=16&size=600x300&maptype=osm&markers=${lat},${lng},red-pushpin`;
-  }
+const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
   if (t.includes('bedford'))                                    return '/images/locations/bedford-park.jpg';
   if (t.includes('kingsbridge') || t.includes('king'))         return '/images/locations/kings-bridge.jpg';
@@ -184,8 +181,11 @@ function getDeliveryTier(miles) {
 
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
-  const img        = getLocationImage(loc.title, loc.latitude, loc.longitude);
-  const open       = isOpenNow(loc.working_days_hours);
+  const mapEmbedSrc = (loc.latitude && loc.longitude)
+    ? `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=16&output=embed`
+    : null;
+  const fallbackImg = getLocationImage(loc.title);
+  const open        = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
   const hoursTable = parseHoursTable(loc.working_days_hours);
   const [flipped, setFlipped] = useState(false);
@@ -208,12 +208,22 @@ function LocationCard({ loc, userCoords, index }) {
     >
       {/* ── Photo Section ── */}
       <div className="lcn-photo-section">
-        <img
-          src={img}
-          alt={loc.title}
-          className="lcn-img"
-          onError={e => { e.target.src = '/images/food/background.png'; }}
-        />
+        {mapEmbedSrc ? (
+          <iframe
+            title={`Map – ${loc.title}`}
+            src={mapEmbedSrc}
+            className="lcn-map-iframe"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        ) : (
+          <img
+            src={fallbackImg}
+            alt={loc.title}
+            className="lcn-img"
+            onError={e => { e.target.src = '/images/locations/bedford-park.jpg'; }}
+          />
+        )}
         <div className="lcn-img-gradient" />
 
         {/* Floating status badge */}
