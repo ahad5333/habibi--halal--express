@@ -923,6 +923,20 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts     INTEGER   DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_lockout_until TIMESTAMPTZ`);
 
+    // ── Global Addon Groups (Sauces, Make it a Meal!, Add a Drink) ──
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_addon_groups (
+        id         SERIAL PRIMARY KEY,
+        name       VARCHAR(100) NOT NULL,
+        options    JSONB NOT NULL DEFAULT '[]',
+        sort_order INT           DEFAULT 0,
+        is_active  BOOLEAN       DEFAULT TRUE
+      );
+    `);
+    await client.query(`
+      ALTER TABLE menus ADD COLUMN IF NOT EXISTS exclude_global_addons BOOLEAN DEFAULT FALSE;
+    `);
+
     await client.query("COMMIT");
     console.log("✅ All tables created/verified");
 
@@ -1088,6 +1102,58 @@ const seedDefaults = async () => {
         ('caviar',    'Caviar',     15.00, false, false)
     `);
     console.log("✅ Default platform settings seeded");
+  }
+
+  // Seed global addon groups (Sauces, Make it a Meal!, Add a Drink)
+  const globalAddonCount = await pool.query("SELECT COUNT(*) FROM global_addon_groups");
+  if (parseInt(globalAddonCount.rows[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO global_addon_groups (name, options, sort_order) VALUES
+      ('Sauces', '[
+        {"id":9001,"title":"White Sauce","price":0.50},
+        {"id":9002,"title":"Hot Sauce","price":0.50},
+        {"id":9003,"title":"Ketchup","price":0.50},
+        {"id":9004,"title":"Mustard","price":0.50},
+        {"id":9005,"title":"BBQ Sauce","price":0.50},
+        {"id":9006,"title":"Special Green Sauce","price":0.50},
+        {"id":9007,"title":"Mayonnaise","price":0.75},
+        {"id":9008,"title":"Blue Cheese","price":1.00}
+      ]', 1),
+      ('Make it a Meal!', '[
+        {"id":9101,"title":"French Fries","price":2.00},
+        {"id":9102,"title":"Pita Bread","price":1.00},
+        {"id":9103,"title":"Extra Rice","price":2.00},
+        {"id":9104,"title":"Add 4 Falafel with White Sauce","price":2.25},
+        {"id":9105,"title":"Add 3 Pieces of Samosa","price":2.50},
+        {"id":9106,"title":"Extra Three Wings (Same Sauce)","price":2.50},
+        {"id":9107,"title":"Extra Three Wings Plain","price":2.50},
+        {"id":9108,"title":"Extra Three Buffalo Wings","price":2.50},
+        {"id":9109,"title":"Extra Three BBQ Wings","price":2.50},
+        {"id":9110,"title":"Extra Meat","price":2.50}
+      ]', 2),
+      ('Add a Drink', '[
+        {"id":9201,"title":"Bottle of Water","price":1.00},
+        {"id":9202,"title":"Can of Soda (Pepsi)","price":1.00},
+        {"id":9203,"title":"Can of Soda (Diet Pepsi)","price":1.00},
+        {"id":9204,"title":"Can of Soda (Coke)","price":1.00},
+        {"id":9205,"title":"Can of Soda (Orange)","price":1.00},
+        {"id":9206,"title":"Can of Soda (Sprite)","price":1.00},
+        {"id":9207,"title":"Can of Soda (Ginger Ale)","price":1.00},
+        {"id":9208,"title":"Can of Soda (Iced Tea)","price":1.00},
+        {"id":9209,"title":"Snapple (Apple)","price":2.00},
+        {"id":9210,"title":"Snapple (Lemon Tea)","price":2.50},
+        {"id":9211,"title":"Snapple (Peach)","price":2.50},
+        {"id":9212,"title":"Gatorade (Apple)","price":2.50},
+        {"id":9213,"title":"Gatorade (Lemon Tea)","price":2.50},
+        {"id":9214,"title":"Gatorade (Peach)","price":2.50},
+        {"id":9215,"title":"Gatorade (Berry)","price":2.50},
+        {"id":9216,"title":"Orange Juice","price":2.50},
+        {"id":9217,"title":"Apple Juice","price":2.50},
+        {"id":9218,"title":"Cranberry Juice","price":2.50},
+        {"id":9219,"title":"Pineapple Juice","price":2.50}
+      ]', 3)
+    `);
+    console.log("✅ Default global addon groups seeded");
   }
 
   // Seed payment settings

@@ -9,7 +9,7 @@ const ALL_CATEGORIES = [
   'Extras','Drinks','Family Tray','Build Your Own',
 ];
 
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot' };
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -41,6 +41,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
     addons:      parseJsonSafe(item.addons),
     addons_max:  item.addons_max || '',
     temperature: item.temperature || 'hot',
+    exclude_global_addons: item.exclude_global_addons || false,
   } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -73,6 +74,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('is_featured', form.is_featured);
       fd.append('addons_max', form.addons_max || '');
       fd.append('temperature', form.temperature || 'hot');
+      fd.append('exclude_global_addons', form.exclude_global_addons ? 'true' : 'false');
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -207,6 +209,21 @@ function MenuModal({ item, categories, onClose, onSave }) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ── Global Add-ons toggle ── */}
+            <div className="mb-toggle-row" style={{ marginTop: '0.75rem' }}>
+              <span>
+                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text-main)' }}>Exclude Global Add-ons</strong>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
+                  Turn on for bakery / dessert items — hides Sauces, Make it a Meal!, Add a Drink
+                </span>
+              </span>
+              <button type="button" className="mb-toggle-btn" onClick={() => set('exclude_global_addons', !form.exclude_global_addons)}>
+                {form.exclude_global_addons
+                  ? <ToggleRight size={26} color="var(--color-primary)" />
+                  : <ToggleLeft  size={26} color="var(--color-text-muted)" />}
+              </button>
             </div>
 
             {/* ── Choices (one must be selected) ── */}

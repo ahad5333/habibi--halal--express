@@ -69,7 +69,7 @@ const createMenu = async (req, res) => {
   try {
     const { name, description, category, price, partner_price, sort_order, notes,
             is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max,
-            categories, temperature } = req.body;
+            categories, temperature, exclude_global_addons } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'name is required.' });
@@ -99,12 +99,14 @@ const createMenu = async (req, res) => {
     const validTemps = ['hot', 'cold', 'frozen', 'none'];
     const parsedTemp = validTemps.includes(temperature) ? temperature : 'hot';
 
+    const excludeGlobal = exclude_global_addons === true || exclude_global_addons === 'true';
+
     const result = await pool.query(
       `INSERT INTO menus (name, description, category, categories, price, partner_price, image_url, sort_order, notes,
-                          is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, true, $10, $11, $12, $13, $14, $15, $16, $17)
+                          is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, true, $10, $11, $12, $13, $14, $15, $16, $17, $18)
        RETURNING id, name, description, category, categories, price, partner_price, image_url, sort_order, notes,
-                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature`,
+                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons`,
       [
         name,
         description || null,
@@ -123,6 +125,7 @@ const createMenu = async (req, res) => {
         parsedAddons  ? JSON.stringify(parsedAddons)  : null,
         parsedAddonsMax,
         parsedTemp,
+        excludeGlobal,
       ]
     );
 
@@ -138,7 +141,7 @@ const updateMenu = async (req, res) => {
     const { id } = req.params;
     const { name, description, category, price, partner_price, sort_order, notes, is_active,
             is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max,
-            categories, temperature } = req.body;
+            categories, temperature, exclude_global_addons } = req.body;
 
     if (name !== undefined && (!name || typeof name !== 'string' || !name.trim())) {
       return res.status(400).json({ error: 'name cannot be empty.' });
@@ -153,7 +156,7 @@ const updateMenu = async (req, res) => {
     // Fetch current row so PATCH-style updates don't overwrite fields not in the request
     const current = await pool.query(
       `SELECT name, description, category, categories, price, partner_price, image_url, sort_order, notes,
-              is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature
+              is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons
        FROM menus WHERE id = $1`, [id]
     );
     if (current.rows.length === 0) return res.status(404).json({ message: "Menu item not found" });
@@ -181,15 +184,19 @@ const updateMenu = async (req, res) => {
       ? (validTemps.includes(temperature) ? temperature : cur.temperature || 'hot')
       : (cur.temperature || 'hot');
 
+    const parsedExcludeGlobal = exclude_global_addons !== undefined
+      ? (exclude_global_addons === true || exclude_global_addons === 'true')
+      : cur.exclude_global_addons || false;
+
     const result = await pool.query(
       `UPDATE menus
        SET name=$1, description=$2, category=$3, categories=$4, price=$5, partner_price=$6,
            image_url=$7, sort_order=$8, notes=$9, is_active=$10,
            is_spicy=$11, is_vegetarian=$12, is_gluten_free=$13, is_featured=$14,
-           choices=$15, addons=$16, addons_max=$17, temperature=$18
-       WHERE id=$19
+           choices=$15, addons=$16, addons_max=$17, temperature=$18, exclude_global_addons=$19
+       WHERE id=$20
        RETURNING id, name, description, category, categories, price, partner_price, image_url, sort_order, notes,
-                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature`,
+                 is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons`,
       [
         name       !== undefined ? name.trim()                              : cur.name,
         description !== undefined ? (description || null)                  : cur.description,
@@ -209,6 +216,7 @@ const updateMenu = async (req, res) => {
         parsedAddons  ? JSON.stringify(parsedAddons)  : null,
         addons_max !== undefined ? (addons_max || null) : cur.addons_max,
         parsedTemp,
+        parsedExcludeGlobal,
         id,
       ]
     );

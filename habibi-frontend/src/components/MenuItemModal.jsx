@@ -33,13 +33,14 @@ const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg
 const toWebp = url =>
   url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
-export default function MenuItemModal({ itemId, onClose }) {
+export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const { addItem } = useCart();
   const { isLoggedIn } = useAuth();
 
-  const [item,      setItem]      = useState(null);
-  const [modifiers, setModifiers] = useState({ choice_groups: [], addon_groups: [] });
-  const [loading,   setLoading]   = useState(true);
+  const [item,        setItem]        = useState(null);
+  const [modifiers,   setModifiers]   = useState({ choice_groups: [], addon_groups: [] });
+  const [loading,     setLoading]     = useState(true);
+  const [suggestions, setSuggestions] = useState([]);
 
   const [choiceSel, setChoiceSel] = useState({});
   const [addonSel,  setAddonSel]  = useState({});
@@ -65,6 +66,18 @@ export default function MenuItemModal({ itemId, onClose }) {
           defaults[cg.id] = def?.id ?? cg.options?.[0]?.id ?? null;
         });
         setChoiceSel(defaults);
+
+        // Fetch suggestions from same category
+        if (itemData?.category) {
+          menuAPI.getAll()
+            .then(all => {
+              const related = (Array.isArray(all) ? all : [])
+                .filter(m => m.category === itemData.category && m.id !== itemData.id && m.is_available !== false)
+                .slice(0, 6);
+              setSuggestions(related);
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -360,6 +373,35 @@ export default function MenuItemModal({ itemId, onClose }) {
                     maxLength={300}
                   />
                 </div>
+
+                {/* ── Suggested items ── */}
+                {suggestions.length > 0 && onSelectItem && (
+                  <div className="mim-suggestions">
+                    <p className="mim-suggestions-title">You might also like</p>
+                    <div className="mim-suggestions-row">
+                      {suggestions.map(s => {
+                        const img = s.image || s.image_url;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            className="mim-suggestion-card"
+                            onClick={() => onSelectItem(s.id)}
+                          >
+                            <div className="mim-sug-img">
+                              {img
+                                ? <img src={img} alt={s.name} loading="lazy" />
+                                : <div className="mim-sug-img-fallback">{s.name?.[0] || '?'}</div>
+                              }
+                            </div>
+                            <p className="mim-sug-name">{s.name}</p>
+                            <p className="mim-sug-price">${parseFloat(s.price).toFixed(2)}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Footer: qty + add to cart ── */}
                 <div className="mim-footer">

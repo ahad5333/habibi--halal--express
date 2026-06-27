@@ -930,6 +930,7 @@ const Menu = () => {
         <MenuItemModal
           itemId={modalItemId}
           onClose={() => setModalItemId(null)}
+          onSelectItem={(id) => setModalItemId(id)}
         />
       )}
 

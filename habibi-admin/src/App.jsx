@@ -62,6 +62,7 @@ const PlatformCredentials = lazy(() => import('./pages/PlatformCredentials'));
 const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
+const GlobalAddons     = lazy(() => import('./pages/GlobalAddons'));
 
 import './App.css';
 
@@ -111,6 +112,7 @@ function AdminLayout() {
             <Route path="/audit-log"      element={<AuditLog />} />
             <Route path="/chat"           element={<ChatInbox />} />
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
+            <Route path="/global-addons"  element={<GlobalAddons />} />
             <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>

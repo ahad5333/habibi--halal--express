@@ -104,6 +104,11 @@ router.post("/modifiers",        createModifier);
 router.patch("/modifiers/:id",   updateModifier);
 router.delete("/modifiers/:id",  deleteModifier);
 
+// Global Addon Groups (Sauces, Make it a Meal!, Add a Drink)
+const { getGlobalAddonGroups, updateGlobalAddonGroup } = require('../controllers/globalAddonController');
+router.get("/global-addons",        getGlobalAddonGroups);
+router.patch("/global-addons/:id",  updateGlobalAddonGroup);
+
 // Business Menus
 router.get("/business-menus", getBusinessMenus);
 router.post("/business-menus", upload.single("image"), createBusinessMenu);
