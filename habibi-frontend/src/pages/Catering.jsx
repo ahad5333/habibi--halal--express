@@ -113,7 +113,7 @@ export default function Catering() {
     <div className="cat-page page-watermark">
       <SEO
         title="Catering | Habibi Halal Express — Events & Group Orders"
-        description="Book Habibi Halal Express for your next event. Weddings, corporate events, parties — 20 to 500+ guests. Get a free custom quote."
+        description="Book Habibi Halal Express for your next event. Weddings, corporate events, parties — 20 to 1000+ guests. Get a free custom quote."
         keywords="halal catering bronx, halal event catering ny, halal wedding food, corporate halal catering"
       />
 
@@ -123,7 +123,7 @@ export default function Catering() {
         <div className="cat-hero-content">
           <span className="cat-hero-tag">🍽️ Habibi Catering</span>
           <h1>Feed Your Whole Crew</h1>
-          <p>Authentic Halal catering for weddings, corporate events, and everything in between. 20 to 500+ guests.</p>
+          <p>Authentic Halal catering for weddings, corporate events, and everything in between. 20 to 1000+ guests.</p>
         </div>
       </div>
 
@@ -332,9 +332,9 @@ export default function Catering() {
       <div className="cat-trust">
         <div className="cat-trust-inner">
           <div className="cat-trust-item"><span>🥩</span><p>100% Zabiha Halal</p></div>
-          <div className="cat-trust-item"><span>⏱</span><p>24-hr Quote Turnaround</p></div>
+          <div className="cat-trust-item"><span>⏱</span><p>12 Hours Turnaround</p></div>
           <div className="cat-trust-item"><span>🚚</span><p>Delivery, Pickup & On-Site</p></div>
-          <div className="cat-trust-item"><span>👥</span><p>20–500+ Guests</p></div>
+          <div className="cat-trust-item"><span>👥</span><p>20–1000+ Guests</p></div>
           <div className="cat-trust-item"><span>📞</span><p>(347) 703-3731</p></div>
         </div>
       </div>
