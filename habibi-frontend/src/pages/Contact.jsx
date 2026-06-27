@@ -53,7 +53,7 @@ const FORM_TYPES = [
     id: 'complaint',
     label: 'Complaint',
     icon: <AlertTriangle size={18} />,
-    title: 'File a Complaint',
+    title: 'Make a Complaint',
     desc: 'We\'re sorry something went wrong. Let us make it right.',
     fields: ['name', 'email', 'phone', 'orderNum', 'location', 'message'],
     placeholder: 'Please describe the issue in detail so we can resolve it quickly...',

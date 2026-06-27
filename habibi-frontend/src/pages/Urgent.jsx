@@ -175,14 +175,6 @@ const Urgent = () => {
               ))}
             </div>
 
-            {/* Direct call card */}
-            <div className="urg-call-card">
-              <p className="urg-call-label">PREFER TO CALL?</p>
-              <p className="urg-call-text">Reach a manager directly, any time.</p>
-              <a href="tel:+17184000443" className="urg-call-number">
-                <Phone size={14} /> (718) 400-0443
-              </a>
-            </div>
           </div>
 
           {/* Form */}
