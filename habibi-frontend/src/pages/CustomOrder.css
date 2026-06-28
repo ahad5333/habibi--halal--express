@@ -271,6 +271,56 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Staff-pick presets row ──────────────────────────────────── */
+.co-presets {
+  padding: 0.9rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.co-presets-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin: 0 0 0.55rem;
+}
+.co-presets-track {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+.co-presets-track::-webkit-scrollbar { display: none; }
+
+.co-preset-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.09);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  text-align: left;
+  min-width: 130px;
+}
+.co-preset-card:hover {
+  border-color: rgba(229,182,78,0.45);
+  background: rgba(229,182,78,0.05);
+  transform: translateY(-1px);
+}
+.co-preset-card.active {
+  border-color: #E5B64E;
+  background: rgba(229,182,78,0.1);
+}
+.co-preset-emoji { font-size: 1.4rem; line-height: 1; margin-bottom: 0.15rem; }
+.co-preset-name  { font-size: 0.82rem; font-weight: 800; color: #f1f1f1; }
+.co-preset-desc  { font-size: 0.65rem; color: rgba(255,255,255,0.38); line-height: 1.3; }
+
 /* ── Quantity stepper ────────────────────────────────────────── */
 .co-qty-row {
   display: flex;

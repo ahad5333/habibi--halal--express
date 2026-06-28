@@ -506,6 +506,68 @@ function Section({ id, title, icon, badge, open, onToggle, children }) {
 }
 
 /* ================================================================
+   STAFF-PICK PRESETS
+   ================================================================ */
+const PRESETS = [
+  {
+    id: 'classic',
+    label: 'The Classic',
+    emoji: '🏆',
+    desc: 'Hero · Chicken · White Sauce',
+    cfg: {
+      base:       BASES.find(b => b.id === '39a'),
+      cheese:     { type: 'american', qty: 'regular' },
+      vegetables: { onions: { qty: 'regular' }, lettuce: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
+      proteins:   { chicken: { qty: 'regular' } },
+      sauces:     { white: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
+  {
+    id: 'spicy-gyro',
+    label: 'Spicy Gyro',
+    emoji: '🔥',
+    desc: 'Wrap · Lamb Gyro · Hot Sauce',
+    cfg: {
+      base:       BASES.find(b => b.id === '39b'),
+      cheese:     { type: 'none', qty: 'regular' },
+      vegetables: { onions: { qty: 'regular' }, peppers: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
+      proteins:   { 'lamb-gyro': { qty: 'regular' } },
+      sauces:     { hot: { placement: 'on_food', qty: 'regular', count: 1 }, white: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
+  {
+    id: 'beef-burger',
+    label: 'Beef Burger',
+    emoji: '🍔',
+    desc: 'Burger Bun · Beef Burger · Ketchup',
+    cfg: {
+      base:       BASES.find(b => b.id === '39g'),
+      cheese:     { type: 'american', qty: 'regular' },
+      vegetables: { lettuce: { qty: 'regular' }, tomatoes: { qty: 'regular' }, onions: { qty: 'regular' } },
+      proteins:   { 'beef-burger': { qty: 'single' } },
+      sauces:     { ketchup: { placement: 'on_food', qty: 'regular', count: 1 }, mayo: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
+  {
+    id: 'falafel-pita',
+    label: 'Falafel Pita',
+    emoji: '🧆',
+    desc: 'Pita · Falafel · Green Sauce',
+    cfg: {
+      base:       BASES.find(b => b.id === '39c'),
+      cheese:     { type: 'none', qty: 'regular' },
+      vegetables: { lettuce: { qty: 'regular' }, cucumbers: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
+      proteins:   { falafel: { qty: 'regular' } },
+      sauces:     { green: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
+];
+
+/* ================================================================
    MAIN COMPONENT
    ================================================================ */
 const INIT = {
@@ -537,6 +599,14 @@ export default function CustomOrder() {
       setDrinks(items.filter(i => /drink|beverage|soda|juice/i.test(i.category_name || i.category || '')));
     }).catch(() => {});
   }, []);
+
+  /* Apply a staff-pick preset */
+  const applyPreset = preset => {
+    setCfg({ ...preset.cfg });
+    setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    setWarnProtein(false);
+    setQty(1);
+  };
 
   /* Section toggle */
   const toggleSection = id => setOpen(prev => {
@@ -827,6 +897,24 @@ export default function CustomOrder() {
 
         {/* ── Right: configuration groups ── */}
         <main className="co-groups">
+
+          {/* ── Staff picks ── */}
+          <div className="co-presets">
+            <p className="co-presets-label">⭐ Staff Picks — tap to pre-fill</p>
+            <div className="co-presets-track">
+              {PRESETS.map(preset => (
+                <button
+                  key={preset.id}
+                  className={`co-preset-card${cfg.base?.id === preset.cfg.base?.id && JSON.stringify(cfg.proteins) === JSON.stringify(preset.cfg.proteins) ? ' active' : ''}`}
+                  onClick={() => applyPreset(preset)}
+                >
+                  <span className="co-preset-emoji">{preset.emoji}</span>
+                  <span className="co-preset-name">{preset.label}</span>
+                  <span className="co-preset-desc">{preset.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 1 — BASE */}
           <Section id="base" title="Choose Your Base" icon="🍞"
