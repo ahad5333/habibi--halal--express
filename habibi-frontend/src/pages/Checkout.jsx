@@ -1112,6 +1112,33 @@ const Checkout = () => {
 
                   {orderError && <div className="order-error">⚠ {orderError}</div>}
 
+                  {/* ── Trust badges ── */}
+                  <div className="trust-badges">
+                    <div className="trust-badge">
+                      <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="trust-badge-img" />
+                      <div className="trust-badge-text">
+                        <span className="trust-badge-label">Halal Certified</span>
+                        <span className="trust-badge-sub">1000+ endorsements</span>
+                      </div>
+                    </div>
+                    <div className="trust-badge-sep" />
+                    <div className="trust-badge">
+                      <img src="/images/logos/grade-a-badge.png" alt="Grade A" className="trust-badge-img" />
+                      <div className="trust-badge-text">
+                        <span className="trust-badge-label">Grade A</span>
+                        <span className="trust-badge-sub">NYC Health Dept.</span>
+                      </div>
+                    </div>
+                    <div className="trust-badge-sep" />
+                    <div className="trust-badge">
+                      <span className="trust-badge-emoji">🔒</span>
+                      <div className="trust-badge-text">
+                        <span className="trust-badge-label">Secure Checkout</span>
+                        <span className="trust-badge-sub">SSL encrypted</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {isLoggedIn && showCTABtn && ctaLabel() && (
                     <button
                       className="btn btn-primary place-order-btn"
