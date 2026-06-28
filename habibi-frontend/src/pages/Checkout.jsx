@@ -987,6 +987,31 @@ const Checkout = () => {
           onClose={() => setShowOfflineModal(false)}
         />
       )}
+
+      {/* ── Sticky mobile bottom bar ── */}
+      {items.length > 0 && (
+        <div className={`ck-sticky-bar${!storeOpen ? ' ck-sticky-bar--closed' : ''}`}>
+          <div className="ck-sticky-info">
+            <span className="ck-sticky-count">
+              {items.reduce((s, i) => s + (i.qty || 1), 0)} item{items.reduce((s, i) => s + (i.qty || 1), 0) !== 1 ? 's' : ''}
+            </span>
+            <span className="ck-sticky-total">${total.toFixed(2)}</span>
+          </div>
+          {!isLoggedIn ? (
+            <Link to="/login?redirect=/checkout" className="ck-sticky-btn">
+              Log In to Order
+            </Link>
+          ) : showCTABtn ? (
+            <button
+              className="ck-sticky-btn"
+              onClick={handlePlaceOrder}
+              disabled={placing || !storeOpen}
+            >
+              {!storeOpen ? 'Currently Closed' : placing ? 'Please wait…' : 'Place Order →'}
+            </button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 };
