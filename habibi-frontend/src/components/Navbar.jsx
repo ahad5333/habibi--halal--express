@@ -276,11 +276,6 @@ const Navbar = () => {
             className="navbar-halal-badge"
           />
 
-          <Link to="/customize" className="navbar-customize-btn" title="Customize Your Order">
-            <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="navbar-customize-icon" />
-            <span className="navbar-customize-label">Customize</span>
-          </Link>
-
           <div className="navbar-top-right">
             {isLoggedIn && (
               <div className="notif-wrap" ref={bellRef}>
@@ -338,6 +333,10 @@ const Navbar = () => {
                 <span>{serviceLocation.title.split('&')[0].trim()}</span>
               </Link>
             )}
+            <Link to="/customize" className="navbar-customize-btn" title="Customize Your Order">
+              <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="navbar-customize-icon" />
+            </Link>
+
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
               <ShoppingBag size={20} />
               {totalItems > 0 && (
