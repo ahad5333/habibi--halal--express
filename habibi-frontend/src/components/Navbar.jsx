@@ -337,7 +337,7 @@ const Navbar = () => {
               <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="navbar-customize-icon" />
               <span className="navbar-customize-label">
                 <span className="cust-lbl-spark">✦</span>
-                <span className="cust-lbl-text">Your Way</span>
+                <span className="cust-lbl-text">Build It</span>
                 <span className="cust-lbl-spark">✦</span>
               </span>
             </Link>
