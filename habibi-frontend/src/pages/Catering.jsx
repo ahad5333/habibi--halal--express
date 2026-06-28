@@ -102,7 +102,7 @@ export default function Catering() {
           <div className="cat-success-ref">
             Quote reference: <strong>#CAT-{String(done?.id || '—').padStart(4,'0')}</strong>
           </div>
-          <p className="cat-success-sub">Check your inbox at <strong>{form.email}</strong> for a confirmation. For urgent bookings call us at (347) 703-3731.</p>
+          <p className="cat-success-sub">Check your inbox at <strong>{form.email}</strong> for a confirmation. Our team will follow up within 12 hours.</p>
           <a href="/menu" className="cat-back-btn">Browse Our Menu</a>
         </div>
       </div>
@@ -335,7 +335,7 @@ export default function Catering() {
           <div className="cat-trust-item"><span>⏱</span><p>12 Hours Turnaround</p></div>
           <div className="cat-trust-item"><span>🚚</span><p>Delivery, Pickup & On-Site</p></div>
           <div className="cat-trust-item"><span>👥</span><p>20–1000+ Guests</p></div>
-          <div className="cat-trust-item"><span>📞</span><p>(347) 703-3731</p></div>
+          <div className="cat-trust-item"><span>✅</span><p>Response Guaranteed</p></div>
         </div>
       </div>
     </div>

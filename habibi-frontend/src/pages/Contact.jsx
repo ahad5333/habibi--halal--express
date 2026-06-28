@@ -429,7 +429,7 @@ const Contact = () => {
               { icon: '🍴', title: 'Restaurant Partnerships', text: 'Join our curated network of Halal excellence.' },
               { icon: '🚚', title: 'Supply Integrity', text: 'Premium ethically sourced Halal ingredient suppliers.' },
               { icon: '👥', title: 'Corporate Catering', text: 'White-glove catering for business events at scale.' },
-              { icon: '📱', title: 'Tech Integrations', text: 'API or platform integrations — let\'s build together.' },
+              { icon: '📱', title: 'Tech Integrations', text: 'API or platform integrations, let\'s build together.' },
             ].map(card => (
               <div key={card.title} className="ct-collab-card">
                 <span className="ct-collab-icon">{card.icon}</span>

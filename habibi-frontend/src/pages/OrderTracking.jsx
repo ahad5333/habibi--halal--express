@@ -36,7 +36,7 @@ const STATUS_INFO = {
   3: { title: 'Chef is Crafting Perfection',  sub: 'Your order is on the grill. Every cut meets our Habibi gold standard.',                     emoji: '👨‍🍳', color: '#E5B64E', animate: 'chef' },
   4: { title: 'Driver is On The Way',         sub: 'Your order has been picked up and is heading to you now. Track live below.',                 emoji: '🛵', color: '#a78bfa', animate: 'drive' },
   5: { title: 'Almost There!',                sub: 'Your driver is nearby. Please be ready to receive your order.',                              emoji: '📍', color: '#f97316', animate: 'nearby' },
-  6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite — made with Habibi love. ✨',                        emoji: '🎉', color: '#4ade80', animate: 'delivered' },
+  6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite, made with Habibi love. ✨',                        emoji: '🎉', color: '#4ade80', animate: 'delivered' },
 };
 
 const DRIVER = { name: 'Ahmad K.', rating: 4.9, deliveries: '1.2K' };

@@ -876,6 +876,23 @@
   color: #ff4444;
 }
 
+.nav-dropdown-link.featured {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  background: linear-gradient(135deg, rgba(229,182,78,0.15) 0%, rgba(249,115,22,0.12) 100%);
+  border: 1px solid rgba(229,182,78,0.35);
+  border-radius: 8px;
+  color: #E5B64E;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.nav-dropdown-link.featured:hover {
+  background: linear-gradient(135deg, rgba(229,182,78,0.28) 0%, rgba(249,115,22,0.22) 100%);
+  color: #F97316;
+  padding-left: 0.85rem;
+}
+
 .sub-icon {
   font-size: 0.95rem;
   width: 20px;

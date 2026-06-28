@@ -337,7 +337,7 @@ const Careers = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Resume / CV <span className="text-muted">(PDF, DOC, DOCX — max 8MB)</span></label>
+                  <label>Resume / CV <span className="text-muted">(PDF, DOC, DOCX, max 8MB)</span></label>
                   <div className="file-upload-wrap">
                     <input
                       type="file"

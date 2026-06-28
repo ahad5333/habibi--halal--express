@@ -22,7 +22,7 @@ const LEFT_ITEMS = [
       { label: 'Extras',          path: '/menu?cat=extras' },
       { label: 'Drinks',          path: '/menu?cat=drinks' },
       { label: 'Family Tray',     path: '/menu?cat=family' },
-      { label: 'Build Your Own',  path: '/menu?cat=byo' },
+      { label: '✨ Build Your Own', path: '/menu?cat=byo', featured: true },
     ],
   },
   {
@@ -139,7 +139,7 @@ function DropdownPanel({ item }) {
               <Link
                 key={s.label}
                 to={s.path}
-                className={`nav-dropdown-link${s.highlight ? ' highlight' : ''}`}
+                className={`nav-dropdown-link${s.highlight ? ' highlight' : ''}${s.featured ? ' featured' : ''}`}
               >
                 {s.label}
               </Link>
@@ -270,7 +270,7 @@ const Navbar = () => {
           </Link>
 
           <img
-            src="/images/logos/halal-certified-nav.jpg"
+            src="/images/logos/halal-certified-premium.png"
             alt="Halal Certified"
             className="navbar-halal-badge"
           />

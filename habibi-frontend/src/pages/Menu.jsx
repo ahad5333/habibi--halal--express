@@ -172,16 +172,20 @@ const Menu = () => {
       let el = sectionRefs.current[sectionKey];
       if (!el) {
         const entry = Object.entries(sectionRefs.current).find(([k]) =>
-          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL) || keyL.includes(k.toLowerCase())
+          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL)
         );
         if (entry) { el = entry[1]; setActiveSidebarCat(entry[0]); }
       } else {
         setActiveSidebarCat(sectionKey);
       }
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) {
+        const navH = document.querySelector('.navbar-wrap')?.offsetHeight || 80;
+        const y = el.getBoundingClientRect().top + window.scrollY - navH - 12;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
     };
-    // One rAF to ensure the DOM has committed the new sections
-    requestAnimationFrame(doScroll);
+    // Double-RAF + small delay so layout fully settles before measuring position
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(doScroll, 80)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingScrollCat, categoryGroups]);
 
@@ -259,25 +263,28 @@ const Menu = () => {
 
     const doScroll = () => {
       if (!sectionKey) return;
-      // Exact match first, then fuzzy (handles 'Taco' matching 'Tacos' in DB)
       const keyL = sectionKey.toLowerCase();
       let el = sectionRefs.current[sectionKey];
       if (!el) {
         const entry = Object.entries(sectionRefs.current).find(([k]) =>
-          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL) || keyL.includes(k.toLowerCase())
+          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL)
         );
         if (entry) { el = entry[1]; setActiveSidebarCat(entry[0]); }
       } else {
         setActiveSidebarCat(sectionKey);
       }
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) {
+        const navH = document.querySelector('.navbar-wrap')?.offsetHeight || 80;
+        const y = el.getBoundingClientRect().top + window.scrollY - navH - 12;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
     };
 
     if (activeCategory !== 'all') {
       setActiveCategory('all');
       setPendingScrollCat(val); // let the sections-ready effect handle the scroll
     } else {
-      requestAnimationFrame(doScroll);
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(doScroll, 80)));
     }
 
     // Scroll the active tab into view — only when the track is actually
