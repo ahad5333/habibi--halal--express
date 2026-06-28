@@ -923,6 +923,26 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts     INTEGER   DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_lockout_until TIMESTAMPTZ`);
 
+    // ── Articles / Blog ───────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id          SERIAL PRIMARY KEY,
+        title       VARCHAR(255) NOT NULL,
+        slug        VARCHAR(255) UNIQUE NOT NULL,
+        subtitle    VARCHAR(500),
+        body        TEXT,
+        category    VARCHAR(100)  DEFAULT 'General',
+        media_url   TEXT,
+        media_type  VARCHAR(10)   DEFAULT 'image',
+        is_published BOOLEAN      DEFAULT TRUE,
+        sort_order  INT           DEFAULT 0,
+        created_at  TIMESTAMPTZ   DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ   DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(is_published, created_at DESC);`);
+
     // ── Global Addon Groups (Sauces, Make it a Meal!, Add a Drink) ──
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_addon_groups (

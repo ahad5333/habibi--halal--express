@@ -5,7 +5,7 @@ import {
   Handshake, BarChart2, AlertTriangle, Settings, LogOut, Zap, CreditCard,
   UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation, Store,
   Briefcase, ClipboardList, QrCode, CalendarDays, Link2, KeyRound, Star, Shield, X,
-  MessageSquare, Gift,
+  MessageSquare, Gift, BookOpen,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -19,6 +19,7 @@ const NAV = [
   { to: '/catering',      icon: <CalendarDays size={17} />, label: 'Catering Quotes' },
   { to: '/menu',           icon: <Utensils size={17} />,    label: 'Menu Builder' },
   { to: '/global-addons',  icon: <Package size={17} />,    label: 'Global Add-ons' },
+  { to: '/articles',       icon: <BookOpen size={17} />,   label: 'Articles' },
   { to: '/customers',  icon: <Users size={17} />,           label: 'Customers' },
   { to: '/staff',      icon: <UserCheck size={17} />,       label: 'Staff' },
   { to: '/careers',   icon: <Briefcase size={17} />,       label: 'Careers' },

@@ -1,0 +1,197 @@
+.art-admin-page { padding: 2rem; max-width: 900px; }
+
+.art-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.art-admin-title { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.25rem; color: var(--color-text); }
+.art-admin-sub   { font-size: 0.85rem; color: var(--color-text-muted); margin: 0; }
+
+.art-admin-error {
+  background: rgba(220,53,69,0.12);
+  border: 1px solid rgba(220,53,69,0.3);
+  color: #f87171;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+.art-admin-loading { color: var(--color-text-muted); padding: 2rem 0; font-size: 0.9rem; }
+.art-admin-empty   { color: var(--color-text-muted); font-size: 0.9rem; padding: 2rem 0; }
+
+/* ── Article list ── */
+.art-admin-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.art-admin-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-surface, #1a1a1a);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  transition: border-color 0.2s;
+}
+.art-admin-row:hover { border-color: rgba(255,255,255,0.15); }
+.art-admin-row--draft { opacity: 0.65; }
+
+.art-admin-thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.art-admin-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.art-admin-info { flex: 1; min-width: 0; }
+.art-admin-row-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; }
+
+.art-admin-cat-pill {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: rgba(229,182,78,0.12);
+  color: var(--color-primary, #e5b64e);
+  border-radius: 99px;
+  padding: 0.15rem 0.55rem;
+}
+.art-admin-draft-pill {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.4);
+  border-radius: 99px;
+  padding: 0.15rem 0.55rem;
+}
+
+.art-admin-row-title { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.art-admin-row-sub   { font-size: 0.75rem; color: var(--color-text-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.art-admin-row-actions { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+
+/* ── Modal ── */
+.art-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+.art-modal {
+  background: var(--color-surface, #1a1a1a);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+  border-radius: 18px;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+}
+
+.art-modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.08));
+}
+.art-modal-title { font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--color-text); }
+
+.art-modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.art-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border, rgba(255,255,255,0.08));
+}
+
+/* ── Media upload drop zone ── */
+.art-media-drop {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  transition: border-color 0.2s, background 0.2s;
+  min-height: 110px;
+}
+.art-media-drop:hover { border-color: var(--color-primary, #e5b64e); background: rgba(229,182,78,0.04); }
+
+.art-media-preview {
+  position: relative;
+  width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.art-media-preview img { width: 100%; height: 220px; object-fit: cover; display: block; border-radius: 8px; }
+.art-media-remove {
+  position: absolute;
+  top: 0.5rem; right: 0.5rem;
+  background: rgba(0,0,0,0.7);
+  border: none; border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff;
+}
+
+/* ── Published toggle ── */
+.art-published-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+.art-published-row label { font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
+.art-pub-toggle {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.78rem; font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.art-pub-toggle.on {
+  background: rgba(229,182,78,0.12);
+  border-color: rgba(229,182,78,0.4);
+  color: var(--color-primary, #e5b64e);
+}
+
+/* ── Quill override ── */
+.art-quill-wrap { border-radius: 10px; overflow: hidden; }
+.art-quill-wrap .ql-toolbar {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1) !important;
+}
+.art-quill-wrap .ql-container {
+  border-color: rgba(255,255,255,0.1) !important;
+  font-size: 0.9rem;
+  min-height: 200px;
+  background: rgba(255,255,255,0.02);
+}
+.art-quill-wrap .ql-editor { min-height: 200px; color: var(--color-text, #f5f0e8); }
+.art-quill-wrap .ql-editor.ql-blank::before { color: rgba(255,255,255,0.3); font-style: normal; }
+.art-quill-wrap .ql-stroke { stroke: rgba(255,255,255,0.6) !important; }
+.art-quill-wrap .ql-fill  { fill:   rgba(255,255,255,0.6) !important; }
+.art-quill-wrap .ql-picker-label { color: rgba(255,255,255,0.6) !important; }
+.art-quill-wrap .ql-picker-options { background: #2a2a2a !important; border-color: rgba(255,255,255,0.1) !important; }

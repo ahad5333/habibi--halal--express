@@ -362,6 +362,24 @@
   scroll-margin-top: 82px; /* clears the fixed navbar so the section title is never hidden */
 }
 
+/* ── Category banner (Tacos) ── */
+.menu-cat-banner {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.menu-cat-banner-img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 260px;
+  border-radius: 14px;
+}
+@media (max-width: 600px) {
+  .menu-cat-banner-img { max-height: 180px; border-radius: 10px; }
+}
+
 .menu-cat-section-hd {
   display: flex;
   align-items: baseline;

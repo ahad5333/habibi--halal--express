@@ -22,7 +22,9 @@ const Careers          = lazy(() => import('./pages/Careers'));
 const Contact          = lazy(() => import('./pages/Contact'));
 const Wholesale        = lazy(() => import('./pages/Wholesale'));
 const Account          = lazy(() => import('./pages/Account'));
-const Videos           = lazy(() => import('./pages/Videos'));
+const Videos               = lazy(() => import('./pages/Videos'));
+const Articles             = lazy(() => import('./pages/Articles'));
+const ArticleHabibiTacos   = lazy(() => import('./pages/ArticleHabibiTacos'));
 const Urgent           = lazy(() => import('./pages/Urgent'));
 const Payment          = lazy(() => import('./pages/Payment'));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'));
@@ -113,6 +115,8 @@ function Layout() {
           <Route path="/payment" element={<Payment />} />
           <Route path="/staff" element={<Careers />} />
           <Route path="/videos" element={<Videos />} />
+          <Route path="/articles" element={<Articles />} />
+          <Route path="/articles/habibi-tacos" element={<ArticleHabibiTacos />} />
           <Route path="/account" element={<Account />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

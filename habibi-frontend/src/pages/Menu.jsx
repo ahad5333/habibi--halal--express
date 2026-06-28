@@ -891,22 +891,35 @@ const Menu = () => {
               <p>No items available.</p>
             </div>
           ) : (
-            categoryGroups.map(([category, catItems]) => (
-              <div
-                key={category}
-                className="menu-cat-section"
-                data-category={category}
-                ref={el => { sectionRefs.current[category] = el; }}
-              >
-                <div className="menu-cat-section-hd">
-                  <h3 className="menu-cat-section-title">{category}</h3>
-                  <span className="menu-cat-section-count">{catItems.length} items</span>
+            categoryGroups.map(([category, catItems]) => {
+              const isTacos = /^tacos?$/i.test(category.trim());
+              return (
+                <div
+                  key={category}
+                  className="menu-cat-section"
+                  data-category={category}
+                  ref={el => { sectionRefs.current[category] = el; }}
+                >
+                  {isTacos && (
+                    <div className="menu-cat-banner menu-cat-banner--tacos">
+                      <img
+                        src="/images/articles/habibi-taco-banner.jpg"
+                        alt="Habibi Tacos — Our Flavor. Your Way. One Epic Taco."
+                        className="menu-cat-banner-img"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+                  <div className="menu-cat-section-hd">
+                    <h3 className="menu-cat-section-title">{category}</h3>
+                    <span className="menu-cat-section-count">{catItems.length} items</span>
+                  </div>
+                  <div className="menu-list">
+                    {catItems.map((item, idx) => renderItemRow(item, idx))}
+                  </div>
                 </div>
-                <div className="menu-list">
-                  {catItems.map((item, idx) => renderItemRow(item, idx))}
-                </div>
-              </div>
-            ))
+              );
+            })
           )
         ) : filtered.length === 0 && activeCategory !== 'byo' ? (
           <div className="menu-empty">
