@@ -132,6 +132,7 @@
 
 /* ── Customize Your Order icon button ── */
 @keyframes customize-spin {
+  /* rotate() only — centering is done with left/right/margin, not transform */
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
@@ -140,6 +141,7 @@
   50%       { box-shadow: 0 0 18px rgba(229,182,78,0.85), 0 0 36px rgba(249,115,22,0.5); }
 }
 @keyframes customize-float {
+  /* applied to the BUTTON so ring + icon float together */
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-2px); }
 }
@@ -148,20 +150,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.18rem;
   text-decoration: none;
   flex-shrink: 0;
-  margin: 0 0.5rem 0 auto;
+  margin: 0 0.5rem;          /* equal sides — no auto push */
   position: relative;
+  animation: customize-float 3s ease-in-out infinite;
 }
 
-/* Spinning gold ring behind the icon */
+/* Spinning gold ring — centered via left/right/margin so rotate() stays clean */
 .navbar-customize-btn::before {
   content: '';
   position: absolute;
-  top: -3px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -4px;                 /* (52px ring - 44px icon) / 2 = 4px */
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -187,16 +192,20 @@
   border-radius: 50%;
   object-fit: cover;
   border: 2.5px solid #0a0a0a;
-  animation: customize-pulse 2.5s ease-in-out infinite, customize-float 3s ease-in-out infinite;
-  transition: transform 0.2s;
+  display: block;             /* removes inline baseline gap */
+  animation: customize-pulse 2.5s ease-in-out infinite;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
+/* Hover — stop float, spin faster, scale icon */
+.navbar-customize-btn:hover {
+  animation: none;
+}
 .navbar-customize-btn:hover .navbar-customize-icon {
   transform: scale(1.1);
   animation: none;
   box-shadow: 0 0 22px rgba(229,182,78,0.9), 0 0 44px rgba(249,115,22,0.55);
 }
-
 .navbar-customize-btn:hover::before {
   animation: customize-spin 0.8s linear infinite;
 }
@@ -210,13 +219,14 @@
   display: none;
   position: relative;
   z-index: 1;
+  line-height: 1;
 }
 @media (min-width: 700px) {
   .navbar-customize-label { display: block; }
 }
 @media (max-width: 480px) {
   .navbar-customize-icon { width: 36px; height: 36px; }
-  .navbar-customize-btn::before { width: 44px; height: 44px; top: -2px; }
+  .navbar-customize-btn::before { width: 44px; height: 44px; top: -4px; }
 }
 
 .navbar-top-right {
