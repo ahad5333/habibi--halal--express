@@ -133,7 +133,7 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
           });
         }
 
-        setUniversalGroups(uGroups);
+        setUniversalGroups(itemData?.exclude_global_addons ? [] : uGroups);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
