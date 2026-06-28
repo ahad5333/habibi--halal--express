@@ -645,14 +645,58 @@ export default function CustomOrder() {
 
   const handleAdd = () => {
     if (!cfg.base) return;
+
+    /* Extras and drinks are added as separate cart line items.
+       Subtract their value so the custom item price stays correct. */
+    let extrasSubtotal = 0;
+    Object.entries(cfg.extras).forEach(([id, cnt]) => {
+      const item = extras.find(x => String(x._id ?? x.id) === id);
+      if (item) extrasSubtotal += parseFloat(item.price || 0) * cnt;
+    });
+    let drinksSubtotal = 0;
+    Object.entries(cfg.drinks).forEach(([id, cnt]) => {
+      const item = drinks.find(x => String(x._id ?? x.id) === id);
+      if (item) drinksSubtotal += parseFloat(item.price || 0) * cnt;
+    });
+
+    /* Main custom order item */
     addItem({
       _id: `custom-${Date.now()}`,
       name: `Custom ${cfg.base.label}`,
-      price: total,
+      price: Math.max(0, total - extrasSubtotal - drinksSubtotal),
       note: buildNote(),
       img: cfg.base.img,
       quantity: 1,
     });
+
+    /* Extras — each as its own cart line */
+    Object.entries(cfg.extras).forEach(([id, cnt]) => {
+      const item = extras.find(x => String(x._id ?? x.id) === id);
+      if (item && cnt > 0) {
+        addItem({
+          id:    item.id,
+          name:  item.name,
+          price: parseFloat(item.price || 0),
+          img:   item.image || item.img,
+          qty:   cnt,
+        });
+      }
+    });
+
+    /* Drinks — each as its own cart line */
+    Object.entries(cfg.drinks).forEach(([id, cnt]) => {
+      const item = drinks.find(x => String(x._id ?? x.id) === id);
+      if (item && cnt > 0) {
+        addItem({
+          id:    item.id,
+          name:  item.name,
+          price: parseFloat(item.price || 0),
+          img:   item.image || item.img,
+          qty:   cnt,
+        });
+      }
+    });
+
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
