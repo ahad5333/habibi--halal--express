@@ -336,14 +336,83 @@
 .cart-delete-btn {
   background: transparent;
   color: var(--color-text-muted);
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 0.3rem;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
 .cart-delete-btn:hover {
   color: #ef4444;
+  background: rgba(239,68,68,0.07);
+  border-color: rgba(239,68,68,0.2);
 }
+.cart-delete-btn--pending {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.35);
+}
+
+/* Red tint on the row while pending */
+.cart-item--removing {
+  background: rgba(239,68,68,0.03);
+  border-radius: 10px;
+  outline: 1px solid rgba(239,68,68,0.15);
+}
+
+/* Inline remove confirmation strip */
+.cart-remove-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.18);
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  margin: 0.1rem 0 0.35rem;
+  animation: cr-slide-in 0.18s ease;
+}
+@keyframes cr-slide-in {
+  from { opacity: 0; transform: translateY(-5px); }
+}
+.cart-remove-msg {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+}
+.cart-remove-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.cart-remove-yes {
+  padding: 0.35rem 0.8rem;
+  border-radius: 7px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.cart-remove-yes:hover { filter: brightness(1.1); }
+.cart-remove-no {
+  padding: 0.35rem 0.8rem;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.55);
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cart-remove-no:hover { background: rgba(255,255,255,0.1); }
 
 /* Delivery */
 .delivery-toggle {

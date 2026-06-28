@@ -56,6 +56,7 @@ const Checkout = () => {
   const [authNetConfig, setAuthNetConfig]   = useState(null);
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
+  const [pendingRemove, setPendingRemove]       = useState(null);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
   const [feeLoading, setFeeLoading]             = useState(false);
@@ -467,7 +468,7 @@ const Checkout = () => {
                     const addons = item.addons || [];
                     return (
                       <React.Fragment key={item.id}>
-                        <div className="cart-item">
+                        <div className={`cart-item${pendingRemove === item.id ? ' cart-item--removing' : ''}`}>
                           <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
                           <div className="cart-item-info">
                             <h4 className="cart-item-name">{item.name}</h4>
@@ -480,9 +481,23 @@ const Checkout = () => {
                               <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
-                            <button className="cart-delete-btn" onClick={() => removeItem(item.id)}><Trash2 size={14} /></button>
+                            <button
+                              className={`cart-delete-btn${pendingRemove === item.id ? ' cart-delete-btn--pending' : ''}`}
+                              onClick={() => setPendingRemove(pendingRemove === item.id ? null : item.id)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
+                        {pendingRemove === item.id && (
+                          <div className="cart-remove-confirm">
+                            <span className="cart-remove-msg">Remove from cart?</span>
+                            <div className="cart-remove-actions">
+                              <button className="cart-remove-yes" onClick={() => { removeItem(item.id); setPendingRemove(null); }}>Remove</button>
+                              <button className="cart-remove-no" onClick={() => setPendingRemove(null)}>Keep it</button>
+                            </div>
+                          </div>
+                        )}
                         {addons.map((addon, idx) => (
                           <div key={`${item.id}-addon-${idx}`} className="cart-addon-row">
                             <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>
