@@ -640,62 +640,55 @@ export default function CustomOrder() {
       const sc = SAUCE_OPTS.find(x => x.id === id);
       if (sc) parts.push(`${sc.label} (${s.placement === 'on_side' ? `x${s.count} on side` : s.qty})`);
     });
+    Object.entries(cfg.extras).forEach(([id, cnt]) => {
+      const item = extras.find(x => String(x._id ?? x.id) === id);
+      if (item) parts.push(`${item.name} x${cnt}`);
+    });
+    Object.entries(cfg.drinks).forEach(([id, cnt]) => {
+      const item = drinks.find(x => String(x._id ?? x.id) === id);
+      if (item) parts.push(`${item.name} x${cnt}`);
+    });
     return parts.join(' | ');
   };
 
   const handleAdd = () => {
     if (!cfg.base) return;
 
-    /* Extras and drinks are added as separate cart line items.
-       Subtract their value so the custom item price stays correct. */
-    let extrasSubtotal = 0;
+    /* Bundle sides and drinks as addons on the custom item so each
+       person's meal stays together (like a McDonald's combo meal). */
+    const addons = [];
+    let addonsTotal = 0;
+
     Object.entries(cfg.extras).forEach(([id, cnt]) => {
       const item = extras.find(x => String(x._id ?? x.id) === id);
-      if (item) extrasSubtotal += parseFloat(item.price || 0) * cnt;
+      if (item && cnt > 0) {
+        const price = parseFloat(item.price || 0);
+        addons.push({ name: item.name, price, qty: cnt });
+        addonsTotal += price * cnt;
+      }
     });
-    let drinksSubtotal = 0;
     Object.entries(cfg.drinks).forEach(([id, cnt]) => {
       const item = drinks.find(x => String(x._id ?? x.id) === id);
-      if (item) drinksSubtotal += parseFloat(item.price || 0) * cnt;
+      if (item && cnt > 0) {
+        const price = parseFloat(item.price || 0);
+        addons.push({ name: item.name, price, qty: cnt });
+        addonsTotal += price * cnt;
+      }
     });
 
-    /* Main custom order item — unique id ensures every custom order
-       is its own cart line, even if base and toppings look identical */
+    /* One cart line per person's order.
+       price = full total (used for subtotal/cart-strip).
+       baseItemPrice = base+ingredients only (displayed in checkout).
+       addons = sides+drinks shown as indented sub-rows in checkout. */
     addItem({
-      id: `custom-${cfg.base.id}-${Date.now()}`,
-      name: `Custom ${cfg.base.label}`,
-      price: Math.max(0, total - extrasSubtotal - drinksSubtotal),
-      note: buildNote(),
-      img: cfg.base.img,
-      quantity: 1,
-    });
-
-    /* Extras — each as its own cart line */
-    Object.entries(cfg.extras).forEach(([id, cnt]) => {
-      const item = extras.find(x => String(x._id ?? x.id) === id);
-      if (item && cnt > 0) {
-        addItem({
-          id:    item.id,
-          name:  item.name,
-          price: parseFloat(item.price || 0),
-          img:   item.image || item.img,
-          qty:   cnt,
-        });
-      }
-    });
-
-    /* Drinks — each as its own cart line */
-    Object.entries(cfg.drinks).forEach(([id, cnt]) => {
-      const item = drinks.find(x => String(x._id ?? x.id) === id);
-      if (item && cnt > 0) {
-        addItem({
-          id:    item.id,
-          name:  item.name,
-          price: parseFloat(item.price || 0),
-          img:   item.image || item.img,
-          qty:   cnt,
-        });
-      }
+      id:            `custom-${cfg.base.id}-${Date.now()}`,
+      name:          `Custom ${cfg.base.label}`,
+      price:         total,
+      baseItemPrice: Math.max(0, total - addonsTotal),
+      note:          buildNote(),
+      img:           cfg.base.img,
+      addons,
+      quantity:      1,
     });
 
     /* Reset form so the user can immediately build another order */

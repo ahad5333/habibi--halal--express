@@ -261,19 +261,25 @@ const Checkout = () => {
     expected_time: timing === 'asap'
       ? 'ASAP'
       : `${scheduleDate === 'today' ? 'Today' : 'Tomorrow'} at ${scheduleTime}`,
-    items: items.map(i => ({
-      menuItemId:      i.id,
-      menu_item_id:    i.id,
-      id:              i.id,
-      name:            i.name,
-      quantity:        i.qty,
-      qty:             i.qty,
-      unit_price:      i.price,
-      price:           i.price,
-      note:            i.note || '',
-      selectedChoices: i.selectedChoices || {},
-      selectedAddons:  i.selectedAddons  || {},
-    })),
+    items: items.map(i => {
+      const addonsNote = (i.addons || [])
+        .map(a => `${a.name}${a.qty > 1 ? ` x${a.qty}` : ''}`)
+        .join(', ');
+      const fullNote = [i.note, addonsNote].filter(Boolean).join(' | ');
+      return {
+        menuItemId:      i.id,
+        menu_item_id:    i.id,
+        id:              i.id,
+        name:            i.name,
+        quantity:        i.qty,
+        qty:             i.qty,
+        unit_price:      i.price,
+        price:           i.price,
+        note:            fullNote,
+        selectedChoices: i.selectedChoices || {},
+        selectedAddons:  i.selectedAddons  || {},
+      };
+    }),
   });
 
   const finishOrder = async (orderNumber) => {
