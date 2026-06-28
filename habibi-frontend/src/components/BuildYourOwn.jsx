@@ -262,29 +262,224 @@ const INGREDIENT_DB = {
 };
 
 /* ─────────────────────────────────────────────────────────────────
-   CHIP INFO MAP  — emoji + short label shown in the canvas chips
+   INGREDIENT MEDALLION DATABASE
+   Each ingredient rendered as a shaped div (background-image crop)
+   positioned on top of the base image with a drop shadow.
+   shape: 'circle' | 'rect' | 'wide' | 'sauce'
+   pos[family]: array of {x, y, w, rot?, ar?}
+     x,y = % of canvas (center of medallion anchor)
+     w   = % of canvas width
+     ar  = CSS aspect-ratio override (default 1/1 for circle)
+     rot = degrees
 ───────────────────────────────────────────────────────────────── */
-const BYO_CHIP_INFO = {
-  chicken:    { emoji: '🍗', label: 'Chicken'    },
-  'lamb-gyro':{ emoji: '🥩', label: 'Lamb Gyro'  },
-  mixed:      { emoji: '🍖', label: 'Mixed'       },
-  falafel:    { emoji: '🧆', label: 'Falafel'     },
-  hotdog:     { emoji: '🌭', label: 'Hot Dog'     },
-  lettuce:    { emoji: '🥬', label: 'Lettuce'     },
-  tomatoes:   { emoji: '🍅', label: 'Tomatoes'   },
-  onions:     { emoji: '🧅', label: 'Onions'      },
-  pickles:    { emoji: '🥒', label: 'Pickles'     },
-  peppers:    { emoji: '🌶️', label: 'Peppers'    },
-  hummus:     { emoji: '🫙', label: 'Hummus'      },
-  white:      { emoji: '🤍', label: 'White Sauce' },
-  hot:        { emoji: '🔥', label: 'Hot Sauce'   },
-  both:       { emoji: '✨', label: 'Both Sauces' },
-  'both-hot': { emoji: '🔥', label: 'Hot Sauce'   },
+const ING_MEDALLION_DB = {
+  chicken: {
+    src: '/images/byo/ing/chicken.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:       [{ x:34, y:54, w:15 }, { x:57, y:53, w:15 }],
+      standard:   [{ x:48, y:53, w:19 }],
+      compact:    [{ x:48, y:55, w:16 }],
+      wrap:       [{ x:46, y:53, w:17 }],
+      platter:    [{ x:62, y:53, w:19 }],
+      familyTray: [{ x:55, y:52, w:15 }, { x:67, y:53, w:15 }],
+    }
+  },
+  'lamb-gyro': {
+    src: '/images/byo/ing/lamb-gyro.png', layer: 4, shape: 'rect', ar: '3/2',
+    pos: {
+      hero:       [{ x:33, y:53, w:16, rot:-8 }, { x:55, y:52, w:16, rot:6 }],
+      standard:   [{ x:47, y:52, w:22, rot:-4 }],
+      compact:    [{ x:47, y:54, w:19, rot:-3 }],
+      wrap:       [{ x:45, y:52, w:20, rot:-3 }],
+      platter:    [{ x:61, y:52, w:22 }],
+      familyTray: [{ x:55, y:52, w:18, rot:-5 }, { x:67, y:52, w:18, rot:5 }],
+    }
+  },
+  hotdog: {
+    src: '/images/byo/ing/hotdog.jpg', layer: 5, shape: 'rect', ar: '5/2',
+    pos: {
+      hero:       [{ x:50, y:52, w:48 }],
+      standard:   [{ x:48, y:53, w:30 }],
+      compact:    [{ x:48, y:55, w:26 }],
+      wrap:       [{ x:47, y:52, w:24, rot:78 }],
+      platter:    [{ x:63, y:52, w:28 }],
+      familyTray: [{ x:57, y:52, w:24 }, { x:71, y:52, w:24 }],
+    }
+  },
+  falafel: {
+    src: '/images/byo/ing/falafel.png', layer: 5, shape: 'circle',
+    pos: {
+      hero:       [{ x:30, y:52, w:9 }, { x:44, y:51, w:9 }, { x:58, y:52, w:9 }],
+      standard:   [{ x:40, y:52, w:11 }, { x:56, y:52, w:11 }],
+      compact:    [{ x:42, y:54, w:10 }, { x:55, y:54, w:10 }],
+      wrap:       [{ x:41, y:52, w:10 }, { x:54, y:52, w:10 }],
+      platter:    [{ x:58, y:52, w:10 }, { x:68, y:52, w:10 }, { x:76, y:52, w:10 }],
+      familyTray: [{ x:53, y:52, w:9 }, { x:62, y:52, w:9 }, { x:71, y:52, w:9 }],
+    }
+  },
+  /* Toppings */
+  lettuce: {
+    src: '/images/byo/ing/lettuce.jpg', layer: 3, shape: 'wide', ar: '6/2',
+    pos: {
+      hero:       [{ x:50, y:58, w:54 }],
+      standard:   [{ x:49, y:57, w:36 }],
+      compact:    [{ x:48, y:58, w:30 }],
+      wrap:       [{ x:48, y:56, w:34 }],
+      platter:    [{ x:64, y:56, w:28 }],
+      familyTray: [{ x:60, y:56, w:26 }, { x:74, y:56, w:26 }],
+    }
+  },
+  tomatoes: {
+    src: '/images/byo/ing/tomato.jpg', layer: 6, shape: 'circle',
+    pos: {
+      hero:       [{ x:27, y:49, w:8 }, { x:44, y:49, w:8 }, { x:62, y:49, w:8 }],
+      standard:   [{ x:41, y:49, w:10 }, { x:57, y:50, w:10 }],
+      compact:    [{ x:42, y:51, w:9 }, { x:55, y:51, w:9 }],
+      wrap:       [{ x:41, y:49, w:9 }, { x:54, y:49, w:9 }],
+      platter:    [{ x:59, y:49, w:9 }, { x:68, y:49, w:9 }],
+      familyTray: [{ x:53, y:49, w:8 }, { x:62, y:49, w:8 }, { x:71, y:49, w:8 }],
+    }
+  },
+  onions: {
+    src: '/images/byo/ing/onion.jpg', layer: 7, shape: 'circle',
+    pos: {
+      hero:       [{ x:33, y:47, w:7 }, { x:47, y:47, w:7 }, { x:61, y:47, w:7 }],
+      standard:   [{ x:42, y:47, w:9 }, { x:56, y:47, w:9 }],
+      compact:    [{ x:43, y:49, w:8 }, { x:55, y:49, w:8 }],
+      wrap:       [{ x:42, y:47, w:8 }, { x:54, y:47, w:8 }],
+      platter:    [{ x:59, y:47, w:8 }, { x:68, y:47, w:8 }],
+      familyTray: [{ x:54, y:47, w:7 }, { x:63, y:47, w:7 }, { x:72, y:47, w:7 }],
+    }
+  },
+  pickles: {
+    src: '/images/byo/ing/pickle.png', layer: 6, shape: 'circle',
+    pos: {
+      hero:       [{ x:35, y:48, w:7 }, { x:50, y:47, w:7 }, { x:65, y:48, w:7 }],
+      standard:   [{ x:42, y:47, w:9 }, { x:57, y:47, w:9 }],
+      compact:    [{ x:43, y:49, w:8 }, { x:55, y:49, w:8 }],
+      wrap:       [{ x:42, y:47, w:8 }, { x:55, y:47, w:8 }],
+      platter:    [{ x:59, y:47, w:8 }, { x:68, y:47, w:8 }],
+      familyTray: [{ x:54, y:47, w:7 }, { x:63, y:47, w:7 }, { x:71, y:47, w:7 }],
+    }
+  },
+  peppers: {
+    src: '/images/byo/ing/pepper.jpg', layer: 7, shape: 'circle',
+    pos: {
+      hero:       [{ x:30, y:47, w:7, rot:-20 }, { x:47, y:46, w:7, rot:15 }, { x:63, y:47, w:7, rot:-10 }],
+      standard:   [{ x:41, y:46, w:9, rot:-15 }, { x:56, y:46, w:9, rot:10 }],
+      compact:    [{ x:43, y:48, w:8, rot:-10 }, { x:55, y:48, w:8, rot:8 }],
+      wrap:       [{ x:42, y:46, w:8, rot:-12 }, { x:54, y:46, w:8, rot:8 }],
+      platter:    [{ x:58, y:46, w:8 }, { x:67, y:46, w:8 }],
+      familyTray: [{ x:53, y:46, w:7 }, { x:62, y:46, w:7 }, { x:71, y:46, w:7 }],
+    }
+  },
+  hummus: {
+    src: '/images/byo/ing/hummus.png', layer: 2, shape: 'wide', ar: '5/1',
+    pos: {
+      hero:       [{ x:50, y:62, w:50 }],
+      standard:   [{ x:49, y:61, w:32 }],
+      compact:    [{ x:48, y:62, w:26 }],
+      wrap:       [{ x:48, y:60, w:30 }],
+      platter:    [{ x:63, y:60, w:26 }],
+      familyTray: [{ x:60, y:60, w:24 }, { x:74, y:60, w:24 }],
+    }
+  },
+  /* Sauces — use actual drizzle images with multiply blend */
+  white: {
+    src: '/images/byo/ing/sauce-white.png', layer: 9, shape: 'sauce',
+    pos: {
+      hero:       [{ x:50, y:51, w:54 }],
+      standard:   [{ x:49, y:51, w:36 }],
+      compact:    [{ x:48, y:53, w:30 }],
+      wrap:       [{ x:48, y:51, w:34 }],
+      platter:    [{ x:63, y:51, w:28 }],
+      familyTray: [{ x:60, y:51, w:26 }],
+    }
+  },
+  hot: {
+    src: '/images/byo/ing/sauce-hot.png', layer: 9, shape: 'sauce',
+    pos: {
+      hero:       [{ x:50, y:51, w:54 }],
+      standard:   [{ x:49, y:51, w:36 }],
+      compact:    [{ x:48, y:53, w:30 }],
+      wrap:       [{ x:48, y:51, w:34 }],
+      platter:    [{ x:63, y:51, w:28 }],
+      familyTray: [{ x:60, y:51, w:26 }],
+    }
+  },
+  both: {
+    src: '/images/byo/ing/sauce-white.png', layer: 9, shape: 'sauce',
+    pos: {
+      hero:       [{ x:37, y:51, w:27 }],
+      standard:   [{ x:39, y:51, w:18 }],
+      compact:    [{ x:40, y:53, w:15 }],
+      wrap:       [{ x:39, y:51, w:17 }],
+      platter:    [{ x:56, y:51, w:14 }],
+      familyTray: [{ x:54, y:51, w:13 }],
+    }
+  },
+  'both-hot': {
+    src: '/images/byo/ing/sauce-hot.png', layer: 9, shape: 'sauce',
+    pos: {
+      hero:       [{ x:63, y:51, w:27 }],
+      standard:   [{ x:59, y:51, w:18 }],
+      compact:    [{ x:57, y:53, w:15 }],
+      wrap:       [{ x:57, y:51, w:17 }],
+      platter:    [{ x:70, y:51, w:14 }],
+      familyTray: [{ x:67, y:51, w:13 }],
+    }
+  },
 };
 
+/* Render one ingredient as a shaped photo medallion or sauce drizzle */
+function renderMedallion(id, family) {
+  const def = ING_MEDALLION_DB[id];
+  if (!def) return null;
+  const positions = def.pos[family] || def.pos.standard || def.pos.compact;
+  if (!positions) return null;
+
+  return positions.map((pos, i) => {
+    if (def.shape === 'sauce') {
+      return (
+        <img
+          key={`${id}-s-${i}`}
+          src={def.src}
+          alt=""
+          style={{
+            position: 'absolute',
+            left: `${pos.x}%`, top: `${pos.y}%`,
+            width: `${pos.w}%`, height: 'auto',
+            transform: 'translate(-50%,-50%)',
+            zIndex: def.layer,
+            mixBlendMode: 'multiply',
+            pointerEvents: 'none',
+          }}
+          onError={e => { e.currentTarget.style.display = 'none'; }}
+        />
+      );
+    }
+    const radius = def.shape === 'circle' ? '50%' : def.shape === 'wide' ? '6px' : '10px';
+    return (
+      <div
+        key={`${id}-m-${i}`}
+        className="byo-medallion"
+        style={{
+          left: `${pos.x}%`, top: `${pos.y}%`,
+          width: `${pos.w}%`,
+          aspectRatio: pos.ar || def.ar || '1 / 1',
+          backgroundImage: `url(${def.src})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          borderRadius: radius,
+          transform: `translate(-50%,-50%) rotate(${pos.rot || 0}deg)`,
+          zIndex: def.layer,
+        }}
+      />
+    );
+  });
+}
+
 /* ─────────────────────────────────────────────────────────────────
-   INGREDIENT CANVAS RENDERER (kept for external reference; canvas
-   redesigned to premium chip approach — no longer used in render)
+   LEGACY INGREDIENT CANVAS RENDERER (no longer used in render)
 ───────────────────────────────────────────────────────────────── */
 function renderIngredient(id, family, extra) {
   const def = INGREDIENT_DB[id];
@@ -449,67 +644,35 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
     <div className="byo-overlay" onClick={onClose}>
       <div className="byo-modal" onClick={e => e.stopPropagation()}>
 
-        {/* ── Premium Visual Canvas ──────────────────────────── */}
+        {/* ── Live Build Canvas ──────────────────────────────── */}
         <div className="byo-canvas">
-          {/* Ambient gold glow */}
-          <div className="byo-canvas-glow" />
-
-          {/* Orbital ring + orbiting dots (shown once a base is picked) */}
-          {selectedBase && <div className="byo-orb-ring" />}
-          {selectedBase && activeIngredients.length > 0 && (
-            <>
-              <div className="byo-orb-dot byo-orb-dot-a" />
-              <div className="byo-orb-dot byo-orb-dot-b" />
-            </>
+          {/* Base image fills the canvas */}
+          {selectedBase ? (
+            <img
+              src={selectedBase.img}
+              alt={selectedBase.label}
+              className="byo-canvas-base"
+              onError={e => { e.currentTarget.style.opacity = '0.2'; }}
+            />
+          ) : (
+            <div className="byo-canvas-empty">
+              <span className="byo-canvas-empty-title">Build Your Own</span>
+              <span className="byo-canvas-empty-sub">Choose a base below ↓</span>
+            </div>
           )}
 
-          {/* Circular base image */}
-          <div className={`byo-base-circle${selectedBase ? ' byo-base-circle--active' : ''}`}>
-            {selectedBase ? (
-              <img
-                src={selectedBase.img}
-                alt={selectedBase.label}
-                className="byo-base-circle-img"
-                onError={e => { e.currentTarget.style.opacity = '0'; }}
-              />
-            ) : (
-              <div className="byo-base-circle-placeholder">
-                <span className="byo-base-circle-icon">🍞</span>
-                <span className="byo-base-circle-hint">Choose base</span>
-              </div>
-            )}
-          </div>
+          {/* Ingredient medallions stacked on the bread */}
+          {selectedBase && [...activeIngredients]
+            .sort((a, b) => (ING_MEDALLION_DB[a]?.layer || 5) - (ING_MEDALLION_DB[b]?.layer || 5))
+            .map(id => renderMedallion(id, family))
+          }
 
-          {/* Base label at bottom-center */}
+          {/* Base info badge */}
           {selectedBase && (
-            <div className="byo-base-label">
-              <span className="byo-base-label-name">{selectedBase.label}</span>
-              <span className="byo-base-label-price">from ${selectedBase.price.toFixed(2)}</span>
+            <div className="byo-canvas-badge">
+              <span className="byo-canvas-base-name">{selectedBase.label}</span>
+              <span className="byo-canvas-price">from ${selectedBase.price.toFixed(2)}</span>
             </div>
-          )}
-
-          {/* Ingredient chips — up to 6, positioned left/right of circle */}
-          {selectedBase && activeIngredients.slice(0, 6).map((id, i) => {
-            const info = BYO_CHIP_INFO[id] || { emoji: '✓', label: id };
-            return (
-              <div key={id} className={`byo-ing-chip byo-ing-chip-${i}`}>
-                <span>{info.emoji}</span>
-                <span>{info.label}</span>
-              </div>
-            );
-          })}
-          {selectedBase && activeIngredients.length > 6 && (
-            <div className="byo-ing-chip byo-ing-chip-more">
-              +{activeIngredients.length - 6}
-            </div>
-          )}
-
-          {/* Sparkle glints */}
-          {selectedBase && activeIngredients.length > 0 && (
-            <>
-              <span className="byo-glint byo-glint-1">✦</span>
-              <span className="byo-glint byo-glint-2">✦</span>
-            </>
           )}
 
           {/* Close button */}

@@ -35,192 +35,78 @@
 @media (min-width: 600px) { .byo-modal { border-radius: 20px; } }
 @keyframes byoSlideUp { from { transform: translateY(40px); opacity: 0; } }
 
-/* ── PREMIUM VISUAL CANVAS ───────────────────────────────────── */
+/* ── LIVE BUILD CANVAS ───────────────────────────────────────── */
 .byo-canvas {
   position: relative;
   width: 100%;
   height: 200px;
   flex-shrink: 0;
-  background: #0a0a0a;
+  background: #111;
   overflow: hidden;
 }
 @media (min-height: 700px) { .byo-canvas { height: 220px; } }
 @media (min-height: 800px) { .byo-canvas { height: 240px; } }
 
-/* Ambient glow behind the circle */
-.byo-canvas-glow {
+/* Full-canvas base bread/platter photo */
+.byo-canvas-base {
   position: absolute;
-  top: 44%;
-  left: 50%;
-  width: 220px;
-  height: 220px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(229,182,78,0.18) 0%, transparent 68%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Orbital ring that rotates CCW */
-.byo-orb-ring {
-  position: absolute;
-  top: 44%;
-  left: 50%;
-  width: 156px;
-  height: 156px;
-  border-radius: 50%;
-  border: 1px dashed rgba(229,182,78,0.28);
-  transform: translate(-50%, -50%);
-  animation: byoRingCCW 22s linear infinite;
-  pointer-events: none;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
   z-index: 1;
 }
-@keyframes byoRingCCW {
-  to { transform: translate(-50%, -50%) rotate(-360deg); }
-}
 
-/* Orbiting glow dots */
-.byo-orb-dot {
+/* Ingredient photo medallion — shaped crop with drop shadow */
+.byo-medallion {
   position: absolute;
-  top: calc(44% - 78px);
-  left: calc(50% - 3px);
-  width: 6px;
-  height: 6px;
-  background: rgba(229,182,78,0.75);
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(229,182,78,0.5);
-  transform-origin: 3px 78px;
   pointer-events: none;
-  z-index: 2;
+  background-repeat: no-repeat;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.6),
+    0 1px 4px rgba(0,0,0,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
+  animation: medalPop 0.34s cubic-bezier(.34,1.56,.64,1);
 }
-.byo-orb-dot-a { animation: byoOrbit 11s linear infinite; }
-.byo-orb-dot-b { animation: byoOrbit 17s linear infinite reverse; }
-@keyframes byoOrbit { to { transform: rotate(360deg); } }
+@keyframes medalPop {
+  from { opacity: 0; scale: 0.35; }
+  to   { opacity: 1; scale: 1;    }
+}
 
-/* Circular base image */
-.byo-base-circle {
+/* Canvas badge — base name / price */
+.byo-canvas-badge {
   position: absolute;
-  top: 44%;
-  left: 50%;
-  width: 110px;
-  height: 110px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid rgba(229,182,78,0.45);
-  box-shadow:
-    0 0 0 5px rgba(229,182,78,0.07),
-    0 0 24px rgba(229,182,78,0.2),
-    0 10px 22px rgba(0,0,0,0.55);
-  z-index: 5;
-  background: #1a1a1a;
-}
-.byo-base-circle--active {
-  border-color: rgba(229,182,78,0.65);
-  box-shadow:
-    0 0 0 6px rgba(229,182,78,0.1),
-    0 0 30px rgba(229,182,78,0.28),
-    0 12px 26px rgba(0,0,0,0.6);
-}
-.byo-base-circle-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  animation: byoCirclePulse 6s ease-in-out infinite;
-}
-@keyframes byoCirclePulse {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.06); }
-}
-.byo-base-circle-placeholder {
-  width: 100%;
-  height: 100%;
+  bottom: 0.7rem;
+  left: 0.75rem;
   display: flex;
   flex-direction: column;
+  gap: 0.06rem;
+  padding: 0.38rem 0.7rem;
+  background: rgba(0,0,0,0.68);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  z-index: 20;
+  pointer-events: none;
+}
+.byo-canvas-base-name { font-size: 0.88rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.byo-canvas-price     { font-size: 0.66rem; font-weight: 700; color: #E5B64E; }
+
+/* Empty state (no base selected) */
+.byo-canvas-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  height: 100%;
+  text-align: center;
 }
-.byo-base-circle-icon  { font-size: 1.8rem; line-height: 1; }
-.byo-base-circle-hint  { font-size: 0.5rem; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.04em; text-align: center; }
+.byo-canvas-empty-title { font-size: 1.35rem; font-weight: 800; color: rgba(255,255,255,0.82); }
+.byo-canvas-empty-sub   { font-size: 0.8rem;  color: rgba(255,255,255,0.38); }
 
-/* Base name label at bottom-center */
-.byo-base-label {
-  position: absolute;
-  bottom: 6%;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.05rem;
-  pointer-events: none;
-  z-index: 8;
-}
-.byo-base-label-name  { font-size: 0.72rem; font-weight: 800; color: #fff;     letter-spacing: 0.01em; white-space: nowrap; }
-.byo-base-label-price { font-size: 0.58rem; font-weight: 700; color: #E5B64E; }
-
-/* Ingredient chips — float left/right of the circle */
-.byo-ing-chip {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 0.28rem;
-  font-size: 0.59rem;
-  font-weight: 700;
-  color: #f0ede8;
-  padding: 0.22rem 0.52rem;
-  border-radius: 20px;
-  background: rgba(10,10,10,0.88);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(229,182,78,0.32);
-  white-space: nowrap;
-  letter-spacing: 0.025em;
-  z-index: 6;
-  max-width: 36%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  animation: byoChipIn 0.38s cubic-bezier(.34,1.56,.64,1) forwards;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
-@keyframes byoChipIn {
-  from { opacity: 0; transform: scale(0.55); }
-  to   { opacity: 1; transform: scale(1);    }
-}
-
-/* Chip positions — 3 slots on left, 3 on right */
-.byo-ing-chip-0 { top: 9%;   left: 2%;  animation-delay: 0s;    }
-.byo-ing-chip-1 { top: 9%;   right: 2%; animation-delay: 0.04s; }
-.byo-ing-chip-2 { top: 40%;  left: 1%;  animation-delay: 0.08s; }
-.byo-ing-chip-3 { top: 40%;  right: 1%; animation-delay: 0.08s; }
-.byo-ing-chip-4 { bottom: 17%; left: 2%;  animation-delay: 0.12s; }
-.byo-ing-chip-5 { bottom: 17%; right: 2%; animation-delay: 0.12s; }
-.byo-ing-chip-more {
-  bottom: 8%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  animation-delay: 0.16s;
-}
-
-/* Sparkle glints */
-.byo-glint {
-  position: absolute;
-  color: #E5B64E;
-  font-size: 0.62rem;
-  pointer-events: none;
-  z-index: 9;
-  animation: byoGlint 2.8s ease-in-out infinite;
-}
-.byo-glint-1 { top: 16%; left: 30%; animation-delay: 0s;    }
-.byo-glint-2 { top: 65%; right: 30%; animation-delay: 1.4s; }
-@keyframes byoGlint {
-  0%, 100% { opacity: 0.15; transform: scale(0.7); }
-  50%       { opacity: 1;    transform: scale(1.5); }
-}
-
-/* Close button — positioned absolutely, no wrapper needed */
+/* Close button */
 .byo-close-btn {
   position: absolute;
   top: 0.75rem;

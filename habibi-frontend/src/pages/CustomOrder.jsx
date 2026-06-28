@@ -114,94 +114,328 @@ const QTY_OPTS = {
 };
 
 /* ================================================================
-   CANVAS CHIP BUILDER — collects all active selections into chips
+   INGREDIENT MEDALLION DATABASE  (CustomOrder — full ingredient set)
+   shape: 'circle' | 'rect' | 'wide' | 'sauce'
+   pos[family]: [{x, y, w, rot?, ar?}]  (x/y/w in % of canvas)
    ================================================================ */
-function getActiveChips(cfg) {
-  const chips = [];
-  if (cfg.cheese.type && cfg.cheese.type !== 'none') {
-    const c = CHEESE_OPTS.find(o => o.id === cfg.cheese.type);
-    if (c) chips.push({ key: 'cheese', emoji: c.emoji, label: c.label });
-  }
-  Object.keys(cfg.vegetables).forEach(id => {
-    const v = VEG_OPTS.find(o => o.id === id);
-    if (v) chips.push({ key: id, emoji: v.emoji, label: v.label });
+const CO_ING_DB = {
+  /* ── Proteins ──────────────────────────────────────────────── */
+  chicken: {
+    src: '/images/byo/ing/chicken.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:34,y:54,w:15},{x:57,y:53,w:15}], standard:[{x:48,y:53,w:19}],
+      compact:[{x:48,y:55,w:16}], wrap:[{x:46,y:53,w:17}],
+      platter:[{x:62,y:53,w:19}], familyTray:[{x:55,y:52,w:15},{x:67,y:53,w:15}],
+    }
+  },
+  'lamb-gyro': {
+    src: '/images/byo/ing/lamb-gyro.png', layer: 4, shape: 'rect', ar:'3/2',
+    pos: {
+      hero:[{x:33,y:53,w:16,rot:-8},{x:55,y:52,w:16,rot:6}], standard:[{x:47,y:52,w:22,rot:-4}],
+      compact:[{x:47,y:54,w:19,rot:-3}], wrap:[{x:45,y:52,w:20,rot:-3}],
+      platter:[{x:61,y:52,w:22}], familyTray:[{x:55,y:52,w:18,rot:-5},{x:67,y:52,w:18,rot:5}],
+    }
+  },
+  mix: {
+    src: '/images/byo/ing/mix.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:34,y:54,w:15},{x:57,y:53,w:15}], standard:[{x:48,y:53,w:19}],
+      compact:[{x:48,y:55,w:16}], wrap:[{x:46,y:53,w:17}],
+      platter:[{x:62,y:53,w:19}], familyTray:[{x:55,y:52,w:15},{x:67,y:53,w:15}],
+    }
+  },
+  hotdog: {
+    src: '/images/byo/ing/hotdog.jpg', layer: 5, shape: 'rect', ar:'5/2',
+    pos: {
+      hero:[{x:50,y:52,w:48}], standard:[{x:48,y:53,w:30}],
+      compact:[{x:48,y:55,w:26}], wrap:[{x:47,y:52,w:24,rot:78}],
+      platter:[{x:63,y:52,w:28}], familyTray:[{x:57,y:52,w:24},{x:71,y:52,w:24}],
+    }
+  },
+  falafel: {
+    src: '/images/byo/ing/falafel.png', layer: 5, shape: 'circle',
+    pos: {
+      hero:[{x:30,y:52,w:9},{x:44,y:51,w:9},{x:58,y:52,w:9}], standard:[{x:40,y:52,w:11},{x:56,y:52,w:11}],
+      compact:[{x:42,y:54,w:10},{x:55,y:54,w:10}], wrap:[{x:41,y:52,w:10},{x:54,y:52,w:10}],
+      platter:[{x:58,y:52,w:10},{x:68,y:52,w:10},{x:76,y:52,w:10}], familyTray:[{x:53,y:52,w:9},{x:62,y:52,w:9},{x:71,y:52,w:9}],
+    }
+  },
+  'egg-fried': {
+    src: '/images/byo/ing/egg-fried.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:36,y:53,w:13},{x:56,y:53,w:13}], standard:[{x:48,y:53,w:16}],
+      compact:[{x:48,y:55,w:14}], wrap:[{x:46,y:53,w:15}],
+      platter:[{x:62,y:53,w:16}], familyTray:[{x:56,y:53,w:14},{x:68,y:53,w:14}],
+    }
+  },
+  'egg-scrambled': {
+    src: '/images/byo/ing/egg-scrambled.jpg', layer: 4, shape: 'wide', ar:'3/2',
+    pos: {
+      hero:[{x:38,y:53,w:18},{x:58,y:53,w:18}], standard:[{x:48,y:53,w:22}],
+      compact:[{x:48,y:55,w:18}], wrap:[{x:46,y:53,w:20}],
+      platter:[{x:62,y:53,w:22}], familyTray:[{x:57,y:53,w:18},{x:69,y:53,w:18}],
+    }
+  },
+  bacon: {
+    src: '/images/byo/ing/bacon.jpg', layer: 4, shape: 'rect', ar:'4/1',
+    pos: {
+      hero:[{x:50,y:52,w:44,rot:2},{x:50,y:56,w:44,rot:-2}], standard:[{x:48,y:52,w:28,rot:2}],
+      compact:[{x:48,y:54,w:24,rot:2}], wrap:[{x:46,y:52,w:26,rot:2}],
+      platter:[{x:62,y:52,w:26}], familyTray:[{x:58,y:52,w:22,rot:2},{x:70,y:52,w:22,rot:-2}],
+    }
+  },
+  'hot-sausage': {
+    src: '/images/byo/ing/hot-sausage.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:33,y:53,w:14},{x:55,y:53,w:14}], standard:[{x:48,y:53,w:17}],
+      compact:[{x:48,y:55,w:14}], wrap:[{x:46,y:53,w:16}],
+      platter:[{x:62,y:53,w:17}], familyTray:[{x:56,y:53,w:14},{x:68,y:53,w:14}],
+    }
+  },
+  'italian-sausage': {
+    src: '/images/byo/ing/italian-sausage.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:33,y:53,w:14},{x:55,y:53,w:14}], standard:[{x:48,y:53,w:18}],
+      compact:[{x:48,y:55,w:14}], wrap:[{x:46,y:53,w:16}],
+      platter:[{x:62,y:53,w:18}], familyTray:[{x:56,y:53,w:14},{x:68,y:53,w:14}],
+    }
+  },
+  turkey: {
+    src: '/images/byo/ing/turkey.jpg', layer: 4, shape: 'rect', ar:'3/2',
+    pos: {
+      hero:[{x:34,y:53,w:16,rot:-5},{x:56,y:52,w:16,rot:4}], standard:[{x:47,y:52,w:22,rot:-3}],
+      compact:[{x:47,y:54,w:18}], wrap:[{x:45,y:52,w:20}],
+      platter:[{x:61,y:52,w:22}], familyTray:[{x:55,y:52,w:18},{x:67,y:52,w:18}],
+    }
+  },
+  'chicken-kabab': {
+    src: '/images/byo/ing/chicken-kabab.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:30,y:52,w:10},{x:47,y:52,w:10},{x:63,y:52,w:10}], standard:[{x:40,y:52,w:13},{x:56,y:52,w:13}],
+      compact:[{x:42,y:54,w:11},{x:56,y:54,w:11}], wrap:[{x:41,y:52,w:12},{x:55,y:52,w:12}],
+      platter:[{x:59,y:52,w:12},{x:69,y:52,w:12}], familyTray:[{x:54,y:52,w:10},{x:63,y:52,w:10},{x:72,y:52,w:10}],
+    }
+  },
+  'beef-kabab': {
+    src: '/images/byo/ing/beef-kabab.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:30,y:52,w:10},{x:47,y:52,w:10},{x:63,y:52,w:10}], standard:[{x:40,y:52,w:13},{x:56,y:52,w:13}],
+      compact:[{x:42,y:54,w:11},{x:56,y:54,w:11}], wrap:[{x:41,y:52,w:12},{x:55,y:52,w:12}],
+      platter:[{x:59,y:52,w:12},{x:69,y:52,w:12}], familyTray:[{x:54,y:52,w:10},{x:63,y:52,w:10},{x:72,y:52,w:10}],
+    }
+  },
+  'philly-steak': {
+    src: '/images/byo/ing/philly-steak.jpg', layer: 4, shape: 'rect', ar:'3/2',
+    pos: {
+      hero:[{x:34,y:53,w:17,rot:-6},{x:57,y:52,w:17,rot:5}], standard:[{x:47,y:52,w:22,rot:-4}],
+      compact:[{x:47,y:54,w:19}], wrap:[{x:45,y:52,w:20}],
+      platter:[{x:61,y:52,w:22}], familyTray:[{x:55,y:52,w:18,rot:-4},{x:67,y:52,w:18,rot:4}],
+    }
+  },
+  'fish-fillet': {
+    src: '/images/byo/ing/fish-fillet.jpg', layer: 4, shape: 'rect', ar:'4/2',
+    pos: {
+      hero:[{x:50,y:52,w:36}], standard:[{x:48,y:52,w:28}],
+      compact:[{x:48,y:54,w:24}], wrap:[{x:46,y:52,w:26}],
+      platter:[{x:62,y:52,w:28}], familyTray:[{x:57,y:52,w:24}],
+    }
+  },
+  shrimp: {
+    src: '/images/byo/ing/shrimp.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:29,y:52,w:9},{x:43,y:51,w:9},{x:58,y:52,w:9},{x:71,y:52,w:9}], standard:[{x:39,y:52,w:11},{x:54,y:52,w:11}],
+      compact:[{x:41,y:54,w:10},{x:55,y:54,w:10}], wrap:[{x:40,y:52,w:10},{x:54,y:52,w:10}],
+      platter:[{x:57,y:52,w:11},{x:66,y:52,w:11},{x:75,y:52,w:11}], familyTray:[{x:52,y:52,w:9},{x:61,y:52,w:9},{x:70,y:52,w:9}],
+    }
+  },
+  tuna: {
+    src: '/images/byo/ing/tuna.jpg', layer: 4, shape: 'wide', ar:'3/2',
+    pos: {
+      hero:[{x:50,y:53,w:32}], standard:[{x:48,y:53,w:24}],
+      compact:[{x:47,y:55,w:20}], wrap:[{x:46,y:53,w:22}],
+      platter:[{x:62,y:53,w:24}], familyTray:[{x:57,y:53,w:20},{x:70,y:53,w:20}],
+    }
+  },
+  'beef-burger': {
+    src: '/images/byo/ing/beef-burger.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:50,y:53,w:22}], standard:[{x:48,y:52,w:22}],
+      compact:[{x:47,y:54,w:20}], wrap:[{x:46,y:52,w:20}],
+      platter:[{x:62,y:52,w:22}], familyTray:[{x:56,y:52,w:20},{x:70,y:52,w:20}],
+    }
+  },
+  'chicken-burger': {
+    src: '/images/byo/ing/chicken-burger.jpg', layer: 4, shape: 'circle',
+    pos: {
+      hero:[{x:50,y:53,w:22}], standard:[{x:48,y:52,w:22}],
+      compact:[{x:47,y:54,w:20}], wrap:[{x:46,y:52,w:20}],
+      platter:[{x:62,y:52,w:22}], familyTray:[{x:56,y:52,w:20},{x:70,y:52,w:20}],
+    }
+  },
+  /* ── Vegetables ─────────────────────────────────────────────── */
+  lettuce: {
+    src: '/images/byo/ing/lettuce.jpg', layer: 3, shape: 'wide', ar:'6/2',
+    pos: {
+      hero:[{x:50,y:58,w:54}], standard:[{x:49,y:57,w:36}],
+      compact:[{x:48,y:58,w:30}], wrap:[{x:48,y:56,w:34}],
+      platter:[{x:64,y:56,w:28}], familyTray:[{x:60,y:56,w:26},{x:74,y:56,w:26}],
+    }
+  },
+  onions: {
+    src: '/images/byo/ing/onion.jpg', layer: 7, shape: 'circle',
+    pos: {
+      hero:[{x:33,y:47,w:7},{x:47,y:47,w:7},{x:61,y:47,w:7}], standard:[{x:42,y:47,w:9},{x:56,y:47,w:9}],
+      compact:[{x:43,y:49,w:8},{x:55,y:49,w:8}], wrap:[{x:42,y:47,w:8},{x:54,y:47,w:8}],
+      platter:[{x:59,y:47,w:8},{x:68,y:47,w:8}], familyTray:[{x:54,y:47,w:7},{x:63,y:47,w:7},{x:72,y:47,w:7}],
+    }
+  },
+  peppers: {
+    src: '/images/byo/ing/pepper.jpg', layer: 7, shape: 'circle',
+    pos: {
+      hero:[{x:30,y:47,w:7,rot:-20},{x:47,y:46,w:7,rot:15},{x:63,y:47,w:7,rot:-10}], standard:[{x:41,y:46,w:9,rot:-15},{x:56,y:46,w:9,rot:10}],
+      compact:[{x:43,y:48,w:8,rot:-10},{x:55,y:48,w:8,rot:8}], wrap:[{x:42,y:46,w:8,rot:-12},{x:54,y:46,w:8,rot:8}],
+      platter:[{x:58,y:46,w:8},{x:67,y:46,w:8}], familyTray:[{x:53,y:46,w:7},{x:62,y:46,w:7},{x:71,y:46,w:7}],
+    }
+  },
+  cucumbers: {
+    src: '/images/byo/ing/cucumber.jpg', layer: 6, shape: 'circle',
+    pos: {
+      hero:[{x:30,y:48,w:8},{x:46,y:49,w:8},{x:62,y:48,w:8}], standard:[{x:41,y:48,w:10},{x:57,y:48,w:10}],
+      compact:[{x:42,y:50,w:9},{x:55,y:50,w:9}], wrap:[{x:41,y:48,w:9},{x:54,y:48,w:9}],
+      platter:[{x:59,y:48,w:9},{x:68,y:48,w:9}], familyTray:[{x:53,y:48,w:8},{x:62,y:48,w:8},{x:71,y:48,w:8}],
+    }
+  },
+  tomatoes: {
+    src: '/images/byo/ing/tomato.jpg', layer: 6, shape: 'circle',
+    pos: {
+      hero:[{x:27,y:49,w:8},{x:44,y:49,w:8},{x:62,y:49,w:8}], standard:[{x:41,y:49,w:10},{x:57,y:50,w:10}],
+      compact:[{x:42,y:51,w:9},{x:55,y:51,w:9}], wrap:[{x:41,y:49,w:9},{x:54,y:49,w:9}],
+      platter:[{x:59,y:49,w:9},{x:68,y:49,w:9}], familyTray:[{x:53,y:49,w:8},{x:62,y:49,w:8},{x:71,y:49,w:8}],
+    }
+  },
+  rice: {
+    src: '/images/byo/ing/rice.jpg', layer: 3, shape: 'wide', ar:'4/2',
+    pos: {
+      hero:[{x:50,y:60,w:44}], standard:[{x:49,y:59,w:32}],
+      compact:[{x:48,y:60,w:26}], wrap:[{x:48,y:58,w:30}],
+      platter:[{x:63,y:58,w:28}], familyTray:[{x:59,y:58,w:26},{x:73,y:58,w:26}],
+    }
+  },
+  /* ── Cheese ─────────────────────────────────────────────────── */
+  american: {
+    src: '/images/byo/ing/american-cheese.jpg', layer: 3, shape: 'rect', ar:'1/1',
+    pos: {
+      hero:[{x:50,y:57,w:36}], standard:[{x:49,y:56,w:26}],
+      compact:[{x:48,y:57,w:22}], wrap:[{x:48,y:55,w:24}],
+      platter:[{x:63,y:55,w:22}], familyTray:[{x:59,y:55,w:20},{x:72,y:55,w:20}],
+    }
+  },
+  cream: {
+    src: '/images/byo/ing/cream-cheese.jpg', layer: 2, shape: 'wide', ar:'4/1',
+    pos: {
+      hero:[{x:50,y:61,w:46}], standard:[{x:49,y:60,w:30}],
+      compact:[{x:48,y:61,w:24}], wrap:[{x:48,y:59,w:28}],
+      platter:[{x:63,y:59,w:24}], familyTray:[{x:59,y:59,w:22},{x:73,y:59,w:22}],
+    }
+  },
+  butter: {
+    src: '/images/byo/ing/butter.jpg', layer: 2, shape: 'rect', ar:'2/1',
+    pos: {
+      hero:[{x:40,y:60,w:16},{x:62,y:60,w:16}], standard:[{x:49,y:59,w:18}],
+      compact:[{x:48,y:60,w:14}], wrap:[{x:48,y:58,w:16}],
+      platter:[{x:63,y:58,w:16}], familyTray:[{x:59,y:58,w:14},{x:72,y:58,w:14}],
+    }
+  },
+  /* ── Sauces — use drizzle images with multiply, or color gradient ── */
+  white: {
+    src: '/images/byo/ing/sauce-white.png', layer: 9, shape: 'sauce',
+    pos: { hero:[{x:50,y:51,w:54}], standard:[{x:49,y:51,w:36}], compact:[{x:48,y:53,w:30}], wrap:[{x:48,y:51,w:34}], platter:[{x:63,y:51,w:28}], familyTray:[{x:60,y:51,w:26}] }
+  },
+  hot: {
+    src: '/images/byo/ing/sauce-hot.png', layer: 9, shape: 'sauce',
+    pos: { hero:[{x:50,y:51,w:54}], standard:[{x:49,y:51,w:36}], compact:[{x:48,y:53,w:30}], wrap:[{x:48,y:51,w:34}], platter:[{x:63,y:51,w:28}], familyTray:[{x:60,y:51,w:26}] }
+  },
+  /* Other sauces shown as small flavor circles */
+  ketchup:  { src: '/images/byo/ing/tomato.jpg',      layer: 9, shape: 'circle', pos: { hero:[{x:34,y:50,w:7},{x:52,y:50,w:7},{x:68,y:50,w:7}], standard:[{x:41,y:50,w:9},{x:57,y:50,w:9}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:8},{x:55,y:50,w:8}], platter:[{x:59,y:50,w:8},{x:68,y:50,w:8}], familyTray:[{x:53,y:50,w:7},{x:62,y:50,w:7},{x:71,y:50,w:7}] } },
+  mustard:  { src: '/images/byo/ing/egg-fried.jpg',   layer: 9, shape: 'circle', pos: { hero:[{x:34,y:50,w:7},{x:52,y:50,w:7}], standard:[{x:41,y:50,w:9},{x:57,y:50,w:9}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:8},{x:55,y:50,w:8}], platter:[{x:59,y:50,w:8},{x:68,y:50,w:8}], familyTray:[{x:53,y:50,w:7},{x:62,y:50,w:7}] } },
+  bbq:      { src: '/images/byo/ing/bacon.jpg',        layer: 9, shape: 'circle', pos: { hero:[{x:36,y:50,w:7},{x:54,y:50,w:7}], standard:[{x:42,y:50,w:9},{x:56,y:50,w:9}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:8},{x:55,y:50,w:8}], platter:[{x:59,y:50,w:8},{x:68,y:50,w:8}], familyTray:[{x:54,y:50,w:7},{x:63,y:50,w:7}] } },
+  green:    { src: '/images/byo/ing/lettuce.jpg',      layer: 9, shape: 'circle', pos: { hero:[{x:36,y:50,w:8},{x:54,y:50,w:8}], standard:[{x:42,y:50,w:10},{x:56,y:50,w:10}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:9},{x:55,y:50,w:9}], platter:[{x:59,y:50,w:9},{x:68,y:50,w:9}], familyTray:[{x:54,y:50,w:7},{x:63,y:50,w:7}] } },
+  mayo:     { src: '/images/byo/ing/cream-cheese.jpg', layer: 9, shape: 'circle', pos: { hero:[{x:36,y:50,w:7},{x:54,y:50,w:7}], standard:[{x:42,y:50,w:9},{x:56,y:50,w:9}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:8},{x:55,y:50,w:8}], platter:[{x:59,y:50,w:8},{x:68,y:50,w:8}], familyTray:[{x:54,y:50,w:7},{x:63,y:50,w:7}] } },
+  blue:     { src: '/images/byo/ing/american-cheese.jpg', layer: 9, shape: 'circle', pos: { hero:[{x:36,y:50,w:7},{x:54,y:50,w:7}], standard:[{x:42,y:50,w:9},{x:56,y:50,w:9}], compact:[{x:43,y:52,w:8},{x:55,y:52,w:8}], wrap:[{x:42,y:50,w:8},{x:55,y:50,w:8}], platter:[{x:59,y:50,w:8},{x:68,y:50,w:8}], familyTray:[{x:54,y:50,w:7},{x:63,y:50,w:7}] } },
+};
+
+function coRenderMedallion(id, family) {
+  const def = CO_ING_DB[id];
+  if (!def) return null;
+  const positions = def.pos[family] || def.pos.standard || def.pos.compact;
+  if (!positions) return null;
+
+  return positions.map((pos, i) => {
+    if (def.shape === 'sauce') {
+      return (
+        <img key={`${id}-s-${i}`} src={def.src} alt=""
+          style={{
+            position: 'absolute', left:`${pos.x}%`, top:`${pos.y}%`,
+            width:`${pos.w}%`, height:'auto',
+            transform:'translate(-50%,-50%)',
+            zIndex: def.layer, mixBlendMode:'multiply', pointerEvents:'none',
+          }}
+          onError={e => { e.currentTarget.style.display='none'; }}
+        />
+      );
+    }
+    const radius = def.shape === 'circle' ? '50%' : def.shape === 'wide' ? '6px' : '10px';
+    return (
+      <div key={`${id}-m-${i}`} className="co-medallion"
+        style={{
+          left:`${pos.x}%`, top:`${pos.y}%`,
+          width:`${pos.w}%`,
+          aspectRatio: pos.ar || def.ar || '1 / 1',
+          backgroundImage:`url(${def.src})`,
+          backgroundSize:'cover', backgroundPosition:'center',
+          borderRadius: radius,
+          transform:`translate(-50%,-50%) rotate(${pos.rot||0}deg)`,
+          zIndex: def.layer,
+        }}
+      />
+    );
   });
-  Object.keys(cfg.proteins).forEach(id => {
-    const p = PROTEIN_OPTS.find(o => o.id === id);
-    if (p) chips.push({ key: id, emoji: p.emoji, label: p.label });
-  });
-  Object.keys(cfg.sauces).forEach(id => {
-    const s = SAUCE_OPTS.find(o => o.id === id);
-    if (s) chips.push({ key: id, emoji: s.emoji, label: s.label });
-  });
-  return chips;
 }
 
-/* ── Premium canvas: circular base image + floating ingredient chips ── */
+/* ── Live build canvas: base photo + ingredient medallions ────── */
 function IngCanvas({ base, cfg }) {
-  const chips = getActiveChips(cfg);
-  const visible = chips.slice(0, 8);
-  const extra   = chips.length - 8;
+  const family = base?.family || 'standard';
+
+  /* Collect all selected ingredient IDs */
+  const activeIds = [];
+  if (cfg.cheese.type && cfg.cheese.type !== 'none') activeIds.push(cfg.cheese.type);
+  Object.keys(cfg.vegetables).forEach(id => activeIds.push(id));
+  Object.keys(cfg.proteins).forEach(id => activeIds.push(id));
+  Object.keys(cfg.sauces).forEach(id => activeIds.push(id));
 
   return (
     <div className="co-canvas">
-      {/* Ambient glow */}
-      <div className="co-canvas-glow" />
-
-      {/* Orbital ring + dots */}
-      {base && <div className="co-orb-ring" />}
-      {base && chips.length > 0 && (
-        <>
-          <div className="co-orb-dot co-orb-dot-a" />
-          <div className="co-orb-dot co-orb-dot-b" />
-          <div className="co-orb-dot co-orb-dot-c" />
-        </>
+      {base ? (
+        <img src={base.img} alt={base.label} className="co-canvas-base"
+          onError={e => { e.currentTarget.style.opacity='0.2'; }}
+        />
+      ) : (
+        <div className="co-canvas-empty">
+          <img src="/images/byo/customize-icon.jpg" alt="" className="co-canvas-icon" />
+          <span>Choose a base to preview your order</span>
+        </div>
       )}
 
-      {/* Circular base image */}
-      <div className={`co-circle${base ? ' co-circle--active' : ''}`}>
-        {base ? (
-          <img src={base.img} alt={base.label} className="co-circle-img"
-            onError={e => { e.currentTarget.style.opacity = '0'; }}
-          />
-        ) : (
-          <div className="co-circle-placeholder">
-            <img src="/images/byo/customize-icon.jpg" alt="" className="co-circle-icon-img" />
-          </div>
-        )}
-      </div>
+      {base && [...activeIds]
+        .sort((a, b) => (CO_ING_DB[a]?.layer || 5) - (CO_ING_DB[b]?.layer || 5))
+        .map(id => coRenderMedallion(id, family))
+      }
 
-      {/* Base label */}
       {base && (
-        <div className="co-base-label">
-          <span className="co-base-label-name">{base.label}</span>
-          <span className="co-base-label-price">from ${base.price.toFixed(2)}</span>
+        <div className="co-canvas-tag">
+          <span>{base.label}</span>
+          <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
         </div>
-      )}
-
-      {/* Empty state hint */}
-      {!base && (
-        <div className="co-canvas-hint">Choose a base above to preview your build</div>
-      )}
-
-      {/* Ingredient chips — up to 8 positions around the circle */}
-      {base && visible.map((chip, i) => (
-        <div key={chip.key} className={`co-chip co-chip-${i}`}>
-          <span>{chip.emoji}</span>
-          <span>{chip.label}</span>
-        </div>
-      ))}
-      {base && extra > 0 && (
-        <div className="co-chip co-chip-more">+{extra} more</div>
-      )}
-
-      {/* Sparkle glints */}
-      {base && chips.length > 0 && (
-        <>
-          <span className="co-glint co-glint-1">✦</span>
-          <span className="co-glint co-glint-2">✦</span>
-          <span className="co-glint co-glint-3">✦</span>
-        </>
       )}
     </div>
   );
