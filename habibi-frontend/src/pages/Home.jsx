@@ -441,18 +441,18 @@ const Home = () => {
           <div className="cust-strip-left">
             <div className="cust-strip-eyebrow">
               <span className="cust-strip-eyebrow-dot" />
-              BUILD IT YOUR WAY
+              PERSONALIZE YOUR MEAL
             </div>
             <h3 className="cust-strip-title">
-              Customize<br />
-              <span className="cust-strip-title-accent">Your Order</span>
+              Build Your Own<br />
+              <span className="cust-strip-title-accent">Habibi Bowl</span>
             </h3>
             <p className="cust-strip-desc">
-              19 halal proteins. 8 sauces. Fresh veggies &amp; cheese.
-              Every ingredient, every quantity, <strong>exactly how you want it</strong>.
+              Layer your perfect bowl — fresh base, halal protein, bold toppings &amp; signature sauces.
+              Over <strong>100+</strong> combinations await.
             </p>
             <div className="cust-steps">
-              {['Base', 'Cheese', 'Veggies', 'Protein', 'Sauces', 'Extras', 'Drink'].map((step, i) => (
+              {['Base', 'Protein', 'Toppings', 'Sauce'].map((step, i) => (
                 <div key={step} className="cust-step">
                   <div className="cust-step-num">{i + 1}</div>
                   <span className="cust-step-label">{step}</span>
@@ -460,7 +460,7 @@ const Home = () => {
               ))}
             </div>
             <Link to="/customize" className="cust-strip-btn">
-              <span>Customize Now</span>
+              <span>Start Building</span>
               <span className="cust-strip-btn-arrow"><ChevronRight size={18} /></span>
             </Link>
           </div>
