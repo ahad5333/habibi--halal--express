@@ -78,7 +78,7 @@ const Payment = () => {
     finally { setRemovingId(null); }
   };
 
-  const [step, setStep] = useState(1); // 1: lookup, 2: pay, 3: done
+  const [step, setStep] = useState(2); // 1: lookup, 2: pay, 3: done
 
   /* Step 1 — Order lookup */
   const [orderRef, setOrderRef] = useState('');
@@ -322,8 +322,7 @@ const Payment = () => {
       <div className="pay-steps-bar">
         <div className="container pay-steps">
           {[
-            { n: 1, label: 'Find Order' },
-            { n: 2, label: 'Enter Payment' },
+            { n: 2, label: 'Payment Details' },
             { n: 3, label: 'Confirmation' },
           ].map((s, i, arr) => (
             <React.Fragment key={s.n}>
@@ -437,12 +436,12 @@ const Payment = () => {
                       <input className="pay-input" placeholder="Any additional details..." value={payNote} onChange={e => setPayNote(e.target.value)} />
                     </div>
 
+                    <p className="pay-hint">
+                      Have an order reference? <button type="button" className="pay-link" onClick={() => setStep(1)}>Find your order →</button>
+                    </p>
                     <div className="pay-actions">
-                      <button type="button" className="btn btn-outline" onClick={() => { setStep(1); setFoundOrder(null); }}>
-                        ← Back
-                      </button>
                       <button type="submit" className="btn btn-primary pay-pay-btn" disabled={payLoading}>
-                        {payLoading ? 'Preparing…' : 'Continue to Card →'}
+                        {payLoading ? 'Preparing…' : 'Continue to Payment →'}
                       </button>
                     </div>
                   </form>
