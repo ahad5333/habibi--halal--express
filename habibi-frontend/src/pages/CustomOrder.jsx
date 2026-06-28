@@ -659,9 +659,10 @@ export default function CustomOrder() {
       if (item) drinksSubtotal += parseFloat(item.price || 0) * cnt;
     });
 
-    /* Main custom order item */
+    /* Main custom order item — unique id ensures every custom order
+       is its own cart line, even if base and toppings look identical */
     addItem({
-      _id: `custom-${Date.now()}`,
+      id: `custom-${cfg.base.id}-${Date.now()}`,
       name: `Custom ${cfg.base.label}`,
       price: Math.max(0, total - extrasSubtotal - drinksSubtotal),
       note: buildNote(),
