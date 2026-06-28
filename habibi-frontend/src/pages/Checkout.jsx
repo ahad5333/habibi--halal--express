@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
@@ -24,6 +24,12 @@ const ALT_PAYMENTS = [
 
 // Methods that go through an offline/modal flow
 const OFFLINE_METHODS = new Set(['cash', 'zelle', 'cashapp']);
+
+const PROMO_DEALS = [
+  { code: 'HABIBI10', emoji: '🎉', label: '10% off your order', desc: 'Min order $20', minOrder: 20 },
+  { code: 'WELCOME5', emoji: '👋', label: '$5 off — welcome deal', desc: 'New customers', minOrder: 0 },
+  { code: 'FREESHIP', emoji: '🚚', label: 'Free delivery', desc: 'Min order $30', minOrder: 30 },
+];
 // Methods served by PayPal SDK
 const PAYPAL_METHODS  = new Set(['paypal']);
 
@@ -57,6 +63,7 @@ const Checkout = () => {
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [pendingRemove, setPendingRemove]       = useState(null);
+  const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
   const [feeLoading, setFeeLoading]             = useState(false);
@@ -223,11 +230,13 @@ const Checkout = () => {
   }, [deliveryMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Coupon ────────────────────────────────────────────────────────────────
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponLoading(true); setCouponErr(''); setCouponMsg('');
+  const handleApplyCoupon = async (codeOverride) => {
+    const code = (codeOverride || couponCode).trim().toUpperCase();
+    if (!code) return;
+    if (codeOverride) setCouponCode(codeOverride);
+    setCouponLoading(true); setCouponErr(''); setCouponMsg(''); setCouponApplied(false); setCouponDiscount(0);
     try {
-      const res = await couponsAPI.validate(couponCode, subtotal, items);
+      const res = await couponsAPI.validate(code, subtotal, items);
       setCouponApplied(true);
       setCouponDiscount(res.discount || 0);
       setCouponMsg(res.message || 'Coupon applied!');
@@ -935,27 +944,75 @@ const Checkout = () => {
                     )}
                   </div>
 
-                  {/* Coupon */}
-                  <div className="coupon-row">
-                    <div className="coupon-input-wrap">
-                      <Tag size={13} className="coupon-icon" />
-                      <input
-                        type="text" className="coupon-input" placeholder="Coupon code"
-                        value={couponCode}
-                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
-                        disabled={couponApplied}
-                      />
-                    </div>
-                    <button
-                      className={`coupon-apply-btn${couponApplied ? ' applied' : ''}`}
-                      onClick={handleApplyCoupon}
-                      disabled={couponApplied || !couponCode.trim() || couponLoading}
-                    >
-                      {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
+                  {/* Coupon — collapsible offers panel */}
+                  <div className={`coupon-panel${showCouponPanel ? ' coupon-panel--open' : ''}${couponApplied ? ' coupon-panel--applied' : ''}`}>
+                    <button className="coupon-panel-hdr" onClick={() => setShowCouponPanel(v => !v)}>
+                      <div className="coupon-panel-hdr-left">
+                        <Tag size={15} className="coupon-panel-tag-icon" />
+                        <span className="coupon-panel-title">Offers &amp; Coupons</span>
+                        {couponApplied && (
+                          <span className="coupon-panel-saved">−${couponDiscount.toFixed(2)} saved</span>
+                        )}
+                      </div>
+                      <ChevronDown size={16} className={`coupon-panel-chevron${showCouponPanel ? ' open' : ''}`} />
                     </button>
+
+                    {showCouponPanel && (
+                      <div className="coupon-panel-body">
+                        {/* Quick-apply deals */}
+                        <div className="coupon-deals">
+                          {PROMO_DEALS.map(deal => {
+                            const eligible = subtotal >= deal.minOrder;
+                            const thisApplied = couponApplied && couponCode === deal.code;
+                            return (
+                              <div key={deal.code} className={`coupon-deal-card${!eligible ? ' coupon-deal-card--locked' : ''}${thisApplied ? ' coupon-deal-card--applied' : ''}`}>
+                                <span className="coupon-deal-emoji">{deal.emoji}</span>
+                                <div className="coupon-deal-info">
+                                  <p className="coupon-deal-label">{deal.label}</p>
+                                  <p className="coupon-deal-desc">
+                                    {deal.desc}
+                                    {!eligible && deal.minOrder > 0 && ` · add $${(deal.minOrder - subtotal).toFixed(2)} more`}
+                                  </p>
+                                </div>
+                                <button
+                                  className={`coupon-deal-apply${thisApplied ? ' applied' : ''}`}
+                                  disabled={!eligible || thisApplied || couponLoading}
+                                  onClick={() => handleApplyCoupon(deal.code)}
+                                >
+                                  {couponLoading && couponCode === deal.code ? '…' : thisApplied ? '✓' : 'Apply'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Manual code divider */}
+                        <div className="coupon-or-divider"><span>or enter a code</span></div>
+
+                        {/* Manual code input */}
+                        <div className="coupon-row">
+                          <div className="coupon-input-wrap">
+                            <Tag size={13} className="coupon-icon" />
+                            <input
+                              type="text" className="coupon-input" placeholder="Enter coupon code"
+                              value={couponCode}
+                              onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
+                              disabled={couponApplied}
+                            />
+                          </div>
+                          <button
+                            className={`coupon-apply-btn${couponApplied ? ' applied' : ''}`}
+                            onClick={() => handleApplyCoupon()}
+                            disabled={couponApplied || !couponCode.trim() || couponLoading}
+                          >
+                            {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
+                          </button>
+                        </div>
+                        {couponMsg && <p className="coupon-feedback coupon-feedback--ok">✓ {couponMsg}</p>}
+                        {couponErr && <p className="coupon-feedback coupon-feedback--err">⚠ {couponErr}</p>}
+                      </div>
+                    )}
                   </div>
-                  {couponMsg && <p style={{ fontSize: '0.75rem', color: '#34d399', margin: '-0.25rem 0 0.25rem' }}>✓ {couponMsg}</p>}
-                  {couponErr && <p style={{ fontSize: '0.75rem', color: '#f87171', margin: '-0.25rem 0 0.25rem' }}>⚠ {couponErr}</p>}
 
                   {/* Loyalty rewards redemption */}
                   {isLoggedIn && redeemablePts > 0 && (
