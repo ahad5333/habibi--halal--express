@@ -67,7 +67,10 @@ const Signup = () => {
     setAgreeTerms(false); setAgreeSms(false);
   }, []);
 
-  // Reset form when the page is restored from browser BFCache (back button)
+  // Reset form on mount (covers direct navigation back to this page)
+  useEffect(() => { resetForm(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Also reset when restored from BFCache (browser back on a cached page)
   useEffect(() => {
     const handler = (e) => { if (e.persisted) resetForm(); };
     window.addEventListener('pageshow', handler);
@@ -134,6 +137,7 @@ const Signup = () => {
 
     const billingAddr = `${billStreet}, ${billCity}, ${billState} ${billZip}`;
     const deliveryAddr = sameAsBilling ? billingAddr : `${delStreet}, ${delCity}, ${delState} ${delZip}`;
+    const submittedEmail = email; // capture before resetForm clears it
 
     setLoading(true);
     try {
@@ -149,8 +153,16 @@ const Signup = () => {
         delivery_address: deliveryAddr,
         delivery_preference: deliveryPref,
       });
-      // Account created + auto-logged-in — go straight to the destination
-      navigate(redirectTo !== '/' ? redirectTo : '/');
+
+      // If backend requires email verification (no auto-login token returned)
+      if (result?.requiresVerification || !result?.user) {
+        setVerifyEmail(submittedEmail);
+        resetForm();
+        setVerificationSent(true);
+      } else {
+        // Auto-logged-in — go straight to the destination
+        navigate(redirectTo !== '/' ? redirectTo : '/');
+      }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -161,15 +173,21 @@ const Signup = () => {
   if (verificationSent) {
     return (
       <div className="signup-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ maxWidth: 460, padding: '2.5rem', background: '#141414', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
-          <h2 style={{ color: '#E5B64E', fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.75rem' }}>Check your inbox</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            We sent a verification link to <strong style={{ color: '#fff' }}>{verifyEmail}</strong>.<br />
-            Click the link in that email to activate your account.
+        <div style={{ maxWidth: 480, padding: '2.5rem', background: '#141414', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📧</div>
+          <h2 style={{ color: '#F97316', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.6rem' }}>Account Created — Check Your Email</h2>
+          <p style={{ color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: '0.5rem' }}>
+            We sent a verification link to
           </p>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)' }}>Didn't get it? Check your spam folder, or{' '}
-            <button onClick={() => setVerificationSent(false)} style={{ background: 'none', border: 'none', color: '#E5B64E', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>try again</button>.
+          <p style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '1.25rem' }}>{verifyEmail}</p>
+          <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+            Click the link in that email to activate your account. Once verified, you can log in and start ordering.
+          </p>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)' }}>
+            Didn't receive it? Check your spam folder, or{' '}
+            <button onClick={() => setVerificationSent(false)} style={{ background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>
+              try again
+            </button>.
           </p>
         </div>
       </div>
