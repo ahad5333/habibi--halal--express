@@ -239,9 +239,9 @@ const Contact = () => {
             <div className="ct-sidebar-cards">
               <div className="ct-info-card urgent-info">
                 <p className="ct-info-badge">URGENT LINE</p>
-                <p className="ct-info-text">Active order issues? Call directly.</p>
-                <a href="tel:+17184000443" className="ct-info-phone">
-                  <Phone size={13} /> (718) 400-0443
+                <p className="ct-info-text">Active order issues? Use our urgent support page for the fastest response.</p>
+                <a href="/urgent" className="ct-info-link">
+                  <Mail size={13} /> habibihe.com/urgent
                 </a>
               </div>
               <div className="ct-info-card">

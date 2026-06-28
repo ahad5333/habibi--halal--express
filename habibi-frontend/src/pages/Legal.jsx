@@ -79,9 +79,7 @@ export default function Legal() {
             <a href="mailto:admin@habibihe.com" className="lh-footer-link">
               <Mail size={13} /> admin@habibihe.com
             </a>
-            <a href="tel:7184000443" className="lh-footer-link">
-              <Phone size={13} /> (718) 400-0443
-            </a>
+
             <a href="https://maps.google.com/?q=2974+Jerome+Ave+Bronx+NY" target="_blank" rel="noreferrer" className="lh-footer-link">
               <MapPin size={13} /> 2974 Jerome Ave, Bronx NY
             </a>

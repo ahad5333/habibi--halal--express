@@ -461,7 +461,7 @@ const Navbar = () => {
                       <Link
                         key={s.label}
                         to={s.path}
-                        className={`mobile-sub-link${s.highlight ? ' highlight' : ''}`}
+                        className={`mobile-sub-link${s.highlight ? ' highlight' : ''}${s.featured ? ' featured' : ''}`}
                         onClick={() => setMobileOpen(false)}
                       >
                         {s.label}

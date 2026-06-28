@@ -828,7 +828,6 @@ const Home = () => {
                 <h3 className="location-title">Bedford Park &amp; Jerome Ave</h3>
                 <p className="location-address">204 E Mosholu Pkwy S, Bronx, NY 10458</p>
                 <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
-                <p className="location-phone">(718) 367-7878</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
             </div>
@@ -842,7 +841,6 @@ const Home = () => {
                 <h3 className="location-title">Lehman College Area</h3>
                 <p className="location-address">250 Bedford Park Blvd W, Bronx, NY 10468</p>
                 <p className="location-hours">Mon–Sun: 7AM – 11PM</p>
-                <p className="location-phone">(718) 367-7879</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
             </div>
@@ -856,7 +854,6 @@ const Home = () => {
                 <h3 className="location-title">Bronx Science Area</h3>
                 <p className="location-address">75 W 205th St, Bronx, NY 10468</p>
                 <p className="location-hours">Mon–Fri: 6AM – 10PM</p>
-                <p className="location-phone">(718) 367-7880</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
             </div>
