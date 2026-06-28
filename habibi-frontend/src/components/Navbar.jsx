@@ -262,13 +262,18 @@ const Navbar = () => {
       {/* ── Top bar: logo + auth ── */}
       <div className="navbar-top">
         <div className="navbar-top-inner">
-          <Link to="/" className="navbar-logo">
-            <img
-              src="/images/logos/logo-full.jpg"
-              alt="Habibi Halal Express"
-              className="logo-img"
-            />
-          </Link>
+          <div className="navbar-logo-wrap">
+            <Link to="/" className="navbar-logo">
+              <img
+                src="/images/logos/logo-full.jpg"
+                alt="Habibi Halal Express"
+                className="logo-img"
+              />
+            </Link>
+            <Link to="/customize" className="navbar-customize-cta">
+              ✦ Customize Your Order
+            </Link>
+          </div>
 
           <img
             src="/images/logos/halal-certified-nav.jpg"
