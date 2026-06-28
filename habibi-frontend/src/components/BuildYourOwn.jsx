@@ -49,18 +49,24 @@ const INGREDIENT_DB = {
   /* ── PROTEINS ─────────────────────────────────────────────── */
 
   hotdog: {
-    img: '/images/byo/ing/hotdog.png',
+    img: '/images/byo/ing/hotdog.jpg',
     layer: 5, tile: false, blend: 'multiply',
-    /* Scale rules come from the family diagram:
-       Hero = full-length; Standard = ~60%; Compact = fits snugly;
-       Wrap = angled; Platter = 2 side-by-side; FamilyTray = 3 */
+    /*
+      Rules derived from the family diagram (WhatsApp image 2026-06-28):
+      - Hero:       full-length, horizontal — nearly spans the whole bread
+      - Standard:   ~55% width, horizontal — fits a round bun
+      - Compact:    ~44% width, horizontal, sits low in bun opening
+      - Wrap:       rotated 85° (nearly vertical) — rolled inside the wrap
+      - Platter:    horizontal, slight 8° tilt, medium size
+      - FamilyTray: full-size horizontal, large serving (one big frank)
+    */
     family: {
-      hero:       { x: 50, y: 52, scale: 0.82, rot: 0,   count: 1 },
-      standard:   { x: 50, y: 54, scale: 0.58, rot: 0,   count: 1 },
-      compact:    { x: 50, y: 57, scale: 0.50, rot: 0,   count: 1 },
-      wrap:       { x: 50, y: 52, scale: 0.52, rot: -22, count: 1 },
-      platter:    { x: 36, y: 52, scale: 0.54, rot: 0,   count: 2, sx: 28 },
-      familyTray: { x: 30, y: 52, scale: 0.44, rot: 0,   count: 3, sx: 20 },
+      hero:       { x: 50, y: 53, scale: 0.84, rot:  0,  count: 1 },
+      standard:   { x: 50, y: 54, scale: 0.56, rot:  0,  count: 1 },
+      compact:    { x: 50, y: 58, scale: 0.44, rot:  0,  count: 1 },
+      wrap:       { x: 50, y: 52, scale: 0.46, rot: 85,  count: 1 },
+      platter:    { x: 50, y: 52, scale: 0.60, rot:  8,  count: 1 },
+      familyTray: { x: 50, y: 52, scale: 0.76, rot:  0,  count: 1 },
     },
   },
 
