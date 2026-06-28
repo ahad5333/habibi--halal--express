@@ -742,6 +742,40 @@ export default function CustomOrder() {
               }
             </button>
           </div>
+
+          {/* ── Make it a meal nudge ── */}
+          {cfg.base &&
+           Object.keys(cfg.proteins).length > 0 &&
+           Object.keys(cfg.extras).length === 0 &&
+           Object.values(cfg.drinks).reduce((a, b) => a + b, 0) === 0 &&
+           (extras.length > 0 || drinks.length > 0) && (
+            <div className="co-meal-nudge">
+              <p className="co-meal-nudge-title">🍟 Make it a meal?</p>
+              <p className="co-meal-nudge-sub">Add a side or drink</p>
+              <div className="co-meal-nudge-chips">
+                {extras.slice(0, 2).map(item => {
+                  const id = String(item.id);
+                  return (
+                    <button key={id} className="co-meal-chip"
+                      onClick={() => setExtraCount(id, 1)}>
+                      + {item.name}
+                      <span className="co-meal-chip-price">${parseFloat(item.price).toFixed(2)}</span>
+                    </button>
+                  );
+                })}
+                {drinks.slice(0, 2).map(item => {
+                  const id = String(item.id);
+                  return (
+                    <button key={id} className="co-meal-chip co-meal-chip-drink"
+                      onClick={() => setDrinkCount(id, 1)}>
+                      + {item.name}
+                      <span className="co-meal-chip-price">${parseFloat(item.price).toFixed(2)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* ── Right: configuration groups ── */}

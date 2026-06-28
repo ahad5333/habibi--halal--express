@@ -271,6 +271,60 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Make it a meal nudge ────────────────────────────────────── */
+.co-meal-nudge {
+  background: linear-gradient(135deg, rgba(229,182,78,0.08) 0%, rgba(249,115,22,0.06) 100%);
+  border: 1px solid rgba(229,182,78,0.22);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: co-slide-in 0.22s ease;
+}
+.co-meal-nudge-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f1f1f1;
+  margin: 0;
+}
+.co-meal-nudge-sub {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+  margin: 0;
+}
+.co-meal-nudge-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.co-meal-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+.co-meal-chip:hover {
+  background: rgba(229,182,78,0.12);
+  border-color: rgba(229,182,78,0.4);
+}
+.co-meal-chip-drink { border-color: rgba(99,179,237,0.2); }
+.co-meal-chip-drink:hover { background: rgba(99,179,237,0.1); border-color: rgba(99,179,237,0.45); }
+.co-meal-chip-price {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #E5B64E;
+}
+
 /* ── Main groups column ──────────────────────────────────────── */
 .co-groups {
   flex: 1;
