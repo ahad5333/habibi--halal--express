@@ -113,6 +113,7 @@ const Menu = () => {
   const tabsRef    = useRef(null);
   const sectionRefs = useRef({});
   const [activeSidebarCat, setActiveSidebarCat] = useState('');
+  const [pendingScrollCat, setPendingScrollCat] = useState(null);
 
   const [ratingStats, setRatingStats] = useState(null);
 
@@ -148,16 +149,41 @@ const Menu = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // React to ?cat= query param — works both on first load and when already on the page
+  // React to ?cat= query param — set pending scroll; actual scroll fires once sections are rendered
   useEffect(() => {
     const cat = searchParams.get('cat');
     if (!cat || cat === 'all') return;
     if (loading) return; // re-fires when loading flips to false
     if (cat === 'byo') { setActiveCategory('byo'); return; }
     setActiveCategory('all');
-    setTimeout(() => handleCatClick(cat), 120);
+    setPendingScrollCat(cat);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), loading]);
+
+  // Fire the deferred scroll once categoryGroups (sections) are actually rendered
+  useEffect(() => {
+    if (!pendingScrollCat || categoryGroups.length === 0) return;
+    const catObj = CATEGORIES.find(c => c.value === pendingScrollCat);
+    const sectionKey = catObj?.match;
+    setPendingScrollCat(null);
+    if (!sectionKey) return;
+    const keyL = sectionKey.toLowerCase();
+    const doScroll = () => {
+      let el = sectionRefs.current[sectionKey];
+      if (!el) {
+        const entry = Object.entries(sectionRefs.current).find(([k]) =>
+          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL) || keyL.includes(k.toLowerCase())
+        );
+        if (entry) { el = entry[1]; setActiveSidebarCat(entry[0]); }
+      } else {
+        setActiveSidebarCat(sectionKey);
+      }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    // One rAF to ensure the DOM has committed the new sections
+    requestAnimationFrame(doScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingScrollCat, categoryGroups]);
 
   useEffect(() => {
     reviewsAPI.getApproved({ limit: 1 })
@@ -249,9 +275,9 @@ const Menu = () => {
 
     if (activeCategory !== 'all') {
       setActiveCategory('all');
-      setTimeout(doScroll, 80);
+      setPendingScrollCat(val); // let the sections-ready effect handle the scroll
     } else {
-      doScroll();
+      requestAnimationFrame(doScroll);
     }
 
     // Scroll the active tab into view — only when the track is actually
