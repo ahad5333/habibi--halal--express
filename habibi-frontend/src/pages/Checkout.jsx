@@ -111,7 +111,7 @@ const Checkout = () => {
       });
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch upsell items once on mount — 4 drinks, 4 juices, 4 salads (12 total, 4 visible at a time)
+  // Fetch upsell items once on mount — drinks, juices, sides, salads (up to 12)
   useEffect(() => {
     menuAPI.getAll()
       .then(data => {
@@ -120,18 +120,26 @@ const Checkout = () => {
         const getCat  = i => (i.category || '').toLowerCase();
 
         const drinks = all
-          .filter(i => getCat(i).includes('drink') && !getName(i).includes('juice') && !getName(i).includes('coffee') && !getName(i).includes('tea') && !getName(i).includes('chocolate'))
+          .filter(i => getCat(i).includes('drink') && !getName(i).includes('juice'))
           .slice(0, 4);
-
         const juices = all
           .filter(i => getCat(i).includes('drink') && getName(i).includes('juice'))
-          .slice(0, 4);
-
+          .slice(0, 3);
+        const sides = all
+          .filter(i => getCat(i).includes('side') || getCat(i).includes('appetizer') || getCat(i).includes('snack'))
+          .slice(0, 3);
         const salads = all
           .filter(i => getCat(i).includes('platter') && getName(i).includes('salad'))
-          .slice(0, 4);
+          .slice(0, 2);
 
-        setUpsellItems([...drinks, ...juices, ...salads]);
+        // Deduplicate by id and cap at 12
+        const seen = new Set();
+        const merged = [...drinks, ...juices, ...sides, ...salads].filter(i => {
+          if (seen.has(i.id)) return false;
+          seen.add(i.id); return true;
+        }).slice(0, 12);
+
+        setUpsellItems(merged);
       })
       .catch(() => {});
   }, []);
@@ -488,23 +496,28 @@ const Checkout = () => {
               )}
             </div>
 
-            {/* Upsell — "Add to your order" */}
+            {/* Upsell — "Complete Your Meal" */}
             {upsellItems.length > 0 && items.length > 0 && (
-              <div className="checkout-section">
+              <div className="checkout-section upsell-section">
                 <div className="upsell-header">
-                  <h2 className="checkout-section-title upsell-title">Add to Your Order</h2>
+                  <div className="upsell-header-left">
+                    <span className="upsell-fire">🔥</span>
+                    <h2 className="checkout-section-title upsell-title">Complete Your Meal</h2>
+                  </div>
                   <div className="upsell-arrows">
-                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: -el.offsetWidth, behavior: 'smooth' }); }}><ChevronLeft size={16} /></button>
-                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: el.offsetWidth, behavior: 'smooth' }); }}><ChevronRight size={16} /></button>
+                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: -200, behavior: 'smooth' }); }}><ChevronLeft size={16} /></button>
+                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: 200, behavior: 'smooth' }); }}><ChevronRight size={16} /></button>
                   </div>
                 </div>
                 <div className="upsell-clip">
-                <div className="upsell-track" ref={upsellRef}>
-                  {upsellItems.filter(u => !items.find(i => i.id === u.id)).map(u => {
-                    const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
-                    return (
-                      <div key={u.id} className="upsell-card">
-                        <div>
+                  <div className="upsell-track" ref={upsellRef}>
+                    {upsellItems.map(u => {
+                      const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
+                      const alreadyIn = !!items.find(i => i.id === u.id);
+                      const cat = (u.category || 'Add-on');
+                      return (
+                        <div key={u.id} className={`upsell-card${alreadyIn ? ' upsell-card--added' : ''}`}>
+                          <div className="upsell-cat-chip">{cat}</div>
                           <div className="upsell-img-wrap">
                             <img
                               src={imgSrc}
@@ -514,20 +527,18 @@ const Checkout = () => {
                             />
                           </div>
                           <p className="upsell-name">{u.name || u.title}</p>
-                        </div>
-                        <div>
                           <p className="upsell-price">${parseFloat(u.price || 0).toFixed(2)}</p>
                           <button
-                            className="upsell-add-btn"
-                            onClick={() => addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: u.category || 'Add-on', note: '', qty: 1 })}
+                            className={`upsell-add-btn${alreadyIn ? ' upsell-add-btn--added' : ''}`}
+                            disabled={alreadyIn}
+                            onClick={() => !alreadyIn && addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: cat, note: '', qty: 1 })}
                           >
-                            <Plus size={12} /> Add
+                            {alreadyIn ? '✓ Added' : <><Plus size={12} /> Add</>}
                           </button>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
