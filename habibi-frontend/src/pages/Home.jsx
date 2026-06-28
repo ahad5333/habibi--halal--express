@@ -481,7 +481,7 @@ const Home = () => {
             <span className="cust-glint cust-glint-3" aria-hidden="true">✦</span>
             <span className="cust-glint cust-glint-4" aria-hidden="true">✦</span>
             <div className="cust-img-crop">
-              <img src="/images/byo/customize-icon.jpg" alt="Customize Your Order" className="cust-strip-icon" />
+              <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="cust-strip-icon" />
             </div>
           </div>
 
