@@ -86,51 +86,106 @@
   }
 }
 
-/* Full-canvas base bread/platter photo */
+/* Full-canvas base photo — cover fills the frame dramatically */
 .co-canvas-base {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   z-index: 1;
 }
 
-/* Ingredient photo medallion — shaped crop with drop shadow */
-.co-medallion {
+/* Gradient fade — makes chip bar readable over any photo */
+.co-canvas-overlay {
   position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 72%;
+  background: linear-gradient(to top, rgba(4,4,4,0.96) 0%, rgba(4,4,4,0.52) 48%, transparent 100%);
   pointer-events: none;
-  background-repeat: no-repeat;
-  box-shadow:
-    0 4px 14px rgba(0,0,0,0.6),
-    0 1px 4px rgba(0,0,0,0.45),
-    inset 0 0 0 1px rgba(255,255,255,0.06);
-  animation: coMedalPop 0.34s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes coMedalPop {
-  from { opacity: 0; scale: 0.35; }
-  to   { opacity: 1; scale: 1;    }
+  z-index: 2;
 }
 
-/* Base name tag */
-.co-canvas-tag {
+/* Base name / price — above chip row */
+.co-canvas-info {
   position: absolute;
-  bottom: 0.6rem;
-  left: 0.6rem;
-  background: rgba(0,0,0,0.62);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 0.4rem 0.7rem;
+  bottom: 2.7rem; left: 0.75rem;
+  z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.05rem;
-  z-index: 20;
+  gap: 0.08rem;
   pointer-events: none;
 }
-.co-canvas-tag span:first-child { font-size: 0.85rem; font-weight: 800; color: #fff; }
-.co-canvas-tag-price { font-size: 0.68rem; color: #E5B64E; font-weight: 700; }
+.co-canvas-base-name { font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.co-canvas-tag-price  { font-size: 0.66rem; color: #E5B64E; font-weight: 700; }
+
+/* Hint when base selected but no ingredients */
+.co-canvas-hint {
+  position: absolute;
+  bottom: 0.7rem; left: 0; right: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.38);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Horizontal ingredient chip bar */
+.co-ing-bar {
+  position: absolute;
+  bottom: 0.55rem; left: 0.65rem; right: 0.65rem;
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 5;
+}
+.co-ing-bar::-webkit-scrollbar { display: none; }
+
+.co-ing-chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(8,8,8,0.84);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229,182,78,0.35);
+  border-radius: 20px;
+  padding: 0.18rem 0.5rem 0.18rem 0.18rem;
+  animation: coChipIn 0.32s cubic-bezier(.34,1.56,.64,1) both;
+  opacity: 0;
+}
+@keyframes coChipIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.78); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.co-ing-chip-thumb {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+.co-ing-chip-emoji {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(229,182,78,0.18);
+  border: 1.5px solid rgba(229,182,78,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.co-ing-chip span {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #f0ede8;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
 
 /* Empty state */
 .co-canvas-empty {

@@ -563,6 +563,26 @@ const ADD_ON_STEPS = [
 ];
 
 /* ─────────────────────────────────────────────────────────────────
+   INGREDIENT META  (label + thumbnail for chip bar)
+───────────────────────────────────────────────────────────────── */
+const BYO_ING_META = {
+  chicken:     { label: 'Chicken',     img: '/images/byo/ing/chicken.jpg' },
+  'lamb-gyro': { label: 'Lamb Gyro',   img: '/images/byo/ing/lamb-gyro.png' },
+  falafel:     { label: 'Falafel',     img: '/images/byo/ing/falafel.png' },
+  hotdog:      { label: 'Hot Dog',     img: '/images/byo/ing/hotdog.jpg' },
+  lettuce:     { label: 'Lettuce',     img: '/images/byo/ing/lettuce.jpg' },
+  tomatoes:    { label: 'Tomatoes',    img: '/images/byo/ing/tomato.jpg' },
+  onions:      { label: 'Onions',      img: '/images/byo/ing/onion.jpg' },
+  pickles:     { label: 'Pickles',     img: '/images/byo/ing/pickle.jpg' },
+  peppers:     { label: 'Hot Peppers', img: '/images/byo/ing/pepper.jpg' },
+  hummus:      { label: 'Hummus',      img: '/images/byo/ing/hummus.jpg' },
+  white:       { label: 'White Sauce', img: '/images/byo/ing/sauce-white.png' },
+  hot:         { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.png' },
+  both:        { label: 'White Sauce', img: '/images/byo/ing/sauce-white.png' },
+  'both-hot':  { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.png' },
+};
+
+/* ─────────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────── */
 export default function BuildYourOwn({ item, onClose, onAdd, initialSelections = {} }) {
@@ -646,36 +666,42 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
 
         {/* ── Live Build Canvas ──────────────────────────────── */}
         <div className="byo-canvas">
-          {/* Base image fills the canvas */}
           {selectedBase ? (
-            <img
-              src={selectedBase.img}
-              alt={selectedBase.label}
-              className="byo-canvas-base"
-              onError={e => { e.currentTarget.style.opacity = '0.2'; }}
-            />
+            <>
+              <img
+                src={selectedBase.img}
+                alt={selectedBase.label}
+                className="byo-canvas-base"
+                onError={e => { e.currentTarget.style.opacity = '0.3'; }}
+              />
+              <div className="byo-canvas-overlay" />
+              <div className="byo-canvas-info">
+                <span className="byo-canvas-base-name">{selectedBase.label}</span>
+                <span className="byo-canvas-price">from ${selectedBase.price.toFixed(2)}</span>
+              </div>
+              {activeIngredients.length > 0 ? (
+                <div className="byo-ing-bar">
+                  {activeIngredients.map((id, i) => {
+                    const meta = BYO_ING_META[id];
+                    if (!meta) return null;
+                    return (
+                      <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.05}s` }}>
+                        <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
+                        <span>{meta.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="byo-canvas-hint">Select ingredients below ↓</div>
+              )}
+            </>
           ) : (
             <div className="byo-canvas-empty">
               <span className="byo-canvas-empty-title">Build Your Own</span>
               <span className="byo-canvas-empty-sub">Choose a base below ↓</span>
             </div>
           )}
-
-          {/* Ingredient medallions stacked on the bread */}
-          {selectedBase && [...activeIngredients]
-            .sort((a, b) => (ING_MEDALLION_DB[a]?.layer || 5) - (ING_MEDALLION_DB[b]?.layer || 5))
-            .map(id => renderMedallion(id, family))
-          }
-
-          {/* Base info badge */}
-          {selectedBase && (
-            <div className="byo-canvas-badge">
-              <span className="byo-canvas-base-name">{selectedBase.label}</span>
-              <span className="byo-canvas-price">from ${selectedBase.price.toFixed(2)}</span>
-            </div>
-          )}
-
-          {/* Close button */}
           <button className="byo-close-btn" onClick={onClose}><X size={18} /></button>
         </div>
 

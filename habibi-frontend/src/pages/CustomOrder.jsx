@@ -402,39 +402,59 @@ function coRenderMedallion(id, family) {
   });
 }
 
-/* ── Live build canvas: base photo + ingredient medallions ────── */
+/* ── Live build canvas: full-bleed base photo + ingredient chip bar ── */
 function IngCanvas({ base, cfg }) {
-  const family = base?.family || 'standard';
-
-  /* Collect all selected ingredient IDs */
-  const activeIds = [];
-  if (cfg.cheese.type && cfg.cheese.type !== 'none') activeIds.push(cfg.cheese.type);
-  Object.keys(cfg.vegetables).forEach(id => activeIds.push(id));
-  Object.keys(cfg.proteins).forEach(id => activeIds.push(id));
-  Object.keys(cfg.sauces).forEach(id => activeIds.push(id));
+  /* Build flat chip list from all active selections */
+  const chips = [];
+  if (cfg.cheese.type && cfg.cheese.type !== 'none') {
+    const opt = CHEESE_OPTS.find(o => o.id === cfg.cheese.type);
+    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
+  }
+  Object.keys(cfg.vegetables).forEach(id => {
+    const opt = VEG_OPTS.find(o => o.id === id);
+    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
+  });
+  Object.keys(cfg.proteins).forEach(id => {
+    const opt = PROTEIN_OPTS.find(o => o.id === id);
+    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
+  });
+  Object.keys(cfg.sauces).forEach(id => {
+    const opt = SAUCE_OPTS.find(o => o.id === id);
+    if (opt) chips.push({ id: opt.id, label: opt.label, img: null, emoji: opt.emoji });
+  });
 
   return (
     <div className="co-canvas">
       {base ? (
-        <img src={base.img} alt={base.label} className="co-canvas-base"
-          onError={e => { e.currentTarget.style.opacity='0.2'; }}
-        />
+        <>
+          <img src={base.img} alt={base.label} className="co-canvas-base"
+            onError={e => { e.currentTarget.style.opacity='0.3'; }}
+          />
+          <div className="co-canvas-overlay" />
+          <div className="co-canvas-info">
+            <span className="co-canvas-base-name">{base.label}</span>
+            <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
+          </div>
+          {chips.length > 0 ? (
+            <div className="co-ing-bar">
+              {chips.map((chip, i) => (
+                <div key={chip.id} className="co-ing-chip" style={{ animationDelay: `${i * 0.05}s` }}>
+                  {chip.img
+                    ? <div className="co-ing-chip-thumb" style={{ backgroundImage: `url(${chip.img})` }} />
+                    : <div className="co-ing-chip-emoji">{chip.emoji}</div>
+                  }
+                  <span>{chip.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="co-canvas-hint">Add ingredients below ↓</div>
+          )}
+        </>
       ) : (
         <div className="co-canvas-empty">
           <img src="/images/byo/customize-icon.jpg" alt="" className="co-canvas-icon" />
           <span>Choose a base to preview your order</span>
-        </div>
-      )}
-
-      {base && [...activeIds]
-        .sort((a, b) => (CO_ING_DB[a]?.layer || 5) - (CO_ING_DB[b]?.layer || 5))
-        .map(id => coRenderMedallion(id, family))
-      }
-
-      {base && (
-        <div className="co-canvas-tag">
-          <span>{base.label}</span>
-          <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
         </div>
       )}
     </div>
