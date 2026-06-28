@@ -206,14 +206,15 @@ const Login = () => {
               </div>
 
               <div className="form-group mt-4">
-                <label className="form-label">EMAIL ADDRESS</label>
+                <label className="form-label">EMAIL OR PHONE NUMBER</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-input"
-                  placeholder="chef@habibi.com"
+                  placeholder="email@example.com or (718) 555-0100"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
+                  autoComplete="username"
                 />
               </div>
 

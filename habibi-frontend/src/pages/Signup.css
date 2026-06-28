@@ -173,6 +173,19 @@
   max-width: 560px;
 }
 
+.sp-form-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.sp-form-sub {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 2rem;
+}
+
 /* ── Step Indicators ─────────────────────────────────────────── */
 .signup-steps {
   display: flex;

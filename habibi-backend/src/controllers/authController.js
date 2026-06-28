@@ -90,10 +90,15 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
     // Accept login by email or phone number
     const identifier = (email || '').trim();
+    const isPhone = /^\+?[\d\s\-().]{7,20}$/.test(identifier) && !identifier.includes('@');
 
     const result = await pool.query(
-      "SELECT * FROM users WHERE email=$1",
-      [identifier]
+      isPhone
+        ? "SELECT * FROM users WHERE phone_number=$1 OR phone_number=$2"
+        : "SELECT * FROM users WHERE email=$1",
+      isPhone
+        ? [identifier, identifier.replace(/\D/g, '')]
+        : [identifier]
     );
 
     const user = result.rows[0];
