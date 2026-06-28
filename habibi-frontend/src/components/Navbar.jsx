@@ -335,7 +335,11 @@ const Navbar = () => {
             )}
             <Link to="/customize" className="navbar-customize-btn" title="Customize Your Order">
               <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="navbar-customize-icon" />
-              <span className="navbar-customize-label">Customize</span>
+              <span className="navbar-customize-label">
+                <span className="cust-lbl-spark">✦</span>
+                <span className="cust-lbl-text">Your Way</span>
+                <span className="cust-lbl-spark">✦</span>
+              </span>
             </Link>
 
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
