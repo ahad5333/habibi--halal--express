@@ -430,65 +430,6 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          CUSTOMIZE YOUR ORDER — PREMIUM STRIP
-      ═══════════════════════════════════════════════════════ */}
-      <section className="cust-strip">
-        <div className="cust-strip-bg-overlay" aria-hidden="true" />
-        <div className="cust-strip-glow"       aria-hidden="true" />
-        <div className="container cust-strip-inner">
-
-          {/* Left — content */}
-          <div className="cust-strip-left">
-            <div className="cust-strip-eyebrow">
-              <span className="cust-strip-eyebrow-dot" />
-              PERSONALIZE YOUR MEAL
-            </div>
-            <h3 className="cust-strip-title">
-              Build Your Own<br />
-              <span className="cust-strip-title-accent">Habibi Bowl</span>
-            </h3>
-            <p className="cust-strip-desc">
-              Layer your perfect bowl — fresh base, halal protein, bold toppings &amp; signature sauces.
-              Over <strong>100+</strong> combinations await.
-            </p>
-            <div className="cust-steps">
-              {['Base', 'Protein', 'Toppings', 'Sauce'].map((step, i) => (
-                <div key={step} className="cust-step">
-                  <div className="cust-step-num">{i + 1}</div>
-                  <span className="cust-step-label">{step}</span>
-                </div>
-              ))}
-            </div>
-            <Link to="/customize" className="cust-strip-btn">
-              <span>Start Building</span>
-              <span className="cust-strip-btn-arrow"><ChevronRight size={18} /></span>
-            </Link>
-          </div>
-
-          {/* Right — spinning circular icon with orbitals */}
-          <div className="cust-strip-right">
-            <div className="cust-bowl-glow"   aria-hidden="true" />
-            <div className="cust-orbit-ring"  aria-hidden="true" />
-            <div className="cust-orbiter cust-orbiter-1" aria-hidden="true" />
-            <div className="cust-orbiter cust-orbiter-2" aria-hidden="true" />
-            <div className="cust-orbiter cust-orbiter-3" aria-hidden="true" />
-            <div className="cust-chip cust-chip-1" aria-hidden="true">🧀 Cheese</div>
-            <div className="cust-chip cust-chip-2" aria-hidden="true">🥩 19 Proteins</div>
-            <div className="cust-chip cust-chip-3" aria-hidden="true">🌿 Fresh Veggies</div>
-            <div className="cust-chip cust-chip-4" aria-hidden="true">🫙 8 Sauces</div>
-            <span className="cust-glint cust-glint-1" aria-hidden="true">✦</span>
-            <span className="cust-glint cust-glint-2" aria-hidden="true">✦</span>
-            <span className="cust-glint cust-glint-3" aria-hidden="true">✦</span>
-            <span className="cust-glint cust-glint-4" aria-hidden="true">✦</span>
-            <div className="cust-img-crop">
-              <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="cust-strip-icon" />
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
           OUR STORY / CULINARY HERITAGE
       ═══════════════════════════════════════════════════════ */}
       <section className="section story-section">
