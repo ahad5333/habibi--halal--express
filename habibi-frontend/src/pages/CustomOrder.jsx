@@ -953,10 +953,22 @@ export default function CustomOrder() {
       <div className="co-hero">
         <img src="/images/byo/customize-hero.jpg" alt="Customize Your Order" className="co-hero-img" />
         <div className="co-hero-overlay" aria-hidden="true" />
+        <div className="co-hero-lines"  aria-hidden="true" />
+
+        {/* Left — title */}
         <div className="co-hero-text">
           <span className="co-hero-eyebrow">✦ Habibi Halal Express</span>
           <h1 className="co-hero-title">Build Your<br/>Perfect Meal</h1>
           <p className="co-hero-sub">Choose your base · Pick your proteins · Add your sauces</p>
+        </div>
+
+        {/* Right — quick-stats badge */}
+        <div className="co-hero-stats">
+          <div className="co-hero-stat"><strong>19</strong><span>Proteins</span></div>
+          <div className="co-hero-stat-sep" />
+          <div className="co-hero-stat"><strong>8</strong><span>Sauces</span></div>
+          <div className="co-hero-stat-sep" />
+          <div className="co-hero-stat"><strong>100+</strong><span>Combos</span></div>
         </div>
       </div>
 
