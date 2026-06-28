@@ -525,7 +525,8 @@ export default function CustomOrder() {
   const [open, setOpen]       = useState(new Set(['base']));
   const [extras, setExtras]   = useState([]);
   const [drinks, setDrinks]   = useState([]);
-  const [added, setAdded]     = useState(false);
+  const [added, setAdded]         = useState(false);
+  const [warnProtein, setWarnProtein] = useState(false);
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -653,6 +654,16 @@ export default function CustomOrder() {
 
   const handleAdd = () => {
     if (!cfg.base) return;
+    if (Object.keys(cfg.proteins).length === 0) {
+      setWarnProtein(true);
+      return;
+    }
+    doAdd();
+  };
+
+  const doAdd = () => {
+    if (!cfg.base) return;
+    setWarnProtein(false);
 
     /* Bundle sides and drinks as addons on the custom item so each
        person's meal stays together (like a McDonald's combo meal). */
@@ -694,6 +705,7 @@ export default function CustomOrder() {
     /* Reset form so the user can immediately build another order */
     setCfg(INIT);
     setOpen(new Set(['base']));
+    setWarnProtein(false);
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -741,6 +753,25 @@ export default function CustomOrder() {
                 : <><ShoppingBag size={16} /> Add to Cart</>
               }
             </button>
+
+            {warnProtein && (
+              <div className="co-protein-warn">
+                <p className="co-protein-warn-msg">⚠️ No protein selected — your order will be veggie only.</p>
+                <div className="co-protein-warn-actions">
+                  <button className="co-protein-warn-pick"
+                    onClick={() => {
+                      setWarnProtein(false);
+                      setOpen(prev => { const n = new Set(prev); n.add('proteins'); return n; });
+                      document.querySelector('.co-groups')?.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}>
+                    Pick Protein
+                  </button>
+                  <button className="co-protein-warn-anyway" onClick={doAdd}>
+                    Add Anyway
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Make it a meal nudge ── */}

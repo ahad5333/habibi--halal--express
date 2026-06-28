@@ -271,6 +271,49 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── No-protein warning ──────────────────────────────────────── */
+.co-protein-warn {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: co-slide-in 0.18s ease;
+}
+.co-protein-warn-msg {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+  line-height: 1.4;
+}
+.co-protein-warn-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.co-protein-warn-pick,
+.co-protein-warn-anyway {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.15s;
+}
+.co-protein-warn-pick {
+  background: #E5B64E;
+  color: #0a0a0a;
+}
+.co-protein-warn-anyway {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.6);
+}
+.co-protein-warn-pick:hover,
+.co-protein-warn-anyway:hover { filter: brightness(1.12); }
+
 /* ── Make it a meal nudge ────────────────────────────────────── */
 .co-meal-nudge {
   background: linear-gradient(135deg, rgba(229,182,78,0.08) 0%, rgba(249,115,22,0.06) 100%);
