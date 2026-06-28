@@ -525,8 +525,9 @@ export default function CustomOrder() {
   const [open, setOpen]       = useState(new Set(['base']));
   const [extras, setExtras]   = useState([]);
   const [drinks, setDrinks]   = useState([]);
-  const [added, setAdded]         = useState(false);
+  const [added, setAdded]             = useState(false);
   const [warnProtein, setWarnProtein] = useState(false);
+  const [qty, setQty]                 = useState(1);
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -699,13 +700,14 @@ export default function CustomOrder() {
       note:          buildNote(),
       img:           cfg.base.img,
       addons,
-      quantity:      1,
+      qty,
     });
 
     /* Reset form so the user can immediately build another order */
     setCfg(INIT);
     setOpen(new Set(['base']));
     setWarnProtein(false);
+    setQty(1);
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -743,6 +745,20 @@ export default function CustomOrder() {
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className="co-price-val">${total.toFixed(2)}</span>
+
+            {/* Quantity stepper */}
+            {cfg.base && (
+              <div className="co-qty-row">
+                <button className="co-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
+                  <Minus size={14} />
+                </button>
+                <span className="co-qty-val">{qty}</span>
+                <button className="co-qty-btn" onClick={() => setQty(q => Math.min(20, q + 1))}>
+                  <Plus size={14} />
+                </button>
+              </div>
+            )}
+
             <button
               className="co-add-btn"
               onClick={handleAdd}
@@ -750,7 +766,7 @@ export default function CustomOrder() {
             >
               {added
                 ? <><Check size={16} /> Added!</>
-                : <><ShoppingBag size={16} /> Add to Cart</>
+                : <><ShoppingBag size={16} /> {qty > 1 ? `Add ${qty} to Cart` : 'Add to Cart'}</>
               }
             </button>
 
@@ -1072,8 +1088,15 @@ export default function CustomOrder() {
           <span>Total</span>
           <strong>${total.toFixed(2)}</strong>
         </div>
+        {cfg.base && (
+          <div className="co-qty-row co-qty-row-mobile">
+            <button className="co-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}><Minus size={13}/></button>
+            <span className="co-qty-val">{qty}</span>
+            <button className="co-qty-btn" onClick={() => setQty(q => Math.min(20, q + 1))}><Plus size={13}/></button>
+          </div>
+        )}
         <button className="co-add-btn co-add-btn-mobile" onClick={handleAdd} disabled={!cfg.base || added}>
-          {added ? <><Check size={15}/> Added!</> : <><ShoppingBag size={15}/> Add to Cart</>}
+          {added ? <><Check size={15}/> Added!</> : <><ShoppingBag size={15}/> {qty > 1 ? `Add ${qty}` : 'Add to Cart'}</>}
         </button>
       </div>
 

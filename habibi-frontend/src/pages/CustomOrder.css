@@ -271,6 +271,46 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Quantity stepper ────────────────────────────────────────── */
+.co-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+}
+.co-qty-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.co-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.co-qty-btn:not(:disabled):hover { background: rgba(229,182,78,0.2); border-color: rgba(229,182,78,0.4); }
+.co-qty-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f0f0f0;
+  min-width: 1.5rem;
+  text-align: center;
+}
+.co-qty-row-mobile {
+  padding: 0.35rem 0.55rem;
+  gap: 0.5rem;
+}
+.co-qty-row-mobile .co-qty-val { font-size: 0.95rem; }
+
 /* ── No-protein warning ──────────────────────────────────────── */
 .co-protein-warn {
   background: rgba(239,68,68,0.08);
