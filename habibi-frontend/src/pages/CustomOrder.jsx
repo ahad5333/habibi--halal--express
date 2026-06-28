@@ -546,7 +546,7 @@ export default function CustomOrder() {
   /* State updaters */
   const setBase = base => {
     setCfg(p => ({ ...p, base }));
-    setOpen(prev => { const n = new Set(prev); n.add('cheese'); return n; });
+    setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
   };
 
   const setCheeseType = type => setCfg(p => ({ ...p, cheese: { ...p.cheese, type } }));
