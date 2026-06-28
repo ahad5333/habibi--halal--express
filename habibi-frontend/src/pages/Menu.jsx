@@ -396,7 +396,7 @@ const Menu = () => {
       price: parseFloat(item.price || 0),
       img:   item.img || item.image || item.image_url || categoryFallback(item),
       tag:   item.category || 'Item',
-      note:  item.note || '',
+      note:  '',
       qty,
     });
   };

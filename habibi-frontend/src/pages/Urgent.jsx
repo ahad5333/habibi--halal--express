@@ -257,10 +257,10 @@ const Urgent = () => {
                   <button type="submit" className="btn urg-submit-btn" disabled={loading}
                     style={{ background: type.color, color: type.color === '#f59e0b' ? '#000' : '#fff' }}
                   >
-                    {loading ? 'Sending Alert...' : `Send Urgent Alert — ${type.label}`}
+                    {loading ? 'Sending Alert...' : `Send Urgent Alert: ${type.label}`}
                   </button>
                   <p className="urg-submit-note">
-                    <Clock size={11} /> Our team will call you at the number provided within {type.sla}.
+                    <Clock size={11} /> Our team will contact you at the number provided within {type.sla}.
                   </p>
                 </div>
 

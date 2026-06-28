@@ -294,7 +294,7 @@ const Home = () => {
             </h1>
 
             <p className="hero-creative-line">
-              ~ Where Every Bite is Blessed — fresh, bold &amp; made with love ~
+              ~ Where Every Bite is Blessed, fresh, bold &amp; made with love ~
             </p>
             
             <div className="hero-cta-group">
@@ -799,7 +799,7 @@ const Home = () => {
 
             <div className="rb-pull-quote">
               <span className="rb-pull-quote-mark">"</span>
-              <p>The Bronx's crown jewel of authentic Halal cuisine — bold flavors, perfect every single time.</p>
+              <p>The Bronx's crown jewel of authentic Halal cuisine, bold flavors, perfect every single time.</p>
               <p className="rb-pull-quote-author">— NY Foodie Magazine</p>
             </div>
           </div>

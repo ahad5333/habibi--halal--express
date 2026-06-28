@@ -112,8 +112,8 @@ export default function Catering() {
   return (
     <div className="cat-page page-watermark">
       <SEO
-        title="Catering | Habibi Halal Express — Events & Group Orders"
-        description="Book Habibi Halal Express for your next event. Weddings, corporate events, parties — 20 to 1000+ guests. Get a free custom quote."
+        title="Catering | Habibi Halal Express, Events &amp; Group Orders"
+        description="Book Habibi Halal Express for your next event. Weddings, corporate events, parties, 20 to 1000+ guests. Get a free custom quote."
         keywords="halal catering bronx, halal event catering ny, halal wedding food, corporate halal catering"
       />
 

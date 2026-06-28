@@ -57,7 +57,7 @@ const ARTICLE = {
     },
     {
       type: 'para',
-      text: `Habibi Tacos aren't about copying tradition — they're about celebrating it while adding our own signature style. By combining premium halal ingredients, fresh vegetables, carefully selected tortillas, and complete customization, we've created a taco experience that is bold, exciting, and unmistakably Habibi.`,
+      text: `Habibi Tacos aren't about copying tradition, they're about celebrating it while adding our own signature style. By combining premium halal ingredients, fresh vegetables, carefully selected tortillas, and complete customization, we've created a taco experience that is bold, exciting, and unmistakably Habibi.`,
     },
     {
       type: 'closing',
