@@ -118,8 +118,8 @@
 /* ── Right side of top bar ───────────────────────────────── */
 /* ── Halal Certified badge (center of top bar) ── */
 .navbar-halal-badge {
-  width: 66px;
-  height: 66px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
   border-radius: 50%;
   mix-blend-mode: screen;
