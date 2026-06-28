@@ -939,9 +939,54 @@ const Checkout = () => {
                     )}
                   </div>
 
-                  <div className="summary-total">
-                    <span className="text-muted text-sm">Total</span>
-                    <span className="total-amount text-primary">${total.toFixed(2)}</span>
+                  {/* ── Price breakdown table ── */}
+                  <div className="price-breakdown">
+                    <div className="pb-row">
+                      <span className="pb-label">Item Total</span>
+                      <span className="pb-value">${subtotal.toFixed(2)}</span>
+                    </div>
+                    {deliveryMode === 'delivery' && (
+                      <div className="pb-row">
+                        <span className="pb-label">
+                          Delivery Fee
+                          {feeLoading && <span className="pb-note"> calculating…</span>}
+                        </span>
+                        <span className="pb-value">
+                          {feeLoading ? '—' : deliveryFee === 0 ? <span className="pb-free">Free</span> : `$${deliveryFee.toFixed(2)}`}
+                        </span>
+                      </div>
+                    )}
+                    <div className="pb-row">
+                      <span className="pb-label">Service Fee</span>
+                      <span className="pb-value">${serviceFee.toFixed(2)}</span>
+                    </div>
+                    <div className="pb-row">
+                      <span className="pb-label">Tax (8.875%)</span>
+                      <span className="pb-value">${tax.toFixed(2)}</span>
+                    </div>
+                    {tip > 0 && (
+                      <div className="pb-row">
+                        <span className="pb-label">Tip</span>
+                        <span className="pb-value">${tip.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {couponDiscount > 0 && (
+                      <div className="pb-row pb-row--discount">
+                        <span className="pb-label">Coupon Discount</span>
+                        <span className="pb-value pb-value--green">−${couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                      <div className="pb-row pb-row--discount">
+                        <span className="pb-label">🏅 Rewards</span>
+                        <span className="pb-value pb-value--green">−${loyaltyDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="pb-divider" />
+                    <div className="pb-total-row">
+                      <span className="pb-total-label">Total</span>
+                      <span className="pb-total-value">${total.toFixed(2)}</span>
+                    </div>
                   </div>
 
                   {orderError && <div className="order-error">⚠ {orderError}</div>}
