@@ -590,6 +590,7 @@ export default function CustomOrder() {
   const [added, setAdded]             = useState(false);
   const [warnProtein, setWarnProtein] = useState(false);
   const [qty, setQty]                 = useState(1);
+  const [dietFilters, setDietFilters] = useState(new Set());
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -599,6 +600,44 @@ export default function CustomOrder() {
       setDrinks(items.filter(i => /drink|beverage|soda|juice/i.test(i.category_name || i.category || '')));
     }).catch(() => {});
   }, []);
+
+  /* Dietary filter exclusion sets */
+  const VEG_EXCLUDED   = new Set(['chicken','lamb-gyro','mix','hotdog','bacon','hot-sausage','italian-sausage','turkey','chicken-kabab','beef-kabab','philly-steak','fish-fillet','shrimp','tuna','beef-burger','chicken-burger']);
+  const DAIRY_CHEESES  = new Set(['american','cream','butter']);
+  const DAIRY_SAUCES   = new Set(['blue']);
+  const GLUTEN_BASES   = new Set(['39a','39b','39c','39d','39e','39f','39g','39h']);
+
+  const isBaseExcluded    = id => dietFilters.has('glutenFree')  && GLUTEN_BASES.has(id);
+  const isProteinExcluded = id => dietFilters.has('vegetarian')  && VEG_EXCLUDED.has(id);
+  const isCheeseExcluded  = id => dietFilters.has('dairyFree')   && DAIRY_CHEESES.has(id);
+  const isSauceExcluded   = id => dietFilters.has('dairyFree')   && DAIRY_SAUCES.has(id);
+
+  const toggleDietFilter = key => {
+    setDietFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); return next; }
+      next.add(key);
+      // Clear any currently selected incompatible items
+      if (key === 'vegetarian') {
+        setCfg(p => {
+          const proteins = { ...p.proteins };
+          VEG_EXCLUDED.forEach(id => delete proteins[id]);
+          return { ...p, proteins };
+        });
+      }
+      if (key === 'dairyFree') {
+        setCfg(p => ({
+          ...p,
+          cheese: DAIRY_CHEESES.has(p.cheese.type) ? { type: 'none', qty: 'regular' } : p.cheese,
+          sauces: Object.fromEntries(Object.entries(p.sauces).filter(([id]) => !DAIRY_SAUCES.has(id))),
+        }));
+      }
+      if (key === 'glutenFree') {
+        setCfg(p => GLUTEN_BASES.has(p.base?.id) ? { ...p, base: null } : p);
+      }
+      return next;
+    });
+  };
 
   /* Apply a staff-pick preset */
   const applyPreset = preset => {
@@ -898,6 +937,23 @@ export default function CustomOrder() {
         {/* ── Right: configuration groups ── */}
         <main className="co-groups">
 
+          {/* ── Dietary filters ── */}
+          <div className="co-diet-filters">
+            {[
+              { key: 'vegetarian', label: 'Vegetarian',  emoji: '🥗' },
+              { key: 'dairyFree',  label: 'Dairy-Free',  emoji: '🥛' },
+              { key: 'glutenFree', label: 'Gluten-Free', emoji: '🌾' },
+            ].map(({ key, label, emoji }) => (
+              <button
+                key={key}
+                className={`co-diet-chip${dietFilters.has(key) ? ' active' : ''}`}
+                onClick={() => toggleDietFilter(key)}
+              >
+                {emoji} {label}
+              </button>
+            ))}
+          </div>
+
           {/* ── Staff picks ── */}
           <div className="co-presets">
             <p className="co-presets-label">⭐ Staff Picks — tap to pre-fill</p>
@@ -923,8 +979,8 @@ export default function CustomOrder() {
               {BASES.map(base => (
                 <button
                   key={base.id}
-                  className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}`}
-                  onClick={() => setBase(base)}
+                  className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}${isBaseExcluded(base.id) ? ' co-filtered' : ''}`}
+                  onClick={() => !isBaseExcluded(base.id) && setBase(base)}
                 >
                   <div className="co-base-img" style={{ backgroundImage: `url(${base.img})` }} />
                   <div className="co-base-info">
@@ -944,8 +1000,8 @@ export default function CustomOrder() {
               {CHEESE_OPTS.map(opt => (
                 <button
                   key={opt.id}
-                  className={`co-opt-card${cfg.cheese.type === opt.id ? ' selected' : ''}`}
-                  onClick={() => setCheeseType(opt.id)}
+                  className={`co-opt-card${cfg.cheese.type === opt.id ? ' selected' : ''}${isCheeseExcluded(opt.id) ? ' co-filtered' : ''}`}
+                  onClick={() => !isCheeseExcluded(opt.id) && setCheeseType(opt.id)}
                 >
                   <span className="co-opt-emoji">{opt.emoji}</span>
                   <span className="co-opt-name">{opt.label}</span>
@@ -1004,8 +1060,8 @@ export default function CustomOrder() {
                 return (
                   <div key={prot.id} className="co-opt-wrap">
                     <button
-                      className={`co-opt-card co-prot-card${sel ? ' selected' : ''}`}
-                      onClick={() => toggleProtein(prot.id)}
+                      className={`co-opt-card co-prot-card${sel ? ' selected' : ''}${isProteinExcluded(prot.id) ? ' co-filtered' : ''}`}
+                      onClick={() => !isProteinExcluded(prot.id) && toggleProtein(prot.id)}
                     >
                       <span className="co-opt-emoji">{prot.emoji}</span>
                       <div className="co-prot-info">
@@ -1042,8 +1098,8 @@ export default function CustomOrder() {
                 return (
                   <div key={sauce.id} className="co-opt-wrap">
                     <button
-                      className={`co-opt-card${sel ? ' selected' : ''}`}
-                      onClick={() => toggleSauce(sauce.id)}
+                      className={`co-opt-card${sel ? ' selected' : ''}${isSauceExcluded(sauce.id) ? ' co-filtered' : ''}`}
+                      onClick={() => !isSauceExcluded(sauce.id) && toggleSauce(sauce.id)}
                     >
                       <span className="co-opt-emoji">{sauce.emoji}</span>
                       <span className="co-opt-name">{sauce.label}</span>

@@ -271,6 +271,46 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Dietary filter chips ────────────────────────────────────── */
+.co-diet-filters {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.co-diet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.co-diet-chip:hover {
+  border-color: rgba(229,182,78,0.4);
+  color: #f0f0f0;
+}
+.co-diet-chip.active {
+  border-color: #E5B64E;
+  background: rgba(229,182,78,0.12);
+  color: #E5B64E;
+}
+
+/* Greyed-out filtered items */
+.co-filtered {
+  opacity: 0.28;
+  cursor: not-allowed !important;
+  filter: grayscale(1);
+}
+.co-filtered:hover { transform: none !important; border-color: rgba(255,255,255,0.09) !important; background: rgba(255,255,255,0.04) !important; }
+
 /* ── Staff-pick presets row ──────────────────────────────────── */
 .co-presets {
   padding: 0.9rem 1rem 0.5rem;
