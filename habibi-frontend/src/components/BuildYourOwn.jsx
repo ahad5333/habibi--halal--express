@@ -551,7 +551,7 @@ const ADD_ON_STEPS = [
   {
     id: 'sauce',
     title: 'Choose Your Sauce',
-    subtitle: 'The finishing touch — drizzled on top',
+    subtitle: 'The finishing touch, drizzled on top',
     type: 'single',
     options: [
       { id: 'white', label: 'White Sauce', emoji: '🤍', desc: 'Creamy & garlicky' },
@@ -728,7 +728,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               {isBasePicker ? 'Choose Your Base' : step.title}
             </h2>
             <p className="byo-sub">
-              {isBasePicker ? 'Pick the bread or vessel — sets your starting price' : step.subtitle}
+              {isBasePicker ? 'Pick the bread or vessel, sets your starting price' : step.subtitle}
             </p>
           </div>
         </div>
@@ -796,7 +796,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               disabled={!canAdvance}
             >
               <ShoppingBag size={16} />
-              Add to Cart — ${basePrice.toFixed(2)}
+              Add to Cart · ${basePrice.toFixed(2)}
             </button>
           ) : (
             <button
