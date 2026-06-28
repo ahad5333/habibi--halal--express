@@ -35,73 +35,196 @@
 @media (min-width: 600px) { .byo-modal { border-radius: 20px; } }
 @keyframes byoSlideUp { from { transform: translateY(40px); opacity: 0; } }
 
-/* ── COMPOSITING CANVAS ──────────────────────────────────────── */
-/*
-   This is the live sandwich preview. The base image fills the
-   canvas, and each selected ingredient is absolutely positioned
-   on top using the INGREDIENT_DB placement rules.
-
-   mix-blend-mode: multiply on each .byo-ing makes white pixels
-   invisible — works perfectly for food images on white/light
-   backgrounds without needing manual background removal.
-*/
+/* ── PREMIUM VISUAL CANVAS ───────────────────────────────────── */
 .byo-canvas {
   position: relative;
   width: 100%;
   height: 200px;
   flex-shrink: 0;
-  background: #0d0d0d;
+  background: #0a0a0a;
   overflow: hidden;
 }
-
 @media (min-height: 700px) { .byo-canvas { height: 220px; } }
 @media (min-height: 800px) { .byo-canvas { height: 240px; } }
 
-.byo-canvas-base {
+/* Ambient glow behind the circle */
+.byo-canvas-glow {
   position: absolute;
-  inset: 0;
+  top: 44%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(229,182,78,0.18) 0%, transparent 68%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Orbital ring that rotates CCW */
+.byo-orb-ring {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  width: 156px;
+  height: 156px;
+  border-radius: 50%;
+  border: 1px dashed rgba(229,182,78,0.28);
+  transform: translate(-50%, -50%);
+  animation: byoRingCCW 22s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes byoRingCCW {
+  to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+/* Orbiting glow dots */
+.byo-orb-dot {
+  position: absolute;
+  top: calc(44% - 78px);
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  background: rgba(229,182,78,0.75);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(229,182,78,0.5);
+  transform-origin: 3px 78px;
+  pointer-events: none;
+  z-index: 2;
+}
+.byo-orb-dot-a { animation: byoOrbit 11s linear infinite; }
+.byo-orb-dot-b { animation: byoOrbit 17s linear infinite reverse; }
+@keyframes byoOrbit { to { transform: rotate(360deg); } }
+
+/* Circular base image */
+.byo-base-circle {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  width: 110px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(229,182,78,0.45);
+  box-shadow:
+    0 0 0 5px rgba(229,182,78,0.07),
+    0 0 24px rgba(229,182,78,0.2),
+    0 10px 22px rgba(0,0,0,0.55);
+  z-index: 5;
+  background: #1a1a1a;
+}
+.byo-base-circle--active {
+  border-color: rgba(229,182,78,0.65);
+  box-shadow:
+    0 0 0 6px rgba(229,182,78,0.1),
+    0 0 30px rgba(229,182,78,0.28),
+    0 12px 26px rgba(0,0,0,0.6);
+}
+.byo-base-circle-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: center;
-  /* Slight brightness boost so white-bg images integrate cleanly */
-  filter: brightness(0.97);
+  object-fit: cover;
+  display: block;
+  animation: byoCirclePulse 6s ease-in-out infinite;
 }
-
-/* Each ingredient overlay */
-.byo-ing {
-  position: absolute;
-  width: 100%;        /* scale() is relative to this — 100% of canvas width */
-  height: auto;
-  object-fit: contain;
-  pointer-events: none;
-  /* mix-blend-mode: multiply is set inline from the INGREDIENT_DB.blend value */
-  transition: opacity 0.25s ease;
-  animation: ingPop 0.3s cubic-bezier(.34,1.56,.64,1);
+@keyframes byoCirclePulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.06); }
 }
-@keyframes ingPop {
-  from { opacity: 0; transform: translate(-50%, -46%) scale(0.88); }
-  /* NOTE: the element also has its own inline transform — this animation
-     adds a "pop" on top of whatever translate+scale+rotate is set inline.
-     The translate(-50%,-50%) in the inline transform centers the img on
-     its anchor point. We can't override that here so we keep it subtle. */
-}
-
-/* Canvas UI overlay (close button + badge) */
-.byo-canvas-ui {
-  position: absolute;
-  inset: 0;
+.byo-base-circle-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 0.75rem 0.875rem;
-  z-index: 20;
-  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
 }
-.byo-canvas-ui > * { pointer-events: auto; }
+.byo-base-circle-icon  { font-size: 1.8rem; line-height: 1; }
+.byo-base-circle-hint  { font-size: 0.5rem; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.04em; text-align: center; }
 
+/* Base name label at bottom-center */
+.byo-base-label {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  pointer-events: none;
+  z-index: 8;
+}
+.byo-base-label-name  { font-size: 0.72rem; font-weight: 800; color: #fff;     letter-spacing: 0.01em; white-space: nowrap; }
+.byo-base-label-price { font-size: 0.58rem; font-weight: 700; color: #E5B64E; }
+
+/* Ingredient chips — float left/right of the circle */
+.byo-ing-chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.59rem;
+  font-weight: 700;
+  color: #f0ede8;
+  padding: 0.22rem 0.52rem;
+  border-radius: 20px;
+  background: rgba(10,10,10,0.88);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(229,182,78,0.32);
+  white-space: nowrap;
+  letter-spacing: 0.025em;
+  z-index: 6;
+  max-width: 36%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: byoChipIn 0.38s cubic-bezier(.34,1.56,.64,1) forwards;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+@keyframes byoChipIn {
+  from { opacity: 0; transform: scale(0.55); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+/* Chip positions — 3 slots on left, 3 on right */
+.byo-ing-chip-0 { top: 9%;   left: 2%;  animation-delay: 0s;    }
+.byo-ing-chip-1 { top: 9%;   right: 2%; animation-delay: 0.04s; }
+.byo-ing-chip-2 { top: 40%;  left: 1%;  animation-delay: 0.08s; }
+.byo-ing-chip-3 { top: 40%;  right: 1%; animation-delay: 0.08s; }
+.byo-ing-chip-4 { bottom: 17%; left: 2%;  animation-delay: 0.12s; }
+.byo-ing-chip-5 { bottom: 17%; right: 2%; animation-delay: 0.12s; }
+.byo-ing-chip-more {
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  animation-delay: 0.16s;
+}
+
+/* Sparkle glints */
+.byo-glint {
+  position: absolute;
+  color: #E5B64E;
+  font-size: 0.62rem;
+  pointer-events: none;
+  z-index: 9;
+  animation: byoGlint 2.8s ease-in-out infinite;
+}
+.byo-glint-1 { top: 16%; left: 30%; animation-delay: 0s;    }
+.byo-glint-2 { top: 65%; right: 30%; animation-delay: 1.4s; }
+@keyframes byoGlint {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50%       { opacity: 1;    transform: scale(1.5); }
+}
+
+/* Close button — positioned absolutely, no wrapper needed */
 .byo-close-btn {
-  align-self: flex-end;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.875rem;
   background: rgba(0,0,0,0.55);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 50%;
@@ -113,50 +236,9 @@
   cursor: pointer;
   color: rgba(255,255,255,0.85);
   transition: background 0.15s;
+  z-index: 20;
 }
 .byo-close-btn:hover { background: rgba(0,0,0,0.8); }
-
-.byo-canvas-badge {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  align-self: flex-start;
-}
-.byo-canvas-base-name {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.1;
-}
-.byo-canvas-price {
-  font-size: 0.72rem;
-  color: #E5B64E;
-  font-weight: 700;
-}
-
-.byo-canvas-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-}
-.byo-canvas-empty-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: rgba(255,255,255,0.85);
-}
-.byo-canvas-empty-sub {
-  font-size: 0.82rem;
-  color: rgba(255,255,255,0.4);
-}
 
 /* ── Progress bar ────────────────────────────────────────────── */
 .byo-progress-bar {

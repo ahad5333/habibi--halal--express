@@ -262,9 +262,29 @@ const INGREDIENT_DB = {
 };
 
 /* ─────────────────────────────────────────────────────────────────
-   INGREDIENT CANVAS RENDERER
-   Returns an array of <img> elements, each absolutely positioned
-   within the canvas div.  Multiple copies handle duplication.
+   CHIP INFO MAP  — emoji + short label shown in the canvas chips
+───────────────────────────────────────────────────────────────── */
+const BYO_CHIP_INFO = {
+  chicken:    { emoji: '🍗', label: 'Chicken'    },
+  'lamb-gyro':{ emoji: '🥩', label: 'Lamb Gyro'  },
+  mixed:      { emoji: '🍖', label: 'Mixed'       },
+  falafel:    { emoji: '🧆', label: 'Falafel'     },
+  hotdog:     { emoji: '🌭', label: 'Hot Dog'     },
+  lettuce:    { emoji: '🥬', label: 'Lettuce'     },
+  tomatoes:   { emoji: '🍅', label: 'Tomatoes'   },
+  onions:     { emoji: '🧅', label: 'Onions'      },
+  pickles:    { emoji: '🥒', label: 'Pickles'     },
+  peppers:    { emoji: '🌶️', label: 'Peppers'    },
+  hummus:     { emoji: '🫙', label: 'Hummus'      },
+  white:      { emoji: '🤍', label: 'White Sauce' },
+  hot:        { emoji: '🔥', label: 'Hot Sauce'   },
+  both:       { emoji: '✨', label: 'Both Sauces' },
+  'both-hot': { emoji: '🔥', label: 'Hot Sauce'   },
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   INGREDIENT CANVAS RENDERER (kept for external reference; canvas
+   redesigned to premium chip approach — no longer used in render)
 ───────────────────────────────────────────────────────────────── */
 function renderIngredient(id, family, extra) {
   const def = INGREDIENT_DB[id];
@@ -429,36 +449,71 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
     <div className="byo-overlay" onClick={onClose}>
       <div className="byo-modal" onClick={e => e.stopPropagation()}>
 
-        {/* ── Visual Compositing Canvas ──────────────────────── */}
+        {/* ── Premium Visual Canvas ──────────────────────────── */}
         <div className="byo-canvas">
-          {selectedBase && (
-            <img
-              src={selectedBase.img}
-              alt={selectedBase.label}
-              className="byo-canvas-base"
-            />
+          {/* Ambient gold glow */}
+          <div className="byo-canvas-glow" />
+
+          {/* Orbital ring + orbiting dots (shown once a base is picked) */}
+          {selectedBase && <div className="byo-orb-ring" />}
+          {selectedBase && activeIngredients.length > 0 && (
+            <>
+              <div className="byo-orb-dot byo-orb-dot-a" />
+              <div className="byo-orb-dot byo-orb-dot-b" />
+            </>
           )}
 
-          {/* Render ingredient layers (sorted by z-index for correct order) */}
-          {selectedBase && activeIngredients.map(id =>
-            renderIngredient(id, family, id)
-          )}
-
-          {/* Canvas overlay UI */}
-          <div className="byo-canvas-ui">
-            <button className="byo-close-btn" onClick={onClose}><X size={18} /></button>
+          {/* Circular base image */}
+          <div className={`byo-base-circle${selectedBase ? ' byo-base-circle--active' : ''}`}>
             {selectedBase ? (
-              <div className="byo-canvas-badge">
-                <span className="byo-canvas-base-name">{selectedBase.label}</span>
-                <span className="byo-canvas-price">from ${selectedBase.price.toFixed(2)}</span>
-              </div>
+              <img
+                src={selectedBase.img}
+                alt={selectedBase.label}
+                className="byo-base-circle-img"
+                onError={e => { e.currentTarget.style.opacity = '0'; }}
+              />
             ) : (
-              <div className="byo-canvas-empty">
-                <span className="byo-canvas-empty-title">Build Your Own</span>
-                <span className="byo-canvas-empty-sub">Start by choosing a base ↓</span>
+              <div className="byo-base-circle-placeholder">
+                <span className="byo-base-circle-icon">🍞</span>
+                <span className="byo-base-circle-hint">Choose base</span>
               </div>
             )}
           </div>
+
+          {/* Base label at bottom-center */}
+          {selectedBase && (
+            <div className="byo-base-label">
+              <span className="byo-base-label-name">{selectedBase.label}</span>
+              <span className="byo-base-label-price">from ${selectedBase.price.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Ingredient chips — up to 6, positioned left/right of circle */}
+          {selectedBase && activeIngredients.slice(0, 6).map((id, i) => {
+            const info = BYO_CHIP_INFO[id] || { emoji: '✓', label: id };
+            return (
+              <div key={id} className={`byo-ing-chip byo-ing-chip-${i}`}>
+                <span>{info.emoji}</span>
+                <span>{info.label}</span>
+              </div>
+            );
+          })}
+          {selectedBase && activeIngredients.length > 6 && (
+            <div className="byo-ing-chip byo-ing-chip-more">
+              +{activeIngredients.length - 6}
+            </div>
+          )}
+
+          {/* Sparkle glints */}
+          {selectedBase && activeIngredients.length > 0 && (
+            <>
+              <span className="byo-glint byo-glint-1">✦</span>
+              <span className="byo-glint byo-glint-2">✦</span>
+            </>
+          )}
+
+          {/* Close button */}
+          <button className="byo-close-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
         {/* ── Progress bar ─────────────────────────────────── */}

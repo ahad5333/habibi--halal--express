@@ -114,76 +114,94 @@ const QTY_OPTS = {
 };
 
 /* ================================================================
-   INGREDIENT COMPOSITING ENGINE  (mirrors BuildYourOwn.jsx)
+   CANVAS CHIP BUILDER — collects all active selections into chips
    ================================================================ */
-const ING_DB = {
-  hotdog:   { img: '/images/byo/ing/hotdog.jpg', layer: 5, blend: 'multiply',
-    rules: { hero:{x:50,y:53,sc:0.84,rot:0}, standard:{x:50,y:54,sc:0.56,rot:0}, compact:{x:50,y:58,sc:0.44,rot:0}, wrap:{x:50,y:52,sc:0.46,rot:85}, platter:{x:65,y:52,sc:0.50,rot:8}, familyTray:{x:65,y:52,sc:0.55,rot:0} } },
-  chicken:  { img: '/images/byo/ing/chicken.jpg', layer: 4, blend: 'multiply',
-    rules: { hero:{x:50,y:52,sc:0.50,rot:0,cnt:2,sx:30}, standard:{x:50,y:52,sc:0.52,rot:0}, compact:{x:50,y:55,sc:0.44,rot:0}, wrap:{x:50,y:52,sc:0.50,rot:0}, platter:{x:65,y:52,sc:0.55,rot:0}, familyTray:{x:65,y:52,sc:0.50,rot:0,cnt:2,sx:16} } },
-  lettuce:  { img: '/images/byo/ing/lettuce.jpg', layer: 3, blend: 'multiply',
-    rules: { hero:{x:50,y:55,sc:0.86}, standard:{x:50,y:56,sc:0.62}, compact:{x:50,y:58,sc:0.52}, wrap:{x:50,y:55,sc:0.60}, platter:{x:65,y:54,sc:0.55}, familyTray:{x:65,y:54,sc:0.60} } },
-  tomatoes: { img: '/images/byo/ing/tomato.jpg', layer: 6, blend: 'multiply',
-    rules: { hero:{x:50,y:48,sc:0.14,cnt:4,sx:14}, standard:{x:50,y:49,sc:0.18,cnt:2,sx:15}, compact:{x:50,y:51,sc:0.16,cnt:2,sx:13}, wrap:{x:50,y:49,sc:0.16,cnt:3,sx:13}, platter:{x:65,y:48,sc:0.18,cnt:2,sx:12}, familyTray:{x:65,y:48,sc:0.17,cnt:3,sx:11} } },
-  onions:   { img: '/images/byo/ing/onion.jpg', layer: 7, blend: 'multiply',
-    rules: { hero:{x:50,y:50,sc:0.11,cnt:5,sx:12}, standard:{x:50,y:50,sc:0.16,cnt:2,sx:13}, compact:{x:50,y:52,sc:0.14,cnt:2,sx:11}, wrap:{x:50,y:50,sc:0.14,cnt:3,sx:11}, platter:{x:65,y:50,sc:0.14,cnt:2,sx:12}, familyTray:{x:65,y:50,sc:0.13,cnt:3,sx:11} } },
-  peppers:  { img: '/images/byo/ing/pepper.jpg', layer: 7, blend: 'multiply',
-    rules: { hero:{x:50,y:47,sc:0.17,rot:-22,cnt:3,sx:16}, standard:{x:50,y:47,sc:0.20,rot:-15,cnt:2,sx:15}, compact:{x:50,y:49,sc:0.18,rot:-10}, wrap:{x:50,y:48,sc:0.18,rot:-25,cnt:2,sx:14}, platter:{x:65,y:47,sc:0.18,rot:-15,cnt:2,sx:12}, familyTray:{x:65,y:47,sc:0.17,rot:-20,cnt:3,sx:11} } },
-  white:    { img: '/images/byo/ing/sauce-white.png', layer: 9, blend: 'multiply',
-    rules: { hero:{x:50,y:51,sc:0.82}, standard:{x:50,y:51,sc:0.60}, compact:{x:50,y:54,sc:0.50}, wrap:{x:50,y:51,sc:0.58}, platter:{x:65,y:50,sc:0.52}, familyTray:{x:65,y:50,sc:0.55} } },
-  hot:      { img: '/images/byo/ing/sauce-hot.png', layer: 9, blend: 'multiply',
-    rules: { hero:{x:50,y:51,sc:0.82}, standard:{x:50,y:51,sc:0.60}, compact:{x:50,y:54,sc:0.50}, wrap:{x:50,y:51,sc:0.58}, platter:{x:65,y:50,sc:0.52}, familyTray:{x:65,y:50,sc:0.55} } },
-};
+function getActiveChips(cfg) {
+  const chips = [];
+  if (cfg.cheese.type && cfg.cheese.type !== 'none') {
+    const c = CHEESE_OPTS.find(o => o.id === cfg.cheese.type);
+    if (c) chips.push({ key: 'cheese', emoji: c.emoji, label: c.label });
+  }
+  Object.keys(cfg.vegetables).forEach(id => {
+    const v = VEG_OPTS.find(o => o.id === id);
+    if (v) chips.push({ key: id, emoji: v.emoji, label: v.label });
+  });
+  Object.keys(cfg.proteins).forEach(id => {
+    const p = PROTEIN_OPTS.find(o => o.id === id);
+    if (p) chips.push({ key: id, emoji: p.emoji, label: p.label });
+  });
+  Object.keys(cfg.sauces).forEach(id => {
+    const s = SAUCE_OPTS.find(o => o.id === id);
+    if (s) chips.push({ key: id, emoji: s.emoji, label: s.label });
+  });
+  return chips;
+}
 
+/* ── Premium canvas: circular base image + floating ingredient chips ── */
 function IngCanvas({ base, cfg }) {
-  const family = base?.family || 'standard';
-  const activeIds = [];
-  if (cfg.vegetables.lettuce)  activeIds.push('lettuce');
-  if (cfg.vegetables.tomatoes) activeIds.push('tomatoes');
-  if (cfg.vegetables.onions)   activeIds.push('onions');
-  if (cfg.vegetables.peppers)  activeIds.push('peppers');
-  const p = cfg.proteins;
-  if (p.chicken || p.mix)    activeIds.push('chicken');
-  if (p.hotdog)              activeIds.push('hotdog');
-  if (cfg.sauces.white?.on)  activeIds.push('white');
-  if (cfg.sauces.hot?.on)    activeIds.push('hot');
+  const chips = getActiveChips(cfg);
+  const visible = chips.slice(0, 8);
+  const extra   = chips.length - 8;
 
   return (
     <div className="co-canvas">
-      {base && <img src={base.img} alt={base.label} className="co-canvas-base" />}
-      {!base && (
-        <div className="co-canvas-empty">
-          <img src="/images/byo/customize-icon.jpg" alt="" className="co-canvas-icon" />
-          <span>Choose a base to preview your order</span>
+      {/* Ambient glow */}
+      <div className="co-canvas-glow" />
+
+      {/* Orbital ring + dots */}
+      {base && <div className="co-orb-ring" />}
+      {base && chips.length > 0 && (
+        <>
+          <div className="co-orb-dot co-orb-dot-a" />
+          <div className="co-orb-dot co-orb-dot-b" />
+          <div className="co-orb-dot co-orb-dot-c" />
+        </>
+      )}
+
+      {/* Circular base image */}
+      <div className={`co-circle${base ? ' co-circle--active' : ''}`}>
+        {base ? (
+          <img src={base.img} alt={base.label} className="co-circle-img"
+            onError={e => { e.currentTarget.style.opacity = '0'; }}
+          />
+        ) : (
+          <div className="co-circle-placeholder">
+            <img src="/images/byo/customize-icon.jpg" alt="" className="co-circle-icon-img" />
+          </div>
+        )}
+      </div>
+
+      {/* Base label */}
+      {base && (
+        <div className="co-base-label">
+          <span className="co-base-label-name">{base.label}</span>
+          <span className="co-base-label-price">from ${base.price.toFixed(2)}</span>
         </div>
       )}
-      {base && activeIds.map(id => {
-        const def = ING_DB[id];
-        if (!def) return null;
-        const r = def.rules[family] || def.rules.standard;
-        if (!r) return null;
-        const cnt = r.cnt || 1;
-        return Array.from({ length: cnt }).map((_, i) => {
-          const off = i - (cnt - 1) / 2;
-          return (
-            <img key={`${id}-${i}`} src={def.img} alt="" className="co-ing"
-              style={{
-                left: `${r.x + off * (r.sx || 0)}%`,
-                top:  `${r.y + off * (r.sy || 0)}%`,
-                transform: `translate(-50%,-50%) scale(${r.sc}) rotate(${r.rot||0}deg)`,
-                zIndex: def.layer,
-                mixBlendMode: def.blend,
-              }}
-              onError={e => { e.currentTarget.style.display='none'; }}
-            />
-          );
-        });
-      })}
-      {base && (
-        <div className="co-canvas-tag">
-          <span>{base.label}</span>
-          <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
+
+      {/* Empty state hint */}
+      {!base && (
+        <div className="co-canvas-hint">Choose a base above to preview your build</div>
+      )}
+
+      {/* Ingredient chips — up to 8 positions around the circle */}
+      {base && visible.map((chip, i) => (
+        <div key={chip.key} className={`co-chip co-chip-${i}`}>
+          <span>{chip.emoji}</span>
+          <span>{chip.label}</span>
         </div>
+      ))}
+      {base && extra > 0 && (
+        <div className="co-chip co-chip-more">+{extra} more</div>
+      )}
+
+      {/* Sparkle glints */}
+      {base && chips.length > 0 && (
+        <>
+          <span className="co-glint co-glint-1">✦</span>
+          <span className="co-glint co-glint-2">✦</span>
+          <span className="co-glint co-glint-3">✦</span>
+        </>
       )}
     </div>
   );
