@@ -203,15 +203,16 @@ const Contact = () => {
       />
 
       {/* ── Hero ── */}
-      <div className="ct-hero-chalk">
-        <img src="/images/titles/contact-title.jpg" alt="Contact Us — Habibi Halal Express" className="ct-hero-chalk-img" />
-      </div>
-      <div className="ct-hero-chalk-sub">
-        <p className="ct-hero-chalk-desc">Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.</p>
-        <div className="ct-hero-pills">
-          <span className="ct-pill"><Phone size={12} /> 24 / 7 Support</span>
-          <span className="ct-pill"><CheckCircle size={12} /> Response in &lt;2 Hours</span>
-          <span className="ct-pill"><MapPin size={12} /> 5 Bronx Locations</span>
+      <div className="ct-hero">
+        <div className="ct-hero-overlay" />
+        <div className="ct-hero-content">
+          <h1 className="ct-hero-title">Get in Touch</h1>
+          <p className="ct-hero-desc">Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.</p>
+          <div className="ct-hero-pills">
+            <span className="ct-pill"><Phone size={12} /> 24 / 7 Support</span>
+            <span className="ct-pill"><CheckCircle size={12} /> Response in &lt;2 Hours</span>
+            <span className="ct-pill"><MapPin size={12} /> Several Locations in NYC</span>
+          </div>
         </div>
       </div>
 

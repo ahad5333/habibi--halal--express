@@ -47,20 +47,53 @@
 }
 .ct-hero-chalk-sub .ct-pill svg { color: #c49a2a; }
 
-/* ── Old photo hero (kept for fallback, now unused) ─────────── */
+.ct-hero .ct-hero-pills { justify-content: center; margin-top: 0; }
+.ct-hero .ct-pill {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+.ct-hero .ct-pill svg { color: #F97316; }
+
+/* ── Photo hero — kitchen/cooking background ─────────────────── */
 .ct-hero {
   position: relative;
-  min-height: 520px;
-  background: url('/images/title/contact-hero-v2.jpg') center top/cover no-repeat;
+  min-height: 420px;
+  background: url('/images/food/kitchen.jpg') center center/cover no-repeat;
   display: flex;
   align-items: center;
-  padding-top: 60px;
+  padding-top: 70px;
 }
 
 .ct-hero-overlay {
   position: absolute;
   inset: 0;
-  background: none;
+  background: linear-gradient(135deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 100%);
+}
+
+.ct-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.ct-hero-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.ct-hero-desc {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.65;
+  max-width: 500px;
+  margin: 0 auto 1.25rem;
 }
 
 .ct-hero-content {
