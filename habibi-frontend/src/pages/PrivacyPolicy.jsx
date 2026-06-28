@@ -83,12 +83,11 @@ export default function PrivacyPolicy() {
         description="Privacy Policy for Habibi Halal Express. Learn how we collect, use, and protect your personal information across our website, app, and ordering services."
       />
 
-      <div className="legal-hero legal-hero--text">
-        <div className="legal-hero-text-content">
-          <p className="legal-eyebrow-vis">HABIBI HALAL EXPRESS</p>
-          <h1 className="legal-title-vis">Privacy Policy</h1>
-          <p className="legal-subtitle">We respect your privacy and are committed to protecting the information entrusted to us through our websites, apps, loyalty programs, and all related services.</p>
-        </div>
+      <div className="legal-hero">
+        <img src="/images/titles/privacy-title.jpg" alt="Privacy Policy — Habibi Halal Express" className="legal-hero-img" />
+      </div>
+      <div className="legal-hero-sub">
+        <p className="legal-subtitle">We respect your privacy and are committed to protecting the information entrusted to us through our websites, apps, loyalty programs, and all related services.</p>
       </div>
 
       <section className="section legal-body">
