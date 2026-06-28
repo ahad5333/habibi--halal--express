@@ -430,20 +430,62 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          CUSTOMIZE YOUR ORDER — BANNER
+          CUSTOMIZE YOUR ORDER — PREMIUM STRIP
       ═══════════════════════════════════════════════════════ */}
-      <section className="customize-banner">
-        <Link to="/customize" className="customize-banner-inner">
-          <img src="/images/byo/customize-icon.jpg" alt="Customize Your Order" className="customize-banner-icon" />
-          <div className="customize-banner-text">
-            <span className="customize-banner-eyebrow">NEW</span>
-            <strong className="customize-banner-title">Customize Your Order</strong>
-            <span className="customize-banner-desc">Mix and match from 19 proteins, 8 sauces, veggies &amp; more — build exactly what you want.</span>
+      <section className="cust-strip">
+        <div className="cust-strip-bg-overlay" aria-hidden="true" />
+        <div className="cust-strip-glow"       aria-hidden="true" />
+        <div className="container cust-strip-inner">
+
+          {/* Left — content */}
+          <div className="cust-strip-left">
+            <div className="cust-strip-eyebrow">
+              <span className="cust-strip-eyebrow-dot" />
+              BUILD IT YOUR WAY
+            </div>
+            <h3 className="cust-strip-title">
+              Customize<br />
+              <span className="cust-strip-title-accent">Your Order</span>
+            </h3>
+            <p className="cust-strip-desc">
+              19 halal proteins. 8 sauces. Fresh veggies &amp; cheese.
+              Every ingredient, every quantity, <strong>exactly how you want it</strong>.
+            </p>
+            <div className="cust-steps">
+              {['Base', 'Cheese', 'Veggies', 'Protein', 'Sauces', 'Extras', 'Drink'].map((step, i) => (
+                <div key={step} className="cust-step">
+                  <div className="cust-step-num">{i + 1}</div>
+                  <span className="cust-step-label">{step}</span>
+                </div>
+              ))}
+            </div>
+            <Link to="/customize" className="cust-strip-btn">
+              <span>Customize Now</span>
+              <span className="cust-strip-btn-arrow"><ChevronRight size={18} /></span>
+            </Link>
           </div>
-          <span className="customize-banner-cta">
-            Build Now <ChevronRight size={16} />
-          </span>
-        </Link>
+
+          {/* Right — spinning circular icon with orbitals */}
+          <div className="cust-strip-right">
+            <div className="cust-bowl-glow"   aria-hidden="true" />
+            <div className="cust-orbit-ring"  aria-hidden="true" />
+            <div className="cust-orbiter cust-orbiter-1" aria-hidden="true" />
+            <div className="cust-orbiter cust-orbiter-2" aria-hidden="true" />
+            <div className="cust-orbiter cust-orbiter-3" aria-hidden="true" />
+            <div className="cust-chip cust-chip-1" aria-hidden="true">🧀 Cheese</div>
+            <div className="cust-chip cust-chip-2" aria-hidden="true">🥩 19 Proteins</div>
+            <div className="cust-chip cust-chip-3" aria-hidden="true">🌿 Fresh Veggies</div>
+            <div className="cust-chip cust-chip-4" aria-hidden="true">🫙 8 Sauces</div>
+            <span className="cust-glint cust-glint-1" aria-hidden="true">✦</span>
+            <span className="cust-glint cust-glint-2" aria-hidden="true">✦</span>
+            <span className="cust-glint cust-glint-3" aria-hidden="true">✦</span>
+            <span className="cust-glint cust-glint-4" aria-hidden="true">✦</span>
+            <div className="cust-img-crop">
+              <img src="/images/byo/customize-icon.jpg" alt="Customize Your Order" className="cust-strip-icon" />
+            </div>
+          </div>
+
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
