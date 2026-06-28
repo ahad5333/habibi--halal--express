@@ -20,7 +20,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(10,10,10,0.6));
+  background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(10,10,10,0.75) 100%);
   pointer-events: none;
 }
 .co-hero-img {
@@ -30,6 +30,33 @@
   object-position: center 30%;
   display: block;
   max-height: 340px;
+}
+.co-hero-text {
+  position: absolute;
+  bottom: 1.6rem;
+  left: 1.5rem;
+  z-index: 2;
+}
+.co-hero-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 0.3rem;
+  line-height: 1.1;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.65);
+  letter-spacing: -0.01em;
+}
+.co-hero-sub {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.58);
+  margin: 0;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+@media (max-width: 480px) {
+  .co-hero-title { font-size: 1.4rem; }
+  .co-hero-sub   { font-size: 0.72rem; }
+  .co-hero-text  { bottom: 1rem; left: 1rem; }
 }
 
 /* ── Two-column layout ───────────────────────────────────────── */
@@ -654,6 +681,12 @@
 .co-section {
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
+.co-section.completed {
+  border-left: 3px solid rgba(229,182,78,0.4);
+}
+.co-section.completed .co-section-title {
+  color: #fff;
+}
 
 .co-section-hdr {
   width: 100%;
@@ -807,6 +840,34 @@
 .co-prot-info { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
 .co-prot-card .co-opt-emoji { font-size: 1.2rem; flex-shrink: 0; }
 .co-prot-card .co-opt-price { margin-left: auto; flex-shrink: 0; }
+
+/* Food photo thumbnails */
+.co-prot-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  transition: border-color 0.13s;
+}
+.co-opt-card.selected .co-prot-thumb { border-color: rgba(229,182,78,0.6); }
+
+.co-opt-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(255,255,255,0.1);
+  transition: border-color 0.13s;
+}
+.co-opt-card.selected .co-opt-thumb { border-color: rgba(229,182,78,0.6); }
+
+/* Press-scale feedback */
+.co-opt-card:active { transform: scale(0.96); transition: transform 0.08s; }
+.co-base-card:active { transform: scale(0.97); transition: transform 0.08s; }
 
 /* ── Check mark badge (shared) ───────────────────────────────── */
 .co-check {

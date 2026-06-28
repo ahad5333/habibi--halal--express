@@ -492,7 +492,7 @@ function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }
 /* ── Collapsible section ─────────────────────────────────────── */
 function Section({ id, title, icon, badge, open, onToggle, children }) {
   return (
-    <div className={`co-section${open ? ' open' : ''}`}>
+    <div className={`co-section${open ? ' open' : ''}${badge > 0 ? ' completed' : ''}`}>
       <button className="co-section-hdr" onClick={() => onToggle(id)}>
         <span className="co-section-left">
           <span className="co-section-icon">{icon}</span>
@@ -923,6 +923,10 @@ export default function CustomOrder() {
       {/* ── Header image ── */}
       <div className="co-hero">
         <img src="/images/byo/customize-hero.jpg" alt="Customize Your Order" className="co-hero-img" />
+        <div className="co-hero-text">
+          <h1 className="co-hero-title">Build Your Perfect Meal</h1>
+          <p className="co-hero-sub">Choose your base · Pick your proteins · Add your sauces</p>
+        </div>
       </div>
 
       <div className="co-layout">
@@ -1153,7 +1157,10 @@ export default function CustomOrder() {
                   className={`co-opt-card${cfg.cheese.type === opt.id ? ' selected' : ''}${isCheeseExcluded(opt.id) ? ' co-filtered' : ''}`}
                   onClick={() => !isCheeseExcluded(opt.id) && setCheeseType(opt.id)}
                 >
-                  <span className="co-opt-emoji">{opt.emoji}</span>
+                  {opt.img
+                    ? <div className="co-opt-thumb" style={{ backgroundImage: `url(${opt.img})` }} />
+                    : <span className="co-opt-emoji">{opt.emoji}</span>
+                  }
                   <span className="co-opt-name">{opt.label}</span>
                   {opt.price > 0 && <span className="co-opt-price">+${opt.price.toFixed(2)}</span>}
                   {cfg.cheese.type === opt.id && <span className="co-check"><Check size={11} /></span>}
@@ -1180,7 +1187,10 @@ export default function CustomOrder() {
                       className={`co-opt-card${sel ? ' selected' : ''}`}
                       onClick={() => toggleVeg(veg.id)}
                     >
-                      <span className="co-opt-emoji">{veg.emoji}</span>
+                      {veg.img
+                        ? <div className="co-opt-thumb" style={{ backgroundImage: `url(${veg.img})` }} />
+                        : <span className="co-opt-emoji">{veg.emoji}</span>
+                      }
                       <span className="co-opt-name">{veg.label}</span>
                       <span className="co-opt-price">+${veg.price.toFixed(2)}</span>
                       {veg.note && <span className="co-opt-note">{veg.note}</span>}
@@ -1213,7 +1223,10 @@ export default function CustomOrder() {
                       className={`co-opt-card co-prot-card${sel ? ' selected' : ''}${isProteinExcluded(prot.id) ? ' co-filtered' : ''}`}
                       onClick={() => !isProteinExcluded(prot.id) && toggleProtein(prot.id)}
                     >
-                      <span className="co-opt-emoji">{prot.emoji}</span>
+                      {prot.img
+                        ? <div className="co-prot-thumb" style={{ backgroundImage: `url(${prot.img})` }} />
+                        : <span className="co-opt-emoji">{prot.emoji}</span>
+                      }
                       <div className="co-prot-info">
                         <span className="co-opt-name">{prot.label}</span>
                         {prot.note && <span className="co-opt-note">{prot.note}</span>}
