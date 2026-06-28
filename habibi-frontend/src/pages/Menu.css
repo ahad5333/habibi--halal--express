@@ -1612,9 +1612,13 @@
     opacity: 0;
   }
 }
-  /* ── Desktop perf fix: hide animated smoke particles entirely.
-     The warm-haze ::before gradient remains — lightweight, no GPU cost. ── */
-  .item-fx-steam .smoke { display: none; }
+  /* ── Desktop perf fix: remove all animated effect particles.
+     Static glows (::before/::after gradients) are kept — zero GPU cost. ── */
+  .item-fx-steam .smoke            { display: none; }
+  .item-fx-fire  .flame,
+  .item-fx-fire  .spark            { display: none; }
+  .item-fx-frost .frost-particle   { display: none; }
+  .item-fx-frost                   { animation: none; }
 
 } /* end @media (min-width: 901px) */
 
