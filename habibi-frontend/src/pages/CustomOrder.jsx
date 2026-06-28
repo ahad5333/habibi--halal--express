@@ -611,12 +611,12 @@ export default function CustomOrder() {
         : sc.price * (SAUCE_FOOD_MULT[s.qty] || 1);
     });
     Object.entries(cfg.extras).forEach(([id, cnt]) => {
-      const item = extras.find(x => (x._id || x.id) === id);
-      if (item) t += item.price * cnt;
+      const item = extras.find(x => String(x._id ?? x.id) === id);
+      if (item) t += parseFloat(item.price || 0) * cnt;
     });
     Object.entries(cfg.drinks).forEach(([id, cnt]) => {
-      const item = drinks.find(x => (x._id || x.id) === id);
-      if (item) t += item.price * cnt;
+      const item = drinks.find(x => String(x._id ?? x.id) === id);
+      if (item) t += parseFloat(item.price || 0) * cnt;
     });
     return Math.max(0, t);
   }, [cfg, extras, drinks]);
@@ -887,7 +887,7 @@ export default function CustomOrder() {
             ) : (
               <div className="co-menu-grid">
                 {extras.map(item => {
-                  const id    = item._id || item.id;
+                  const id    = String(item._id ?? item.id);
                   const count = cfg.extras[id] || 0;
                   return (
                     <div key={id} className="co-menu-card">
@@ -916,7 +916,7 @@ export default function CustomOrder() {
             ) : (
               <div className="co-menu-grid">
                 {drinks.map(item => {
-                  const id    = item._id || item.id;
+                  const id    = String(item._id ?? item.id);
                   const count = cfg.drinks[id] || 0;
                   return (
                     <div key={id} className="co-menu-card">
