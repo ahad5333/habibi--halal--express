@@ -2,7 +2,7 @@
 .byo-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0,0,0,0.8);
   backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
@@ -22,8 +22,8 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-width: 520px;
-  max-height: 90dvh;
+  max-width: 560px;
+  max-height: 92dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -34,36 +34,29 @@
 }
 @keyframes byoSlideUp { from { transform: translateY(30px); opacity: 0; } }
 
-/* ─ Header ─────────────────────────────────────── */
-.byo-header {
+/* ─ Hero image (selected base preview) ────────────────────── */
+.byo-hero {
+  position: relative;
+  height: 160px;
+  flex-shrink: 0;
+  background: #0d0d0d center/cover no-repeat;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 1.5rem 1.5rem 1rem;
-  gap: 1rem;
+  align-items: flex-end;
+  transition: background-image 0.35s ease;
 }
-.byo-step-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #E5B64E;
-  margin-bottom: 0.25rem;
+
+.byo-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
 }
-.byo-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #f1f1f1;
-  margin: 0 0 0.25rem;
-}
-.byo-sub {
-  font-size: 0.82rem;
-  color: rgba(255,255,255,0.45);
-  margin: 0;
-}
-.byo-close {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
+
+.byo-close-hero {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -71,32 +64,161 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: rgba(255,255,255,0.6);
-  flex-shrink: 0;
+  color: rgba(255,255,255,0.8);
+  z-index: 2;
   transition: background 0.15s;
 }
-.byo-close:hover { background: rgba(255,255,255,0.12); }
+.byo-close-hero:hover { background: rgba(0,0,0,0.75) !important; }
 
-/* ─ Progress bar ────────────────────────────────── */
+.byo-hero-label {
+  position: relative;
+  z-index: 1;
+  padding: 0 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.byo-hero-base-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+.byo-hero-price {
+  font-size: 0.75rem;
+  color: #E5B64E;
+  font-weight: 600;
+}
+
+.byo-hero-prompt {
+  position: relative;
+  z-index: 1;
+  padding: 0 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.byo-hero-prompt > span:first-child {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+}
+.byo-hero-prompt-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+/* ─ Progress bar ─────────────────────────────────────── */
 .byo-progress-bar {
   height: 3px;
   background: rgba(255,255,255,0.08);
-  margin: 0 1.5rem;
-  border-radius: 2px;
+  border-radius: 0;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .byo-progress-fill {
   height: 100%;
   background: #E5B64E;
-  border-radius: 2px;
   transition: width 0.3s ease;
 }
 
-/* ─ Options grid ────────────────────────────────── */
+/* ─ Header ───────────────────────────────────────────── */
+.byo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.5rem 0.5rem;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+.byo-step-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E5B64E;
+  margin-bottom: 0.2rem;
+}
+.byo-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f1f1f1;
+  margin: 0 0 0.2rem;
+}
+.byo-sub {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.4);
+  margin: 0;
+}
+
+/* ─ Base picker grid ─────────────────────────────────── */
+.byo-bases {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.6rem !important;
+  padding: 0.75rem 1.25rem !important;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (min-width: 480px) {
+  .byo-bases { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+.byo-base-card {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.byo-base-card:hover {
+  border-color: rgba(229,182,78,0.5);
+  transform: translateY(-1px);
+}
+.byo-base-card.selected {
+  border-color: #E5B64E;
+  box-shadow: 0 0 0 1px #E5B64E;
+}
+
+.byo-base-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #222 center/cover no-repeat;
+}
+
+.byo-base-info {
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.byo-base-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #f1f1f1;
+  line-height: 1.2;
+}
+.byo-base-note {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.35);
+}
+.byo-base-price {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #E5B64E;
+}
+
+/* ─ Add-on options grid ──────────────────────────────── */
 .byo-options {
   display: grid;
   gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   overflow-y: auto;
   flex: 1;
 }
@@ -132,6 +254,7 @@
 .byo-opt-label { font-size: 0.82rem; font-weight: 600; color: #f1f1f1; }
 .byo-opt-desc  { font-size: 0.7rem; color: rgba(255,255,255,0.4); line-height: 1.3; }
 
+/* ─ Check badge (shared) ─────────────────────────────── */
 .byo-check {
   position: absolute;
   top: 0.4rem;
@@ -144,15 +267,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-/* ─ Footer ──────────────────────────────────────── */
+/* ─ Footer ───────────────────────────────────────────── */
 .byo-footer {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.5rem 1.25rem;
+  padding: 0.875rem 1.25rem 1.25rem;
   border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
 .byo-btn {
   display: inline-flex;
@@ -160,7 +285,7 @@
   gap: 0.4rem;
   padding: 0.75rem 1.25rem;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: filter 0.15s, background 0.15s;
