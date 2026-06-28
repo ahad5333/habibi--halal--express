@@ -119,7 +119,7 @@ const INGREDIENT_DB = {
   /* ── TOPPINGS ─────────────────────────────────────────────── */
 
   lettuce: {
-    img: '/images/byo/ing/lettuce.png',
+    img: '/images/byo/ing/lettuce.jpg',
     layer: 3, tile: false, blend: 'multiply',
     /* Lettuce is the BASE LAYER — it goes UNDER the protein.
        It should peek out from the sides and bottom slightly. */
@@ -134,7 +134,7 @@ const INGREDIENT_DB = {
   },
 
   tomatoes: {
-    img: '/images/byo/ing/tomato.png',
+    img: '/images/byo/ing/tomato.jpg',
     layer: 6, tile: true, blend: 'multiply',
     /* Tomato slices — tiled in a row, slightly above center */
     family: {
@@ -148,7 +148,7 @@ const INGREDIENT_DB = {
   },
 
   onions: {
-    img: '/images/byo/ing/onion.png',
+    img: '/images/byo/ing/onion.jpg',
     layer: 7, tile: true, blend: 'multiply',
     /* Onion rings/slices — small, many scattered pieces */
     family: {
@@ -176,7 +176,7 @@ const INGREDIENT_DB = {
   },
 
   peppers: {
-    img: '/images/byo/ing/pepper.png',
+    img: '/images/byo/ing/pepper.jpg',
     layer: 7, tile: true, blend: 'multiply',
     /* Hot pepper rings — angled and scattered, above most toppings */
     family: {
