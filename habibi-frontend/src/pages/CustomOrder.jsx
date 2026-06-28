@@ -424,42 +424,63 @@ function IngCanvas({ base, cfg }) {
     if (opt) chips.push({ id: opt.id, label: opt.label, img: null, emoji: opt.emoji });
   });
 
+  const visibleChips = chips.slice(0, 8);
+  const extraCount   = chips.length - visibleChips.length;
+
   return (
     <div className="co-canvas">
+      {/* Ambient center glow */}
+      <div className="co-canvas-center-glow" />
+
       {base ? (
         <>
+          {/* Spinning dashed orbit ring */}
+          <div className="co-canvas-ring co-canvas-ring--outer" />
+          <div className="co-canvas-ring co-canvas-ring--inner" />
+
+          {/* Circular food image */}
           <img src={base.img} alt={base.label} className="co-canvas-base"
             onError={e => { e.currentTarget.style.opacity='0.3'; }}
           />
-          <div className="co-canvas-overlay" />
+
+          {/* Base label badge — bottom of circle */}
           <div className="co-canvas-info">
             <span className="co-canvas-base-name">{base.label}</span>
             <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
           </div>
-          {chips.length > 0 ? (
-            <div className="co-ing-bar">
-              {chips.slice(0, 9).map((chip, i) => (
-                <div key={chip.id} className="co-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
-                  {chip.img
-                    ? <div className="co-ing-chip-thumb" style={{ backgroundImage: `url(${chip.img})` }} />
-                    : <div className="co-ing-chip-emoji">{chip.emoji}</div>
-                  }
-                  <span>{chip.label}</span>
-                </div>
-              ))}
-              {chips.length > 9 && (
-                <div className="co-ing-chip co-ing-chip-more">
-                  <span>+{chips.length - 9}</span>
+
+          {/* Orbital ingredient chips */}
+          {visibleChips.length > 0 ? (
+            <div className="co-canvas-orbitals">
+              {visibleChips.map((chip, i, arr) => {
+                const angle = (360 / arr.length) * i - 90;
+                return (
+                  <div
+                    key={chip.id}
+                    className="co-orbit-chip"
+                    style={{ '--orb-angle': `${angle}deg` }}
+                    title={chip.label}
+                  >
+                    {chip.img
+                      ? <div className="co-orbit-thumb" style={{ backgroundImage: `url(${chip.img})` }} />
+                      : <span className="co-orbit-emoji">{chip.emoji}</span>
+                    }
+                  </div>
+                );
+              })}
+              {extraCount > 0 && (
+                <div className="co-orbit-chip co-orbit-more" style={{ '--orb-angle': `${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg` }}>
+                  +{extraCount}
                 </div>
               )}
             </div>
           ) : (
-            <div className="co-canvas-hint">Add ingredients below ↓</div>
+            <p className="co-canvas-hint">Add ingredients below ↓</p>
           )}
         </>
       ) : (
         <div className="co-canvas-empty">
-          <img src="/images/byo/customize-icon.jpg" alt="" className="co-canvas-icon" />
+          <img src="/images/byo/customize-icon.webp" alt="" className="co-canvas-icon" />
           <span>Choose a base to preview your order</span>
         </div>
       )}

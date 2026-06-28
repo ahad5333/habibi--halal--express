@@ -152,142 +152,171 @@
 .co-canvas {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  background: #161616;
-  border-radius: 16px;
+  aspect-ratio: 1 / 1;
+  background: radial-gradient(circle at 50% 50%, #1c0900 0%, #0e0e0e 55%, #080808 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(249,115,22,0.18);
+  box-shadow: 0 0 40px rgba(249,115,22,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  border: 1px solid rgba(249,115,22,0.2);
-  box-shadow: 0 0 30px rgba(249,115,22,0.06);
 }
 
-/* Mobile: show canvas inline at top of groups */
 @media (max-width: 859px) {
   .co-canvas {
     width: calc(100% - 2rem);
     margin: 1rem auto 0;
     border-radius: 14px;
-    display: block;
   }
 }
 
-/* Full-canvas base photo — cover fills the frame dramatically */
-.co-canvas-base {
+/* Ambient orange center glow */
+.co-canvas-center-glow {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249,115,22,0.13) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Spinning decoration rings */
+.co-canvas-ring {
+  position: absolute;
+  border-radius: 50%;
+  border-style: dashed;
+  pointer-events: none;
+}
+.co-canvas-ring--outer {
+  width: 82%;
+  height: 82%;
+  border-width: 1px;
+  border-color: rgba(249,115,22,0.16);
+  animation: co-ring-spin 28s linear infinite;
   z-index: 1;
 }
-
-/* Gradient fade — makes chip bar readable over any photo */
-.co-canvas-overlay {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 72%;
-  background: linear-gradient(to top, rgba(4,4,4,0.96) 0%, rgba(4,4,4,0.52) 48%, transparent 100%);
-  pointer-events: none;
-  z-index: 2;
+.co-canvas-ring--inner {
+  width: 68%;
+  height: 68%;
+  border-width: 1px;
+  border-color: rgba(249,115,22,0.1);
+  animation: co-ring-spin 18s linear infinite reverse;
+  z-index: 1;
+}
+@keyframes co-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-/* Base name / price — top-left badge */
+/* Circular food image — centered */
+.co-canvas-base {
+  position: absolute;
+  width: 52%;
+  height: 52%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 3;
+  border: 3px solid rgba(249,115,22,0.55);
+  box-shadow:
+    0 0 0 5px rgba(249,115,22,0.08),
+    0 0 32px rgba(249,115,22,0.3),
+    0 0 64px rgba(249,115,22,0.1);
+}
+
+/* Base name badge — bottom centre */
 .co-canvas-info {
   position: absolute;
-  top: 0.7rem; left: 0.75rem;
+  bottom: 9%;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.06rem;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 0.3rem 0.55rem;
+  align-items: center;
+  gap: 0.04rem;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 20px;
+  padding: 0.22rem 0.8rem;
   pointer-events: none;
+  white-space: nowrap;
 }
-.co-canvas-base-name { font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.1; }
-.co-canvas-tag-price  { font-size: 0.66rem; color: #F97316; font-weight: 700; }
+.co-canvas-base-name { font-size: 0.72rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.co-canvas-tag-price  { font-size: 0.6rem;  color: #F97316; font-weight: 700; }
 
-/* Hint when base selected but no ingredients */
+/* Hint text */
 .co-canvas-hint {
   position: absolute;
-  bottom: 0.7rem; left: 0; right: 0;
+  bottom: 8%;
+  left: 0; right: 0;
   text-align: center;
-  font-size: 0.68rem;
-  color: rgba(255,255,255,0.38);
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
   z-index: 5;
+  pointer-events: none;
+  margin: 0;
+}
+
+/* ── Orbital ingredient chips ────────────────────────────────── */
+.co-canvas-orbitals {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
   pointer-events: none;
 }
 
-/* Wrapping ingredient chip area */
-.co-ing-bar {
+.co-orbit-chip {
   position: absolute;
-  bottom: 0.55rem; left: 0.65rem; right: 0.65rem;
-  display: flex;
-  gap: 0.28rem;
-  flex-wrap: wrap;
-  align-content: flex-end;
-  max-height: 6.5rem;
-  overflow: hidden;
-  z-index: 5;
-}
-
-.co-ing-chip {
+  width: 38px;
+  height: 38px;
+  top: 50%;
+  left: 50%;
+  margin: -19px;
+  border-radius: 50%;
+  background: rgba(14, 7, 0, 0.9);
+  border: 2px solid rgba(249,115,22,0.45);
+  box-shadow: 0 0 10px rgba(249,115,22,0.2), 0 2px 8px rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background: rgba(8,8,8,0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(249,115,22,0.35);
-  border-radius: 20px;
-  padding: 0.15rem 0.42rem 0.15rem 0.15rem;
-  animation: coChipIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
-  opacity: 0;
-}
-@keyframes coChipIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.8); }
-  to   { opacity: 1; transform: translateY(0)   scale(1);   }
+  justify-content: center;
+  overflow: hidden;
+  transform: rotate(var(--orb-angle)) translateX(108px) rotate(calc(-1 * var(--orb-angle)));
+  animation: orb-pop 0.35s cubic-bezier(.34,1.56,.64,1) both;
 }
 
-.co-ing-chip-thumb {
-  width: 22px; height: 22px;
-  border-radius: 50%;
+@keyframes orb-pop {
+  from { opacity: 0; scale: 0.4; }
+  to   { opacity: 1; scale: 1;   }
+}
+
+.co-orbit-thumb {
+  width: 100%;
+  height: 100%;
   background-size: cover;
   background-position: center;
-  border: 1.5px solid rgba(255,255,255,0.12);
-  flex-shrink: 0;
-}
-.co-ing-chip-emoji {
-  width: 22px; height: 22px;
   border-radius: 50%;
-  background: rgba(249,115,22,0.18);
-  border: 1.5px solid rgba(249,115,22,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-.co-ing-chip span {
-  font-size: 0.58rem;
-  font-weight: 700;
-  color: #f0ede8;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
 }
 
-/* "+N more" overflow pill */
-.co-ing-chip-more {
-  background: rgba(249,115,22,0.15);
-  border-color: rgba(249,115,22,0.45);
-  padding: 0.15rem 0.5rem;
+.co-orbit-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  user-select: none;
 }
-.co-ing-chip-more span {
-  font-size: 0.65rem;
+
+.co-orbit-more {
+  background: rgba(249,115,22,0.18);
+  border-color: rgba(249,115,22,0.6);
+  font-size: 0.6rem;
   font-weight: 800;
   color: #F97316;
 }
 
-/* Empty state */
+/* ── Empty state ─────────────────────────────────────────────── */
 .co-canvas-empty {
   display: flex;
   flex-direction: column;
@@ -297,16 +326,19 @@
   height: 100%;
   padding: 1.5rem;
   text-align: center;
+  z-index: 2;
+  position: relative;
 }
 .co-canvas-icon {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  opacity: 0.75;
+  opacity: 0.7;
+  border: 2px solid rgba(249,115,22,0.3);
 }
 .co-canvas-empty span {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: rgba(255,255,255,0.35);
   line-height: 1.4;
 }
