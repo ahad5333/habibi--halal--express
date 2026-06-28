@@ -526,7 +526,6 @@ const Menu = () => {
       <div className="menu-header">
         <div className="menu-header-overlay" />
         <div className="menu-header-content">
-          <img src="/images/hero/halal-certified.webp" alt="Halal Certified" className="menu-header-halal" />
           <h1 className="menu-header-title">Menu</h1>
           <p className="menu-header-sub">Every dish crafted with tradition, precision &amp; passion</p>
         </div>

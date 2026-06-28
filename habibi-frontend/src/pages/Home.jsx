@@ -278,10 +278,6 @@ const Home = () => {
       <section className="hero-section">
         <div className="hero-top-dark">
           
-          <div className="hero-halal-badge">
-            <img src="/images/hero/halal-certified.webp" alt="Halal Certified" className="halal-img" />
-          </div>
-
           <div className="floating-ingredients">
           </div>
 

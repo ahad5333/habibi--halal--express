@@ -212,11 +212,6 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                 <div className="mim-img-grad" />
 
                 <div className="mim-img-top">
-                  <img
-                    src="/images/hero/halal-certified.webp"
-                    alt="Halal"
-                    className="mim-halal-stamp"
-                  />
                   {(item?.is_popular || item?.is_featured) && (
                     <span className="mim-top-badge">
                       <Flame size={11} /> #1 Most Liked

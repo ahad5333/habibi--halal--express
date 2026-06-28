@@ -286,6 +286,12 @@ const Navbar = () => {
             />
           </Link>
 
+          <img
+            src="/images/logos/halal-certified-nav.jpg"
+            alt="Halal Certified"
+            className="navbar-halal-badge"
+          />
+
           <div className="navbar-top-right">
             {isLoggedIn && (
               <div className="notif-wrap" ref={bellRef}>

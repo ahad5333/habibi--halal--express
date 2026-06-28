@@ -219,11 +219,6 @@ const MenuItemPage = () => {
           </button>
         )}
 
-        <img
-          src="/images/hero/halal-certified.webp"
-          alt="Halal Certified"
-          className="mip-halal-stamp"
-        />
       </div>
 
       {/* ══════════ SCROLLABLE BODY ══════════ */}

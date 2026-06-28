@@ -27,6 +27,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  position: relative;
 }
 
 /* ── Logo ─────────────────────────────────────────────────── */
@@ -115,6 +116,20 @@
 }
 
 /* ── Right side of top bar ───────────────────────────────── */
+/* ── Halal Certified badge (center of top bar) ── */
+.navbar-halal-badge {
+  width: 66px;
+  height: 66px;
+  object-fit: contain;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  flex-shrink: 0;
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .navbar-top-right {
   display: flex;
   align-items: center;
@@ -144,6 +159,7 @@
 }
 @media (max-width: 768px) {
   .navbar-service-location { display: none; }
+  .navbar-halal-badge { display: none; }
 }
 
 /* Cart / Bell */
