@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
@@ -635,6 +635,32 @@ const Checkout = () => {
                         <div className="map-pin-center"><MapPin size={24} className="text-primary" fill="currentColor" /></div>
                         <p className="text-xs text-muted absolute bottom-2 left-2">DELIVERY MAP</p>
                       </div>
+
+                      {/* Estimated delivery time badge */}
+                      <div className={`eta-badge eta-badge--delivery${feeLoading ? ' eta-badge--loading' : ''}`}>
+                        <div className="eta-badge-icon">
+                          <Clock size={15} />
+                        </div>
+                        <div className="eta-badge-text">
+                          {feeLoading ? (
+                            <span className="eta-badge-time">Calculating…</span>
+                          ) : address.trim() ? (
+                            <>
+                              <span className="eta-badge-time">25–40 min</span>
+                              <span className="eta-badge-label">estimated delivery</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="eta-badge-time">30–45 min</span>
+                              <span className="eta-badge-label">once address is entered</span>
+                            </>
+                          )}
+                        </div>
+                        {address.trim() && !feeLoading && (
+                          <span className="eta-badge-live">LIVE</span>
+                        )}
+                      </div>
+
                       <div className="form-row two-col mb-4">
                         <div className="form-group">
                           <label className="form-label">RECEIVER NAME</label>
@@ -687,6 +713,18 @@ const Checkout = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Pickup ETA badge */}
+                      <div className="eta-badge eta-badge--pickup">
+                        <div className="eta-badge-icon eta-badge-icon--green">
+                          <Clock size={15} />
+                        </div>
+                        <div className="eta-badge-text">
+                          <span className="eta-badge-time">10–20 min</span>
+                          <span className="eta-badge-label">ready for pickup</span>
+                        </div>
+                      </div>
+
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
                           <label className="form-label">YOUR NAME</label>
