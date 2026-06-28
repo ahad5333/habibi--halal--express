@@ -181,9 +181,11 @@ function getDeliveryTier(miles) {
 
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
-  const mapEmbedSrc = (loc.latitude && loc.longitude)
-    ? `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=16&output=embed`
-    : null;
+  const mapEmbedSrc = loc.latitude && loc.longitude
+    ? `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=17&output=embed`
+    : loc.brief_address
+      ? `https://maps.google.com/maps?q=${encodeURIComponent(loc.brief_address)}&z=17&output=embed`
+      : null;
   const fallbackImg = getLocationImage(loc.title);
   const open        = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
@@ -215,6 +217,7 @@ function LocationCard({ loc, userCoords, index }) {
             className="lcn-map-iframe"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
           />
         ) : (
           <img
