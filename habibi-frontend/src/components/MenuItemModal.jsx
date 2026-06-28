@@ -5,6 +5,24 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
 
+/* ── Universal addon groups: Sauces / Make it a Meal! / Add a Drink ──
+   These 3 groups appear on every item (client spec).
+   "More Meat" and other item-specific groups come from the DB first. ── */
+const UNIVERSAL_SAUCES = {
+  id: '__sauces__',
+  title: 'Sauces',
+  options: [
+    { id: '__s1__', title: 'White Sauce',         price: 0.50 },
+    { id: '__s2__', title: 'Hot Sauce',            price: 0.50 },
+    { id: '__s3__', title: 'Ketchup',              price: 0.50 },
+    { id: '__s4__', title: 'Mustard',              price: 0.50 },
+    { id: '__s5__', title: 'BBQ Sauce',            price: 0.50 },
+    { id: '__s6__', title: 'Special Green Sauce',  price: 0.50 },
+    { id: '__s7__', title: 'Mayonnaise',           price: 0.50 },
+    { id: '__s8__', title: 'Blue Cheese',          price: 0.50 },
+  ],
+};
+
 const CATEGORY_FALLBACKS = {
   platter:       '/images/food/food-4.jpg',
   burger:        '/images/habibi-burger.jpg',
@@ -37,10 +55,12 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const { addItem } = useCart();
   const { isLoggedIn } = useAuth();
 
-  const [item,        setItem]        = useState(null);
-  const [modifiers,   setModifiers]   = useState({ choice_groups: [], addon_groups: [] });
-  const [loading,     setLoading]     = useState(true);
-  const [suggestions, setSuggestions] = useState([]);
+  const [item,           setItem]           = useState(null);
+  const [modifiers,      setModifiers]      = useState({ choice_groups: [], addon_groups: [] });
+  const [loading,        setLoading]        = useState(true);
+  const [suggestions,    setSuggestions]    = useState([]);
+  const [universalGroups, setUniversalGroups] = useState([]);
+  const [universalSel,   setUniversalSel]  = useState({});
 
   const [choiceSel, setChoiceSel] = useState({});
   const [addonSel,  setAddonSel]  = useState({});
@@ -53,10 +73,10 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   useEffect(() => {
     if (!itemId) return;
     setLoading(true);
-    setChoiceSel({}); setAddonSel({}); setNote(''); setQty(1); setAdded(false);
+    setChoiceSel({}); setAddonSel({}); setUniversalSel({}); setNote(''); setQty(1); setAdded(false);
 
-    Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId)])
-      .then(([itemData, mods]) => {
+    Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId), menuAPI.getAll()])
+      .then(([itemData, mods, all]) => {
         setItem(itemData);
         const safeMods = mods || { choice_groups: [], addon_groups: [] };
         setModifiers(safeMods);
@@ -67,17 +87,53 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
         });
         setChoiceSel(defaults);
 
-        // Fetch suggestions from same category
-        if (itemData?.category) {
-          menuAPI.getAll()
-            .then(all => {
-              const related = (Array.isArray(all) ? all : [])
-                .filter(m => m.category === itemData.category && m.id !== itemData.id && m.is_available !== false)
-                .slice(0, 6);
-              setSuggestions(related);
-            })
-            .catch(() => {});
+        const available = (Array.isArray(all) ? all : []).filter(m => m.is_available !== false);
+        const itemCat = (itemData?.category || '').toLowerCase();
+
+        // Suggestions — same category
+        const related = available
+          .filter(m => m.category === itemData?.category && m.id !== itemData?.id)
+          .slice(0, 6);
+        setSuggestions(related);
+
+        // Build universal groups (Sauces always first, then Meal, then Drink)
+        const uGroups = [UNIVERSAL_SAUCES];
+
+        const extras = available
+          .filter(m => (m.category || '').toLowerCase().includes('extra') && m.id !== itemData?.id)
+          .slice(0, 10);
+        if (extras.length > 0 && !itemCat.includes('extra')) {
+          uGroups.push({
+            id: '__meal__',
+            title: 'Make it a Meal!',
+            options: extras.map(m => ({
+              id: `__meal_${m.id}__`,
+              title: m.name || m.title,
+              price: parseFloat(m.price || 0),
+            })),
+          });
         }
+
+        const drinks = available
+          .filter(m =>
+            ((m.category || '').toLowerCase().includes('drink') ||
+             (m.category || '').toLowerCase().includes('beverage')) &&
+            m.id !== itemData?.id
+          )
+          .slice(0, 10);
+        if (drinks.length > 0 && !itemCat.includes('drink') && !itemCat.includes('beverage')) {
+          uGroups.push({
+            id: '__drink__',
+            title: 'Add a Drink',
+            options: drinks.map(m => ({
+              id: `__drk_${m.id}__`,
+              title: m.name || m.title,
+              price: parseFloat(m.price || 0),
+            })),
+          });
+        }
+
+        setUniversalGroups(uGroups);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -121,10 +177,20 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
     });
     return sum + price * q;
   }, 0);
-  const unitPrice = basePrice + choiceExtra + addonExtra;
+
+  const universalExtra = Object.entries(universalSel).reduce((sum, [optId, q]) => {
+    let price = 0;
+    universalGroups.forEach(ug => {
+      const opt = ug.options?.find(o => o.id === optId);
+      if (opt) price = parseFloat(opt.price || 0);
+    });
+    return sum + price * q;
+  }, 0);
+
+  const unitPrice = basePrice + choiceExtra + addonExtra + universalExtra;
   const total     = unitPrice * qty;
 
-  /* ── Addon helpers ── */
+  /* ── Addon helpers (DB groups) ── */
   const toggleAddon = optId => {
     setAddonSel(prev => {
       if (prev[optId]) { const n = { ...prev }; delete n[optId]; return n; }
@@ -133,6 +199,21 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   };
   const adjustAddonQty = (optId, delta) => {
     setAddonSel(prev => {
+      const next = (prev[optId] || 0) + delta;
+      if (next <= 0) { const n = { ...prev }; delete n[optId]; return n; }
+      return { ...prev, [optId]: next };
+    });
+  };
+
+  /* ── Universal addon helpers (string IDs) ── */
+  const toggleUniversal = optId => {
+    setUniversalSel(prev => {
+      if (prev[optId]) { const n = { ...prev }; delete n[optId]; return n; }
+      return { ...prev, [optId]: 1 };
+    });
+  };
+  const adjustUniversalQty = (optId, delta) => {
+    setUniversalSel(prev => {
       const next = (prev[optId] || 0) + delta;
       if (next <= 0) { const n = { ...prev }; delete n[optId]; return n; }
       return { ...prev, [optId]: next };
@@ -166,13 +247,26 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
         return { name, price, qty: q };
       }).filter(a => a.name);
 
+    // Universal group selections (sauces, meal, drink)
+    const universalList = Object.entries(universalSel)
+      .filter(([, q]) => q > 0)
+      .map(([optId, q]) => {
+        let name = '', price = 0;
+        universalGroups.forEach(ug => {
+          const opt = ug.options?.find(o => o.id === optId);
+          if (opt) { name = opt.title; price = parseFloat(opt.price || 0); }
+        });
+        return { name, price, qty: q };
+      }).filter(a => a.name);
+
+    const allAddons = [...addonsList, ...universalList];
     const itemNote = [choiceNote, note.trim()].filter(Boolean).join('\n');
     addItem({
       id:            item.id,
       name:          cleanName,
       price:         unitPrice,
       baseItemPrice: basePrice + choiceExtra,
-      addons:        addonsList,
+      addons:        allAddons,
       img:           item.image || item.image_url || categoryFallback(item),
       tag:           item.category || 'Item',
       note:          itemNote,
@@ -353,6 +447,52 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                   </div>
                 ))}
 
+                {/* ── Universal groups: Sauces / Make it a Meal! / Add a Drink ── */}
+                {universalGroups.map(ug => (
+                  <div key={ug.id} className="mim-section">
+                    <div className="mim-section-hd">
+                      <div>
+                        <span className="mim-section-title">{ug.title}</span>
+                        <p className="mim-section-sub">Add as many as you like</p>
+                      </div>
+                      <span className="mim-badge mim-badge--opt">Optional</span>
+                    </div>
+                    <div className="mim-options-list">
+                      {ug.options.map(opt => {
+                        const checked = !!universalSel[opt.id];
+                        const aqty   = universalSel[opt.id] || 0;
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`mim-addon-row${checked ? ' sel' : ''}`}
+                            onClick={() => toggleUniversal(opt.id)}
+                            role="checkbox"
+                            aria-checked={checked}
+                          >
+                            <div className={`mim-checkbox${checked ? ' on' : ''}`}>
+                              {checked && '✓'}
+                            </div>
+                            <span className="mim-opt-name">{opt.title}</span>
+                            <div className="mim-addon-right" onClick={e => e.stopPropagation()}>
+                              {checked ? (
+                                <div className="mim-stepper">
+                                  <button onClick={() => adjustUniversalQty(opt.id, -1)}><Minus size={10} /></button>
+                                  <span>{aqty}</span>
+                                  <button onClick={() => adjustUniversalQty(opt.id, 1)}><Plus size={10} /></button>
+                                </div>
+                              ) : (
+                                <span className="mim-addon-price">
+                                  {opt.price === 0 ? 'Free' : `+$${opt.price.toFixed(2)}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
                 {/* ── Special Instructions ── */}
                 <div className="mim-section">
                   <div className="mim-section-hd">
@@ -414,7 +554,7 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                     onClick={handleAdd}
                     disabled={missingRequired || added}
                   >
-                    {added ? '✓ Added to Cart!' : `Add to Cart — $${total.toFixed(2)}`}
+                    {added ? '✓ Added to Cart!' : `Add to Cart · $${total.toFixed(2)}`}
                   </button>
                 </div>
               </>
