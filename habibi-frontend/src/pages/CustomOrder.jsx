@@ -698,6 +698,10 @@ export default function CustomOrder() {
       }
     });
 
+    /* Reset form so the user can immediately build another order */
+    setCfg(INIT);
+    setOpen(new Set(['base']));
+
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
