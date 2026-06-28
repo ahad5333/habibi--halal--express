@@ -155,6 +155,7 @@
   text-decoration: none;
   flex-shrink: 0;
   position: relative;
+  margin-right: 0.6rem;
   animation: customize-float 3s ease-in-out infinite;
 }
 
