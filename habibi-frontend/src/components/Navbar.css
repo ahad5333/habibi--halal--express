@@ -130,7 +130,20 @@
   transform: translateX(-50%);
 }
 
-/* Customize Your Order icon button */
+/* ── Customize Your Order icon button ── */
+@keyframes customize-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes customize-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(229,182,78,0.5), 0 0 18px rgba(249,115,22,0.25); }
+  50%       { box-shadow: 0 0 18px rgba(229,182,78,0.85), 0 0 36px rgba(249,115,22,0.5); }
+}
+@keyframes customize-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-2px); }
+}
+
 .navbar-customize-btn {
   display: flex;
   flex-direction: column;
@@ -139,20 +152,55 @@
   text-decoration: none;
   flex-shrink: 0;
   margin: 0 0.5rem 0 auto;
+  position: relative;
 }
+
+/* Spinning gold ring behind the icon */
+.navbar-customize-btn::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #E5B64E 0deg,
+    #F97316 90deg,
+    transparent 130deg,
+    transparent 180deg,
+    #E5B64E 220deg,
+    #F97316 270deg,
+    transparent 310deg,
+    transparent 360deg
+  );
+  animation: customize-spin 3s linear infinite;
+  z-index: 0;
+}
+
 .navbar-customize-icon {
+  position: relative;
+  z-index: 1;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #E5B64E;
-  box-shadow: 0 0 10px rgba(229,182,78,0.35);
-  transition: box-shadow 0.2s, transform 0.15s;
+  border: 2.5px solid #0a0a0a;
+  animation: customize-pulse 2.5s ease-in-out infinite, customize-float 3s ease-in-out infinite;
+  transition: transform 0.2s;
 }
+
 .navbar-customize-btn:hover .navbar-customize-icon {
-  box-shadow: 0 0 18px rgba(229,182,78,0.65);
-  transform: scale(1.07);
+  transform: scale(1.1);
+  animation: none;
+  box-shadow: 0 0 22px rgba(229,182,78,0.9), 0 0 44px rgba(249,115,22,0.55);
 }
+
+.navbar-customize-btn:hover::before {
+  animation: customize-spin 0.8s linear infinite;
+}
+
 .navbar-customize-label {
   font-size: 0.54rem;
   font-weight: 700;
@@ -160,12 +208,15 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   display: none;
+  position: relative;
+  z-index: 1;
 }
 @media (min-width: 700px) {
   .navbar-customize-label { display: block; }
 }
 @media (max-width: 480px) {
   .navbar-customize-icon { width: 36px; height: 36px; }
+  .navbar-customize-btn::before { width: 44px; height: 44px; top: -2px; }
 }
 
 .navbar-top-right {
