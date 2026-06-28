@@ -459,7 +459,7 @@ function IngCanvas({ base, cfg }) {
                   <div
                     key={chip.id}
                     className="co-orbit-chip"
-                    style={{ transform: `rotate(${angle}deg) translateX(108px) rotate(${-angle}deg)` }}
+                    style={{ transform: `rotate(${angle}deg) translateX(92px) rotate(${-angle}deg)` }}
                     title={chip.label}
                   >
                     {chip.img
@@ -472,7 +472,7 @@ function IngCanvas({ base, cfg }) {
               {extraCount > 0 && (
                 <div
                   className="co-orbit-chip co-orbit-more"
-                  style={{ transform: `rotate(${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg) translateX(108px) rotate(${-(((360 / (visibleChips.length + 1)) * visibleChips.length) - 90)}deg)` }}
+                  style={{ transform: `rotate(${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg) translateX(92px) rotate(${-(((360 / (visibleChips.length + 1)) * visibleChips.length) - 90)}deg)` }}
                 >
                   +{extraCount}
                 </div>

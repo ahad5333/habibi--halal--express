@@ -226,10 +226,10 @@
     0 0 64px rgba(249,115,22,0.1);
 }
 
-/* Base name badge — bottom centre */
+/* Base name badge — top centre, above the food circle */
 .co-canvas-info {
   position: absolute;
-  bottom: 9%;
+  top: 8%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -241,7 +241,7 @@
   backdrop-filter: blur(8px);
   border: 1px solid rgba(249,115,22,0.25);
   border-radius: 20px;
-  padding: 0.45rem 0.8rem 0.22rem;
+  padding: 0.28rem 0.8rem;
   pointer-events: none;
   white-space: nowrap;
 }
