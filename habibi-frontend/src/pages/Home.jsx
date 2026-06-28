@@ -371,19 +371,19 @@ const Home = () => {
           <div className="byo-strip-left">
             <div className="byo-strip-eyebrow">
               <span className="byo-strip-eyebrow-dot" />
-              PERSONALIZE YOUR MEAL
+              BUILD IT YOUR WAY
             </div>
             <h3 className="byo-strip-title">
-              Build Your Own<br />
-              <span className="byo-strip-title-accent">Habibi Bowl</span>
+              Customize<br />
+              <span className="byo-strip-title-accent">Your Order</span>
             </h3>
             <p className="byo-strip-desc">
-              Layer your perfect bowl — fresh base, halal protein, bold toppings &amp; signature sauces.
-              Over <strong>100+</strong> combinations await.
+              19 halal proteins. 8 sauces. Fresh veggies &amp; cheese.
+              Every ingredient, every quantity, <strong>exactly how you want it</strong>.
             </p>
             {/* Step indicators */}
             <div className="byo-steps">
-              {['Base', 'Protein', 'Toppings', 'Sauce'].map((step, i) => (
+              {['Base', 'Cheese', 'Veggies', 'Protein', 'Sauces', 'Extras', 'Drink'].map((step, i) => (
                 <div key={step} className="byo-step">
                   <div className="byo-step-num">{i + 1}</div>
                   <span className="byo-step-label">{step}</span>
@@ -391,7 +391,7 @@ const Home = () => {
               ))}
             </div>
             <Link to="/menu?cat=byo" className="byo-strip-btn">
-              <span>Start Building</span>
+              <span>Customize Now</span>
               <span className="byo-strip-btn-arrow"><ChevronRight size={18} /></span>
             </Link>
           </div>
