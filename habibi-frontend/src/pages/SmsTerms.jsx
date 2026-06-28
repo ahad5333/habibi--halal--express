@@ -82,15 +82,11 @@ const SmsTerms = () => (
       description="SMS Terms and Conditions for Habibi Halal Express text message program. Learn about message frequency, opt-out instructions (STOP), and data rates."
     />
 
-    <div className="legal-hero sms-hero">
-      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.18 }} />
-      <div className="legal-hero-content">
-        <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
-        <h1 className="legal-title">SMS Terms &amp; Conditions</h1>
-        <p className="legal-subtitle">
-          Everything you need to know about our text message program, how it works, how to opt out, and your rights.
-        </p>
-      </div>
+    <div className="legal-hero">
+      <img src="/images/titles/sms-terms-title.jpg" alt="SMS Terms and Conditions — Habibi Halal Express" className="legal-hero-img" />
+    </div>
+    <div className="legal-hero-sub">
+      <p className="legal-subtitle">Everything you need to know about our text message program, how it works, how to opt out, and your rights.</p>
     </div>
 
     <div className="legal-body">

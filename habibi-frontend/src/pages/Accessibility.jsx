@@ -11,15 +11,11 @@ const Accessibility = () => (
     />
 
     {/* Hero */}
-    <div className="legal-hero accessibility-hero">
-      <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.18 }} />
-      <div className="legal-hero-content">
-        <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
-        <h1 className="legal-title">Accessibility Statement</h1>
-        <p className="legal-subtitle">
-          We are committed to making our website and app accessible to everyone, including people with disabilities.
-        </p>
-      </div>
+    <div className="legal-hero">
+      <img src="/images/titles/accessibility-title.jpg" alt="Accessibility Statement — Habibi Halal Express" className="legal-hero-img" />
+    </div>
+    <div className="legal-hero-sub">
+      <p className="legal-subtitle">We are committed to making our website and app accessible to everyone, including people with disabilities.</p>
     </div>
 
     <div className="legal-body">

@@ -130,14 +130,10 @@ export default function TermsOfService() {
       />
 
       <div className="legal-hero">
-        <div className="legal-hero-overlay" style={{ backgroundImage: "url('/images/legal_banner.png')", opacity: 0.15 }} />
-        <div className="legal-hero-content">
-          <p className="legal-eyebrow">Habibi Halal Express, INC.</p>
-          <h1 className="legal-title">Terms of Service</h1>
-          <p className="legal-subtitle">
-            These Terms govern your access to and use of our websites, mobile apps, ordering platform, delivery, payments, loyalty programs, and all related services.
-          </p>
-        </div>
+        <img src="/images/titles/terms-title.jpg" alt="Terms of Service — Habibi Halal Express" className="legal-hero-img" />
+      </div>
+      <div className="legal-hero-sub">
+        <p className="legal-subtitle">These Terms govern your access to and use of our websites, mobile apps, ordering platform, delivery, payments, loyalty programs, and all related services.</p>
       </div>
 
       <section className="section legal-body">

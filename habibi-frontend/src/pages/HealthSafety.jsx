@@ -46,20 +46,16 @@ export default function HealthSafety() {
   return (
     <>
       <SEO
-        title="Health & Safety — Habibi Halal Express"
+        title="Our Standards — Habibi Halal Express"
         description="Learn about Habibi Halal Express's commitment to Halal certification, NYC Health Department A-rating, allergen handling, and kitchen hygiene standards."
         url="/health-safety"
       />
 
       <div className="legal-hero">
-        <div className="legal-hero-overlay" />
-        <div className="container legal-hero-content">
-          <p className="legal-eyebrow">OUR STANDARDS</p>
-          <h1 className="legal-title">Health <span className="text-primary">&amp;</span> Safety</h1>
-          <p className="legal-subtitle">
-            Certified Halal. NYC Health A-Rated. Transparent from farm to table.
-          </p>
-        </div>
+        <img src="/images/titles/our-standards-title.jpg" alt="Our Standards — Habibi Halal Express" className="legal-hero-img" />
+      </div>
+      <div className="legal-hero-sub">
+        <p className="legal-subtitle">Certified Halal. NYC Health A-Rated. Transparent from farm to table.</p>
       </div>
 
       <section className="section legal-body">
