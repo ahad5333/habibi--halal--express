@@ -974,7 +974,12 @@ export default function CustomOrder() {
 
       <div className="co-layout">
 
-        {/* ── Left: sticky canvas ── */}
+        {/* ── Mobile-only canvas (above sections, hidden on desktop) ── */}
+        <div className="co-mobile-canvas-wrap">
+          <IngCanvas base={cfg.base} cfg={cfg} />
+        </div>
+
+        {/* ── Left: sticky canvas (desktop sidebar) ── */}
         <aside className="co-sidebar">
           <IngCanvas base={cfg.base} cfg={cfg} />
           <div className="co-price-card">

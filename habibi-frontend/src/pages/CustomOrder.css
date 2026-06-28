@@ -225,6 +225,25 @@
 @media (min-width: 860px)  { .co-sidebar { display: flex; } }
 @media (min-width: 1100px) { .co-sidebar { width: 320px; } }
 
+/* ── Mobile canvas strip (visible only below 860px) ─────────── */
+.co-mobile-canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1rem 0;
+  width: 100%;
+}
+.co-mobile-canvas-wrap .co-canvas {
+  width: min(320px, 100%);
+  margin: 0;
+}
+.co-mobile-canvas-wrap .co-canvas-info {
+  width: min(320px, 100%);
+}
+@media (min-width: 860px) {
+  .co-mobile-canvas-wrap { display: none; }
+}
+
 /* ── Compositing canvas ──────────────────────────────────────── */
 .co-canvas {
   position: relative;
