@@ -519,7 +519,7 @@ const INIT = {
 };
 
 export default function CustomOrder() {
-  const { addItem } = useCart();
+  const { addItem, items: cartItems, subtotal } = useCart();
   const navigate    = useNavigate();
   const [cfg, setCfg]         = useState(INIT);
   const [open, setOpen]       = useState(new Set(['base']));
@@ -983,6 +983,25 @@ export default function CustomOrder() {
 
         </main>
       </div>
+
+      {/* ── Sticky cart strip (same as Menu page) ── */}
+      {cartItems.length > 0 && (
+        <div className="menu-cart-strip">
+          <div className="menu-cart-strip-left">
+            <ShoppingBag size={16} />
+            <span className="menu-cart-count">
+              {cartItems.reduce((s, c) => s + c.qty, 0)} items
+            </span>
+            <span className="menu-cart-names">
+              {cartItems.slice(0, 2).map(ci => ci.name).join(', ')}
+              {cartItems.length > 2 && ` +${cartItems.length - 2} more`}
+            </span>
+          </div>
+          <Link to="/checkout" className="menu-cart-strip-btn">
+            View Cart · ${subtotal.toFixed(2)}
+          </Link>
+        </div>
+      )}
 
       {/* ── Sticky mobile footer ── */}
       <div className="co-mobile-footer">
