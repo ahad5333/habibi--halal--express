@@ -923,8 +923,10 @@ export default function CustomOrder() {
       {/* ── Header image ── */}
       <div className="co-hero">
         <img src="/images/byo/customize-hero.jpg" alt="Customize Your Order" className="co-hero-img" />
+        <div className="co-hero-overlay" aria-hidden="true" />
         <div className="co-hero-text">
-          <h1 className="co-hero-title">Build Your Perfect Meal</h1>
+          <span className="co-hero-eyebrow">✦ Habibi Halal Express</span>
+          <h1 className="co-hero-title">Build Your<br/>Perfect Meal</h1>
           <p className="co-hero-sub">Choose your base · Pick your proteins · Add your sauces</p>
         </div>
       </div>
