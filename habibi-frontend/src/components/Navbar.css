@@ -130,6 +130,44 @@
   transform: translateX(-50%);
 }
 
+/* Customize Your Order icon button */
+.navbar-customize-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin: 0 0.5rem 0 auto;
+}
+.navbar-customize-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #E5B64E;
+  box-shadow: 0 0 10px rgba(229,182,78,0.35);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.navbar-customize-btn:hover .navbar-customize-icon {
+  box-shadow: 0 0 18px rgba(229,182,78,0.65);
+  transform: scale(1.07);
+}
+.navbar-customize-label {
+  font-size: 0.54rem;
+  font-weight: 700;
+  color: #E5B64E;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: none;
+}
+@media (min-width: 700px) {
+  .navbar-customize-label { display: block; }
+}
+@media (max-width: 480px) {
+  .navbar-customize-icon { width: 36px; height: 36px; }
+}
+
 .navbar-top-right {
   display: flex;
   align-items: center;

@@ -430,6 +430,23 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          CUSTOMIZE YOUR ORDER — BANNER
+      ═══════════════════════════════════════════════════════ */}
+      <section className="customize-banner">
+        <Link to="/customize" className="customize-banner-inner">
+          <img src="/images/byo/customize-icon.jpg" alt="Customize Your Order" className="customize-banner-icon" />
+          <div className="customize-banner-text">
+            <span className="customize-banner-eyebrow">NEW</span>
+            <strong className="customize-banner-title">Customize Your Order</strong>
+            <span className="customize-banner-desc">Mix and match from 19 proteins, 8 sauces, veggies &amp; more — build exactly what you want.</span>
+          </div>
+          <span className="customize-banner-cta">
+            Build Now <ChevronRight size={16} />
+          </span>
+        </Link>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
           OUR STORY / CULINARY HERITAGE
       ═══════════════════════════════════════════════════════ */}
       <section className="section story-section">

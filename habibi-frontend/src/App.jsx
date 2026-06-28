@@ -47,6 +47,7 @@ const Reviews             = lazy(() => import('./pages/Reviews'));
 const Unsubscribe         = lazy(() => import('./pages/Unsubscribe'));
 const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
 const GroupOrder          = lazy(() => import('./pages/GroupOrder'));
+const CustomOrder         = lazy(() => import('./pages/CustomOrder'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -145,6 +146,7 @@ function Layout() {
           {/* Group Orders */}
           <Route path="/group-order"              element={<GroupOrder />} />
           <Route path="/group-order/:sessionId"   element={<GroupOrder />} />
+          <Route path="/customize"                element={<CustomOrder />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
