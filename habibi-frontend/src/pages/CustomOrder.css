@@ -285,7 +285,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transform: rotate(var(--orb-angle)) translateX(108px) rotate(calc(-1 * var(--orb-angle)));
+  /* transform applied via inline style in JSX */
   animation: orb-pop 0.35s cubic-bezier(.34,1.56,.64,1) both;
 }
 

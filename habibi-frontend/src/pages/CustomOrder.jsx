@@ -453,12 +453,13 @@ function IngCanvas({ base, cfg }) {
           {visibleChips.length > 0 ? (
             <div className="co-canvas-orbitals">
               {visibleChips.map((chip, i, arr) => {
-                const angle = (360 / arr.length) * i - 90;
+                const total = arr.length + (extraCount > 0 ? 1 : 0);
+                const angle = (360 / total) * i - 90;
                 return (
                   <div
                     key={chip.id}
                     className="co-orbit-chip"
-                    style={{ '--orb-angle': `${angle}deg` }}
+                    style={{ transform: `rotate(${angle}deg) translateX(108px) rotate(${-angle}deg)` }}
                     title={chip.label}
                   >
                     {chip.img
@@ -469,7 +470,10 @@ function IngCanvas({ base, cfg }) {
                 );
               })}
               {extraCount > 0 && (
-                <div className="co-orbit-chip co-orbit-more" style={{ '--orb-angle': `${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg` }}>
+                <div
+                  className="co-orbit-chip co-orbit-more"
+                  style={{ transform: `rotate(${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg) translateX(108px) rotate(${-(((360 / (visibleChips.length + 1)) * visibleChips.length) - 90)}deg)` }}
+                >
                   +{extraCount}
                 </div>
               )}
