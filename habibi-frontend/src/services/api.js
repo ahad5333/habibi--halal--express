@@ -308,6 +308,14 @@ export const favoritesAPI = {
   remove:  (menuItemId) => request(`/api/favorites/${menuItemId}`, { method: 'DELETE' }),
 };
 
+// ─── Saved Custom Orders ─────────────────────────────────────────────────────
+
+export const savedCustomAPI = {
+  getAll: ()              => request('/api/saved-customs'),
+  save:   (name, config)  => request('/api/saved-customs', { method: 'POST', body: JSON.stringify({ name, config }) }),
+  delete: (id)            => request(`/api/saved-customs/${id}`, { method: 'DELETE' }),
+};
+
 // ─── Notifications ───────────────────────────────────────────────────────────
 
 export const notificationsAPI = {

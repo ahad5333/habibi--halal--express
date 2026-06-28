@@ -271,6 +271,100 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Save order ──────────────────────────────────────────────── */
+.co-save-row { display: flex; flex-direction: column; gap: 0.4rem; }
+.co-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px dashed rgba(229,182,78,0.35);
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(229,182,78,0.75);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+.co-save-btn:hover { border-color: #E5B64E; color: #E5B64E; }
+.co-save-input-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.co-save-input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  color: #f0f0f0;
+  outline: none;
+}
+.co-save-input:focus { border-color: #E5B64E; }
+.co-save-input::placeholder { color: rgba(255,255,255,0.3); }
+.co-save-confirm, .co-save-cancel {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.15s;
+}
+.co-save-confirm { background: #E5B64E; color: #0a0a0a; }
+.co-save-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.co-save-cancel  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+.co-save-confirm:not(:disabled):hover, .co-save-cancel:hover { filter: brightness(1.15); }
+
+/* ── My Saved Orders section ─────────────────────────────────── */
+.co-saved-section {
+  padding: 0.75rem 1rem 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.co-saved-card {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-width: 140px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(99,179,237,0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.co-saved-load {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.co-saved-load:hover { background: rgba(99,179,237,0.08); }
+.co-saved-del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.co-saved-del:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
 /* ── Dietary filter chips ────────────────────────────────────── */
 .co-diet-filters {
   display: flex;

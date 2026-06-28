@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check } from 'lucide-react';
+import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check, Bookmark, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { menuAPI } from '../services/api';
+import { menuAPI, savedCustomAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO';
 import './CustomOrder.css';
 
@@ -582,6 +583,7 @@ const INIT = {
 
 export default function CustomOrder() {
   const { addItem, items: cartItems, subtotal } = useCart();
+  const { isLoggedIn } = useAuth();
   const navigate    = useNavigate();
   const [cfg, setCfg]         = useState(INIT);
   const [open, setOpen]       = useState(new Set(['base']));
@@ -590,7 +592,11 @@ export default function CustomOrder() {
   const [added, setAdded]             = useState(false);
   const [warnProtein, setWarnProtein] = useState(false);
   const [qty, setQty]                 = useState(1);
-  const [dietFilters, setDietFilters] = useState(new Set());
+  const [dietFilters, setDietFilters]     = useState(new Set());
+  const [savedOrders, setSavedOrders]     = useState([]);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [saveName, setSaveName]           = useState('');
+  const [saveStatus, setSaveStatus]       = useState('idle'); // idle | saving | saved | error
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -637,6 +643,44 @@ export default function CustomOrder() {
       }
       return next;
     });
+  };
+
+  /* Load saved orders when logged in */
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    savedCustomAPI.getAll().then(data => {
+      if (Array.isArray(data)) setSavedOrders(data);
+    }).catch(() => {});
+  }, [isLoggedIn]);
+
+  /* Save current config */
+  const handleSave = async () => {
+    if (!saveName.trim() || !cfg.base) return;
+    setSaveStatus('saving');
+    try {
+      const saved = await savedCustomAPI.save(saveName.trim(), cfg);
+      setSavedOrders(prev => [saved, ...prev]);
+      setSaveStatus('saved');
+      setSaveName('');
+      setTimeout(() => { setSaveStatus('idle'); setShowSaveInput(false); }, 1800);
+    } catch {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }
+  };
+
+  /* Delete a saved order */
+  const handleDeleteSaved = async id => {
+    await savedCustomAPI.delete(id).catch(() => {});
+    setSavedOrders(prev => prev.filter(o => o.id !== id));
+  };
+
+  /* Load a saved config */
+  const loadSaved = saved => {
+    setCfg({ ...INIT, ...saved.config });
+    setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    setWarnProtein(false);
+    setQty(1);
   };
 
   /* Apply a staff-pick preset */
@@ -879,6 +923,33 @@ export default function CustomOrder() {
               }
             </button>
 
+            {/* Save to account — logged-in + base selected */}
+            {isLoggedIn && cfg.base && (
+              <div className="co-save-row">
+                {!showSaveInput ? (
+                  <button className="co-save-btn" onClick={() => { setShowSaveInput(true); setSaveName(''); }}>
+                    <Bookmark size={14} /> Save this order
+                  </button>
+                ) : (
+                  <div className="co-save-input-row">
+                    <input
+                      className="co-save-input"
+                      placeholder="Name it (e.g. Dad's Special)"
+                      value={saveName}
+                      maxLength={60}
+                      onChange={e => setSaveName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSave()}
+                      autoFocus
+                    />
+                    <button className="co-save-confirm" onClick={handleSave} disabled={!saveName.trim() || saveStatus === 'saving'}>
+                      {saveStatus === 'saving' ? '…' : saveStatus === 'saved' ? '✓' : saveStatus === 'error' ? '!' : '↵'}
+                    </button>
+                    <button className="co-save-cancel" onClick={() => setShowSaveInput(false)}>✕</button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {warnProtein && (
               <div className="co-protein-warn">
                 <p className="co-protein-warn-msg">⚠️ No protein selected — your order will be veggie only.</p>
@@ -936,6 +1007,27 @@ export default function CustomOrder() {
 
         {/* ── Right: configuration groups ── */}
         <main className="co-groups">
+
+          {/* ── My Saved Orders (logged-in only) ── */}
+          {isLoggedIn && savedOrders.length > 0 && (
+            <div className="co-saved-section">
+              <p className="co-presets-label">🔖 My Saved Orders</p>
+              <div className="co-presets-track">
+                {savedOrders.map(order => (
+                  <div key={order.id} className="co-saved-card">
+                    <button className="co-saved-load" onClick={() => loadSaved(order)}>
+                      <span className="co-preset-emoji">🍽️</span>
+                      <span className="co-preset-name">{order.name}</span>
+                      <span className="co-preset-desc">{order.config?.base?.label || 'Custom order'}</span>
+                    </button>
+                    <button className="co-saved-del" onClick={() => handleDeleteSaved(order.id)} title="Delete">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Dietary filters ── */}
           <div className="co-diet-filters">
