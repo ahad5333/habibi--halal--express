@@ -593,6 +593,7 @@ export default function CustomOrder() {
   const [warnProtein, setWarnProtein] = useState(false);
   const [qty, setQty]                 = useState(1);
   const [dietFilters, setDietFilters]     = useState(new Set());
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [savedOrders, setSavedOrders]     = useState([]);
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveName, setSaveName]           = useState('');
@@ -776,6 +777,40 @@ export default function CustomOrder() {
     return Math.max(0, t);
   }, [cfg, extras, drinks]);
 
+  /* Price breakdown lines */
+  const breakdown = useMemo(() => {
+    if (!cfg.base) return [];
+    const lines = [];
+    lines.push({ label: cfg.base.label + ' (base)', price: cfg.base.price });
+    if (cfg.cheese.type !== 'none') {
+      const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
+      if (c) lines.push({ label: `${c.label} (${cfg.cheese.qty})`, price: c.price });
+    }
+    Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
+      const v = VEG_OPTS.find(x => x.id === id);
+      if (v) lines.push({ label: `${v.label} (${qty})`, price: v.price * (VEG_QTY_MULT[qty] || 1) });
+    });
+    Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
+      const p = PROTEIN_OPTS.find(x => x.id === id);
+      if (p) lines.push({ label: `${p.label} (${proteinQtyLabel(p, qty)})`, price: calcProteinPrice(p, qty) });
+    });
+    Object.entries(cfg.sauces).forEach(([id, s]) => {
+      const sc = SAUCE_OPTS.find(x => x.id === id);
+      if (!sc) return;
+      const price = s.placement === 'on_side' ? sc.price * (s.count || 1) : sc.price * (SAUCE_FOOD_MULT[s.qty] || 1);
+      lines.push({ label: `${sc.label}${s.placement === 'on_side' ? ' (on side)' : ''}`, price });
+    });
+    Object.entries(cfg.extras).forEach(([id, cnt]) => {
+      const item = extras.find(x => String(x._id ?? x.id) === id);
+      if (item) lines.push({ label: `${item.name} ×${cnt}`, price: parseFloat(item.price || 0) * cnt });
+    });
+    Object.entries(cfg.drinks).forEach(([id, cnt]) => {
+      const item = drinks.find(x => String(x._id ?? x.id) === id);
+      if (item) lines.push({ label: `${item.name} ×${cnt}`, price: parseFloat(item.price || 0) * cnt });
+    });
+    return lines;
+  }, [cfg, extras, drinks]);
+
   /* Build cart item note */
   const buildNote = () => {
     const parts = [];
@@ -898,6 +933,29 @@ export default function CustomOrder() {
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className="co-price-val">${total.toFixed(2)}</span>
+
+            {/* Price breakdown */}
+            {breakdown.length > 0 && (
+              <div className="co-breakdown">
+                <button className="co-breakdown-toggle" onClick={() => setShowBreakdown(p => !p)}>
+                  <span>{showBreakdown ? '▲' : '▼'} breakdown</span>
+                </button>
+                {showBreakdown && (
+                  <div className="co-breakdown-list">
+                    {breakdown.map((line, i) => (
+                      <div key={i} className="co-breakdown-row">
+                        <span className="co-breakdown-label">{line.label}</span>
+                        <span className="co-breakdown-price">${line.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="co-breakdown-total-row">
+                      <span>Total</span>
+                      <span>${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Quantity stepper */}
             {cfg.base && (

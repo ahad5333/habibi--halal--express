@@ -271,6 +271,56 @@
 .co-add-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
+/* ── Price breakdown ─────────────────────────────────────────── */
+.co-breakdown { display: flex; flex-direction: column; gap: 0; }
+.co-breakdown-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  text-align: left;
+  padding: 0;
+  transition: color 0.15s;
+  letter-spacing: 0.04em;
+}
+.co-breakdown-toggle:hover { color: rgba(229,182,78,0.7); }
+.co-breakdown-list {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  animation: co-slide-in 0.18s ease;
+}
+.co-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.co-breakdown-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.3;
+}
+.co-breakdown-price {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  white-space: nowrap;
+}
+.co-breakdown-total-row {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #E5B64E;
+}
+
 /* ── Save order ──────────────────────────────────────────────── */
 .co-save-row { display: flex; flex-direction: column; gap: 0.4rem; }
 .co-save-btn {
