@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Phone, Utensils, PackageX, Stethoscope, ShieldAlert, Clock, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, Phone, Utensils, PackageX, Stethoscope, ShieldAlert, Clock, CheckCircle, MessageSquare } from 'lucide-react';
 import { contactAPI } from '../services/api';
 import SEO from '../components/SEO';
 import './Urgent.css';
@@ -122,9 +123,6 @@ const Urgent = () => {
       <div className="urg-banner">
         <Phone size={14} />
         <span>Life-threatening emergency? <strong>Call 911 immediately.</strong></span>
-        <span className="urg-banner-sep">|</span>
-        <span>Habibi Emergency Line:</span>
-        <a href="tel:+17184000443" className="urg-banner-phone">(718) 400-0443</a>
       </div>
 
       {/* ── Hero ── */}
@@ -142,7 +140,6 @@ const Urgent = () => {
           </p>
           <div className="urg-hero-pills">
             <span className="urg-pill"><Clock size={12} /> 24 / 7 Monitoring</span>
-            <span className="urg-pill"><Phone size={12} /> SMS Alert to Manager</span>
             <span className="urg-pill"><CheckCircle size={12} /> Response &lt; 10 min</span>
           </div>
         </div>
@@ -175,6 +172,14 @@ const Urgent = () => {
               ))}
             </div>
 
+            <Link to="/contact" className="urg-other-link">
+              <MessageSquare size={16} />
+              <div>
+                <span className="urg-other-label">Something else?</span>
+                <span className="urg-other-sub">General questions, suggestions, complaints &amp; more</span>
+              </div>
+            </Link>
+
           </div>
 
           {/* Form */}
@@ -193,7 +198,7 @@ const Urgent = () => {
               <div className="urg-success">
                 <div className="urg-success-icon"><CheckCircle size={44} /></div>
                 <h3>Alert Dispatched</h3>
-                <p>Our team has been notified via SMS. A manager will contact you at <strong>{phone}</strong> within {type.sla}.</p>
+                <p>Our team has been notified. A manager will contact you at <strong>{phone}</strong> within {type.sla}.</p>
                 <p className="urg-success-ref">Reference: URG-{Date.now().toString().slice(-6)}</p>
                 <button className="btn btn-outline" onClick={() => { setSuccess(false); resetForm(); }}>
                   Submit Another
