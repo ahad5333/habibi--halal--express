@@ -437,8 +437,8 @@ function IngCanvas({ base, cfg }) {
           </div>
           {chips.length > 0 ? (
             <div className="co-ing-bar">
-              {chips.map((chip, i) => (
-                <div key={chip.id} className="co-ing-chip" style={{ animationDelay: `${i * 0.05}s` }}>
+              {chips.slice(0, 9).map((chip, i) => (
+                <div key={chip.id} className="co-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
                   {chip.img
                     ? <div className="co-ing-chip-thumb" style={{ backgroundImage: `url(${chip.img})` }} />
                     : <div className="co-ing-chip-emoji">{chip.emoji}</div>
@@ -446,6 +446,11 @@ function IngCanvas({ base, cfg }) {
                   <span>{chip.label}</span>
                 </div>
               ))}
+              {chips.length > 9 && (
+                <div className="co-ing-chip co-ing-chip-more">
+                  <span>+{chips.length - 9}</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="co-canvas-hint">Add ingredients below ↓</div>

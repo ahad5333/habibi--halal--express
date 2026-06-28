@@ -68,15 +68,20 @@
   z-index: 2;
 }
 
-/* Base name / price — sits just above the chip row */
+/* Base name / price — top-left badge, always visible */
 .byo-canvas-info {
   position: absolute;
-  bottom: 2.6rem;
+  top: 0.7rem;
   left: 0.75rem;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.08rem;
+  gap: 0.06rem;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
   pointer-events: none;
 }
 .byo-canvas-base-name { font-size: 0.82rem; font-weight: 800; color: #fff; line-height: 1.1; }
@@ -93,40 +98,38 @@
   pointer-events: none;
 }
 
-/* Horizontal scrolling ingredient chip bar */
+/* Wrapping ingredient chip area */
 .byo-ing-bar {
   position: absolute;
   bottom: 0.5rem; left: 0.6rem; right: 0.6rem;
   display: flex;
-  gap: 0.35rem;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  max-height: 5.8rem;
+  overflow: hidden;
   z-index: 5;
-  padding-bottom: 0.05rem;
 }
-.byo-ing-bar::-webkit-scrollbar { display: none; }
 
 .byo-ing-chip {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  background: rgba(8,8,8,0.84);
+  gap: 0.25rem;
+  background: rgba(8,8,8,0.82);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(229,182,78,0.35);
   border-radius: 20px;
-  padding: 0.18rem 0.5rem 0.18rem 0.18rem;
-  animation: byoChipIn 0.32s cubic-bezier(.34,1.56,.64,1) both;
+  padding: 0.15rem 0.42rem 0.15rem 0.15rem;
+  animation: byoChipIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
   opacity: 0;
 }
 @keyframes byoChipIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.78); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  from { opacity: 0; transform: translateY(8px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);   }
 }
 
 .byo-ing-chip-thumb {
-  width: 26px; height: 26px;
+  width: 22px; height: 22px;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
@@ -134,11 +137,23 @@
   flex-shrink: 0;
 }
 .byo-ing-chip span {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   color: #f0ede8;
   white-space: nowrap;
   letter-spacing: 0.02em;
+}
+
+/* "+N more" overflow pill */
+.byo-ing-chip-more {
+  background: rgba(229,182,78,0.15);
+  border-color: rgba(229,182,78,0.45);
+  padding: 0.15rem 0.5rem;
+}
+.byo-ing-chip-more span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #E5B64E;
 }
 
 /* Empty state (no base selected) */

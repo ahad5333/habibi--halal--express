@@ -681,16 +681,21 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               </div>
               {activeIngredients.length > 0 ? (
                 <div className="byo-ing-bar">
-                  {activeIngredients.map((id, i) => {
+                  {activeIngredients.slice(0, 8).map((id, i) => {
                     const meta = BYO_ING_META[id];
                     if (!meta) return null;
                     return (
-                      <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.05}s` }}>
+                      <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
                         <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
                         <span>{meta.label}</span>
                       </div>
                     );
                   })}
+                  {activeIngredients.length > 8 && (
+                    <div className="byo-ing-chip byo-ing-chip-more">
+                      <span>+{activeIngredients.length - 8}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="byo-canvas-hint">Select ingredients below ↓</div>
