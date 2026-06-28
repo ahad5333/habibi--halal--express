@@ -314,7 +314,7 @@ cron.schedule('*/5 * * * *', async () => {
       UPDATE guest_orders
          SET order_status = 'cancelled', updated_at = NOW()
        WHERE order_status = 'pending'
-         AND created_at < NOW() - INTERVAL '30 minutes'
+         AND placed_at < NOW() - INTERVAL '30 minutes'
     `);
     if (rowCount > 0) {
       console.log(`[Cron] Abandoned orders cancelled: ${rowCount}`);
