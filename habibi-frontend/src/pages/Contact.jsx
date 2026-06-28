@@ -203,23 +203,17 @@ const Contact = () => {
       />
 
       {/* ── Hero ── */}
-      <section className="ct-hero">
-        <div className="ct-hero-overlay" />
-        <div className="container ct-hero-content">
-          <p className="ct-eyebrow" style={{ color: '#FF3B30' }}>GET IN TOUCH</p>
-          <h1 className="ct-hero-title" style={{ color: '#ffffff' }}>
-            Concierge <span style={{ color: '#FF3B30' }}>&amp; Contact</span>
-          </h1>
-          <p className="ct-hero-sub" style={{ color: '#dddddd' }}>
-            Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.
-          </p>
-          <div className="ct-hero-pills">
-            <span className="ct-pill" style={{ color: '#ffb300' }}><Phone size={12} /> 24 / 7 Support</span>
-            <span className="ct-pill" style={{ color: '#ffb300' }}><CheckCircle size={12} /> Response in &lt;2 Hours</span>
-            <span className="ct-pill" style={{ color: '#ffb300' }}><MapPin size={12} /> 5 Bronx Locations</span>
-          </div>
+      <div className="ct-hero-chalk">
+        <img src="/images/titles/contact-title.jpg" alt="Contact Us — Habibi Halal Express" className="ct-hero-chalk-img" />
+      </div>
+      <div className="ct-hero-chalk-sub">
+        <p className="ct-hero-chalk-desc">Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.</p>
+        <div className="ct-hero-pills">
+          <span className="ct-pill"><Phone size={12} /> 24 / 7 Support</span>
+          <span className="ct-pill"><CheckCircle size={12} /> Response in &lt;2 Hours</span>
+          <span className="ct-pill"><MapPin size={12} /> 5 Bronx Locations</span>
         </div>
-      </section>
+      </div>
 
       {/* ── Form section ── */}
       <section className="section">
