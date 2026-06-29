@@ -387,3 +387,13 @@
   justify-content: center;
 }
 .byo-btn-add:not(:disabled):hover { filter: brightness(1.07); }
+.byo-total-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #E5B64E;
+  background: rgba(229,182,78,0.12);
+  border: 1px solid rgba(229,182,78,0.3);
+  border-radius: 20px;
+  padding: 0.25rem 0.7rem;
+  white-space: nowrap;
+}

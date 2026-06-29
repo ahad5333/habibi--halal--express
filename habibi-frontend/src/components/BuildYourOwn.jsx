@@ -518,6 +518,44 @@ function renderIngredient(id, family, extra) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   INGREDIENT PRICING  (base prices + base-family multipliers)
+───────────────────────────────────────────────────────────────── */
+const PROTEIN_FIRST_IDS = new Set(['chicken', 'lamb-gyro', 'mixed', 'bacon', 'tuna', 'shrimp', 'turkey']);
+const VEG_IDS           = new Set(['lettuce', 'tomatoes', 'onions', 'pickles', 'peppers']);
+
+const ING_BASE_PRICE = {
+  chicken: 3.99, 'lamb-gyro': 4.49, mixed: 4.99,
+  bacon:   2.49, tuna:        2.49, shrimp: 3.99, turkey: 2.49,
+  falafel: 2.49, hotdog:      1.99,
+  cheese:  0.99,
+  lettuce: 0,    tomatoes: 0.49, onions: 0.49,
+  pickles: 0.49, peppers:  0.49, hummus: 0.99,
+};
+
+/* Apply base-family multipliers per client spec:
+   - Protein first group: 0.8× compact/wrap/standard, 1× hero/platter, 4× familyTray
+   - Cheese: 2× on hero or familyTray
+   - Vegetables: 3× on familyTray */
+const calcIngPrice = (id, family) => {
+  const base = ING_BASE_PRICE[id] ?? 0;
+  if (base === 0) return 0;
+  if (PROTEIN_FIRST_IDS.has(id)) {
+    if (family === 'familyTray') return +(base * 4).toFixed(2);
+    if (family === 'hero' || family === 'platter') return base;
+    return +(base * 0.8).toFixed(2);
+  }
+  if (id === 'cheese') {
+    if (family === 'hero' || family === 'familyTray') return +(base * 2).toFixed(2);
+    return base;
+  }
+  if (VEG_IDS.has(id)) {
+    if (family === 'familyTray') return +(base * 3).toFixed(2);
+    return base;
+  }
+  return base;
+};
+
+/* ─────────────────────────────────────────────────────────────────
    BYO STEP DEFINITIONS (protein → toppings → sauce)
 ───────────────────────────────────────────────────────────────── */
 const ADD_ON_STEPS = [
@@ -526,26 +564,33 @@ const ADD_ON_STEPS = [
     title: 'Choose Your Protein',
     subtitle: 'Freshly prepared, Zabiha halal certified',
     type: 'single',
+    cols: 3,
     options: [
       { id: 'chicken',   label: 'Chicken',       emoji: '🍗', desc: 'Marinated chopped chicken' },
       { id: 'lamb-gyro', label: 'Lamb Gyro',      emoji: '🥩', desc: 'Slow-roasted gyro slices' },
       { id: 'mixed',     label: 'Mixed (Both)',   emoji: '🍖', desc: 'Chicken + Lamb gyro' },
+      { id: 'bacon',     label: 'Halal Bacon',    emoji: '🥓', desc: 'Crispy halal beef bacon' },
+      { id: 'tuna',      label: 'Tuna',           emoji: '🐟', desc: 'Fresh tuna salad' },
+      { id: 'shrimp',    label: 'Shrimp',         emoji: '🍤', desc: 'Grilled halal shrimp' },
+      { id: 'turkey',    label: 'Turkey',         emoji: '🦃', desc: 'Sliced turkey breast' },
       { id: 'falafel',   label: 'Falafel',        emoji: '🧆', desc: 'Crispy chickpea fritters' },
       { id: 'hotdog',    label: 'Frank / Hotdog', emoji: '🌭', desc: 'Grilled halal beef frank' },
     ],
   },
   {
     id: 'toppings',
-    title: 'Add Your Toppings',
+    title: 'Add Your Toppings & Cheese',
     subtitle: 'Select all that apply',
     type: 'multi',
+    cols: 3,
     options: [
-      { id: 'lettuce',  label: 'Lettuce',     emoji: '🥬' },
-      { id: 'tomatoes', label: 'Tomatoes',    emoji: '🍅' },
-      { id: 'onions',   label: 'Onions',      emoji: '🧅' },
-      { id: 'pickles',  label: 'Pickles',     emoji: '🥒' },
-      { id: 'peppers',  label: 'Hot Peppers', emoji: '🌶️' },
-      { id: 'hummus',   label: 'Hummus',      emoji: '🥣' },
+      { id: 'cheese',   label: 'Cheese',      emoji: '🧀' },
+      { id: 'lettuce',  label: 'Lettuce',      emoji: '🥬' },
+      { id: 'tomatoes', label: 'Tomatoes',     emoji: '🍅' },
+      { id: 'onions',   label: 'Onions',       emoji: '🧅' },
+      { id: 'pickles',  label: 'Pickles',      emoji: '🥒' },
+      { id: 'peppers',  label: 'Hot Peppers',  emoji: '🌶️' },
+      { id: 'hummus',   label: 'Hummus',       emoji: '🥣' },
     ],
   },
   {
@@ -553,6 +598,7 @@ const ADD_ON_STEPS = [
     title: 'Choose Your Sauce',
     subtitle: 'The finishing touch, drizzled on top',
     type: 'single',
+    cols: 2,
     options: [
       { id: 'white', label: 'White Sauce', emoji: '🤍', desc: 'Creamy & garlicky' },
       { id: 'hot',   label: 'Hot Sauce',   emoji: '🔥', desc: 'Spicy harissa blend' },
@@ -568,8 +614,14 @@ const ADD_ON_STEPS = [
 const BYO_ING_META = {
   chicken:     { label: 'Chicken',     img: '/images/byo/ing/chicken.jpg' },
   'lamb-gyro': { label: 'Lamb Gyro',   img: '/images/byo/ing/lamb-gyro.png' },
+  mixed:       { label: 'Mixed',       img: '/images/byo/ing/mix.jpg' },
+  bacon:       { label: 'Halal Bacon', img: '/images/byo/ing/bacon.jpg' },
+  tuna:        { label: 'Tuna',        img: '/images/byo/ing/tuna.jpg' },
+  shrimp:      { label: 'Shrimp',      img: '/images/byo/ing/shrimp.jpg' },
+  turkey:      { label: 'Turkey',      img: '/images/byo/ing/turkey.jpg' },
   falafel:     { label: 'Falafel',     img: '/images/byo/ing/falafel.png' },
   hotdog:      { label: 'Hot Dog',     img: '/images/byo/ing/hotdog.jpg' },
+  cheese:      { label: 'Cheese',      img: '/images/byo/ing/american-cheese.jpg' },
   lettuce:     { label: 'Lettuce',     img: '/images/byo/ing/lettuce.jpg' },
   tomatoes:    { label: 'Tomatoes',    img: '/images/byo/ing/tomato.jpg' },
   onions:      { label: 'Onions',      img: '/images/byo/ing/onion.jpg' },
@@ -602,6 +654,20 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
 
   const basePrice = selectedBase ? selectedBase.price : 0;
   const family    = selectedBase?.family || 'standard';
+
+  const calcTotal = () => {
+    let total = basePrice;
+    const prot = selections.protein;
+    if (prot === 'mixed') {
+      total += calcIngPrice('chicken', family) + calcIngPrice('lamb-gyro', family);
+    } else if (prot && prot !== 'none') {
+      total += calcIngPrice(prot, family);
+    }
+    (selections.toppings || []).forEach(t => { total += calcIngPrice(t, family); });
+    return total;
+  };
+
+  const runningTotal = calcTotal();
 
   /* Collect all ingredient IDs currently selected */
   const activeIngredients = (() => {
@@ -655,7 +721,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
   };
 
   const handleAdd = () => {
-    onAdd({ ...item, name: buildName(), note: buildNote(), price: basePrice }, 1);
+    onAdd({ ...item, name: buildName(), note: buildNote(), price: runningTotal }, 1);
   };
 
   const goBack = () => setStepIdx(i => (i === 0 ? -1 : i - 1));
@@ -677,7 +743,11 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               <div className="byo-canvas-overlay" />
               <div className="byo-canvas-info">
                 <span className="byo-canvas-base-name">{selectedBase.label}</span>
-                <span className="byo-canvas-price">from ${selectedBase.price.toFixed(2)}</span>
+                <span className="byo-canvas-price">
+                {runningTotal > basePrice
+                  ? `Total $${runningTotal.toFixed(2)}`
+                  : `from $${basePrice.toFixed(2)}`}
+              </span>
               </div>
               {activeIngredients.length > 0 ? (
                 <div className="byo-ing-bar">
@@ -758,7 +828,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
             ))}
           </div>
         ) : (
-          <div className={`byo-options ${step.type === 'multi' ? 'byo-grid-3' : 'byo-grid-2'}`}>
+          <div className={`byo-options byo-grid-${step.cols || 2}`}>
             {step.options.map(opt => {
               const selected = step.type === 'multi'
                 ? selections.toppings.includes(opt.id)
@@ -788,6 +858,9 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               <ChevronLeft size={16} /> Back
             </button>
           )}
+          {selectedBase && !isBasePicker && (
+            <span className="byo-total-badge">${runningTotal.toFixed(2)}</span>
+          )}
           <div style={{ flex: 1 }} />
           {isLast ? (
             <button
@@ -796,7 +869,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               disabled={!canAdvance}
             >
               <ShoppingBag size={16} />
-              Add to Cart · ${basePrice.toFixed(2)}
+              Add to Cart · ${runningTotal.toFixed(2)}
             </button>
           ) : (
             <button
