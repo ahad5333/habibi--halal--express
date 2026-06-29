@@ -160,6 +160,70 @@ const Menu = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), loading]);
 
+  const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
+
+  const filtered = items.filter(item => {
+    if ((locAvailMap[item.id] || 'available') === 'inactive') return false;
+    let catMatch = false;
+    if (activeCategory === 'all') {
+      catMatch = true;
+    } else if (activeCategory === 'breakfast') {
+      catMatch = (item.category || '').toLowerCase().includes('breakfast');
+    } else if (activeCategory === 'burgers') {
+      const name = (item.name || item.title || '').toLowerCase();
+      const cat  = (item.category || '').toLowerCase();
+      catMatch = cat === 'burgers' || cat.includes('berger') ||
+                 (cat === 'sandwich' && (name.includes('burger') || name.includes('berger')));
+    } else {
+      const m = activeCatObj?.match;
+      catMatch = item.category === m ||
+        (Array.isArray(item.categories) && !!m && item.categories.includes(m));
+    }
+    const words = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const searchMatch = words.length === 0 || words.every(w =>
+      [item.name || item.title || '', item.description || '', item.category || '']
+        .join(' ').toLowerCase().includes(w)
+    );
+    return catMatch && searchMatch;
+  });
+
+  // Featured section — breakfast items first, then by sort_order
+  const featuredItems = useMemo(() => {
+    const available = items.filter(i => i.is_available !== false && i.is_active !== false && (locAvailMap[i.id] || 'available') !== 'inactive');
+    const breakfast = available.filter(i =>
+      (i.category || '').toLowerCase().includes('breakfast')
+    );
+    const pool = breakfast.length >= 4 ? breakfast : [...available].sort((a, b) => {
+      const sa = a.sort_order ?? 9999;
+      const sb = b.sort_order ?? 9999;
+      return sa !== sb ? sa - sb : a.id - b.id;
+    });
+    return pool.slice(0, 8);
+  }, [items]);
+
+  // Group items by category for "All" view — items can appear in multiple sections
+  const categoryGroups = useMemo(() => {
+    if (activeCategory !== 'all') return [];
+    const groups = {};
+    filtered.forEach(item => {
+      const allCats = new Set([
+        ...(Array.isArray(item.categories) ? item.categories : []),
+        item.category,
+      ].filter(Boolean));
+      allCats.forEach(cat => {
+        if (!groups[cat]) groups[cat] = [];
+        if (!groups[cat].find(i => i.id === item.id)) groups[cat].push(item);
+      });
+    });
+    return Object.entries(groups).sort(([a], [b]) => {
+      const aL = a.toLowerCase();
+      const bL = b.toLowerCase();
+      const ia = CAT_ORDER.findIndex(m => aL === m.toLowerCase() || aL.includes(m.toLowerCase()));
+      const ib = CAT_ORDER.findIndex(m => bL === m.toLowerCase() || bL.includes(m.toLowerCase()));
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+  }, [filtered, activeCategory]);
+
   // Fire the deferred scroll once categoryGroups (sections) are actually rendered
   useEffect(() => {
     if (!pendingScrollCat || categoryGroups.length === 0) return;
@@ -294,72 +358,6 @@ const Menu = () => {
       if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   };
-
-  const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
-
-  const filtered = items.filter(item => {
-    if ((locAvailMap[item.id] || 'available') === 'inactive') return false;
-    let catMatch = false;
-    if (activeCategory === 'all') {
-      catMatch = true;
-    } else if (activeCategory === 'breakfast') {
-      catMatch = (item.category || '').toLowerCase().includes('breakfast');
-    } else if (activeCategory === 'burgers') {
-      const name = (item.name || item.title || '').toLowerCase();
-      const cat  = (item.category || '').toLowerCase();
-      catMatch = cat === 'burgers' || cat.includes('berger') ||
-                 (cat === 'sandwich' && (name.includes('burger') || name.includes('berger')));
-    } else {
-      const m = activeCatObj?.match;
-      catMatch = item.category === m ||
-        (Array.isArray(item.categories) && !!m && item.categories.includes(m));
-    }
-    const words = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    const searchMatch = words.length === 0 || words.every(w =>
-      [item.name || item.title || '', item.description || '', item.category || '']
-        .join(' ').toLowerCase().includes(w)
-    );
-    return catMatch && searchMatch;
-  });
-
-  // Featured section — breakfast items first, then by sort_order
-  const featuredItems = useMemo(() => {
-    const available = items.filter(i => i.is_available !== false && i.is_active !== false && (locAvailMap[i.id] || 'available') !== 'inactive');
-    const breakfast = available.filter(i =>
-      (i.category || '').toLowerCase().includes('breakfast')
-    );
-    // If we have enough breakfast items use those, otherwise fall back to sort_order
-    const pool = breakfast.length >= 4 ? breakfast : [...available].sort((a, b) => {
-      const sa = a.sort_order ?? 9999;
-      const sb = b.sort_order ?? 9999;
-      return sa !== sb ? sa - sb : a.id - b.id;
-    });
-    return pool.slice(0, 8);
-  }, [items]);
-
-  // Group items by category for "All" view — items can appear in multiple sections
-  const categoryGroups = useMemo(() => {
-    if (activeCategory !== 'all') return [];
-    const groups = {};
-    filtered.forEach(item => {
-      // Collect all categories this item belongs to
-      const allCats = new Set([
-        ...(Array.isArray(item.categories) ? item.categories : []),
-        item.category,
-      ].filter(Boolean));
-      allCats.forEach(cat => {
-        if (!groups[cat]) groups[cat] = [];
-        if (!groups[cat].find(i => i.id === item.id)) groups[cat].push(item);
-      });
-    });
-    return Object.entries(groups).sort(([a], [b]) => {
-      const aL = a.toLowerCase();
-      const bL = b.toLowerCase();
-      const ia = CAT_ORDER.findIndex(m => aL === m.toLowerCase() || aL.includes(m.toLowerCase()));
-      const ib = CAT_ORDER.findIndex(m => bL === m.toLowerCase() || bL.includes(m.toLowerCase()));
-      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-    });
-  }, [filtered, activeCategory]);
 
   // Scroll spy — highlight sidebar/tab matching the section currently in view
   useEffect(() => {
