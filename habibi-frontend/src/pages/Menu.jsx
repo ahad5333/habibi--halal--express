@@ -27,13 +27,29 @@ const CATEGORY_IMAGES = {
   breakfast: '/images/menu/g10.jpg',
   platter:   '/images/menu/G1.jpg',
   sandwich:  '/images/menu/G3.jpg',
-  burgers:   '/images/menu/G3.jpg',
-  tacos:     '/images/menu/G3b.png',
+  burgers:   '/images/habibi-burger.jpg',
+  tacos:     '/images/articles/habibi-taco-banner.jpg',
   specials:  '/images/menu/G5.jpg',
-  extras:    '/images/menu/G5.jpg',
+  extras:    '/images/halal-salad-v2.jpg',
   drinks:    '/images/menu/G7.jpg',
   family:    '/images/menu/G9.jpg',
-  byo:       '/images/menu/G9.jpg',
+  byo:       '/images/byo/customize-hero.jpg',
+};
+
+/* Map a raw DB category string to a banner image */
+const getCategoryBanner = dbCat => {
+  const c = (dbCat || '').toLowerCase();
+  if (c.includes('breakfast'))           return CATEGORY_IMAGES.breakfast;
+  if (c.includes('platter'))             return CATEGORY_IMAGES.platter;
+  if (c.includes('burger') || c.includes('berger')) return CATEGORY_IMAGES.burgers;
+  if (c.includes('sandwich'))            return CATEGORY_IMAGES.sandwich;
+  if (c.includes('taco'))                return CATEGORY_IMAGES.tacos;
+  if (c.includes('habibi') || c.includes('special')) return CATEGORY_IMAGES.specials;
+  if (c.includes('extra'))               return CATEGORY_IMAGES.extras;
+  if (c.includes('drink') || c.includes('beverage')) return CATEGORY_IMAGES.drinks;
+  if (c.includes('family'))              return CATEGORY_IMAGES.family;
+  if (c.includes('build'))               return CATEGORY_IMAGES.byo;
+  return null;
 };
 
 // Ordered list of DB category strings for section sorting
@@ -988,7 +1004,7 @@ const Menu = () => {
             </div>
           ) : (
             categoryGroups.map(([category, catItems]) => {
-              const isTacos = /^tacos?$/i.test(category.trim());
+              const bannerSrc = getCategoryBanner(category);
               return (
                 <div
                   key={category}
@@ -996,20 +1012,28 @@ const Menu = () => {
                   data-category={category}
                   ref={el => { sectionRefs.current[category] = el; }}
                 >
-                  {isTacos && (
-                    <div className="menu-cat-banner menu-cat-banner--tacos">
+                  {bannerSrc && (
+                    <div className="menu-cat-banner">
                       <img
-                        src="/images/articles/habibi-taco-banner.jpg"
-                        alt="Habibi Tacos — Our Flavor. Your Way. One Epic Taco."
+                        src={bannerSrc}
+                        alt={category}
                         className="menu-cat-banner-img"
                         loading="lazy"
+                        onError={e => { e.target.onerror = null; e.target.closest('.menu-cat-banner').style.display = 'none'; }}
                       />
+                      <div className="menu-cat-banner-overlay" />
+                      <div className="menu-cat-banner-label">
+                        <span className="menu-cat-banner-title">{category}</span>
+                        <span className="menu-cat-banner-count">{catItems.length} items</span>
+                      </div>
                     </div>
                   )}
-                  <div className="menu-cat-section-hd">
-                    <h3 className="menu-cat-section-title">{category}</h3>
-                    <span className="menu-cat-section-count">{catItems.length} items</span>
-                  </div>
+                  {!bannerSrc && (
+                    <div className="menu-cat-section-hd">
+                      <h3 className="menu-cat-section-title">{category}</h3>
+                      <span className="menu-cat-section-count">{catItems.length} items</span>
+                    </div>
+                  )}
                   <div className="menu-list">
                     {catItems.map((item, idx) => renderItemRow(item, idx))}
                   </div>

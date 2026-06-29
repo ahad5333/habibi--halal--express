@@ -364,6 +364,7 @@
 
 /* ── Category banner (Tacos) ── */
 .menu-cat-banner {
+  position: relative;
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
@@ -373,11 +374,39 @@
   width: 100%;
   display: block;
   object-fit: cover;
-  max-height: 260px;
+  max-height: 220px;
   border-radius: 14px;
 }
+.menu-cat-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 55%, transparent 100%);
+  border-radius: 14px;
+}
+.menu-cat-banner-label {
+  position: absolute;
+  bottom: 1rem;
+  left: 1.2rem;
+  right: 1.2rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.menu-cat-banner-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.menu-cat-banner-count {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+}
 @media (max-width: 600px) {
-  .menu-cat-banner-img { max-height: 180px; border-radius: 10px; }
+  .menu-cat-banner-img { max-height: 150px; border-radius: 10px; }
+  .menu-cat-banner-title { font-size: 1.1rem; }
 }
 
 .menu-cat-section-hd {
