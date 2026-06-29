@@ -462,6 +462,16 @@
   font-weight: 900;
   color: #F97316;
   line-height: 1;
+  transition: color 0.15s;
+}
+
+@keyframes co-total-flash {
+  0%   { color: #F97316; }
+  30%  { color: #fff; text-shadow: 0 0 12px #FB923C; }
+  100% { color: #F97316; text-shadow: none; }
+}
+.co-price-flash {
+  animation: co-total-flash 0.45s ease-out;
 }
 
 /* ── Add to Cart button ──────────────────────────────────────── */

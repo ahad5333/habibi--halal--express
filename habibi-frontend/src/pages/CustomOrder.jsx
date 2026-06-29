@@ -489,7 +489,6 @@ function IngCanvas({ base, cfg }) {
       {base && (
         <div className="co-canvas-info">
           <span className="co-canvas-base-name">{base.label}</span>
-          <span className="co-canvas-tag-price">from ${base.price.toFixed(2)}</span>
         </div>
       )}
     </>
@@ -510,7 +509,6 @@ function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }
             onClick={() => onChange(opt)}
           >
             {label}
-            {price !== null && <span className="co-qty-pill-price">${price.toFixed(2)}</span>}
           </button>
         );
       })}
@@ -627,6 +625,7 @@ export default function CustomOrder() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveName, setSaveName]           = useState('');
   const [saveStatus, setSaveStatus]       = useState('idle'); // idle | saving | saved | error
+  const [totalFlash, setTotalFlash]       = useState(false);
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -674,6 +673,14 @@ export default function CustomOrder() {
       return next;
     });
   };
+
+  /* Flash running total when it changes */
+  useEffect(() => {
+    if (total <= 0) return;
+    setTotalFlash(true);
+    const t = setTimeout(() => setTotalFlash(false), 450);
+    return () => clearTimeout(t);
+  }, [total]);
 
   /* Load saved orders when logged in */
   useEffect(() => {
@@ -984,7 +991,7 @@ export default function CustomOrder() {
           <IngCanvas base={cfg.base} cfg={cfg} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
-            <span className="co-price-val">${total.toFixed(2)}</span>
+            <span className={`co-price-val${totalFlash ? ' co-price-flash' : ''}`}>${total.toFixed(2)}</span>
 
             {/* Price breakdown */}
             {breakdown.length > 0 && (
@@ -1210,7 +1217,6 @@ export default function CustomOrder() {
                     : <span className="co-opt-emoji">{opt.emoji}</span>
                   }
                   <span className="co-opt-name">{opt.label}</span>
-                  {opt.price > 0 && <span className="co-opt-price">+${opt.price.toFixed(2)}</span>}
                   {cfg.cheese.type === opt.id && <span className="co-check"><Check size={11} /></span>}
                 </button>
               ))}
@@ -1240,7 +1246,6 @@ export default function CustomOrder() {
                         : <span className="co-opt-emoji">{veg.emoji}</span>
                       }
                       <span className="co-opt-name">{veg.label}</span>
-                      <span className="co-opt-price">+${veg.price.toFixed(2)}</span>
                       {veg.note && <span className="co-opt-note">{veg.note}</span>}
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
@@ -1249,14 +1254,13 @@ export default function CustomOrder() {
                         opts={QTY_OPTS.veg}
                         value={sel.qty}
                         onChange={qty => setVegQty(veg.id, qty)}
-                        formatPrice={qty => veg.price * (VEG_QTY_MULT[qty] || 1)}
                       />
                     )}
                   </div>
                 );
               })}
             </div>
-            <p className="co-qty-legend">Low/Regular = same price · Extra +50% · Double +100%</p>
+            <p className="co-qty-legend">Low · Regular · Extra · Double — price updates in running total above</p>
           </Section>
 
           {/* 4 — PROTEIN */}
@@ -1279,7 +1283,6 @@ export default function CustomOrder() {
                         <span className="co-opt-name">{prot.label}</span>
                         {prot.note && <span className="co-opt-note">{prot.note}</span>}
                       </div>
-                      <span className="co-opt-price">${prot.price.toFixed(2)}</span>
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
                     {sel && (
@@ -1287,7 +1290,6 @@ export default function CustomOrder() {
                         opts={prot.qtyType === 'eggs' ? QTY_OPTS.eggs : QTY_OPTS[prot.qtyType]}
                         value={sel.qty}
                         onChange={qty => setProteinQty(prot.id, qty)}
-                        formatPrice={qty => calcProteinPrice(prot, qty)}
                       />
                     )}
                   </div>
@@ -1314,7 +1316,6 @@ export default function CustomOrder() {
                     >
                       <span className="co-opt-emoji">{sauce.emoji}</span>
                       <span className="co-opt-name">{sauce.label}</span>
-                      <span className="co-opt-price">${sauce.price.toFixed(2)}</span>
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
                     {sel && (
@@ -1336,7 +1337,6 @@ export default function CustomOrder() {
                             opts={QTY_OPTS['sauce-food']}
                             value={sel.qty}
                             onChange={qty => setSauceQty(sauce.id, qty)}
-                            formatPrice={qty => sauce.price * (SAUCE_FOOD_MULT[qty] || 1)}
                           />
                         ) : (
                           <div className="co-counter-row">
@@ -1346,7 +1346,6 @@ export default function CustomOrder() {
                               <span>{sel.count || 1}</span>
                               <button onClick={() => setSauceCount(sauce.id, (sel.count||1)+1)}><Plus size={13}/></button>
                             </div>
-                            <span className="co-counter-price">${(sauce.price*(sel.count||1)).toFixed(2)}</span>
                           </div>
                         )}
                       </div>
@@ -1441,7 +1440,7 @@ export default function CustomOrder() {
       <div className="co-mobile-footer">
         <div className="co-mobile-total">
           <span>Total</span>
-          <strong>${total.toFixed(2)}</strong>
+          <strong className={totalFlash ? 'co-price-flash' : ''}>${total.toFixed(2)}</strong>
         </div>
         {cfg.base && (
           <div className="co-qty-row co-qty-row-mobile">
