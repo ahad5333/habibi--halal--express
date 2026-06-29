@@ -89,7 +89,7 @@ function Layout() {
     <>
       {!isFullscreen && <Navbar />}
       <main>
-        <ErrorBoundary>
+        <ErrorBoundary key={location.pathname}>
         <Suspense fallback={
           <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: 40, height: 40, border: '3px solid #d97706', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
