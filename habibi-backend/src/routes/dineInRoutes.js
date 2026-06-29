@@ -154,8 +154,8 @@ router.delete('/tables/:id', protect, admin, async (req, res) => {
   }
 });
 
-// ── Kitchen load — kitchen token or admin JWT required ───────────────────────
-router.get('/kitchen-load', kitchenAuth, async (req, res) => {
+// ── Public: kitchen load for dine-in QR landing (shows wait time to customers) ─
+router.get('/kitchen-load', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT COUNT(*) AS active_count
