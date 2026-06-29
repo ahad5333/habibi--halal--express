@@ -82,6 +82,28 @@ const SAUCE_OPTS = [
 const VEG_QTY_MULT  = { low: 1, regular: 1, extra: 1.5, double: 2 };
 const SAUCE_FOOD_MULT = { low: 0.5, regular: 1, extra: 2 };
 
+/* Proteins whose price scales with the selected base */
+const PROTEIN_BASE_TIERED = new Set([
+  'chicken', 'lamb-gyro', 'mix', 'bacon', 'tuna', 'shrimp', 'turkey',
+]);
+
+/* Base-dependent multipliers (per client spec):
+   - Cheese:   2× on Hero or Family Tray
+   - Veg:      3× on Family Tray
+   - Tiered proteins: 4× on Family Tray, 0.8× on compact/wrap/standard bases,
+                      1× on Hero or Platter                                     */
+function getBaseMultipliers(base) {
+  if (!base) return { cheese: 1, veg: 1, protein: 1 };
+  const isFamilyTray = base.id === '39j';
+  const isHero       = base.id === '39a';
+  const isPlatter    = base.id === '39i';
+  return {
+    cheese:  (isHero || isFamilyTray) ? 2 : 1,
+    veg:     isFamilyTray ? 3 : 1,
+    protein: isFamilyTray ? 4 : (isHero || isPlatter) ? 1 : 0.8,
+  };
+}
+
 function calcProteinPrice(protein, qty) {
   const b = protein.price;
   switch (protein.qtyType) {
@@ -783,17 +805,22 @@ export default function CustomOrder() {
 
   /* Running total */
   const total = useMemo(() => {
+    const mult = getBaseMultipliers(cfg.base);
     let t = cfg.base?.price || 0;
     if (cfg.cheese.type !== 'none') {
-      t += CHEESE_OPTS.find(c => c.id === cfg.cheese.type)?.price || 0;
+      const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
+      if (c) t += c.price * mult.cheese;
     }
     Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
       const v = VEG_OPTS.find(x => x.id === id);
-      if (v) t += v.price * (VEG_QTY_MULT[qty] || 1);
+      if (v) t += v.price * (VEG_QTY_MULT[qty] || 1) * mult.veg;
     });
     Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
       const p = PROTEIN_OPTS.find(x => x.id === id);
-      if (p) t += calcProteinPrice(p, qty);
+      if (p) {
+        const m = PROTEIN_BASE_TIERED.has(id) ? mult.protein : 1;
+        t += calcProteinPrice(p, qty) * m;
+      }
     });
     Object.entries(cfg.sauces).forEach(([id, s]) => {
       const sc = SAUCE_OPTS.find(x => x.id === id);
@@ -816,19 +843,23 @@ export default function CustomOrder() {
   /* Price breakdown lines */
   const breakdown = useMemo(() => {
     if (!cfg.base) return [];
+    const mult = getBaseMultipliers(cfg.base);
     const lines = [];
     lines.push({ label: cfg.base.label + ' (base)', price: cfg.base.price });
     if (cfg.cheese.type !== 'none') {
       const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
-      if (c) lines.push({ label: `${c.label} (${cfg.cheese.qty})`, price: c.price });
+      if (c) lines.push({ label: `${c.label} (${cfg.cheese.qty})`, price: c.price * mult.cheese });
     }
     Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
       const v = VEG_OPTS.find(x => x.id === id);
-      if (v) lines.push({ label: `${v.label} (${qty})`, price: v.price * (VEG_QTY_MULT[qty] || 1) });
+      if (v) lines.push({ label: `${v.label} (${qty})`, price: v.price * (VEG_QTY_MULT[qty] || 1) * mult.veg });
     });
     Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
       const p = PROTEIN_OPTS.find(x => x.id === id);
-      if (p) lines.push({ label: `${p.label} (${proteinQtyLabel(p, qty)})`, price: calcProteinPrice(p, qty) });
+      if (p) {
+        const m = PROTEIN_BASE_TIERED.has(id) ? mult.protein : 1;
+        lines.push({ label: `${p.label} (${proteinQtyLabel(p, qty)})`, price: calcProteinPrice(p, qty) * m });
+      }
     });
     Object.entries(cfg.sauces).forEach(([id, s]) => {
       const sc = SAUCE_OPTS.find(x => x.id === id);
@@ -992,6 +1023,12 @@ export default function CustomOrder() {
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className={`co-price-val${totalFlash ? ' co-price-flash' : ''}`}>${total.toFixed(2)}</span>
+            {cfg.base?.id === '39j' && (
+              <span className="co-base-hint">Family Tray: ingredients scaled ×4 portions</span>
+            )}
+            {cfg.base?.id === '39a' && (
+              <span className="co-base-hint">Hero: cheese doubled</span>
+            )}
 
             {/* Price breakdown */}
             {breakdown.length > 0 && (

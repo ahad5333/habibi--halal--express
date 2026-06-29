@@ -474,6 +474,15 @@
   animation: co-total-flash 0.45s ease-out;
 }
 
+.co-base-hint {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(251,146,60,0.75);
+  text-align: center;
+  margin-top: 0.2rem;
+  letter-spacing: 0.02em;
+}
+
 /* ── Add to Cart button ──────────────────────────────────────── */
 .co-add-btn {
   display: inline-flex;
