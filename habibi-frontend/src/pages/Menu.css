@@ -1282,23 +1282,14 @@
 
   .mf-img-wrap { overflow: visible !important; }
 
-  /* Smoke rises straight up, scale capped at 1.0 — contained within the
-     img-wrap thumbnail (clipped by overflow:hidden above). */
-  @keyframes smokeRiseA {
-    0%   { transform: translateY(0)      scale(0.35); opacity: 0;    }
-    7%   { opacity: 0.80; }
-    28%  { transform: translateY(-32px)  scale(0.60); opacity: 0.65; }
-    55%  { transform: translateY(-64px)  scale(0.80); opacity: 0.38; }
-    80%  { transform: translateY(-96px)  scale(0.92); opacity: 0.15; }
-    100% { transform: translateY(-128px) scale(1.00); opacity: 0;    }
-  }
-  @keyframes smokeRiseB {
-    0%   { transform: translateY(0)      scale(0.35); opacity: 0;    }
-    7%   { opacity: 0.78; }
-    30%  { transform: translateY(-36px)  scale(0.62); opacity: 0.60; }
-    58%  { transform: translateY(-68px)  scale(0.82); opacity: 0.35; }
-    82%  { transform: translateY(-100px) scale(0.95); opacity: 0.13; }
-    100% { transform: translateY(-132px) scale(1.00); opacity: 0;    }
+  /* Steam wisps on mobile — rise, sway, expand, fade */
+  @keyframes steamWisp {
+    0%   { transform: translateY(0)      translateX(0)    scaleX(1);   opacity: 0;    }
+    8%   { opacity: 0.9; }
+    28%  { transform: translateY(-22px)  translateX(4px)  scaleX(1.3); opacity: 0.85; }
+    55%  { transform: translateY(-50px)  translateX(-3px) scaleX(1.7); opacity: 0.55; }
+    80%  { transform: translateY(-74px)  translateX(4px)  scaleX(2.0); opacity: 0.20; }
+    100% { transform: translateY(-92px)  translateX(1px)  scaleX(2.4); opacity: 0;    }
   }
   /* Sparks: rise straight up, no side drift */
   @keyframes sparkRiseHigh {
@@ -1625,156 +1616,59 @@
   overflow: visible;
 }
 
-/* Warm haze at the food surface */
+/* Warm heat glow at the food surface */
 .item-fx-steam::before {
   content: '';
   position: absolute;
-  bottom: 0; left: 5%; right: 5%; height: 50%;
+  bottom: 0; left: 0; right: 0; height: 55%;
   background: radial-gradient(ellipse at bottom,
-    rgba(255, 200, 100, 0.22) 0%,
-    rgba(255, 240, 180, 0.10) 40%,
-    transparent 75%
+    rgba(255, 180, 60, 0.32) 0%,
+    rgba(255, 220, 120, 0.16) 38%,
+    transparent 70%
   );
-  filter: blur(10px);
+  filter: blur(8px);
   pointer-events: none;
   z-index: 1;
 }
 
-/* All smoke puffs — soft rounded blobs */
+/* Steam wisps — thin vertical tendrils, fade at top & bottom */
 .item-fx-steam .smoke {
   position: absolute;
-  border-radius: 50%;
+  border-radius: 40%;
   opacity: 0;
   pointer-events: none;
   transform-origin: center bottom;
   will-change: transform, opacity;
-  filter: url(#smoke-warp) blur(7px);
+  filter: blur(2.5px);
   z-index: 2;
+  background: linear-gradient(to top,
+    transparent 0%,
+    rgba(255,255,255,0.55) 20%,
+    rgba(255,255,255,0.88) 50%,
+    rgba(255,255,255,0.50) 80%,
+    transparent 100%
+  );
 }
 
-/* Puff 1 — large, left-center */
-.item-fx-steam .smoke.s1 {
-  width: 40px; height: 46px;
-  bottom: 28%; left: 22%;
-  background: radial-gradient(ellipse at 45% 55%,
-    rgba(255,255,255,0.92) 0%,
-    rgba(240,240,240,0.55) 38%,
-    rgba(255,255,255,0.15) 62%,
-    transparent 80%);
-  animation: smokeRiseA 4.4s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 0s;
-}
-/* Puff 2 — medium, far left */
-.item-fx-steam .smoke.s2 {
-  width: 30px; height: 34px;
-  bottom: 32%; left: 10%;
-  background: radial-gradient(ellipse at 50% 60%,
-    rgba(255,255,255,0.80) 0%,
-    rgba(235,235,235,0.45) 40%,
-    rgba(255,255,255,0.10) 65%,
-    transparent 82%);
-  animation: smokeRiseB 3.9s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 0.55s;
-}
-/* Puff 3 — large, center */
-.item-fx-steam .smoke.s3 {
-  width: 44px; height: 50px;
-  bottom: 25%; left: 38%;
-  background: radial-gradient(ellipse at 42% 52%,
-    rgba(255,255,255,0.88) 0%,
-    rgba(245,245,245,0.52) 35%,
-    rgba(255,255,255,0.14) 60%,
-    transparent 80%);
-  animation: smokeRiseA 4.8s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 1.1s;
-}
-/* Puff 4 — medium, right-center */
-.item-fx-steam .smoke.s4 {
-  width: 34px; height: 38px;
-  bottom: 30%; left: 56%;
-  background: radial-gradient(ellipse at 48% 55%,
-    rgba(255,255,255,0.85) 0%,
-    rgba(240,240,240,0.48) 38%,
-    rgba(255,255,255,0.12) 63%,
-    transparent 82%);
-  animation: smokeRiseB 4.2s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 1.7s;
-}
-/* Puff 5 — small, far right */
-.item-fx-steam .smoke.s5 {
-  width: 26px; height: 30px;
-  bottom: 34%; left: 68%;
-  background: radial-gradient(ellipse at 50% 58%,
-    rgba(255,255,255,0.78) 0%,
-    rgba(238,238,238,0.42) 42%,
-    rgba(255,255,255,0.10) 66%,
-    transparent 84%);
-  animation: smokeRiseA 3.7s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 0.85s;
-}
-/* Puff 6 — large, center-left delayed */
-.item-fx-steam .smoke.s6 {
-  width: 38px; height: 44px;
-  bottom: 26%; left: 30%;
-  background: radial-gradient(ellipse at 44% 54%,
-    rgba(255,255,255,0.86) 0%,
-    rgba(242,242,242,0.50) 36%,
-    rgba(255,255,255,0.13) 61%,
-    transparent 80%);
-  animation: smokeRiseB 5.0s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 2.3s;
-}
-/* Puff 7 — small, center-right */
-.item-fx-steam .smoke.s7 {
-  width: 22px; height: 26px;
-  bottom: 36%; left: 48%;
-  background: radial-gradient(ellipse at 50% 56%,
-    rgba(255,255,255,0.75) 0%,
-    rgba(236,236,236,0.40) 44%,
-    rgba(255,255,255,0.09) 67%,
-    transparent 85%);
-  animation: smokeRiseA 3.5s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 2.95s;
-}
-/* Puff 8 — medium, left-mid late */
-.item-fx-steam .smoke.s8 {
-  width: 28px; height: 32px;
-  bottom: 29%; left: 18%;
-  background: radial-gradient(ellipse at 46% 58%,
-    rgba(255,255,255,0.82) 0%,
-    rgba(238,238,238,0.44) 40%,
-    rgba(255,255,255,0.11) 64%,
-    transparent 83%);
-  animation: smokeRiseB 4.3s cubic-bezier(0.25,0.1,0.25,1) infinite;
-  animation-delay: 1.45s;
-}
+.item-fx-steam .smoke.s1 { width: 5px; height: 62px; bottom: 4%; left: 22%; animation: steamWisp 3.5s ease-in-out infinite 0s; }
+.item-fx-steam .smoke.s2 { width: 4px; height: 52px; bottom: 5%; left: 38%; animation: steamWisp 3.9s ease-in-out infinite 0.65s; }
+.item-fx-steam .smoke.s3 { width: 6px; height: 72px; bottom: 4%; left: 53%; animation: steamWisp 4.1s ease-in-out infinite 1.3s; }
+.item-fx-steam .smoke.s4 { width: 3px; height: 48px; bottom: 5%; left: 67%; animation: steamWisp 3.3s ease-in-out infinite 2.0s; }
+.item-fx-steam .smoke.s5 { width: 5px; height: 58px; bottom: 4%; left: 15%; animation: steamWisp 3.7s ease-in-out infinite 0.4s; }
+.item-fx-steam .smoke.s6 { width: 4px; height: 67px; bottom: 5%; left: 44%; animation: steamWisp 4.4s ease-in-out infinite 1.85s; }
+.item-fx-steam .smoke.s7 { width: 3px; height: 44px; bottom: 4%; left: 60%; animation: steamWisp 3.2s ease-in-out infinite 2.7s; }
+.item-fx-steam .smoke.s8 { width: 4px; height: 55px; bottom: 4%; left: 30%; animation: steamWisp 3.8s ease-in-out infinite 1.1s; }
 
-/* Desktop-only: full drifting smoke with translateX and large scale.
-   Scoped to ≥901px so the mobile-safe versions (inside max-width:900px above)
-   are not overridden by these — CSS @keyframes last-definition-wins globally
-   even across media queries, so this must come in a later desktop-only block. */
+/* Desktop: taller wisp rise with larger horizontal sway */
 @media (min-width: 901px) {
-
-/* Rise A — drifts right, crosses back left, expands */
-@keyframes smokeRiseA {
-  0%   { transform: translateY(0)      translateX(0)     scale(0.35); opacity: 0;    }
-  7%   { opacity: 0.80; }
-  28%  { transform: translateY(-38px)  translateX(12px)  scale(0.75); opacity: 0.65; }
-  55%  { transform: translateY(-78px)  translateX(-5px)  scale(1.30); opacity: 0.38; }
-  80%  { transform: translateY(-118px) translateX(7px)   scale(1.80); opacity: 0.15; }
-  100% { transform: translateY(-155px) translateX(3px)   scale(2.20); opacity: 0;    }
+@keyframes steamWisp {
+  0%   { transform: translateY(0)       translateX(0)    scaleX(1);   opacity: 0;    }
+  8%   { opacity: 0.9; }
+  28%  { transform: translateY(-38px)   translateX(6px)  scaleX(1.4); opacity: 0.85; }
+  55%  { transform: translateY(-82px)   translateX(-5px) scaleX(1.9); opacity: 0.50; }
+  80%  { transform: translateY(-122px)  translateX(7px)  scaleX(2.3); opacity: 0.18; }
+  100% { transform: translateY(-152px)  translateX(2px)  scaleX(2.7); opacity: 0;    }
 }
-
-/* Rise B — drifts left, crosses back right, expands */
-@keyframes smokeRiseB {
-  0%   { transform: translateY(0)      translateX(0)     scale(0.35); opacity: 0;    }
-  7%   { opacity: 0.78; }
-  30%  { transform: translateY(-42px)  translateX(-13px) scale(0.80); opacity: 0.60; }
-  58%  { transform: translateY(-82px)  translateX(6px)   scale(1.35); opacity: 0.35; }
-  82%  { transform: translateY(-122px) translateX(-8px)  scale(1.85); opacity: 0.13; }
-  100% { transform: translateY(-160px) translateX(-2px)  scale(2.25); opacity: 0;    }
-}
-
 } /* end @media (min-width: 901px) */
 
 /* ── FROZEN EFFECT (Beverages / Ice Items) ── */
@@ -1818,57 +1712,31 @@
   border-radius: inherit;
 }
 
-/* Ice crystal particles — diamond-shaped sparkles, NOT circular */
+/* Condensation droplets — appear at top and slide down like water on a cold glass */
 .item-fx-frost .frost-particle {
   position: absolute;
-  width: 5px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.95);
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  box-shadow: 0 0 5px rgba(147, 210, 255, 0.9), 0 0 10px rgba(56, 189, 248, 0.6);
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: linear-gradient(to bottom,
+    rgba(210, 240, 255, 0.95) 0%,
+    rgba(147, 210, 255, 0.80) 50%,
+    rgba(56, 189, 248, 0.60) 100%
+  );
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.9), 0 0 5px rgba(56,189,248,0.5);
   opacity: 0;
 }
 
-.item-fx-frost .frost-particle.fp1 {
-  left: 15%;
-  bottom: 18%;
-  animation: iceSparkle 3.2s ease-in-out infinite;
-  animation-delay: 0s;
-}
+.item-fx-frost .frost-particle.fp1 { width: 4px; height: 8px;  left: 18%; top: 10%; animation: condensDrop 4.0s ease-in infinite 0s; }
+.item-fx-frost .frost-particle.fp2 { width: 3px; height: 6px;  left: 55%; top: 6%;  animation: condensDrop 3.6s ease-in infinite 0.9s; }
+.item-fx-frost .frost-particle.fp3 { width: 5px; height: 9px;  left: 36%; top: 14%; animation: condensDrop 4.5s ease-in infinite 1.8s; }
+.item-fx-frost .frost-particle.fp4 { width: 3px; height: 6px;  left: 72%; top: 8%;  animation: condensDrop 3.9s ease-in infinite 2.7s; }
+.item-fx-frost .frost-particle.fp5 { width: 4px; height: 7px;  left: 28%; top: 5%;  animation: condensDrop 4.2s ease-in infinite 1.2s; }
 
-.item-fx-frost .frost-particle.fp2 {
-  left: 72%;
-  bottom: 22%;
-  animation: iceSparkle 2.8s ease-in-out infinite;
-  animation-delay: 0.9s;
-}
-
-.item-fx-frost .frost-particle.fp3 {
-  left: 40%;
-  bottom: 8%;
-  animation: iceSparkle 3.6s ease-in-out infinite;
-  animation-delay: 1.6s;
-}
-
-.item-fx-frost .frost-particle.fp4 {
-  left: 82%;
-  bottom: 35%;
-  animation: iceSparkle 3.0s ease-in-out infinite;
-  animation-delay: 0.4s;
-}
-
-.item-fx-frost .frost-particle.fp5 {
-  left: 28%;
-  bottom: 30%;
-  animation: iceSparkle 3.6s ease-in-out infinite;
-  animation-delay: 2.9s;
-}
-
-@keyframes iceSparkle {
-  0%, 100% { opacity: 0;    transform: scale(0.6) rotate(0deg); }
-  40%       { opacity: 0.92; transform: scale(1.2) rotate(45deg); }
-  70%       { opacity: 0.75; transform: scale(1.0) rotate(90deg); }
-  90%       { opacity: 0;    transform: scale(0.7) rotate(135deg); }
+@keyframes condensDrop {
+  0%   { transform: translateY(0);    opacity: 0;    }
+  8%   { opacity: 0.9; }
+  50%  { opacity: 0.75; }
+  90%  { opacity: 0.30; }
+  100% { transform: translateY(65px); opacity: 0;    }
 }
 
 /* ── BYO special tab/sidebar item ─────────────────────────────────── */
