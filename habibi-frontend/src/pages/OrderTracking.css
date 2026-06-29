@@ -220,10 +220,104 @@
   text-shadow: 0 0 18px rgba(255,255,255,0.45), 0 1px 4px rgba(0,0,0,0.4);
 }
 
-/* Check icon in done segments */
+/* Check icon in done segments — kept for backwards compat */
 .ot-pill-check {
   color: rgba(255,255,255,0.9);
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+
+/* ── Food-step icon system ──────────────────────────────────────── */
+.ot-pill-step-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+  display: block;
+  position: relative;
+}
+
+/* Done: slightly dimmed icon — orange bg already signals completion */
+.ot-pil-done {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  filter: brightness(1.15);
+}
+
+/* Pending: greyed out */
+.ot-pil-pending {
+  opacity: 0.22;
+  filter: grayscale(1);
+}
+
+/* Active: bright + large */
+.ot-pil-active {
+  font-size: 1.55rem;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+}
+
+/* ── Per-step animations ─────────────────────────────────────── */
+
+/* 1. Received — slow rock (paper shaking) */
+.anim-received {
+  animation: animReceived 1.8s ease-in-out infinite;
+}
+@keyframes animReceived {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25%       { transform: rotate(-8deg) scale(1.1); }
+  75%       { transform: rotate(6deg) scale(1.05); }
+}
+
+/* 2. Accepted — quick pop + settle */
+.anim-accepted {
+  animation: animAccepted 1.4s ease-in-out infinite;
+}
+@keyframes animAccepted {
+  0%, 100% { transform: scale(1); }
+  20%       { transform: scale(1.4); }
+  40%       { transform: scale(0.95); }
+  60%       { transform: scale(1.15); }
+  80%       { transform: scale(1); }
+}
+
+/* 3. Preparing — cook bob with tilt */
+.anim-preparing {
+  animation: animPreparing 1.3s ease-in-out infinite;
+}
+@keyframes animPreparing {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  20%       { transform: translateY(-6px) rotate(-12deg) scale(1.1); }
+  50%       { transform: translateY(-2px) rotate(6deg) scale(1.05); }
+  80%       { transform: translateY(-5px) rotate(-8deg) scale(1.1); }
+}
+
+/* 4. On the Way — scooter drive */
+.anim-on-way {
+  animation: animOnWay 0.75s ease-in-out infinite;
+}
+@keyframes animOnWay {
+  0%   { transform: translateX(-4px) translateY(0) rotate(-4deg); }
+  50%  { transform: translateX(4px)  translateY(-3px) rotate(4deg); }
+  100% { transform: translateX(-4px) translateY(0) rotate(-4deg); }
+}
+
+/* 5. Nearby — urgent ping */
+.anim-nearby {
+  animation: animNearby 0.55s ease-in-out infinite;
+}
+@keyframes animNearby {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50%       { transform: scale(1.35) translateY(-4px); }
+}
+
+/* 6. Delivered — celebration spin-pop */
+.anim-delivered {
+  animation: animDelivered 1s ease-in-out infinite;
+}
+@keyframes animDelivered {
+  0%   { transform: scale(1) rotate(0deg); }
+  15%  { transform: scale(1.5) rotate(-20deg); }
+  35%  { transform: scale(1.25) rotate(12deg); }
+  55%  { transform: scale(1.4) rotate(-8deg); }
+  75%  { transform: scale(1.15) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
 /* Status message below pill */

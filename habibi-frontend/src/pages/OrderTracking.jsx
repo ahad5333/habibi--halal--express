@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Check, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw } from 'lucide-react';
 import { ordersAPI } from '../services/api';
 import './OrderTracking.css';
 
@@ -13,12 +13,12 @@ const RESTAURANT_LAT = 40.8804;
 const RESTAURANT_LNG = -73.8827;
 
 const STEPS = [
-  { id: 1, key: 'pending',     label: 'Received',   icon: '📋' },
-  { id: 2, key: 'accepted',    label: 'Accepted',   icon: '✅' },
-  { id: 3, key: 'preparing',   label: 'Preparing',  icon: '👨‍🍳' },
-  { id: 4, key: 'on_the_way',  label: 'On the Way', icon: '🛵' },
-  { id: 5, key: 'nearby',      label: 'Nearby',     icon: '📍' },
-  { id: 6, key: 'delivered',   label: 'Delivered',  icon: '🎉' },
+  { id: 1, key: 'pending',    label: 'Received',   icon: '📋', animClass: 'anim-received'  },
+  { id: 2, key: 'accepted',   label: 'Accepted',   icon: '✅', animClass: 'anim-accepted'  },
+  { id: 3, key: 'preparing',  label: 'Preparing',  icon: '🍳', animClass: 'anim-preparing' },
+  { id: 4, key: 'on_the_way', label: 'On the Way', icon: '🛵', animClass: 'anim-on-way'   },
+  { id: 5, key: 'nearby',     label: 'Nearby',     icon: '📍', animClass: 'anim-nearby'   },
+  { id: 6, key: 'delivered',  label: 'Delivered',  icon: '🎉', animClass: 'anim-delivered' },
 ];
 
 const STATUS_STEP = {
@@ -490,9 +490,13 @@ export default function OrderTracking() {
                       key={step.id}
                       className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
                     >
-                      {done
-                        ? <Check size={20} strokeWidth={3} className="ot-pill-check" />
-                        : <span className="ot-pill-num">{step.id}</span>}
+                      {done ? (
+                        <span className="ot-pill-step-icon ot-pil-done">{step.icon}</span>
+                      ) : active ? (
+                        <span className={`ot-pill-step-icon ot-pil-active ${step.animClass}`}>{step.icon}</span>
+                      ) : (
+                        <span className="ot-pill-step-icon ot-pil-pending">{step.icon}</span>
+                      )}
                     </div>
                   );
                 })}
