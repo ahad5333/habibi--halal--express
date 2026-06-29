@@ -16,7 +16,7 @@ const contactSchema = {
   "mainEntity": {
     "@type": "Organization",
     "name": "Habibi Halal Express",
-    "telephone": "+1-888-887-5571",
+    "telephone": "+1-888-887-5771",
     "email": "habibi@habibihe.com"
   }
 };
@@ -246,8 +246,8 @@ const Contact = () => {
               </div>
               <div className="ct-info-card">
                 <p className="ct-info-badge">TOLL-FREE PHONE</p>
-                <a href="tel:+18888875571" className="ct-info-link">
-                  <Phone size={13} /> (888)-887-5571
+                <a href="tel:+18888875771" className="ct-info-link">
+                  <Phone size={13} /> (888)-887-5771
                 </a>
               </div>
               <div className="ct-info-card">
