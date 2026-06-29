@@ -422,6 +422,18 @@
   color: rgba(255,255,255,0.45);
   white-space: nowrap;
 }
+.mim-opt-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+.mim-addon-price-inline {
+  font-size: 0.68rem;
+  color: rgba(249,115,22,0.7);
+  font-weight: 600;
+}
 
 /* ── Qty stepper — appears when addon is checked ── */
 .mim-stepper {

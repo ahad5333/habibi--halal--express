@@ -444,10 +444,10 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                     </div>
                     <span className="mim-quota-counter">
                       {quotaTotal === quotaRequired
-                        ? `All ${quotaRequired} tacos selected!`
+                        ? `All ${quotaRequired} tacos selected! ✓`
                         : quotaLeft > 0
-                        ? `${quotaLeft} more to pick`
-                        : `${Math.abs(quotaLeft)} too many — remove some`
+                        ? `Ordered ${quotaTotal} · Left ${quotaLeft}`
+                        : `Ordered ${quotaTotal} · ${Math.abs(quotaLeft)} too many — remove some`
                       }
                     </span>
                   </div>
@@ -512,25 +512,26 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                       const extraQty = moreTacosSel[taco.name] || 0;
                       return (
                         <div key={`extra-${taco.id}`} className={`mim-addon-row${extraQty > 0 ? ' sel' : ''}`}>
-                          <span className="mim-opt-name">{taco.name}</span>
+                          <div className="mim-opt-name-wrap">
+                            <span className="mim-opt-name">{taco.name}</span>
+                            <span className="mim-addon-price-inline">+$5.99 each</span>
+                          </div>
                           <div className="mim-addon-right" onClick={e => e.stopPropagation()}>
-                            {extraQty > 0 ? (
-                              <div className="mim-stepper">
-                                <button onClick={() => setMoreTacosSel(p => {
+                            <div className="mim-stepper">
+                              <button
+                                disabled={extraQty === 0}
+                                onClick={() => setMoreTacosSel(p => {
                                   const n = { ...p };
                                   if ((n[taco.name] || 0) <= 1) delete n[taco.name]; else n[taco.name]--;
                                   return n;
                                 })}>
-                                  <Minus size={10} />
-                                </button>
-                                <span>{extraQty}</span>
-                                <button onClick={() => setMoreTacosSel(p => ({ ...p, [taco.name]: (p[taco.name] || 0) + 1 }))}>
-                                  <Plus size={10} />
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="mim-addon-price">+$5.99</span>
-                            )}
+                                <Minus size={10} />
+                              </button>
+                              <span>{extraQty}</span>
+                              <button onClick={() => setMoreTacosSel(p => ({ ...p, [taco.name]: (p[taco.name] || 0) + 1 }))}>
+                                <Plus size={10} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
