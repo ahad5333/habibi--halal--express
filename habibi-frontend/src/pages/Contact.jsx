@@ -16,7 +16,7 @@ const contactSchema = {
   "mainEntity": {
     "@type": "Organization",
     "name": "Habibi Halal Express",
-    "telephone": "+1-718-400-0443",
+    "telephone": "+1-888-887-5571",
     "email": "habibi@habibihe.com"
   }
 };
@@ -242,6 +242,12 @@ const Contact = () => {
                 <p className="ct-info-text">Active order issues? Use our urgent support page for the fastest response.</p>
                 <a href="/urgent" className="ct-info-link">
                   <Mail size={13} /> habibihe.com/urgent
+                </a>
+              </div>
+              <div className="ct-info-card">
+                <p className="ct-info-badge">TOLL-FREE PHONE</p>
+                <a href="tel:+18888875571" className="ct-info-link">
+                  <Phone size={13} /> (888)-887-5571
                 </a>
               </div>
               <div className="ct-info-card">
