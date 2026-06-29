@@ -1416,11 +1416,12 @@
 }
 
 /* Allow smoke/frost effects to float above the image wrap — desktop only.
-   On mobile, the base overflow:hidden (line ~529) must stay active so effects
+   On mobile, overflow:hidden + clip-path stay active so effects
    don't cause horizontal page overflow. */
 @media (min-width: 901px) {
   .menu-item-row-img-wrap {
     overflow: visible;
+    clip-path: none; /* img element handles rounding; clip-path would block floating effects */
   }
 }
 
@@ -1612,13 +1613,7 @@
     opacity: 0;
   }
 }
-  /* ── Desktop perf fix: remove all animated effect particles.
-     Static glows (::before/::after gradients) are kept — zero GPU cost. ── */
-  .item-fx-steam .smoke            { display: none; }
-  .item-fx-fire  .flame,
-  .item-fx-fire  .spark            { display: none; }
-  .item-fx-frost .frost-particle   { display: none; }
-  .item-fx-frost                   { animation: none; }
+  /* Particles visible on desktop — overflow:visible already set on .menu-item-row-img-wrap */
 
 } /* end @media (min-width: 901px) */
 

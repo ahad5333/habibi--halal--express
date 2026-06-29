@@ -431,8 +431,8 @@ const Menu = () => {
     const isFav    = favoriteIds.has(item.id);
     const isSpicy  = !!item.is_spicy;
     const temp     = getItemTemp(item, name);
-    const fxClass  = temp === 'none' || temp === 'cold' ? '' :
-                     temp === 'frozen' ? 'item-fx item-fx-frost' :
+    const fxClass  = temp === 'none' ? '' :
+                     (temp === 'frozen' || temp === 'cold') ? 'item-fx item-fx-frost' :
                      (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
     const isSoldOut = locStatus === 'sold_out';
 
@@ -709,8 +709,8 @@ const Menu = () => {
                 const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
                 const isSpicy = !!item.is_spicy;
                 const temp2   = getItemTemp(item, name);
-                const fxClass = temp2 === 'none' || temp2 === 'cold' ? '' :
-                                temp2 === 'frozen' ? 'item-fx item-fx-frost' :
+                const fxClass = temp2 === 'none' ? '' :
+                                (temp2 === 'frozen' || temp2 === 'cold') ? 'item-fx item-fx-frost' :
                                 (isSpicy ? 'item-fx item-fx-fire' : 'item-fx item-fx-steam');
                 return (
                   <div
