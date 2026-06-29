@@ -9,7 +9,7 @@ const ALL_CATEGORIES = [
   'Extras','Drinks','Family Tray','Build Your Own',
 ];
 
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false };
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '' };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -42,6 +42,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
     addons_max:  item.addons_max || '',
     temperature: item.temperature || 'hot',
     exclude_global_addons: item.exclude_global_addons || false,
+    quota_required: item.quota_required || '',
   } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -75,6 +76,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('addons_max', form.addons_max || '');
       fd.append('temperature', form.temperature || 'hot');
       fd.append('exclude_global_addons', form.exclude_global_addons ? 'true' : 'false');
+      fd.append('quota_required', form.quota_required || '');
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -224,6 +226,27 @@ function MenuModal({ item, categories, onClose, onSave }) {
                   ? <ToggleRight size={26} color="var(--color-primary)" />
                   : <ToggleLeft  size={26} color="var(--color-text-muted)" />}
               </button>
+            </div>
+
+            {/* ── Quota Required ── */}
+            <div className="mb-toggle-row" style={{ marginTop: '0.75rem', alignItems: 'flex-start', gap: '1rem' }}>
+              <span>
+                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text-main)' }}>Taco Quota (Pick-N)</strong>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
+                  For "Dozen of Tacos" — set to 12 so customer must pick exactly that many tacos. Leave blank for normal items.
+                </span>
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="99"
+                step="1"
+                className="input"
+                placeholder="—"
+                style={{ width: '5rem', flexShrink: 0 }}
+                value={form.quota_required}
+                onChange={e => set('quota_required', e.target.value ? parseInt(e.target.value) : '')}
+              />
             </div>
 
             {/* ── Choices (one must be selected) ── */}
@@ -580,7 +603,14 @@ export default function MenuBuilder() {
                     </div>
                   </td>
                   <td>
-                    <p className="mb-item-name">{item.name}</p>
+                    <p className="mb-item-name">
+                      {item.name}
+                      {item.quota_required > 0 && (
+                        <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', background: 'rgba(249,115,22,0.18)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '4px', padding: '1px 5px', verticalAlign: 'middle' }}>
+                          pick-{item.quota_required}
+                        </span>
+                      )}
+                    </p>
                     {item.description && (
                       <p className="mb-item-desc">{item.description}</p>
                     )}

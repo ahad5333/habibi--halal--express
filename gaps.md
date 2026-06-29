@@ -28,7 +28,6 @@
 | `NODE_ENV` | `development` | `production` | We change it |
 | `FRONTEND_URL` | `http://localhost:5175` | `https://habibihe.com` | We change it |
 | `CORS_ORIGINS` | localhost only | `https://habibihe.com,https://www.habibihe.com` | We change it |
-| ~~`STRIPE_SECRET_KEY`~~ | ~~removed~~ | ~~Not needed — replaced by Authorize.net~~ | — |
 | `AUTHNET_API_LOGIN_ID` | *(not set)* | From VAR sheet — add via admin CPanel Payment Accounts page | Client — VAR sheet from merchant processor |
 | `AUTHNET_TRANSACTION_KEY` | *(not set)* | From VAR sheet — add via admin CPanel | Client — VAR sheet |
 | `AUTHNET_CLIENT_KEY` | *(not set)* | From merchant portal → Account → Manage Public Client Key | Client — Authorize.net merchant portal |
@@ -46,7 +45,6 @@
 
 | Env Var | Current Value | What's Needed |
 |---|---|---|
-| ~~`VITE_STRIPE_PUBLISHABLE_KEY`~~ | ~~removed~~ | ~~Not needed — replaced by Authorize.net Accept.js~~ |
 | `VITE_PAYPAL_CLIENT_ID` | `REPLACE_ME` | Real PayPal client ID |
 | `VITE_GOOGLE_MAPS_KEY` | *(missing)* | Same Google Maps key as backend |
 | `VITE_GA_MEASUREMENT_ID` | `G-MOCKTRACKER` | Real GA4 ID from analytics.google.com |
@@ -188,16 +186,13 @@ Features to test before submission:
 ## Phase 3 — Website: Payments
 
 ### ✅ Done
-- **Authorize.net card payments** *(replaced Stripe — 2026-06-27)* — `AuthNetForm.jsx` loads Accept.js from Authorize.net CDN; card tokenized client-side (PCI compliant, card details never touch our server); opaqueData token sent to `POST /api/payments/authnet/charge`; backend charges via active merchant account credentials
+- **Authorize.net card payments** — `AuthNetForm.jsx` loads Accept.js from Authorize.net CDN; card tokenized client-side (PCI compliant, card details never touch our server); opaqueData token sent to `POST /api/payments/authnet/charge`; backend charges via active merchant account credentials
 - **Authorize.net multi-account manager** — `authorize_net_accounts` DB table stores multiple VAR sheet credentials; admin CPanel → Payment Accounts page lets admin add/edit/delete/activate accounts; only one account active at a time; switching accounts takes effect instantly with no code change; `GET /api/payments/authnet/config` returns public apiLoginId + clientKey for Accept.js
 - **Authorize.net refund** — `POST /api/payments/authnet/refund/:orderNumber` admin endpoint; reads transactionId from order, refunds via active account
 - **PayPal server-side capture** — `POST /api/payments/paypal/capture` verifies transaction with PayPal OAuth2 + REST API before marking order paid; frontend no longer calls `actions.order.capture()` directly
 - **Zelle / CashApp instructions modal** — `OfflinePayModal.jsx` reads `ZELLE_EMAIL`, `ZELLE_NAME`, `CASHAPP_CASHTAG` from backend `GET /api/payments/offline-info`; shows payment handle + "I've sent the payment" confirm button
 - **Square** — real charge via `squareCharge()` with `SQUARE_ACCESS_TOKEN`; mocks when absent
 - **Refund handling** — admin `POST /api/admin/payments/:orderNumber/refund` endpoint
-
-### ❌ Removed
-- **Stripe** — removed entirely (client uses Authorize.net). `StripeCardForm.jsx` no longer used in checkout. Apple Pay / Google Pay removed (were Stripe-specific). Stripe env vars (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY`) no longer needed.
 
 ### 📋 What's needed to activate Authorize.net
 From the VAR sheet, add one account in admin CPanel → Payment Accounts:
@@ -355,7 +350,7 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 - In-app notification bell + inbox (`user_notifications` table, `NotificationsScreen`)
 - Driver chat (WebSocket + DB persistence)
 - Offers screen, dine-in QR flow, voice search
-- 5 production blockers remain — all require external accounts (EAS, Google Maps, Stripe, Firebase, APNs)
+- 5 production blockers remain — all require external accounts (EAS, Google Maps, Firebase, APNs, Authorize.net)
 
 #### 10b — Merchant Tablet App (Habibi Merchant)
 - Login with merchant credentials
@@ -394,7 +389,7 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 - **Firebase service worker** — `habibi-frontend/public/firebase-messaging-sw.js` created; enables background push notifications when tab is closed; fill Firebase config values before deploy
 - **CI/CD pipeline** — `.github/workflows/deploy.yml` created; runs backend syntax check + frontend Vite build + admin Vite build on every push/PR to `main`
 - **Cloudinary image CDN** — `uploadMiddleware.js` auto-detects `CLOUDINARY_*` env vars; uses Cloudinary in production (with 800px resize + auto quality), local disk fallback in dev; `cloudinary` + `multer-storage-cloudinary` installed
-- **Security hardening (30 vulnerabilities fixed)** — coupon routes admin-locked; negative discount/quantity rejected; order total/item validation; adminMiddleware merchant-role removed; loyalty points atomic transaction; Stripe webhook bypass removed; HTTPS redirect; frameguard; multer error handler; rate limiters active in all envs; file upload MIME+extension whitelist; finance/logistics routes admin-locked; public tracking PII redacted; password hash randomised on delete; reset token not leaked in API response; audit log wired to menu/coupon/order actions
+- **Security hardening (30 vulnerabilities fixed)** — coupon routes admin-locked; negative discount/quantity rejected; order total/item validation; adminMiddleware merchant-role removed; loyalty points atomic transaction; HTTPS redirect; frameguard; multer error handler; rate limiters active in all envs; file upload MIME+extension whitelist; finance/logistics routes admin-locked; public tracking PII redacted; password hash randomised on delete; reset token not leaked in API response; audit log wired to menu/coupon/order actions
 - **Audit log wired** — `logAudit()` called on `create/update/delete_menu_item`, `create/delete_coupon`, `update_order_status`
 - **Customer features** — loyalty redemption at checkout, review submission on OrderConfirmation, favorites (heart button + Account tab), Account notifications tab, navbar notification bell with unread badge
 - **Legal pages** — `/health-safety`, `/privacy-policy`, `/terms` — all footer links now live
@@ -419,7 +414,6 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 - **Production hosting** — backend needs Railway / Render / DigitalOcean App Platform / Fly.io
 - **PostgreSQL cloud DB** — currently localhost; needs Supabase, Neon, or RDS before any live traffic
 - **HTTPS / SSL** — provided automatically by Railway/Render/Vercel once deployed
-- **Stripe webhook secret** — `STRIPE_WEBHOOK_SECRET` is a placeholder; must be set from Stripe CLI/dashboard in production
 
 #### Data
 - **Automated DB backup** — no cron backup or cloud backup configured; data loss risk if cloud DB crashes
@@ -436,7 +430,6 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 | 🔴 Critical | Cloud PostgreSQL (Supabase/Neon) | XS | 11 | ❌ Need account |
 | 🔴 Critical | Production hosting (Railway/Render) | Small | 11 | ❌ Need account |
 | 🔴 Critical | HTTPS / SSL certificate | XS | 11 | ❌ Auto via host |
-| 🔴 Critical | Set `STRIPE_WEBHOOK_SECRET` from Stripe CLI | XS | 3 | ❌ Need account |
 | 🔴 High | Helmet.js + CORS origin allowlist | XS | 11 | ✅ Done |
 | 🟡 Medium | Structured logging (Winston) | Small | 11 | ✅ Done (`logger.js`) |
 | 🟡 Medium | Error monitoring (Sentry) | XS | 11 | ❌ Need account |
@@ -490,14 +483,12 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 
 | Service | Backend `.env` var | Frontend `.env` var | Where to Get | Current State | Cost |
 |---|---|---|---|---|---|
-| **Stripe Secret Key** | `STRIPE_SECRET_KEY` | — | dashboard.stripe.com → Developers → API Keys | 🔶 `sk_test_REPLACE_ME` | 2.9% + 30¢/txn |
-| **Stripe Webhook Secret** | `STRIPE_WEBHOOK_SECRET` | — | Stripe Dashboard → Webhooks → add endpoint → signing secret | 🔶 `whsec_REPLACE_ME` | Free |
-| **Stripe Publishable Key** | — | `VITE_STRIPE_PUBLISHABLE_KEY` | Same dashboard — starts `pk_live_` | 🔶 `pk_test_REPLACE_ME` | Free |
+| **Authorize.net API Login ID** | `AUTHNET_API_LOGIN_ID` | — | Authorize.net merchant portal → Account → API Credentials | ❌ Not set | Interchange + $25/mo |
+| **Authorize.net Transaction Key** | `AUTHNET_TRANSACTION_KEY` | — | Same page | ❌ Not set | Free |
+| **Authorize.net Client Key** | `AUTHNET_CLIENT_KEY` | — | Merchant portal → Account → Manage Public Client Key | ❌ Not set | Free |
 | **PayPal Client ID** | `PAYPAL_CLIENT_ID` | `VITE_PAYPAL_CLIENT_ID` | developer.paypal.com → My Apps → Create App | 🔶 `REPLACE_ME` | 3.49% + fixed fee |
 | **PayPal Client Secret** | `PAYPAL_CLIENT_SECRET` | — | Same app page | 🔶 `REPLACE_ME` | Free |
 | **PayPal Mode** | `PAYPAL_MODE` | — | Set to `production` for live | 🔶 `sandbox` | — |
-
-> **Stripe webhook setup:** In production, go to Stripe Dashboard → Developers → Webhooks → Add endpoint → URL: `https://yourbackend.com/api/webhooks/stripe` → select events: `payment_intent.succeeded`, `payment_intent.payment_failed`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
@@ -588,7 +579,7 @@ All 19 feature gaps resolved. See `CUSTOMER_MOBILE_APP.md` for full list.
 | Service | Env Var | Purpose | Cost |
 |---|---|---|---|
 | **OpenAI** | `OPENAI_API_KEY` | Powers `/api/ai` routes (if used) | Pay-per-token; gpt-4o-mini is cheapest |
-| **Square** | `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `SQUARE_WEBHOOK_SIGNATURE_KEY` | Alternative to Stripe; set `PAYMENT_PROCESSOR=square` | 2.6% + 10¢ in-person |
+| **Square** | `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `SQUARE_WEBHOOK_SIGNATURE_KEY` | Alternative payment processor; set `PAYMENT_PROCESSOR=square` | 2.6% + 10¢ in-person |
 | **Sentry** | `SENTRY_DSN` | Error monitoring — catches unhandled exceptions | Free ≤5k errors/month |
 
 ---
@@ -853,17 +844,19 @@ DB_USER=postgres
 DB_PASSWORD=<supabase-password>                        # REQUIRED
 LOG_LEVEL=info
 
-# ── Stripe ──────────────────────────────────────────────────────────────────
-STRIPE_SECRET_KEY=sk_live_xxxx                         # REQUIRED for card payments
-STRIPE_WEBHOOK_SECRET=whsec_xxxx                       # REQUIRED — from Stripe Dashboard → Webhooks
+# ── Authorize.net ───────────────────────────────────────────────────────────
+AUTHNET_API_LOGIN_ID=xxxx                              # REQUIRED for card payments
+AUTHNET_TRANSACTION_KEY=xxxx                           # REQUIRED
+AUTHNET_CLIENT_KEY=xxxx                                # REQUIRED — from merchant portal → Manage Public Client Key
+AUTHNET_ENV=production                                 # REQUIRED — use "sandbox" for testing
 
 # ── PayPal ──────────────────────────────────────────────────────────────────
 PAYPAL_CLIENT_ID=xxxx                                  # REQUIRED for PayPal button
 PAYPAL_CLIENT_SECRET=xxxx                              # REQUIRED
 PAYPAL_MODE=production                                 # REQUIRED — change from "sandbox"
 
-# ── Square (optional alternative to Stripe) ─────────────────────────────────
-PAYMENT_PROCESSOR=stripe                               # Change to "square" to swap
+# ── Square (optional alternative payment processor) ─────────────────────────
+PAYMENT_PROCESSOR=authnet                              # Change to "square" to swap
 SQUARE_ACCESS_TOKEN=
 SQUARE_LOCATION_ID=
 SQUARE_WEBHOOK_SIGNATURE_KEY=
@@ -913,7 +906,6 @@ Copy this into `habibi-frontend/.env` (for Vercel, add these as Environment Vari
 
 ```env
 VITE_API_URL=https://api.habibihalal.com               # REQUIRED — your Railway backend URL
-VITE_STRIPE_PUBLISHABLE_KEY=pk_live_xxxx               # REQUIRED for Stripe Payment Element
 VITE_PAYPAL_CLIENT_ID=xxxx                             # REQUIRED for PayPal button
 VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX                    # Recommended — format: G-XXXXXXXXXX
 VITE_FB_PIXEL_ID=xxxxxxxxxxxxxxx                       # Recommended — 15-digit number
@@ -932,7 +924,7 @@ VITE_SITE_URL=https://habibihalal.com                  # Used for canonical URLs
 | 3 | Deploy frontend to Vercel + set `VITE_API_URL` | ✅ Yes | 10 min |
 | 4 | Deploy admin panel to Vercel as second project | ✅ Yes | 10 min |
 | 5 | Add custom domains + update DNS records | ✅ Yes | 30 min + DNS propagation |
-| 6 | Get Stripe **live** keys + add webhook endpoint in dashboard | ✅ Yes — no real payments without | 15 min |
+| 6 | Add Authorize.net credentials (API Login ID, Transaction Key, Client Key) via admin CPanel → Payment Accounts | ✅ Yes — no real card payments without | 5 min |
 | 7 | Verify sender domain in SendGrid (DNS records) | ✅ Yes — emails go to spam without | 30 min + DNS |
 | 7a | Add `SENDGRID_API_KEY` to `.env` + `pm2 restart habibi-backend` | No — but activates admin MFA automatically | 2 min |
 | 8 | Buy Twilio phone number + add `TWILIO_*` credentials | No — SMS optional at launch | 10 min |
@@ -947,4 +939,4 @@ VITE_SITE_URL=https://habibihalal.com                  # Used for canonical URLs
 | 17 | Set up UptimeRobot to ping `/health` every 5 min | No — free alerting | 5 min |
 
 > **Minimum to accept first real order:** Steps 1–7 (approximately 2–3 hours including DNS propagation wait).  
-> **Estimated monthly cost at launch:** ~$10–20/month (Railway $5, Supabase free, Twilio per-message, Stripe per-transaction, Vercel free, SendGrid free tier).
+> **Estimated monthly cost at launch:** ~$10–20/month (Railway $5, Supabase free, Twilio per-message, Authorize.net per-transaction, Vercel free, SendGrid free tier).

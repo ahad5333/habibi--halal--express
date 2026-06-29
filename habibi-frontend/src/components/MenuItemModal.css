@@ -743,3 +743,63 @@
   .mim-qty-btn   { width: 34px; }
   .mim-add-btn   { font-size: 0.78rem; }
 }
+
+/* ── Quota item (Dozen of Tacos) ── */
+.mim-badge--done {
+  color: #4ade80;
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.3);
+}
+
+.mim-quota-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.6rem 0 1rem;
+}
+
+.mim-quota-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.mim-quota-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F97316, #FBBF24);
+  border-radius: 99px;
+  transition: width 0.2s ease;
+}
+
+.mim-quota-bar-fill.over {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+}
+
+.mim-quota-counter {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+}
+
+.mim-quota-error {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.mim-footer--quota {
+  padding-top: 0.5rem;
+}
+
+.mim-footer--quota .mim-add-btn {
+  width: 100%;
+}

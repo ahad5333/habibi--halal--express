@@ -69,11 +69,18 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const [isFav,     setIsFav]     = useState(false);
   const [added,     setAdded]     = useState(false);
 
+  // Quota-item state (Dozen of Tacos, etc.)
+  const [tacoItems,    setTacoItems]    = useState([]);
+  const [quotaSel,     setQuotaSel]     = useState({});
+  const [moreTacosSel, setMoreTacosSel] = useState({});
+  const [quotaError,   setQuotaError]   = useState('');
+
   /* ── Load item + modifiers ── */
   useEffect(() => {
     if (!itemId) return;
     setLoading(true);
     setChoiceSel({}); setAddonSel({}); setUniversalSel({}); setNote(''); setQty(1); setAdded(false);
+    setQuotaSel({}); setMoreTacosSel({}); setQuotaError('');
 
     Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId), menuAPI.getAll()])
       .then(([itemData, mods, all]) => {
@@ -89,6 +96,12 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
 
         const available = (Array.isArray(all) ? all : []).filter(m => m.is_available !== false);
         const itemCat = (itemData?.category || '').toLowerCase();
+
+        // Extract taco items for quota selector
+        const tacos = available
+          .filter(m => (m.category || '').toLowerCase() === 'tacos')
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        setTacoItems(tacos);
 
         // Suggestions — same category
         const related = available
@@ -187,8 +200,16 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
     return sum + price * q;
   }, 0);
 
-  const unitPrice = basePrice + choiceExtra + addonExtra + universalExtra;
-  const total     = unitPrice * qty;
+  // Quota item: "More Tacos" extra cost
+  const quotaRequired  = parseInt(item?.quota_required || 0);
+  const quotaTotal     = Object.values(quotaSel).reduce((s, q) => s + q, 0);
+  const quotaLeft      = quotaRequired - quotaTotal;
+  const moreTacosExtra = Object.values(moreTacosSel).reduce((s, q) => s + q * 5.99, 0);
+
+  const unitPrice = quotaRequired > 0
+    ? basePrice + moreTacosExtra
+    : basePrice + choiceExtra + addonExtra + universalExtra;
+  const total = unitPrice * qty;
 
   /* ── Addon helpers (DB groups) ── */
   const toggleAddon = optId => {
@@ -230,6 +251,45 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
 
   /* ── Add to cart ── */
   const handleAdd = () => {
+    // Quota item (Dozen of Tacos, etc.)
+    if (quotaRequired > 0) {
+      if (quotaTotal !== quotaRequired) {
+        const diff = quotaRequired - quotaTotal;
+        setQuotaError(
+          diff > 0
+            ? `The required total is ${quotaRequired}. Please add ${diff} more taco${diff !== 1 ? 's' : ''}.`
+            : `The required total is ${quotaRequired}. Please remove ${Math.abs(diff)} taco${Math.abs(diff) !== 1 ? 's' : ''}.`
+        );
+        return;
+      }
+      setQuotaError('');
+
+      const quotaAddons = Object.entries(quotaSel)
+        .filter(([, q]) => q > 0)
+        .map(([name, qty]) => ({ name, price: 0, qty }));
+      const moreTacosAddons = Object.entries(moreTacosSel)
+        .filter(([, q]) => q > 0)
+        .map(([name, qty]) => ({ name: `Extra ${name}`, price: 5.99, qty }));
+
+      addItem({
+        id:            item.id,
+        name:          cleanName,
+        price:         unitPrice,
+        baseItemPrice: basePrice,
+        addons:        [...quotaAddons, ...moreTacosAddons],
+        img:           item.image || item.image_url || categoryFallback(item),
+        tag:           item.category || 'Item',
+        note:          note.trim(),
+        qty:           1,
+        selectedChoices: {},
+        selectedAddons:  {},
+      });
+      setAdded(true);
+      setTimeout(() => { setAdded(false); onClose(); }, 1400);
+      return;
+    }
+
+    // Normal item
     const choiceNote = (modifiers.choice_groups || [])
       .map(cg => {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
@@ -247,7 +307,6 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
         return { name, price, qty: q };
       }).filter(a => a.name);
 
-    // Universal group selections (sauces, meal, drink)
     const universalList = Object.entries(universalSel)
       .filter(([, q]) => q > 0)
       .map(([optId, q]) => {
@@ -278,7 +337,9 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
     setTimeout(() => { setAdded(false); onClose(); }, 1400);
   };
 
-  const missingRequired = (modifiers.choice_groups || []).some(cg => !choiceSel[cg.id]);
+  const missingRequired = quotaRequired > 0
+    ? quotaTotal !== quotaRequired
+    : (modifiers.choice_groups || []).some(cg => !choiceSel[cg.id]);
 
   return (
     <div className="mim-overlay" onClick={onClose}>
@@ -358,7 +419,159 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                 <div className="mim-skel mim-skel--line short" />
                 <div className="mim-skel mim-skel--block" />
               </div>
+            ) : quotaRequired > 0 ? (
+              /* ════════ QUOTA ITEM UI (Dozen of Tacos, etc.) ════════ */
+              <>
+                {/* ── Pick-N selector ── */}
+                <div className="mim-section mim-quota-section">
+                  <div className="mim-section-hd">
+                    <div>
+                      <span className="mim-section-title">Pick Your {quotaRequired} Tacos</span>
+                      <p className="mim-section-sub">Mix and match — any combo that adds up to {quotaRequired}</p>
+                    </div>
+                    <span className={`mim-badge ${quotaTotal === quotaRequired ? 'mim-badge--done' : 'mim-badge--req'}`}>
+                      {quotaTotal === quotaRequired ? '✓ Ready!' : `${quotaTotal} / ${quotaRequired}`}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mim-quota-bar-wrap">
+                    <div className="mim-quota-bar">
+                      <div
+                        className={`mim-quota-bar-fill${quotaTotal > quotaRequired ? ' over' : ''}`}
+                        style={{ width: `${Math.min(100, (quotaTotal / quotaRequired) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="mim-quota-counter">
+                      {quotaTotal === quotaRequired
+                        ? `All ${quotaRequired} tacos selected!`
+                        : quotaLeft > 0
+                        ? `${quotaLeft} more to pick`
+                        : `${Math.abs(quotaLeft)} too many — remove some`
+                      }
+                    </span>
+                  </div>
+
+                  <div className="mim-options-list">
+                    {tacoItems.map(taco => {
+                      const tacoQty = quotaSel[taco.name] || 0;
+                      return (
+                        <div key={taco.id} className={`mim-addon-row${tacoQty > 0 ? ' sel' : ''}`}>
+                          <span className="mim-opt-name">{taco.name}</span>
+                          <div className="mim-addon-right" onClick={e => e.stopPropagation()}>
+                            <div className="mim-stepper">
+                              <button
+                                onClick={() => {
+                                  setQuotaSel(p => {
+                                    const next = Math.max(0, (p[taco.name] || 0) - 1);
+                                    const r = { ...p };
+                                    if (next === 0) delete r[taco.name]; else r[taco.name] = next;
+                                    return r;
+                                  });
+                                  setQuotaError('');
+                                }}
+                                disabled={tacoQty === 0}
+                              >
+                                <Minus size={10} />
+                              </button>
+                              <span>{tacoQty}</span>
+                              <button
+                                onClick={() => {
+                                  if (quotaTotal >= quotaRequired) {
+                                    setQuotaError(`You already have ${quotaRequired} tacos. Remove one before adding another.`);
+                                    return;
+                                  }
+                                  setQuotaSel(p => ({ ...p, [taco.name]: (p[taco.name] || 0) + 1 }));
+                                  setQuotaError('');
+                                }}
+                                disabled={quotaTotal >= quotaRequired}
+                              >
+                                <Plus size={10} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {quotaError && <p className="mim-quota-error">{quotaError}</p>}
+                </div>
+
+                {/* ── More Tacos add-on (+$5.99 each) ── */}
+                <div className="mim-section">
+                  <div className="mim-section-hd">
+                    <div>
+                      <span className="mim-section-title">More Tacos</span>
+                      <p className="mim-section-sub">Add extra tacos to your order</p>
+                    </div>
+                    <span className="mim-badge mim-badge--opt">+$5.99 each</span>
+                  </div>
+                  <div className="mim-options-list">
+                    {tacoItems.map(taco => {
+                      const extraQty = moreTacosSel[taco.name] || 0;
+                      return (
+                        <div key={`extra-${taco.id}`} className={`mim-addon-row${extraQty > 0 ? ' sel' : ''}`}>
+                          <span className="mim-opt-name">{taco.name}</span>
+                          <div className="mim-addon-right" onClick={e => e.stopPropagation()}>
+                            {extraQty > 0 ? (
+                              <div className="mim-stepper">
+                                <button onClick={() => setMoreTacosSel(p => {
+                                  const n = { ...p };
+                                  if ((n[taco.name] || 0) <= 1) delete n[taco.name]; else n[taco.name]--;
+                                  return n;
+                                })}>
+                                  <Minus size={10} />
+                                </button>
+                                <span>{extraQty}</span>
+                                <button onClick={() => setMoreTacosSel(p => ({ ...p, [taco.name]: (p[taco.name] || 0) + 1 }))}>
+                                  <Plus size={10} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="mim-addon-price">+$5.99</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Special Instructions ── */}
+                <div className="mim-section">
+                  <div className="mim-section-hd">
+                    <span className="mim-section-title">Special Instructions</span>
+                    <span className="mim-badge mim-badge--opt">Optional</span>
+                  </div>
+                  <textarea
+                    className="mim-notes"
+                    placeholder="Spicy sauce on the side, extra lime..."
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    rows={2}
+                    maxLength={300}
+                  />
+                </div>
+
+                {/* ── Footer: quota add-to-cart ── */}
+                <div className="mim-footer mim-footer--quota">
+                  <button
+                    className={`mim-add-btn${added ? ' done' : ''}${quotaTotal !== quotaRequired ? ' off' : ''}`}
+                    onClick={handleAdd}
+                    disabled={added}
+                  >
+                    {added
+                      ? '✓ Added to Cart!'
+                      : quotaTotal !== quotaRequired
+                      ? `Select ${quotaRequired} tacos (${quotaTotal}/${quotaRequired})`
+                      : `Add to Cart · $${(basePrice + moreTacosExtra).toFixed(2)}`
+                    }
+                  </button>
+                </div>
+              </>
             ) : (
+              /* ════════ NORMAL ITEM UI ════════ */
               <>
                 {/* ── Choice groups (radio — required) ── */}
                 {(modifiers.choice_groups || []).map(cg => (

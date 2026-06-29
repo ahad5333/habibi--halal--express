@@ -10,7 +10,7 @@ import SEO from '../components/SEO';
 import './Menu.css';
 
 const CATEGORIES = [
-  { label: 'All',             shortLabel: 'All',      value: 'all',       match: null,             emoji: '🍽️' },
+  { label: 'All Categories',  shortLabel: 'All',      value: 'grid',      match: null,             emoji: '🍽️' },
   { label: 'Breakfast',       shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
   { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
   { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
@@ -22,6 +22,19 @@ const CATEGORIES = [
   { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
   { label: 'Build Your Own!', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
 ];
+
+const CATEGORY_IMAGES = {
+  breakfast: '/images/menu/g10.jpg',
+  platter:   '/images/menu/G1.jpg',
+  sandwich:  '/images/menu/G3.jpg',
+  burgers:   '/images/menu/G3.jpg',
+  tacos:     '/images/menu/G3b.png',
+  specials:  '/images/menu/G5.jpg',
+  extras:    '/images/menu/G5.jpg',
+  drinks:    '/images/menu/G7.jpg',
+  family:    '/images/menu/G9.jpg',
+  byo:       '/images/menu/G9.jpg',
+};
 
 // Ordered list of DB category strings for section sorting
 const CAT_ORDER = [
@@ -101,7 +114,7 @@ const getItemTemp = (item, resolvedName) => {
 const Menu = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('grid');
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
@@ -155,7 +168,7 @@ const Menu = () => {
     if (!cat || cat === 'all') return;
     if (loading) return; // re-fires when loading flips to false
     if (cat === 'byo') { setActiveCategory('byo'); return; }
-    setActiveCategory('all');
+    setActiveCategory('grid');
     setPendingScrollCat(cat);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), loading]);
@@ -165,7 +178,7 @@ const Menu = () => {
   const filtered = items.filter(item => {
     if ((locAvailMap[item.id] || 'available') === 'inactive') return false;
     let catMatch = false;
-    if (activeCategory === 'all') {
+    if (activeCategory === 'all' || activeCategory === 'grid') {
       catMatch = true;
     } else if (activeCategory === 'breakfast') {
       catMatch = (item.category || '').toLowerCase().includes('breakfast');
@@ -203,7 +216,7 @@ const Menu = () => {
 
   // Group items by category for "All" view — items can appear in multiple sections
   const categoryGroups = useMemo(() => {
-    if (activeCategory !== 'all') return [];
+    if (activeCategory !== 'all' && activeCategory !== 'grid') return [];
     const groups = {};
     filtered.forEach(item => {
       const allCats = new Set([
@@ -315,13 +328,15 @@ const Menu = () => {
       return;
     }
 
-    // "All" → show full menu, stay at current scroll position
-    if (val === 'all') {
-      setActiveCategory('all');
+    // "All Categories" (grid) → return to category overview
+    if (val === 'all' || val === 'grid') {
+      setActiveCategory('grid');
+      setActiveSidebarCat('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    // All other categories: stay in 'all' view and scroll to the section
+    // All other categories: show that category's items with banner
     const catObj = CATEGORIES.find(c => c.value === val);
     const sectionKey = catObj?.match;
 
@@ -344,9 +359,12 @@ const Menu = () => {
       }
     };
 
-    if (activeCategory !== 'all') {
+    if (activeCategory !== 'all' && activeCategory !== 'grid') {
       setActiveCategory('all');
-      setPendingScrollCat(val); // let the sections-ready effect handle the scroll
+      setPendingScrollCat(val);
+    } else if (activeCategory === 'grid') {
+      setActiveCategory('all');
+      setPendingScrollCat(val);
     } else {
       requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(doScroll, 80)));
     }
@@ -640,8 +658,8 @@ const Menu = () => {
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
               ? activeCategory === 'byo'
-              : cat.value === 'all'
-                ? activeCategory === 'all' && !activeSidebarCat
+              : cat.value === 'grid'
+                ? activeCategory === 'grid' && !activeSidebarCat
                 : activeSidebarCat === cat.match;
             return (
               <button
@@ -671,8 +689,8 @@ const Menu = () => {
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
               ? activeCategory === 'byo'
-              : cat.value === 'all'
-                ? activeCategory === 'all' && !activeSidebarCat
+              : cat.value === 'grid'
+                ? activeCategory === 'grid' && !activeSidebarCat
                 : activeSidebarCat === cat.match;
             return (
               <button
@@ -689,6 +707,37 @@ const Menu = () => {
       </aside>
 
       <div className="menu-content">
+
+      {/* ── Category grid — landing page when no category selected ── */}
+      {activeCategory === 'grid' && !search && (
+        <div className="cat-grid-wrap">
+          <p className="cat-grid-eyebrow">EXPLORE OUR MENU</p>
+          <h2 className="cat-grid-title">What are you craving?</h2>
+          <div className="cat-grid">
+            {CATEGORIES.filter(c => c.value !== 'grid').map(cat => (
+              <button
+                key={cat.value}
+                className={`cat-grid-card${cat.special ? ' cat-grid-card--byo' : ''}`}
+                onClick={() => handleCatClick(cat.value)}
+              >
+                <div className="cat-grid-img-wrap">
+                  <img
+                    src={CATEGORY_IMAGES[cat.value] || '/images/food/food-1.jpg'}
+                    alt={cat.label}
+                    loading="lazy"
+                    onError={e => { e.target.onerror = null; e.target.src = '/images/food/food-1.jpg'; }}
+                  />
+                  <div className="cat-grid-overlay" />
+                </div>
+                <div className="cat-grid-info">
+                  <span className="cat-grid-emoji">{cat.emoji}</span>
+                  <span className="cat-grid-name">{cat.label}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Featured / Popular section (All + no search) ──── */}
       {activeCategory === 'all' && !search && featuredItems.length > 0 && (
@@ -795,8 +844,25 @@ const Menu = () => {
       {/* ── Main content ──────────────────────────────────── */}
       <div className="menu-main-wrap">
 
-        {/* Section heading */}
-        <div className="menu-grid-header">
+        {/* Category banner — shown when a specific category is active */}
+        {activeCategory !== 'grid' && activeCategory !== 'all' && activeCategory !== 'byo' && CATEGORY_IMAGES[activeCategory] && (
+          <div className="cat-banner">
+            <img
+              src={CATEGORY_IMAGES[activeCategory]}
+              alt={activeCatObj?.label || ''}
+              className="cat-banner-img"
+              loading="lazy"
+            />
+            <div className="cat-banner-overlay" />
+            <div className="cat-banner-content">
+              <span className="cat-banner-emoji">{activeCatObj?.emoji}</span>
+              <h2 className="cat-banner-title">{activeCatObj?.label}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Section heading — hidden on grid landing */}
+        <div className="menu-grid-header" style={activeCategory === 'grid' && !search ? { display: 'none' } : {}}>
           <h2 className="menu-grid-title">
             {activeCatObj?.label || 'All Items'}
           </h2>

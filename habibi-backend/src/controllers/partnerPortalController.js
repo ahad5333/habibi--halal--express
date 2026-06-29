@@ -42,11 +42,11 @@ exports.getCatalog = async (req, res) => {
       priceTier = appRes.rows[0]?.price_tier || 'tier_1';
     }
 
-    const [regularMenus, businessMenus] = await Promise.all([
+    const [regularMenus, businessMenus, tacoMenus] = await Promise.all([
       // Regular menu with partner pricing
       pool.query(`
         SELECT id, name, description, price, partner_price,
-               image_url, category, is_available
+               image_url, category, is_available, quota_required
         FROM menus
         WHERE is_active = TRUE AND is_available = TRUE
           AND partner_price IS NOT NULL AND partner_price > 0
@@ -60,6 +60,14 @@ exports.getCatalog = async (req, res) => {
         FROM business_menus
         WHERE is_active = TRUE
         ORDER BY category, sort_order, id
+      `),
+      // Taco types for quota picker (all active tacos regardless of partner_price)
+      pool.query(`
+        SELECT id, name, price, image_url
+        FROM menus
+        WHERE is_active = TRUE AND is_available = TRUE
+          AND LOWER(category) = 'tacos'
+        ORDER BY sort_order, id
       `),
     ]);
 
@@ -84,6 +92,7 @@ exports.getCatalog = async (req, res) => {
       price_tier: priceTier,
       regular_menu: regularItems,
       wholesale_catalog: businessItems,
+      taco_types: tacoMenus.rows,
     });
   } catch (err) {
     res.status(500).json(safeError(err));

@@ -22,14 +22,76 @@ const STATUS_BADGE = {
 
 const TIER_LABELS = { tier_1: 'Standard', tier_2: 'Silver', tier_3: 'Gold' };
 
+// ── QuotaPickModal ────────────────────────────────────────────────
+function QuotaPickModal({ quotaItem, tacoTypes, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(null);
+  const label = (name) => name.replace(/\s*\(Halal\)/i, '').replace(/\bTaco\b/i, '').trim() || name;
+
+  return (
+    <div className="pp-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="pp-modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
+        <div className="pp-modal-hdr">
+          <h3>Dozen of Tacos — Pick a Type</h3>
+          <button className="pp-icon-btn" onClick={onClose}><X size={15}/></button>
+        </div>
+        <div style={{ padding: '1rem 1.25rem' }}>
+          <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>
+            Select one taco type. Each dozen will be fulfilled as 12 of that taco.
+          </p>
+          {tacoTypes.length === 0 ? (
+            <p style={{ color: '#fca5a5', fontSize: '0.82rem' }}>No taco options found — contact your account manager.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+              {tacoTypes.map(taco => (
+                <button
+                  key={taco.id}
+                  type="button"
+                  onClick={() => setSelected(taco)}
+                  style={{
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: '8px',
+                    border: `2px solid ${selected?.id === taco.id ? '#F97316' : 'rgba(255,255,255,0.12)'}`,
+                    background: selected?.id === taco.id ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: selected?.id === taco.id ? '#fb923c' : 'rgba(255,255,255,0.75)',
+                    fontSize: '0.8rem',
+                    fontWeight: selected?.id === taco.id ? 600 : 400,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {label(taco.name)}
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <button className="pp-clear-btn" style={{ margin: 0 }} onClick={onClose}>Cancel</button>
+            <button
+              className="pp-submit-btn"
+              style={{ margin: 0, padding: '0.5rem 1.25rem', fontSize: '0.84rem', opacity: selected ? 1 : 0.5 }}
+              disabled={!selected}
+              onClick={() => selected && onConfirm(quotaItem, selected)}
+            >
+              <Plus size={14}/> Add Dozen{selected ? ` (${label(selected.name)})` : ''}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CatalogTab ────────────────────────────────────────────────────
-function CatalogTab({ catalog, cart, onAdd, onRemove }) {
+function CatalogTab({ catalog, cart, onAdd, onRemove, onQuotaAdd }) {
   const [filterCat, setFilterCat] = useState('all');
   const [view, setView]           = useState('regular'); // 'regular' | 'wholesale'
+  const [quotaTarget, setQuotaTarget] = useState(null);
 
   const items = view === 'wholesale' ? catalog.wholesale_catalog : catalog.regular_menu;
   const cats  = ['all', ...new Set(items.map(i => i.category).filter(Boolean))];
   const visible = filterCat === 'all' ? items : items.filter(i => i.category === filterCat);
+  const tacoTypes = catalog.taco_types || [];
 
   const getQty = (id, src) => cart.find(c => c.id === id && c.source === src)?.qty || 0;
 
@@ -57,6 +119,18 @@ function CatalogTab({ catalog, cart, onAdd, onRemove }) {
           </button>
         ))}
       </div>
+
+      {quotaTarget && (
+        <QuotaPickModal
+          quotaItem={quotaTarget}
+          tacoTypes={tacoTypes}
+          onConfirm={(qItem, taco) => {
+            onQuotaAdd(qItem, taco);
+            setQuotaTarget(null);
+          }}
+          onClose={() => setQuotaTarget(null)}
+        />
+      )}
 
       {visible.length === 0 ? (
         <div className="pp-empty">
@@ -89,7 +163,11 @@ function CatalogTab({ catalog, cart, onAdd, onRemove }) {
                 </div>
                 <div className="pp-catalog-footer">
                   <p className="pp-catalog-price">${price.toFixed(2)}</p>
-                  {qty === 0 ? (
+                  {item.quota_required > 0 ? (
+                    <button className="pp-add-btn" onClick={() => setQuotaTarget(item)}>
+                      <Plus size={14}/> Select Type
+                    </button>
+                  ) : qty === 0 ? (
                     <button className="pp-add-btn" onClick={() => onAdd(item, minQty)}>
                       <Plus size={14}/> Add
                     </button>
@@ -457,6 +535,23 @@ export default function PartnerPortal() {
     else setCart(prev => prev.map(c => c.id === item.id && c.source === item.source ? { ...c, qty: newQty } : c));
   };
 
+  const addQuotaToCart = (quotaItem, selectedTaco) => {
+    const price = parseFloat(quotaItem.display_price || quotaItem.partner_price || quotaItem.price || 0);
+    const tacoLabel = selectedTaco.name.replace(/\s*\(Halal\)/i, '').replace(/\bTaco\b/i, '').trim() || selectedTaco.name;
+    const compositeId = `q${quotaItem.id}-t${selectedTaco.id}`;
+    setCart(prev => {
+      const existing = prev.find(c => c.id === compositeId);
+      if (existing) return prev.map(c => c.id === compositeId ? { ...c, qty: c.qty + 1 } : c);
+      return [...prev, {
+        id: compositeId,
+        name: `Dozen of Tacos — ${tacoLabel}`,
+        price,
+        qty: 1,
+        source: quotaItem.source,
+      }];
+    });
+  };
+
   const submitOrder = async (payload) => {
     setSubmitting(true);
     try {
@@ -538,7 +633,7 @@ export default function PartnerPortal() {
             loading.catalog
               ? <div className="pp-empty"><div className="pp-spinner-lg"/></div>
               : catalog
-                ? <CatalogTab catalog={catalog} cart={cart} onAdd={addToCart} onRemove={removeFromCart} />
+                ? <CatalogTab catalog={catalog} cart={cart} onAdd={addToCart} onRemove={removeFromCart} onQuotaAdd={addQuotaToCart} />
                 : <div className="pp-empty"><AlertCircle size={40}/><p>Could not load catalog</p></div>
           )}
 
