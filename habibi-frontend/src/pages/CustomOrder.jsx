@@ -180,7 +180,7 @@ const CO_ING_DB = {
 };
 
 /* ── Top-down food-photography canvas ─────────────────────────── */
-function IngCanvas({ base, cfg }) {
+function IngCanvas({ base, cfg, onReset }) {
   const family = base?.family;
 
   /* Collect all selected IDs and build sorted render layers (lower z first) */
@@ -207,6 +207,12 @@ function IngCanvas({ base, cfg }) {
     <>
       <div className="co-canvas">
         <div className="co-canvas-center-glow" />
+
+        {base && onReset && (
+          <button className="co-reset-btn" onClick={onReset} title="Start over">
+            ↺ Reset
+          </button>
+        )}
 
         {base ? (
           <>
@@ -492,6 +498,13 @@ export default function CustomOrder() {
     setQty(1);
   };
 
+  const handleReset = () => {
+    setCfg(INIT);
+    setOpen(new Set(['base']));
+    setQty(1);
+    setWarnProtein(false);
+  };
+
   /* Section toggle */
   const toggleSection = id => setOpen(prev => {
     const n = new Set(prev);
@@ -764,12 +777,12 @@ export default function CustomOrder() {
 
         {/* ── Mobile-only canvas (above sections, hidden on desktop) ── */}
         <div className="co-mobile-canvas-wrap">
-          <IngCanvas base={cfg.base} cfg={cfg} />
+          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} />
         </div>
 
         {/* ── Left: sticky canvas (desktop sidebar) ── */}
         <aside className="co-sidebar">
-          <IngCanvas base={cfg.base} cfg={cfg} />
+          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className={`co-price-val${totalFlash ? ' co-price-flash' : ''}`}>${total.toFixed(2)}</span>

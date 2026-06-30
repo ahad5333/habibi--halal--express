@@ -311,6 +311,27 @@
 }
 
 /* ── Sauce bowl row (top-right corner) ──────────────────────── */
+.co-reset-btn {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  z-index: 20;
+  background: rgba(239,68,68,0.15);
+  color: rgba(255,255,255,0.92);
+  border: 1px solid rgba(239,68,68,0.45);
+  border-radius: 20px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, border-color 0.15s;
+}
+.co-reset-btn:hover {
+  background: rgba(239,68,68,0.32);
+  border-color: rgba(239,68,68,0.7);
+}
+
 .co-canvas-sauce-row {
   position: absolute;
   top: 6%;
