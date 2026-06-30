@@ -146,32 +146,37 @@ const loginUser = async (req, res) => {
       [user.id]
     );
 
-    // Admin MFA — TODO: enforce once SMTP/SendGrid is configured (VULN-01)
+    // Admin MFA — always enforced regardless of SMTP config.
+    // If email is not configured the OTP is also printed to server stdout
+    // so admins can retrieve it from `pm2 logs` until SendGrid is live.
     if (user.role === 'admin') {
+      if (
+        user.admin_otp_attempts >= 5 &&
+        user.admin_otp_expires &&
+        new Date(user.admin_otp_expires) > new Date()
+      ) {
+        return res.status(429).json({
+          message: 'Too many failed MFA attempts. Please wait a few minutes and try again.',
+        });
+      }
+      const otp        = String(crypto.randomInt(100000, 1000000));
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+      const otpHash    = await bcrypt.hash(otp, 12);
+      await pool.query(
+        `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
+        [otpHash, otpExpires, user.id]
+      );
       const smtpConfigured = !!(
         process.env.SENDGRID_API_KEY ||
         (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
       if (smtpConfigured) {
-        if (
-          user.admin_otp_attempts >= 5 &&
-          user.admin_otp_expires &&
-          new Date(user.admin_otp_expires) > new Date()
-        ) {
-          return res.status(429).json({
-            message: 'Too many failed MFA attempts. Please wait a few minutes and try again.',
-          });
-        }
-        const otp        = String(crypto.randomInt(100000, 1000000));
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-        const otpHash    = await bcrypt.hash(otp, 12);
-        await pool.query(
-          `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
-          [otpHash, otpExpires, user.id]
-        );
         sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
-        return res.json({ mfa_required: true, email: user.email });
+      } else {
+        // Fallback: log OTP to server console until email is configured
+        console.warn(`[ADMIN MFA] Email not configured. OTP for ${user.email}: ${otp} (expires in 10 min)`);
       }
+      return res.json({ mfa_required: true, email: user.email });
     }
 
     const token = jwt.sign(
