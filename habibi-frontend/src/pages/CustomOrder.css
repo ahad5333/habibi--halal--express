@@ -274,62 +274,79 @@
   }
 }
 
-/* Ambient orange center glow */
+/* Ambient glow */
 .co-canvas-center-glow {
   position: absolute;
-  width: 60%;
-  height: 60%;
+  width: 80%;
+  height: 80%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(249,115,22,0.13) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Spinning decoration rings */
-.co-canvas-ring {
-  position: absolute;
-  border-radius: 50%;
-  border-style: dashed;
-  pointer-events: none;
-}
-.co-canvas-ring--outer {
-  width: 82%;
-  height: 82%;
-  border-width: 1px;
-  border-color: rgba(249,115,22,0.16);
-  animation: co-ring-spin 28s linear infinite;
-  z-index: 1;
-}
-.co-canvas-ring--inner {
-  width: 68%;
-  height: 68%;
-  border-width: 1px;
-  border-color: rgba(249,115,22,0.1);
-  animation: co-ring-spin 18s linear infinite reverse;
-  z-index: 1;
-}
-@keyframes co-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* Circular food image — centered */
+/* Base food image — large, centered, transparent-friendly */
 .co-canvas-base {
   position: absolute;
-  width: 52%;
-  height: 52%;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-  z-index: 3;
-  border: 3px solid rgba(249,115,22,0.55);
-  box-shadow:
-    0 0 0 5px rgba(249,115,22,0.08),
-    0 0 32px rgba(249,115,22,0.3),
-    0 0 64px rgba(249,115,22,0.1);
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  object-position: center bottom;
+  z-index: 2;
+  bottom: 0;
+  left: 50%;
+  top: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.7));
 }
 
-/* Base name — below the canvas, never overlaps canvas content */
+/* ── Layered ingredient images ───────────────────────────────── */
+.co-canvas-ing {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  animation: ing-pop 0.3s cubic-bezier(.34,1.4,.64,1) both;
+}
+
+@keyframes ing-pop {
+  from { opacity: 0; scale: 0.6; }
+  to   { opacity: 1; scale: 1; }
+}
+
+/* ── Sauce bowl row ──────────────────────────────────────────── */
+.co-canvas-sauce-row {
+  position: absolute;
+  bottom: 8%;
+  right: 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 12;
+}
+
+.co-canvas-sauce-bowl {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(249,115,22,0.5);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+  animation: ing-pop 0.3s cubic-bezier(.34,1.4,.64,1) both;
+}
+
+.co-canvas-sauce-emoji {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(20,10,0,0.85);
+  border: 2px solid rgba(249,115,22,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+/* Base name — below the canvas */
 .co-canvas-info {
   display: flex;
   align-items: center;
@@ -355,53 +372,6 @@
   z-index: 5;
   pointer-events: none;
   margin: 0;
-}
-
-/* ── Orbital ingredient chips ────────────────────────────────── */
-.co-canvas-orbitals {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.co-orbit-chip {
-  position: absolute;
-  width: 38px;
-  height: 38px;
-  top: 50%;
-  left: 50%;
-  margin: -19px;
-  border-radius: 50%;
-  background: rgba(14, 7, 0, 0.9);
-  border: 2px solid rgba(249,115,22,0.45);
-  box-shadow: 0 0 10px rgba(249,115,22,0.2), 0 2px 8px rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  /* transform applied via inline style in JSX */
-  animation: orb-pop 0.35s cubic-bezier(.34,1.56,.64,1) both;
-}
-
-@keyframes orb-pop {
-  from { opacity: 0; scale: 0.4; }
-  to   { opacity: 1; scale: 1;   }
-}
-
-.co-orbit-thumb {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  border-radius: 50%;
-}
-
-.co-orbit-emoji {
-  font-size: 1rem;
-  line-height: 1;
-  user-select: none;
 }
 
 .co-orbit-more {

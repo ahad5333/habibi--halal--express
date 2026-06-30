@@ -427,77 +427,72 @@ function coRenderMedallion(id, family) {
 
 /* ── Live build canvas: full-bleed base photo + ingredient chip bar ── */
 function IngCanvas({ base, cfg }) {
-  /* Build flat chip list from all active selections */
-  const chips = [];
-  if (cfg.cheese.type && cfg.cheese.type !== 'none') {
-    const opt = CHEESE_OPTS.find(o => o.id === cfg.cheese.type);
-    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
-  }
-  Object.keys(cfg.vegetables).forEach(id => {
-    const opt = VEG_OPTS.find(o => o.id === id);
-    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
-  });
-  Object.keys(cfg.proteins).forEach(id => {
-    const opt = PROTEIN_OPTS.find(o => o.id === id);
-    if (opt) chips.push({ id: opt.id, label: opt.label, img: opt.img, emoji: opt.emoji });
-  });
-  Object.keys(cfg.sauces).forEach(id => {
-    const opt = SAUCE_OPTS.find(o => o.id === id);
-    if (opt) chips.push({ id: opt.id, label: opt.label, img: null, emoji: opt.emoji });
-  });
+  const family = base?.family;
 
-  const visibleChips = chips.slice(0, 8);
-  const extraCount   = chips.length - visibleChips.length;
+  /* Build sorted ingredient layers from CO_ING_DB */
+  const layers = [];
+  const selectedIds = [
+    ...(cfg.cheese.type && cfg.cheese.type !== 'none' ? [cfg.cheese.type] : []),
+    ...Object.keys(cfg.vegetables),
+    ...Object.keys(cfg.proteins),
+  ];
+  selectedIds.forEach(id => {
+    const def = CO_ING_DB[id];
+    if (!def || !family || !def.pos[family]) return;
+    def.pos[family].forEach(p => layers.push({ id, def, pos: p }));
+  });
+  layers.sort((a, b) => a.def.layer - b.def.layer);
+
+  /* Sauces — shown as rounded bowl thumbnails */
+  const activeSauces = Object.keys(cfg.sauces)
+    .map(id => SAUCE_OPTS.find(o => o.id === id))
+    .filter(Boolean);
+
+  const hasContent = layers.length > 0 || activeSauces.length > 0;
 
   return (
     <>
       <div className="co-canvas">
-        {/* Ambient center glow */}
         <div className="co-canvas-center-glow" />
 
         {base ? (
           <>
-            {/* Spinning dashed orbit rings */}
-            <div className="co-canvas-ring co-canvas-ring--outer" />
-            <div className="co-canvas-ring co-canvas-ring--inner" />
-
-            {/* Circular food image */}
+            {/* Large base food image */}
             <img src={base.img} alt={base.label} className="co-canvas-base"
-              onError={e => { e.currentTarget.style.opacity='0.3'; }}
+              onError={e => { e.currentTarget.style.opacity = '0.3'; }}
             />
 
-            {/* Orbital ingredient chips */}
-            {visibleChips.length > 0 ? (
-              <div className="co-canvas-orbitals">
-                {visibleChips.map((chip, i, arr) => {
-                  const total = arr.length + (extraCount > 0 ? 1 : 0);
-                  const angle = (360 / total) * i - 90;
-                  return (
-                    <div
-                      key={chip.id}
-                      className="co-orbit-chip"
-                      style={{ transform: `rotate(${angle}deg) translateX(92px) rotate(${-angle}deg)` }}
-                      title={chip.label}
-                    >
-                      {chip.img
-                        ? <div className="co-orbit-thumb" style={{ backgroundImage: `url(${chip.img})` }} />
-                        : <span className="co-orbit-emoji">{chip.emoji}</span>
-                      }
-                    </div>
-                  );
-                })}
-                {extraCount > 0 && (
-                  <div
-                    className="co-orbit-chip co-orbit-more"
-                    style={{ transform: `rotate(${(360 / (visibleChips.length + 1)) * visibleChips.length - 90}deg) translateX(92px) rotate(${-(((360 / (visibleChips.length + 1)) * visibleChips.length) - 90)}deg)` }}
-                  >
-                    +{extraCount}
-                  </div>
-                )}
+            {/* Layered ingredient images at CO_ING_DB positions */}
+            {layers.map(({ id, def, pos }, i) => (
+              <img
+                key={`${id}-${i}`}
+                src={def.src}
+                alt=""
+                className="co-canvas-ing"
+                style={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  width: `${pos.w}%`,
+                  zIndex: def.layer,
+                  transform: pos.rot
+                    ? `translate(-50%, -50%) rotate(${pos.rot}deg)`
+                    : 'translate(-50%, -50%)',
+                }}
+              />
+            ))}
+
+            {/* Sauce bowl thumbnails */}
+            {activeSauces.length > 0 && (
+              <div className="co-canvas-sauce-row">
+                {activeSauces.slice(0, 5).map(sauce => (
+                  sauce.img
+                    ? <img key={sauce.id} src={sauce.img} alt={sauce.label} className="co-canvas-sauce-bowl" title={sauce.label} />
+                    : <span key={sauce.id} className="co-canvas-sauce-emoji" title={sauce.label}>{sauce.emoji}</span>
+                ))}
               </div>
-            ) : (
-              <p className="co-canvas-hint">Add ingredients below ↓</p>
             )}
+
+            {!hasContent && <p className="co-canvas-hint">Add ingredients below ↓</p>}
           </>
         ) : (
           <div className="co-canvas-empty">
@@ -507,7 +502,6 @@ function IngCanvas({ base, cfg }) {
         )}
       </div>
 
-      {/* Base name — sits below the canvas, never overlaps */}
       {base && (
         <div className="co-canvas-info">
           <span className="co-canvas-base-name">{base.label}</span>
