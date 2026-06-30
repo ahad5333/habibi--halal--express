@@ -14,8 +14,16 @@ const BASES = [
   { id: '39f', label: 'Roll',          price: 1.49, img: '/images/menu/39f.jpg', family: 'standard'   },
   { id: '39g', label: 'Burger Bun',    price: 1.99, img: '/images/menu/39g.jpg', family: 'standard'   },
   { id: '39h', label: 'Hot Dog Bun',   price: 0.99, img: '/images/menu/39h.jpg', family: 'compact'    },
-  { id: '39i', label: 'Platter',       price: 2.99, img: '/images/menu/39i.jpg', family: 'platter'    },
-  { id: '39j', label: 'Family Tray',   price: 4.99, img: '/images/menu/39j.jpg', family: 'familyTray' },
+  { id: '39i', label: 'Platter',       price: 2.99, img: '/images/menu/39i.jpg', family: 'platter',
+    note: 'Includes: Rice · Pita · House Salad',
+    includes: ['🍚 Rice', '🫓 Pita Bread', '🥗 House Salad'],
+    defaultToppings: ['lettuce', 'tomatoes', 'onions'],
+  },
+  { id: '39j', label: 'Family Tray',   price: 4.99, img: '/images/menu/39j.jpg', family: 'familyTray',
+    note: 'Feeds 4–6 · Rice · Pita · Salad · Hummus',
+    includes: ['🍚 Rice (Large)', '🫓 Pita Bread ×4', '🥗 House Salad', '🥣 Hummus'],
+    defaultToppings: ['lettuce', 'tomatoes', 'onions', 'pickles', 'hummus'],
+  },
 ];
 
 /* ─────────────────────────────────────────────────────────────────
@@ -642,9 +650,10 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
   const [selectedBase, setBase]     = useState(null);
   const [selections, setSelections] = useState({ toppings: [], ...initialSelections });
 
-  const isBasePicker = stepIdx === -1;
-  const step         = !isBasePicker ? ADD_ON_STEPS[stepIdx] : null;
-  const isLast       = stepIdx === ADD_ON_STEPS.length - 1;
+  const isBasePicker  = stepIdx === -1;
+  const step          = !isBasePicker ? ADD_ON_STEPS[stepIdx] : null;
+  const isLast        = stepIdx === ADD_ON_STEPS.length - 1;
+  const isPlatterBase = family === 'platter' || family === 'familyTray';
   const totalSteps   = ADD_ON_STEPS.length + 1;
   const displayStep  = stepIdx + 2;
 
@@ -691,7 +700,12 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
 
   const selectBase = (base) => {
     setBase(base);
-    setSelections(s => ({ ...s, base: base.id }));
+    setSelections(s => ({
+      ...s,
+      base: base.id,
+      // Platter/tray bases come with a house salad — pre-select those toppings
+      toppings: base.defaultToppings ? [...base.defaultToppings] : [],
+    }));
   };
 
   const selectSingle = (optId) =>
@@ -749,6 +763,16 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
                   : `from $${basePrice.toFixed(2)}`}
               </span>
               </div>
+              {/* Platter/tray fixed inclusions banner */}
+              {isPlatterBase && selectedBase.includes && (
+                <div className="byo-platter-includes">
+                  <span className="byo-inc-label">Included</span>
+                  {selectedBase.includes.map((item, i) => (
+                    <span key={i} className="byo-inc-item">{item}</span>
+                  ))}
+                </div>
+              )}
+
               {activeIngredients.length > 0 ? (
                 <div className="byo-ing-bar">
                   {activeIngredients.slice(0, 8).map((id, i) => {
@@ -768,7 +792,9 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
                   )}
                 </div>
               ) : (
-                <div className="byo-canvas-hint">Select ingredients below ↓</div>
+                <div className="byo-canvas-hint">
+                  {isPlatterBase ? 'Now choose your protein →' : 'Select ingredients below ↓'}
+                </div>
               )}
             </>
           ) : (
@@ -798,7 +824,14 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               {isBasePicker ? 'Choose Your Base' : step.title}
             </h2>
             <p className="byo-sub">
-              {isBasePicker ? 'Pick the bread or vessel, sets your starting price' : step.subtitle}
+              {isBasePicker
+                ? 'Pick the bread, platter or tray — sets your starting price'
+                : (isPlatterBase && step.id === 'protein'
+                    ? 'Served over rice with pita & house salad — already included'
+                    : isPlatterBase && step.id === 'toppings'
+                    ? 'House salad already added — add more or remove what you like'
+                    : step.subtitle)
+              }
             </p>
           </div>
         </div>
