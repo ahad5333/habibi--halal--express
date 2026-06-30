@@ -14,7 +14,7 @@ const CATEGORIES = [
   { label: 'Breakfast',       shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
   { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
   { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
-  { label: 'Burgers',         shortLabel: 'Burgers',   value: 'burgers',   match: 'Burgers',        emoji: '🍔' },
+  { label: 'Bergers',         shortLabel: 'Bergers',   value: 'burgers',   match: 'Bergers',        emoji: '🍔' },
   { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Tacos',          emoji: '🌮' },
   { label: 'Habibi Specials', shortLabel: 'Specials',  value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
   { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕' },
@@ -54,7 +54,7 @@ const getCategoryBanner = dbCat => {
 
 // Ordered list of DB category strings for section sorting
 const CAT_ORDER = [
-  'Breakfast','Platter','Sandwich','Burgers','Taco','Tacos',
+  'Breakfast','Platter','Sandwich','Bergers','Taco','Tacos',
   'Habibi Specials','Specials','Extras','Drinks','Family Tray','Build Your Own',
 ];
 
@@ -165,7 +165,7 @@ const Menu = () => {
     "@context": "https://schema.org",
     "@type": "Menu",
     "name": "Habibi Halal Express Menu",
-    "description": "Authentic Halal menu — Platters, Gyros, Burgers, Sandwiches, Family Trays.",
+    "description": "Authentic Halal menu — Platters, Gyros, Bergers, Sandwiches, Family Trays.",
   };
 
   useEffect(() => {
@@ -201,8 +201,8 @@ const Menu = () => {
     } else if (activeCategory === 'burgers') {
       const name = (item.name || item.title || '').toLowerCase();
       const cat  = (item.category || '').toLowerCase();
-      catMatch = cat === 'burgers' || cat.includes('berger') ||
-                 (cat === 'sandwich' && (name.includes('burger') || name.includes('berger')));
+      catMatch = cat === 'bergers' || cat === 'burgers' || cat.includes('berger') ||
+                 (cat === 'sandwich' && (name.includes('berger') || name.includes('burger')));
     } else {
       const m = activeCatObj?.match;
       catMatch = item.category === m ||
@@ -581,9 +581,9 @@ const Menu = () => {
   return (
     <div className="menu-page">
       <SEO
-        title="Menu | Authentic Halal Platters, Gyros & Burgers"
-        description="Explore the Habibi Halal Express menu. Order online: Chicken over Rice, Gyro Platters, Philly Cheesesteaks, and Burgers."
-        keywords="halal menu, gyros, chicken over rice platter, philly cheesesteak, halal burgers bronx"
+        title="Menu | Authentic Halal Platters, Gyros & Bergers"
+        description="Explore the Habibi Halal Express menu. Order online: Chicken over Rice, Gyro Platters, Philly Cheesesteaks, and Bergers."
+        keywords="halal menu, gyros, chicken over rice platter, philly cheesesteak, halal bergers bronx"
         schema={items.length > 0 ? menuSchema : null}
       />
 

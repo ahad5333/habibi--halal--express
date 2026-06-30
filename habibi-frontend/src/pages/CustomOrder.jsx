@@ -63,8 +63,8 @@ const PROTEIN_OPTS = [
   { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: '🐟', img: '/images/byo/ing/fish-fillet.webp'     },
   { id: 'shrimp',          label: 'Shrimp',                price: 8.00, qtyType: 'low-extra',     emoji: '🍤', img: '/images/byo/ing/shrimp.webp'          },
   { id: 'tuna',            label: 'Tuna Fish',             price: 7.00, qtyType: 'low-extra',     emoji: '🐠', img: '/images/byo/ing/tuna.webp'            },
-  { id: 'beef-burger',     label: 'Beef Burger',           price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/beef-burger.webp'     },
-  { id: 'chicken-burger',  label: 'Chicken Burger',        price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/chicken-burger.webp'  },
+  { id: 'beef-burger',     label: 'Beef Berger',           price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/beef-burger.webp'     },
+  { id: 'chicken-burger',  label: 'Chicken Berger',        price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/chicken-burger.webp'  },
 ];
 
 const SAUCE_OPTS = [
@@ -339,9 +339,9 @@ const PRESETS = [
   },
   {
     id: 'beef-burger',
-    label: 'Beef Burger',
+    label: 'Beef Berger',
     emoji: '🍔',
-    desc: 'Burger Bun · Beef Burger · Ketchup',
+    desc: 'Burger Bun · Beef Berger · Ketchup',
     cfg: {
       base:       BASES.find(b => b.id === '39g'),
       cheese:     { type: 'american', qty: 'regular' },

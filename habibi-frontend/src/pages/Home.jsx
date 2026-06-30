@@ -72,7 +72,7 @@ const restaurantSchema = {
   "telephone": "+1-718-561-0001",
   "priceRange": "$$",
   "menu": "https://habibihalalexpress.com/menu",
-  "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros", "Burgers"],
+  "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros", "Bergers"],
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Bedford Park Blvd & Jerome Ave",
@@ -265,7 +265,7 @@ const Home = () => {
     <div className="home-page">
       <SEO
         title="Home | Authentic Halal Dining & Fast Delivery"
-        description="Order fresh, healthy halal platters, gyros, burgers, and sides from Habibi Halal Express. Serving the Bronx, NY, with fast delivery and premium ingredients."
+        description="Order fresh, healthy halal platters, gyros, bergers, and sides from Habibi Halal Express. Serving the Bronx, NY, with fast delivery and premium ingredients."
         keywords="halal food bronx, mediterranean restaurant nyc, halal delivery near me, gyro wrap, chicken over rice platter"
         schema={restaurantSchema}
       />
@@ -320,7 +320,7 @@ const Home = () => {
             <p className="hero-bottom-desc-exact">
               100% certified halal, cooked fresh to order, never frozen, never rushed.<br />
               Rooted in the Bronx and built on family recipes passed down through generations,<br />
-              every dish carries the bold flavors of authentic halal cuisine. Juicy burgers,<br />
+              every dish carries the bold flavors of authentic halal cuisine. Juicy bergers,<br />
               seasoned grilled chicken, loaded rice platters, delivered straight to your door.
             </p>
 
@@ -524,9 +524,9 @@ const Home = () => {
 
             {/* Burger */}
             <div className="curated-card small">
-              <img src="/images/habibi-burger.jpg" alt="Habibi Burger" className="curated-img" loading="lazy" />
+              <img src="/images/habibi-burger.jpg" alt="Habibi Berger" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>Habibi Burger</h3>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>Habibi Berger</h3>
                 <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$10.99</p>
                 <div className="curated-actions mt-2">
                   <Link to="/menu?cat=burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
