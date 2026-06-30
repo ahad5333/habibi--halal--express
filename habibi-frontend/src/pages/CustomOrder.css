@@ -284,71 +284,36 @@
   z-index: 0;
 }
 
-/* ── Sandwich cross-section scene ───────────────────────────── */
-/* Scene stacks at the bottom of the canvas; flex column puts
-   veggies (first in JSX) at top and base image at bottom      */
-.co-scene {
+/* Base food image — top-down view, 92%×88% box centered in canvas */
+.co-canvas-base {
   position: absolute;
-  bottom: 0;
-  left: 4%;
-  right: 4%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-bottom: 6%;
-}
-
-/* Base food photo — fills the full scene width */
-.co-scene-base {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  z-index: 1;
-}
-.co-scene-base-img {
-  width: 100%;
-  max-height: 110px;
+  width: 92%;
+  height: 88%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   object-fit: contain;
-  display: block;
-  filter: drop-shadow(0 6px 24px rgba(0,0,0,0.95));
+  z-index: 1;
+  filter: drop-shadow(0 6px 28px rgba(0,0,0,0.9));
 }
 
-/* Ingredient strip — horizontal band showing the food photo */
-.co-scene-layer {
-  width: 78%;
-  height: 32px;
-  flex-shrink: 0;
-  background-size: cover;
-  background-position: center;
-  border-radius: 9px;
-  margin-bottom: -10px;   /* overlap creates realistic sandwich layering */
-  position: relative;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.5);
-  animation: ing-pop 0.22s cubic-bezier(.34,1.4,.64,1) both;
-}
-
-/* "+N more" overflow strip */
-.co-scene-extra {
-  background: rgba(12,6,0,0.9);
-  border: 1px solid rgba(249,115,22,0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #F97316;
+/* Transparent ingredient images overlaid on base */
+.co-canvas-ing {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  animation: ing-pop 0.25s cubic-bezier(.34,1.4,.64,1) both;
 }
 
 @keyframes ing-pop {
-  from { opacity: 0; scale: 0.65; }
+  from { opacity: 0; scale: 0.6; }
   to   { opacity: 1; scale: 1; }
 }
 
-/* ── Sauce bowl row (top-right corner, above the food) ──────── */
+/* ── Sauce bowl row (top-right corner) ──────────────────────── */
 .co-canvas-sauce-row {
   position: absolute;
-  top: 7%;
+  top: 6%;
   right: 5%;
   display: flex;
   flex-direction: column;
