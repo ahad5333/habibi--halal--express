@@ -429,26 +429,19 @@ function coRenderMedallion(id, family) {
 function IngCanvas({ base, cfg }) {
   const family = base?.family;
 
-  /* Build sorted ingredient layers from CO_ING_DB */
-  const layers = [];
+  /* All non-sauce selections rendered via coRenderMedallion */
   const selectedIds = [
     ...(cfg.cheese.type && cfg.cheese.type !== 'none' ? [cfg.cheese.type] : []),
     ...Object.keys(cfg.vegetables),
     ...Object.keys(cfg.proteins),
   ];
-  selectedIds.forEach(id => {
-    const def = CO_ING_DB[id];
-    if (!def || !family || !def.pos[family]) return;
-    def.pos[family].forEach(p => layers.push({ id, def, pos: p }));
-  });
-  layers.sort((a, b) => a.def.layer - b.def.layer);
 
-  /* Sauces — shown as rounded bowl thumbnails */
+  /* Sauces — shown as rounded bowl thumbnails, not on canvas */
   const activeSauces = Object.keys(cfg.sauces)
     .map(id => SAUCE_OPTS.find(o => o.id === id))
     .filter(Boolean);
 
-  const hasContent = layers.length > 0 || activeSauces.length > 0;
+  const hasContent = selectedIds.length > 0 || activeSauces.length > 0;
 
   return (
     <>
@@ -457,31 +450,15 @@ function IngCanvas({ base, cfg }) {
 
         {base ? (
           <>
-            {/* Large base food image */}
+            {/* Base food image — behind all ingredients (z-index 1) */}
             <img src={base.img} alt={base.label} className="co-canvas-base"
               onError={e => { e.currentTarget.style.opacity = '0.3'; }}
             />
 
-            {/* Layered ingredient images at CO_ING_DB positions */}
-            {layers.map(({ id, def, pos }, i) => (
-              <img
-                key={`${id}-${i}`}
-                src={def.src}
-                alt=""
-                className="co-canvas-ing"
-                style={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  width: `${pos.w}%`,
-                  zIndex: def.layer,
-                  transform: pos.rot
-                    ? `translate(-50%, -50%) rotate(${pos.rot}deg)`
-                    : 'translate(-50%, -50%)',
-                }}
-              />
-            ))}
+            {/* Ingredient medallions — layered at CO_ING_DB positions */}
+            {family && selectedIds.map(id => coRenderMedallion(id, family))}
 
-            {/* Sauce bowl thumbnails */}
+            {/* Sauce bowls — rounded thumbnails, bottom-right */}
             {activeSauces.length > 0 && (
               <div className="co-canvas-sauce-row">
                 {activeSauces.slice(0, 5).map(sauce => (
