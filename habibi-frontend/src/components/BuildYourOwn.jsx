@@ -745,7 +745,7 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
       <div className="byo-modal" onClick={e => e.stopPropagation()}>
 
         {/* ── Live Build Canvas ──────────────────────────────── */}
-        <div className="byo-canvas">
+        <div className="byo-canvas" data-family={selectedBase?.family || ''}>
           {selectedBase ? (
             <>
               <img
@@ -763,38 +763,64 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
                   : `from $${basePrice.toFixed(2)}`}
               </span>
               </div>
-              {/* Platter/tray fixed inclusions banner */}
-              {isPlatterBase && selectedBase.includes && (
-                <div className="byo-platter-includes">
-                  <span className="byo-inc-label">Included</span>
-                  {selectedBase.includes.map((item, i) => (
-                    <span key={i} className="byo-inc-item">{item}</span>
-                  ))}
-                </div>
-              )}
-
-              {activeIngredients.length > 0 ? (
-                <div className="byo-ing-bar">
-                  {activeIngredients.slice(0, 8).map((id, i) => {
-                    const meta = BYO_ING_META[id];
-                    if (!meta) return null;
-                    return (
-                      <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
-                        <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
-                        <span>{meta.label}</span>
-                      </div>
-                    );
-                  })}
-                  {activeIngredients.length > 8 && (
-                    <div className="byo-ing-chip byo-ing-chip-more">
-                      <span>+{activeIngredients.length - 8}</span>
+              {isPlatterBase ? (
+                /* ── Platter / Family Tray: food-zone ring clips everything inside ── */
+                <div className={`byo-food-zone byo-food-zone--${family}`}>
+                  {/* Included items — inside the zone */}
+                  {selectedBase.includes && (
+                    <div className="byo-platter-includes byo-platter-includes--inzone">
+                      <span className="byo-inc-label">Included</span>
+                      {selectedBase.includes.map((item, i) => (
+                        <span key={i} className="byo-inc-item">{item}</span>
+                      ))}
                     </div>
+                  )}
+                  {/* Ingredient chips — inside the zone */}
+                  {activeIngredients.length > 0 ? (
+                    <div className="byo-ing-bar byo-ing-bar--inzone">
+                      {activeIngredients.slice(0, 6).map((id, i) => {
+                        const meta = BYO_ING_META[id];
+                        if (!meta) return null;
+                        return (
+                          <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
+                            <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
+                            <span>{meta.label}</span>
+                          </div>
+                        );
+                      })}
+                      {activeIngredients.length > 6 && (
+                        <div className="byo-ing-chip byo-ing-chip-more">
+                          <span>+{activeIngredients.length - 6}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="byo-zone-hint">Choose your protein →</p>
                   )}
                 </div>
               ) : (
-                <div className="byo-canvas-hint">
-                  {isPlatterBase ? 'Now choose your protein →' : 'Select ingredients below ↓'}
-                </div>
+                /* ── Bread bases: chips at bottom of canvas as before ── */
+                activeIngredients.length > 0 ? (
+                  <div className="byo-ing-bar">
+                    {activeIngredients.slice(0, 8).map((id, i) => {
+                      const meta = BYO_ING_META[id];
+                      if (!meta) return null;
+                      return (
+                        <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
+                          <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
+                          <span>{meta.label}</span>
+                        </div>
+                      );
+                    })}
+                    {activeIngredients.length > 8 && (
+                      <div className="byo-ing-chip byo-ing-chip-more">
+                        <span>+{activeIngredients.length - 8}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="byo-canvas-hint">Select ingredients below ↓</div>
+                )
               )}
             </>
           ) : (
