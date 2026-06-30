@@ -740,6 +740,12 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
 
   const goBack = () => setStepIdx(i => (i === 0 ? -1 : i - 1));
 
+  const handleReset = () => {
+    setBase(null);
+    setSelections({ toppings: [] });
+    setStepIdx(-1);
+  };
+
   return (
     <div className="byo-overlay" onClick={onClose}>
       <div className="byo-modal" onClick={e => e.stopPropagation()}>
@@ -890,6 +896,11 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
           {!isBasePicker && (
             <button className="byo-btn byo-btn-back" onClick={goBack}>
               <ChevronLeft size={16} /> Back
+            </button>
+          )}
+          {selectedBase && (
+            <button className="byo-btn byo-btn-reset" onClick={handleReset} title="Start over">
+              ↺ Reset
             </button>
           )}
           {selectedBase && !isBasePicker && (
