@@ -1,4 +1,4 @@
-/* ── Shell ─────────────────────────────────────────────── */
+﻿/* ── Shell ─────────────────────────────────────────────── */
 .pp-shell {
   display: flex;
   min-height: 100vh;
@@ -147,7 +147,7 @@
 }
 
 .pp-page-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 1.4rem;
   font-weight: 700;
   color: #fff;
@@ -864,7 +864,7 @@
 }
 
 .pp-inv-brand {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 1.1rem;
   font-weight: 700;
   color: #E5B64E;
@@ -1004,7 +1004,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
 }
 
 .pp-acct-name {
@@ -1054,7 +1054,7 @@
 }
 
 .pp-biz-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 1rem;
   font-weight: 700;
   color: #fff;

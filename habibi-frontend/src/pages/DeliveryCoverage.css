@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    DELIVERY COVERAGE PAGE
    ============================================================ */
 
@@ -38,7 +38,7 @@
   margin-bottom: 0.75rem;
 }
 .dc-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
   color: #fff;
@@ -82,7 +82,7 @@
 
 /* Section headings */
 .dc-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
@@ -246,7 +246,7 @@
   text-align: center;
 }
 .dc-cta-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 2rem;
   margin: 0 0 0.75rem;
 }
