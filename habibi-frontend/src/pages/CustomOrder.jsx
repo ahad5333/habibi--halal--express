@@ -427,21 +427,23 @@ function coRenderMedallion(id, family) {
 
 /* ── Live build canvas: full-bleed base photo + ingredient chip bar ── */
 function IngCanvas({ base, cfg }) {
-  const family = base?.family;
+  /* Sandwich cross-section order: veggies on top, proteins middle, cheese/spread near base */
+  const vegLayers  = Object.keys(cfg.vegetables)
+    .map(id => VEG_OPTS.find(o => o.id === id)).filter(o => o?.img);
+  const protLayers = Object.keys(cfg.proteins)
+    .map(id => PROTEIN_OPTS.find(o => o.id === id)).filter(o => o?.img);
+  const chzLayers  = (cfg.cheese.type && cfg.cheese.type !== 'none')
+    ? [CHEESE_OPTS.find(o => o.id === cfg.cheese.type)].filter(o => o?.img)
+    : [];
 
-  /* All non-sauce selections rendered via coRenderMedallion */
-  const selectedIds = [
-    ...(cfg.cheese.type && cfg.cheese.type !== 'none' ? [cfg.cheese.type] : []),
-    ...Object.keys(cfg.vegetables),
-    ...Object.keys(cfg.proteins),
-  ];
+  /* Top → bottom render order: veg (top of sandwich), then protein, then cheese */
+  const allLayers = [...vegLayers, ...protLayers, ...chzLayers];
+  const MAX = 6;
+  const visible = allLayers.slice(0, MAX);
+  const extra   = allLayers.length - visible.length;
 
-  /* Sauces — shown as rounded bowl thumbnails, not on canvas */
   const activeSauces = Object.keys(cfg.sauces)
-    .map(id => SAUCE_OPTS.find(o => o.id === id))
-    .filter(Boolean);
-
-  const hasContent = selectedIds.length > 0 || activeSauces.length > 0;
+    .map(id => SAUCE_OPTS.find(o => o.id === id)).filter(Boolean);
 
   return (
     <>
@@ -450,26 +452,48 @@ function IngCanvas({ base, cfg }) {
 
         {base ? (
           <>
-            {/* Base food image — behind all ingredients (z-index 1) */}
-            <img src={base.img} alt={base.label} className="co-canvas-base"
-              onError={e => { e.currentTarget.style.opacity = '0.3'; }}
-            />
+            <div className="co-scene">
+              {/* Ingredient strips — stacked top-to-bottom, each overlapping the next */}
+              {visible.map((ing, i) => (
+                <div
+                  key={ing.id + i}
+                  className="co-scene-layer"
+                  style={{
+                    backgroundImage: `url(${ing.img})`,
+                    zIndex: MAX - i + 2,
+                    animationDelay: `${i * 0.04}s`,
+                  }}
+                  title={ing.label}
+                />
+              ))}
+              {extra > 0 && (
+                <div className="co-scene-layer co-scene-extra" style={{ zIndex: 2 }}>
+                  +{extra} more
+                </div>
+              )}
 
-            {/* Ingredient medallions — layered at CO_ING_DB positions */}
-            {family && selectedIds.map(id => coRenderMedallion(id, family))}
+              {/* Base food image — always at the bottom of the stack */}
+              <div className="co-scene-base">
+                <img src={base.img} alt={base.label} className="co-scene-base-img"
+                  onError={e => { e.currentTarget.style.opacity = '0.3'; }}
+                />
+              </div>
+            </div>
 
-            {/* Sauce bowls — rounded thumbnails, bottom-right */}
+            {/* Sauce bowl thumbnails — bottom-right corner */}
             {activeSauces.length > 0 && (
               <div className="co-canvas-sauce-row">
-                {activeSauces.slice(0, 5).map(sauce => (
+                {activeSauces.slice(0, 4).map(sauce => (
                   sauce.img
                     ? <img key={sauce.id} src={sauce.img} alt={sauce.label} className="co-canvas-sauce-bowl" title={sauce.label} />
-                    : <span key={sauce.id} className="co-canvas-sauce-emoji" title={sauce.label}>{sauce.emoji}</span>
+                    : <span key={sauce.id} className="co-canvas-sauce-emoji">{sauce.emoji}</span>
                 ))}
               </div>
             )}
 
-            {!hasContent && <p className="co-canvas-hint">Add ingredients below ↓</p>}
+            {allLayers.length === 0 && activeSauces.length === 0 && (
+              <p className="co-canvas-hint">Add ingredients below ↓</p>
+            )}
           </>
         ) : (
           <div className="co-canvas-empty">
