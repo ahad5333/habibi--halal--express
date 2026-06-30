@@ -390,7 +390,7 @@ const Home = () => {
                 </div>
               ))}
             </div>
-            <Link to="/menu?cat=byo" className="byo-strip-btn">
+            <Link to="/customize" className="byo-strip-btn">
               <span>Customize Now</span>
               <span className="byo-strip-btn-arrow"><ChevronRight size={18} /></span>
             </Link>
