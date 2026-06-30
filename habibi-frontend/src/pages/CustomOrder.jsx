@@ -12,16 +12,16 @@ import './CustomOrder.css';
    ================================================================ */
 
 const BASES = [
-  { id: '39a', label: 'Hero',        price: 1.99, img: '/images/menu/39a.jpg', family: 'hero'       },
-  { id: '39b', label: 'Wrap',        price: 1.99, img: '/images/menu/39b.jpg', family: 'wrap',       note: 'Habibi Special Wrap' },
-  { id: '39c', label: 'Pita Bread',  price: 1.99, img: '/images/menu/39c.jpg', family: 'wrap'       },
-  { id: '39d', label: 'Croissant',   price: 1.99, img: '/images/menu/39d.jpg', family: 'compact'    },
-  { id: '39e', label: 'Bagel',       price: 1.99, img: '/images/menu/39e.jpg', family: 'standard'   },
-  { id: '39f', label: 'Roll',        price: 1.49, img: '/images/menu/39f.jpg', family: 'standard'   },
-  { id: '39g', label: 'Burger Bun',  price: 1.99, img: '/images/menu/39g.jpg', family: 'standard'   },
-  { id: '39h', label: 'Hot Dog Bun', price: 0.99, img: '/images/menu/39h.jpg', family: 'compact'    },
-  { id: '39i', label: 'Platter',     price: 2.99, img: '/images/menu/39i.jpg', family: 'platter'    },
-  { id: '39j', label: 'Family Tray', price: 4.99, img: '/images/menu/39j.jpg', family: 'familyTray' },
+  { id: '39a', label: 'Hero',        price: 1.99, img: '/images/menu/39a.png', family: 'hero'       },
+  { id: '39b', label: 'Wrap',        price: 1.99, img: '/images/menu/39b.png', family: 'wrap',       note: 'Habibi Special Wrap' },
+  { id: '39c', label: 'Pita Bread',  price: 1.99, img: '/images/menu/39c.png', family: 'wrap'       },
+  { id: '39d', label: 'Croissant',   price: 1.99, img: '/images/menu/39d.png', family: 'compact'    },
+  { id: '39e', label: 'Bagel',       price: 1.99, img: '/images/menu/39e.png', family: 'standard'   },
+  { id: '39f', label: 'Roll',        price: 1.49, img: '/images/menu/39f.png', family: 'standard'   },
+  { id: '39g', label: 'Burger Bun',  price: 1.99, img: '/images/menu/39g.png', family: 'standard'   },
+  { id: '39h', label: 'Hot Dog Bun', price: 0.99, img: '/images/menu/39h.png', family: 'compact'    },
+  { id: '39i', label: 'Platter',     price: 2.99, img: '/images/menu/39i.png', family: 'platter'    },
+  { id: '39j', label: 'Family Tray', price: 4.99, img: '/images/menu/39j.png', family: 'familyTray' },
 ];
 
 const CHEESE_OPTS = [
