@@ -3047,7 +3047,7 @@
 /* ── BYO Strip ── */
 @media (max-width: 480px) {
   .byo-strip { padding: 1.25rem 0; }
-  .byo-strip-title { font-size: 1rem; }
+  .byo-strip-title { font-size: 2rem; }
   .byo-strip-desc { font-size: 0.82rem; }
   .byo-strip-btn { font-size: 0.82rem; padding: 0.6rem 1rem; white-space: nowrap; }
 }
