@@ -763,65 +763,40 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
                   : `from $${basePrice.toFixed(2)}`}
               </span>
               </div>
-              {isPlatterBase ? (
-                /* ── Platter / Family Tray: food-zone ring clips everything inside ── */
-                <div className={`byo-food-zone byo-food-zone--${family}`}>
-                  {/* Included items — inside the zone */}
-                  {selectedBase.includes && (
-                    <div className="byo-platter-includes byo-platter-includes--inzone">
-                      <span className="byo-inc-label">Included</span>
-                      {selectedBase.includes.map((item, i) => (
-                        <span key={i} className="byo-inc-item">{item}</span>
-                      ))}
-                    </div>
-                  )}
-                  {/* Square ingredient tiles inside the zone */}
-                  {activeIngredients.length > 0 ? (
-                    <div className="byo-zone-grid">
-                      {activeIngredients.slice(0, 9).map((id, i) => {
-                        const meta = BYO_ING_META[id];
-                        if (!meta) return null;
-                        return (
-                          <div key={id} className="byo-zone-tile" style={{ animationDelay: `${i * 0.05}s` }}>
-                            <div className="byo-zone-tile-img" style={{ backgroundImage: `url(${meta.img})` }} />
-                            <span className="byo-zone-tile-label">{meta.label}</span>
-                          </div>
-                        );
-                      })}
-                      {activeIngredients.length > 9 && (
-                        <div className="byo-zone-tile byo-zone-tile--more">
-                          <span>+{activeIngredients.length - 9}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="byo-zone-hint">Choose your protein →</p>
-                  )}
-                </div>
-              ) : (
-                /* ── Bread bases: chips at bottom of canvas as before ── */
-                activeIngredients.length > 0 ? (
-                  <div className="byo-ing-bar">
-                    {activeIngredients.slice(0, 8).map((id, i) => {
+              {/* ── Universal food zone — every base type ── */}
+              <div className={`byo-food-zone byo-food-zone--${family}`}>
+                {isPlatterBase && selectedBase.includes && (
+                  <div className="byo-platter-includes byo-platter-includes--inzone">
+                    <span className="byo-inc-label">Included</span>
+                    {selectedBase.includes.map((item, i) => (
+                      <span key={i} className="byo-inc-item">{item}</span>
+                    ))}
+                  </div>
+                )}
+                {activeIngredients.length > 0 ? (
+                  <div className="byo-zone-grid">
+                    {activeIngredients.slice(0, 9).map((id, i) => {
                       const meta = BYO_ING_META[id];
                       if (!meta) return null;
                       return (
-                        <div key={id} className="byo-ing-chip" style={{ animationDelay: `${i * 0.04}s` }}>
-                          <div className="byo-ing-chip-thumb" style={{ backgroundImage: `url(${meta.img})` }} />
-                          <span>{meta.label}</span>
+                        <div key={id} className="byo-zone-tile" style={{ animationDelay: `${i * 0.05}s` }}>
+                          <div className="byo-zone-tile-img" style={{ backgroundImage: `url(${meta.img})` }} />
+                          <span className="byo-zone-tile-label">{meta.label}</span>
                         </div>
                       );
                     })}
-                    {activeIngredients.length > 8 && (
-                      <div className="byo-ing-chip byo-ing-chip-more">
-                        <span>+{activeIngredients.length - 8}</span>
+                    {activeIngredients.length > 9 && (
+                      <div className="byo-zone-tile byo-zone-tile--more">
+                        <span>+{activeIngredients.length - 9}</span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="byo-canvas-hint">Select ingredients below ↓</div>
-                )
-              )}
+                  <p className="byo-zone-hint">
+                    {isPlatterBase ? 'Choose your protein →' : 'Add ingredients below ↓'}
+                  </p>
+                )}
+              </div>
             </>
           ) : (
             <div className="byo-canvas-empty">
