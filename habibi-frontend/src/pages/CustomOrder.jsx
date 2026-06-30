@@ -696,14 +696,6 @@ export default function CustomOrder() {
     });
   };
 
-  /* Flash running total when it changes */
-  useEffect(() => {
-    if (total <= 0) return;
-    setTotalFlash(true);
-    const t = setTimeout(() => setTotalFlash(false), 450);
-    return () => clearTimeout(t);
-  }, [total]);
-
   /* Load saved orders when logged in */
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -839,6 +831,14 @@ export default function CustomOrder() {
     });
     return Math.max(0, t);
   }, [cfg, extras, drinks]);
+
+  /* Flash running total when it changes — must be after `total` useMemo to avoid TDZ */
+  useEffect(() => {
+    if (total <= 0) return;
+    setTotalFlash(true);
+    const t = setTimeout(() => setTotalFlash(false), 450);
+    return () => clearTimeout(t);
+  }, [total]);
 
   /* Price breakdown lines */
   const breakdown = useMemo(() => {
