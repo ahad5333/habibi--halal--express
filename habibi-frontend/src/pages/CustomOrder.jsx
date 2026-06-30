@@ -1351,7 +1351,10 @@ export default function CustomOrder() {
                       className={`co-opt-card${sel ? ' selected' : ''}${isSauceExcluded(sauce.id) ? ' co-filtered' : ''}`}
                       onClick={() => !isSauceExcluded(sauce.id) && toggleSauce(sauce.id)}
                     >
-                      <span className="co-opt-emoji">{sauce.emoji}</span>
+                      {sauce.img
+                        ? <div className="co-opt-thumb" style={{ backgroundImage: `url(${sauce.img})` }} />
+                        : <span className="co-opt-emoji">{sauce.emoji}</span>
+                      }
                       <span className="co-opt-name">{sauce.label}</span>
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
