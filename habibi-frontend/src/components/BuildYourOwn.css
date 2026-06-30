@@ -340,10 +340,34 @@
 .byo-canvas-empty-sub   { font-size: 0.8rem;  color: rgba(255,255,255,0.38); }
 
 /* Close button */
-.byo-close-btn {
+.byo-canvas-actions {
   position: absolute;
   top: 0.75rem;
-  right: 0.875rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  z-index: 20;
+}
+
+.byo-reset-btn {
+  background: rgba(239,68,68,0.15);
+  color: rgba(255,255,255,0.9);
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, border-color 0.15s;
+}
+.byo-reset-btn:hover {
+  background: rgba(239,68,68,0.35);
+  border-color: rgba(239,68,68,0.7);
+}
+
+.byo-close-btn {
   background: rgba(0,0,0,0.55);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 50%;
@@ -355,7 +379,7 @@
   cursor: pointer;
   color: rgba(255,255,255,0.85);
   transition: background 0.15s;
-  z-index: 20;
+  flex-shrink: 0;
 }
 .byo-close-btn:hover { background: rgba(0,0,0,0.8); }
 
@@ -544,18 +568,6 @@
 .byo-btn-back {
   background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.65);
-}
-.byo-btn-reset {
-  background: rgba(239,68,68,0.12);
-  color: rgba(239,68,68,0.85);
-  border: 1px solid rgba(239,68,68,0.25);
-  font-size: 0.72rem;
-  letter-spacing: 0.03em;
-}
-.byo-btn-reset:hover {
-  background: rgba(239,68,68,0.22);
-  color: #ef4444;
-  border-color: rgba(239,68,68,0.5);
 }
 .byo-btn-next {
   background: #1e3a8a;

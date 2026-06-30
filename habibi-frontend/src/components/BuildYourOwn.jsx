@@ -810,7 +810,14 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
               <span className="byo-canvas-empty-sub">Choose a base below ↓</span>
             </div>
           )}
-          <button className="byo-close-btn" onClick={onClose}><X size={18} /></button>
+          <div className="byo-canvas-actions">
+            {selectedBase && (
+              <button className="byo-reset-btn" onClick={handleReset} title="Start over">
+                ↺ Reset
+              </button>
+            )}
+            <button className="byo-close-btn" onClick={onClose}><X size={18} /></button>
+          </div>
         </div>
 
         {/* ── Progress bar ─────────────────────────────────── */}
@@ -896,11 +903,6 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
           {!isBasePicker && (
             <button className="byo-btn byo-btn-back" onClick={goBack}>
               <ChevronLeft size={16} /> Back
-            </button>
-          )}
-          {selectedBase && (
-            <button className="byo-btn byo-btn-reset" onClick={handleReset} title="Start over">
-              ↺ Reset
             </button>
           )}
           {selectedBase && !isBasePicker && (
