@@ -332,13 +332,14 @@ const Navbar = () => {
                 <span>{serviceLocation.title.split('&')[0].trim()}</span>
               </Link>
             )}
-            <Link to="/customize" className="navbar-customize-btn" title="Customize Your Order">
-              <img src="/images/byo/customize-icon.webp" alt="Customize Your Order" className="navbar-customize-icon" />
+            <Link to="/customize" className="navbar-customize-btn" title="Build Your Own — mix & match proteins, toppings & sauces">
+              <img src="/images/byo/customize-icon.webp" alt="Build Your Own Meal" className="navbar-customize-icon" />
               <span className="navbar-customize-label">
                 <span className="cust-lbl-spark">✦</span>
-                <span className="cust-lbl-text">Build It</span>
+                <span className="cust-lbl-text">Build Your Own</span>
                 <span className="cust-lbl-spark">✦</span>
               </span>
+              <span className="cust-lbl-sub">mix &amp; match</span>
             </Link>
 
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">

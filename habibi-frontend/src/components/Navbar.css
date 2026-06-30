@@ -235,9 +235,9 @@
 }
 
 .cust-lbl-text {
-  font-size: 0.5rem;
+  font-size: 0.56rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   background: linear-gradient(90deg, #E5B64E 0%, #F97316 28%, #ffe9a8 52%, #F97316 76%, #E5B64E 100%);
   background-size: 250% auto;
@@ -245,6 +245,17 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: cust-label-shine 2s linear infinite;
+}
+
+.cust-lbl-sub {
+  font-size: 0.45rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(229, 182, 78, 0.55);
+  line-height: 1;
+  margin-top: -3px;
+  white-space: nowrap;
 }
 
 .cust-lbl-spark {
