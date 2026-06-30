@@ -144,15 +144,65 @@
   margin: 0;
 }
 
-/* Ingredient bar inside the food zone */
-.byo-ing-bar--inzone {
-  position: static !important;
-  bottom: auto !important;
-  left: auto !important;
-  right: auto !important;
-  max-height: none !important;
+/* Square ingredient tile grid inside the food zone */
+.byo-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.1rem;
+}
+
+.byo-zone-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  animation: byoChipIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
+  opacity: 0;
+}
+
+.byo-zone-tile-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(229,182,78,0.4);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.byo-zone-tile-label {
+  font-size: 0.42rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.byo-zone-tile--more {
   justify-content: center;
-  flex-wrap: wrap;
+  align-items: center;
+}
+.byo-zone-tile--more .byo-zone-tile-img {
+  display: none;
+}
+.byo-zone-tile--more span {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #E5B64E;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed rgba(229,182,78,0.5);
+  border-radius: 6px;
 }
 
 /* Platter / family tray — fixed inclusions banner */
