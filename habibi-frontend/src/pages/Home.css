@@ -1701,7 +1701,6 @@
 }
 
 .story-text {
-  font-family: var(--font-serif);
   font-size: 0.95rem;
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.65);
@@ -1731,7 +1730,6 @@
 }
 
 .story-highlight-label {
-  font-family: var(--font-serif);
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
