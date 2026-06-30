@@ -25,26 +25,26 @@ const BASES = [
 ];
 
 const CHEESE_OPTS = [
-  { id: 'none',     label: 'No Cheese',      price: 0,    emoji: 'â¬œ', default: true },
-  { id: 'american', label: 'American Cheese', price: 1.00, emoji: 'ðŸ§€', img: '/images/byo/ing/american-cheese.webp' },
-  { id: 'cream',    label: 'Cream Cheese',    price: 2.00, emoji: 'ðŸ§ˆ', img: '/images/byo/ing/cream-cheese.webp'   },
-  { id: 'butter',   label: 'Butter',          price: 2.00, emoji: 'ðŸ«™', img: '/images/byo/ing/butter.webp'        },
+  { id: 'none',     label: 'No Cheese',      price: 0,    emoji: 'Ã¢Â¬Å“', default: true },
+  { id: 'american', label: 'American Cheese', price: 1.00, emoji: 'Ã°Å¸Â§â‚¬', img: '/images/byo/ing/american-cheese.webp' },
+  { id: 'cream',    label: 'Cream Cheese',    price: 2.00, emoji: 'Ã°Å¸Â§Ë†', img: '/images/byo/ing/cream-cheese.webp'   },
+  { id: 'butter',   label: 'Butter',          price: 2.00, emoji: 'Ã°Å¸Â«â„¢', img: '/images/byo/ing/butter.webp'        },
 ];
 
 const VEG_OPTS = [
-  { id: 'onions',    label: 'Onions',        price: 0.50, emoji: 'ðŸ§…', img: '/images/byo/ing/onion.webp'    },
-  { id: 'peppers',   label: 'Green Peppers', price: 0.50, emoji: 'ðŸŒ¿', img: '/images/byo/ing/pepper.webp'   },
-  { id: 'cucumbers', label: 'Cucumbers',     price: 0.50, emoji: 'ðŸ¥’', img: '/images/byo/ing/cucumber.webp' },
-  { id: 'lettuce',   label: 'Lettuce',       price: 0.50, emoji: 'ðŸ¥¬', img: '/images/byo/ing/lettuce.webp'  },
-  { id: 'tomatoes',  label: 'Tomatoes',      price: 0.50, emoji: 'ðŸ…', img: '/images/byo/ing/tomato.webp'   },
-  { id: 'rice',      label: 'Rice',          price: 2.00, emoji: 'ðŸš', img: '/images/byo/ing/rice.webp', note: 'Basmati rice' },
+  { id: 'onions',    label: 'Onions',        price: 0.50, emoji: 'Ã°Å¸Â§â€¦', img: '/images/byo/ing/onion.webp'    },
+  { id: 'peppers',   label: 'Green Peppers', price: 0.50, emoji: 'Ã°Å¸Å’Â¿', img: '/images/byo/ing/pepper.webp'   },
+  { id: 'cucumbers', label: 'Cucumbers',     price: 0.50, emoji: 'Ã°Å¸Â¥â€™', img: '/images/byo/ing/cucumber.webp' },
+  { id: 'lettuce',   label: 'Lettuce',       price: 0.50, emoji: 'Ã°Å¸Â¥Â¬', img: '/images/byo/ing/lettuce.webp'  },
+  { id: 'tomatoes',  label: 'Tomatoes',      price: 0.50, emoji: 'Ã°Å¸ â€¦', img: '/images/byo/ing/tomato.webp'   },
+  { id: 'rice',      label: 'Rice',          price: 2.00, emoji: 'Ã°Å¸ Å¡', img: '/images/byo/ing/rice.webp', note: 'Basmati rice' },
 ];
 
 /* qtyType determines which quantity selector is shown:
-   'low-extra'     â†’ Low / Regular / Extra / Double
-   'eggs'          â†’ 1 / 2 / 3 / 4 eggs  ($1 each)
-   'single-double' â†’ Single / Double
-   'single-triple' â†’ Single / Double / Triple               */
+   'low-extra'     Ã¢â€ â€™ Low / Regular / Extra / Double
+   'eggs'          Ã¢â€ â€™ 1 / 2 / 3 / 4 eggs  ($1 each)
+   'single-double' Ã¢â€ â€™ Single / Double
+   'single-triple' Ã¢â€ â€™ Single / Double / Triple               */
 const PROTEIN_OPTS = [
   { id: 'egg-fried',       label: 'Egg (Fried)',           price: 1.00, qtyType: 'eggs',          emoji: 'ðŸ³', img: '/images/byo/ing/egg-fried.webp'       },
   { id: 'egg-scrambled',   label: 'Egg (Scrambled)',        price: 1.00, qtyType: 'eggs',          emoji: 'ðŸ³', img: '/images/byo/ing/egg-scrambled.webp'   },
@@ -60,25 +60,25 @@ const PROTEIN_OPTS = [
   { id: 'beef-kabab',      label: 'Beef Shish Kabab',      price: 4.00, qtyType: 'single-triple', emoji: 'ðŸ¢', img: '/images/byo/ing/beef-kabab.webp'      },
   { id: 'philly-steak',    label: 'Philly Steak',          price: 6.00, qtyType: 'single-double', emoji: 'ðŸ¥©', img: '/images/byo/ing/philly-steak.webp'    },
   { id: 'falafel',         label: 'Falafel',               price: 6.00, qtyType: 'low-extra',     emoji: 'ðŸ§†', img: '/images/byo/ing/falafel.webp',  note: 'Low=3 balls, Regular=6, Extra=9, Double=12' },
-  { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: 'ðŸŸ', img: '/images/byo/ing/fish-fillet.webp'     },
-  { id: 'shrimp',          label: 'Shrimp',                price: 8.00, qtyType: 'low-extra',     emoji: 'ðŸ¤', img: '/images/byo/ing/shrimp.webp'          },
+  { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: 'ðŸŸ', img: '/images/byo/ing/fish-fillet.webp'     },
+  { id: 'shrimp',          label: 'Shrimp',                price: 8.00, qtyType: 'low-extra',     emoji: 'ðŸ¤¤', img: '/images/byo/ing/shrimp.webp'          },
   { id: 'tuna',            label: 'Tuna Fish',             price: 7.00, qtyType: 'low-extra',     emoji: 'ðŸ ', img: '/images/byo/ing/tuna.webp'            },
   { id: 'beef-burger',     label: 'Beef Burger',           price: 5.00, qtyType: 'single-double', emoji: 'ðŸ”', img: '/images/byo/ing/beef-burger.webp'     },
   { id: 'chicken-burger',  label: 'Chicken Burger',        price: 5.00, qtyType: 'single-double', emoji: 'ðŸ”', img: '/images/byo/ing/chicken-burger.webp'  },
 ];
 
 const SAUCE_OPTS = [
-  { id: 'white',   label: 'White Sauce',      price: 1.00, emoji: 'ðŸ¤' },
-  { id: 'hot',     label: 'Hot Sauce',        price: 1.00, emoji: 'ðŸ”¥' },
-  { id: 'ketchup', label: 'Ketchup',          price: 0.75, emoji: 'ðŸ…' },
-  { id: 'mustard', label: 'Mustard',          price: 0.75, emoji: 'ðŸ’›' },
-  { id: 'bbq',     label: 'BBQ Sauce',        price: 1.00, emoji: 'ðŸ«™' },
-  { id: 'green',   label: 'Special Green Sauce', price: 1.25, emoji: 'ðŸ’š' },
-  { id: 'mayo',    label: 'Mayonnaise',       price: 0.75, emoji: 'ðŸ¶' },
-  { id: 'blue',    label: 'Blue Cheese',      price: 1.25, emoji: 'ðŸ«' },
+  { id: 'white',   label: 'White Sauce',         price: 1.00, emoji: 'ðŸ¤', img: '/images/byo/ing/sauce-white-bowl.webp'  },
+  { id: 'hot',     label: 'Hot Sauce',           price: 1.00, emoji: 'ðŸ”¥', img: '/images/byo/ing/sauce-hot-bowl.webp'    },
+  { id: 'ketchup', label: 'Ketchup',             price: 0.75, emoji: 'ðŸ…', img: '/images/byo/ing/sauce-ketchup.webp'     },
+  { id: 'mustard', label: 'Mustard',             price: 0.75, emoji: 'ðŸ’›', img: '/images/byo/ing/sauce-mustard.webp'     },
+  { id: 'bbq',     label: 'BBQ Sauce',           price: 1.00, emoji: 'ðŸ«™', img: '/images/byo/ing/sauce-bbq.webp'         },
+  { id: 'green',   label: 'Special Green Sauce', price: 1.25, emoji: 'ðŸ’š', img: '/images/byo/ing/sauce-green.webp'       },
+  { id: 'mayo',    label: 'Mayonnaise',          price: 0.75, emoji: 'ðŸ¶', img: '/images/byo/ing/sauce-mayo.webp'        },
+  { id: 'blue',    label: 'Blue Cheese',         price: 1.25, emoji: 'ðŸ«', img: '/images/byo/ing/sauce-blue-cheese.webp' },
 ];
 
-/* â”€â”€ Price helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Price helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 const VEG_QTY_MULT  = { low: 1, regular: 1, extra: 1.5, double: 2 };
 const SAUCE_FOOD_MULT = { low: 0.5, regular: 1, extra: 2 };
 
@@ -88,10 +88,10 @@ const PROTEIN_BASE_TIERED = new Set([
 ]);
 
 /* Base-dependent multipliers (per client spec):
-   - Cheese:   2Ã— on Hero or Family Tray
-   - Veg:      3Ã— on Family Tray
-   - Tiered proteins: 4Ã— on Family Tray, 0.8Ã— on compact/wrap/standard bases,
-                      1Ã— on Hero or Platter                                     */
+   - Cheese:   2Ãƒâ€” on Hero or Family Tray
+   - Veg:      3Ãƒâ€” on Family Tray
+   - Tiered proteins: 4Ãƒâ€” on Family Tray, 0.8Ãƒâ€” on compact/wrap/standard bases,
+                      1Ãƒâ€” on Hero or Platter                                     */
 function getBaseMultipliers(base) {
   if (!base) return { cheese: 1, veg: 1, protein: 1 };
   const isFamilyTray = base.id === '39j';
@@ -125,7 +125,7 @@ function proteinQtyLabel(protein, qty) {
   return qty.charAt(0).toUpperCase() + qty.slice(1);
 }
 
-/* â”€â”€ Quantity option lists per type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Quantity option lists per type Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 const QTY_OPTS = {
   'low-extra':     ['low', 'regular', 'extra', 'double'],
   'eggs':          [1, 2, 3, 4],
@@ -137,12 +137,12 @@ const QTY_OPTS = {
 };
 
 /* ================================================================
-   INGREDIENT MEDALLION DATABASE  (CustomOrder â€” full ingredient set)
+   INGREDIENT MEDALLION DATABASE  (CustomOrder Ã¢â‚¬â€ full ingredient set)
    shape: 'circle' | 'rect' | 'wide' | 'sauce'
    pos[family]: [{x, y, w, rot?, ar?}]  (x/y/w in % of canvas)
    ================================================================ */
 const CO_ING_DB = {
-  /* â”€â”€ Proteins â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Ã¢â€â‚¬Ã¢â€â‚¬ Proteins Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
   chicken: {
     src: '/images/byo/ing/chicken.webp', layer: 4, shape: 'circle',
     pos: {
@@ -295,7 +295,7 @@ const CO_ING_DB = {
       platter:[{x:62,y:52,w:22}], familyTray:[{x:56,y:52,w:20},{x:70,y:52,w:20}],
     }
   },
-  /* â”€â”€ Vegetables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Ã¢â€â‚¬Ã¢â€â‚¬ Vegetables Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
   lettuce: {
     src: '/images/byo/ing/lettuce.webp', layer: 3, shape: 'wide', ar:'6/2',
     pos: {
@@ -344,7 +344,7 @@ const CO_ING_DB = {
       platter:[{x:63,y:58,w:28}], familyTray:[{x:59,y:58,w:26},{x:73,y:58,w:26}],
     }
   },
-  /* â”€â”€ Cheese â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Ã¢â€â‚¬Ã¢â€â‚¬ Cheese Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
   american: {
     src: '/images/byo/ing/american-cheese.webp', layer: 3, shape: 'rect', ar:'1/1',
     pos: {
@@ -369,7 +369,7 @@ const CO_ING_DB = {
       platter:[{x:63,y:58,w:16}], familyTray:[{x:59,y:58,w:14},{x:72,y:58,w:14}],
     }
   },
-  /* â”€â”€ Sauces â€” use drizzle images with multiply, or color gradient â”€â”€ */
+  /* Ã¢â€â‚¬Ã¢â€â‚¬ Sauces Ã¢â‚¬â€ use drizzle images with multiply, or color gradient Ã¢â€â‚¬Ã¢â€â‚¬ */
   white: {
     src: '/images/byo/ing/sauce-white.webp', layer: 9, shape: 'sauce',
     pos: { hero:[{x:50,y:51,w:54}], standard:[{x:49,y:51,w:36}], compact:[{x:48,y:53,w:30}], wrap:[{x:48,y:51,w:34}], platter:[{x:63,y:51,w:28}], familyTray:[{x:60,y:51,w:26}] }
@@ -425,7 +425,7 @@ function coRenderMedallion(id, family) {
   });
 }
 
-/* â”€â”€ Live build canvas: full-bleed base photo + ingredient chip bar â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Live build canvas: full-bleed base photo + ingredient chip bar Ã¢â€â‚¬Ã¢â€â‚¬ */
 function IngCanvas({ base, cfg }) {
   /* Build flat chip list from all active selections */
   const chips = [];
@@ -496,7 +496,7 @@ function IngCanvas({ base, cfg }) {
                 )}
               </div>
             ) : (
-              <p className="co-canvas-hint">Add ingredients below â†“</p>
+              <p className="co-canvas-hint">Add ingredients below Ã¢â€ â€œ</p>
             )}
           </>
         ) : (
@@ -507,7 +507,7 @@ function IngCanvas({ base, cfg }) {
         )}
       </div>
 
-      {/* Base name â€” sits below the canvas, never overlaps */}
+      {/* Base name Ã¢â‚¬â€ sits below the canvas, never overlaps */}
       {base && (
         <div className="co-canvas-info">
           <span className="co-canvas-base-name">{base.label}</span>
@@ -517,7 +517,7 @@ function IngCanvas({ base, cfg }) {
   );
 }
 
-/* â”€â”€ Small reusable quantity pill row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Small reusable quantity pill row Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }) {
   return (
     <div className="co-qty-pills">
@@ -538,7 +538,7 @@ function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }
   );
 }
 
-/* â”€â”€ Collapsible section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Collapsible section Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 function Section({ id, title, icon, badge, open, onToggle, children }) {
   return (
     <div className={`co-section${open ? ' open' : ''}${badge > 0 ? ' completed' : ''}`}>
@@ -562,8 +562,8 @@ const PRESETS = [
   {
     id: 'classic',
     label: 'The Classic',
-    emoji: 'ðŸ†',
-    desc: 'Hero Â· Chicken Â· White Sauce',
+    emoji: 'Ã°Å¸Ââ€ ',
+    desc: 'Hero Ã‚Â· Chicken Ã‚Â· White Sauce',
     cfg: {
       base:       BASES.find(b => b.id === '39a'),
       cheese:     { type: 'american', qty: 'regular' },
@@ -576,8 +576,8 @@ const PRESETS = [
   {
     id: 'spicy-gyro',
     label: 'Spicy Gyro',
-    emoji: 'ðŸ”¥',
-    desc: 'Wrap Â· Lamb Gyro Â· Hot Sauce',
+    emoji: 'Ã°Å¸â€Â¥',
+    desc: 'Wrap Ã‚Â· Lamb Gyro Ã‚Â· Hot Sauce',
     cfg: {
       base:       BASES.find(b => b.id === '39b'),
       cheese:     { type: 'none', qty: 'regular' },
@@ -590,8 +590,8 @@ const PRESETS = [
   {
     id: 'beef-burger',
     label: 'Beef Burger',
-    emoji: 'ðŸ”',
-    desc: 'Burger Bun Â· Beef Burger Â· Ketchup',
+    emoji: 'Ã°Å¸Ââ€',
+    desc: 'Burger Bun Ã‚Â· Beef Burger Ã‚Â· Ketchup',
     cfg: {
       base:       BASES.find(b => b.id === '39g'),
       cheese:     { type: 'american', qty: 'regular' },
@@ -604,8 +604,8 @@ const PRESETS = [
   {
     id: 'falafel-pita',
     label: 'Falafel Pita',
-    emoji: 'ðŸ§†',
-    desc: 'Pita Â· Falafel Â· Green Sauce',
+    emoji: 'Ã°Å¸Â§â€ ',
+    desc: 'Pita Ã‚Â· Falafel Ã‚Â· Green Sauce',
     cfg: {
       base:       BASES.find(b => b.id === '39c'),
       cheese:     { type: 'none', qty: 'regular' },
@@ -832,7 +832,7 @@ export default function CustomOrder() {
     return Math.max(0, t);
   }, [cfg, extras, drinks]);
 
-  /* Flash running total when it changes â€” must be after `total` useMemo to avoid TDZ */
+  /* Flash running total when it changes Ã¢â‚¬â€ must be after `total` useMemo to avoid TDZ */
   useEffect(() => {
     if (total <= 0) return;
     setTotalFlash(true);
@@ -869,11 +869,11 @@ export default function CustomOrder() {
     });
     Object.entries(cfg.extras).forEach(([id, cnt]) => {
       const item = extras.find(x => String(x._id ?? x.id) === id);
-      if (item) lines.push({ label: `${item.name} Ã—${cnt}`, price: parseFloat(item.price || 0) * cnt });
+      if (item) lines.push({ label: `${item.name} Ãƒâ€”${cnt}`, price: parseFloat(item.price || 0) * cnt });
     });
     Object.entries(cfg.drinks).forEach(([id, cnt]) => {
       const item = drinks.find(x => String(x._id ?? x.id) === id);
-      if (item) lines.push({ label: `${item.name} Ã—${cnt}`, price: parseFloat(item.price || 0) * cnt });
+      if (item) lines.push({ label: `${item.name} Ãƒâ€”${cnt}`, price: parseFloat(item.price || 0) * cnt });
     });
     return lines;
   }, [cfg, extras, drinks]);
@@ -983,24 +983,24 @@ export default function CustomOrder() {
     <div className="co-page">
       <SEO
         title="Customize Your Order | Habibi Halal Express"
-        description="Build your perfect halal meal â€” choose your base, protein, vegetables, and sauces. Fully custom, fully halal."
+        description="Build your perfect halal meal Ã¢â‚¬â€ choose your base, protein, vegetables, and sauces. Fully custom, fully halal."
         url="/customize"
       />
 
-      {/* â”€â”€ Header image â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Header image Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <div className="co-hero">
         <img src="/images/byo/customize-hero.jpg" alt="Customize Your Order" className="co-hero-img" />
         <div className="co-hero-overlay" aria-hidden="true" />
         <div className="co-hero-lines"  aria-hidden="true" />
 
-        {/* Left â€” title */}
+        {/* Left Ã¢â‚¬â€ title */}
         <div className="co-hero-text">
-          <span className="co-hero-eyebrow">âœ¦ Habibi Halal Express</span>
+          <span className="co-hero-eyebrow">Ã¢Å“Â¦ Habibi Halal Express</span>
           <h1 className="co-hero-title">Build Your<br/>Perfect Meal</h1>
-          <p className="co-hero-sub">Choose your base Â· Pick your proteins Â· Add your sauces</p>
+          <p className="co-hero-sub">Choose your base Ã‚Â· Pick your proteins Ã‚Â· Add your sauces</p>
         </div>
 
-        {/* Right â€” quick-stats badge */}
+        {/* Right Ã¢â‚¬â€ quick-stats badge */}
         <div className="co-hero-stats">
           <div className="co-hero-stat"><strong>19</strong><span>Proteins</span></div>
           <div className="co-hero-stat-sep" />
@@ -1012,19 +1012,19 @@ export default function CustomOrder() {
 
       <div className="co-layout">
 
-        {/* â”€â”€ Mobile-only canvas (above sections, hidden on desktop) â”€â”€ */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile-only canvas (above sections, hidden on desktop) Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <div className="co-mobile-canvas-wrap">
           <IngCanvas base={cfg.base} cfg={cfg} />
         </div>
 
-        {/* â”€â”€ Left: sticky canvas (desktop sidebar) â”€â”€ */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Left: sticky canvas (desktop sidebar) Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <aside className="co-sidebar">
           <IngCanvas base={cfg.base} cfg={cfg} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className={`co-price-val${totalFlash ? ' co-price-flash' : ''}`}>${total.toFixed(2)}</span>
             {cfg.base?.id === '39j' && (
-              <span className="co-base-hint">Family Tray: ingredients scaled Ã—4 portions</span>
+              <span className="co-base-hint">Family Tray: ingredients scaled Ãƒâ€”4 portions</span>
             )}
             {cfg.base?.id === '39a' && (
               <span className="co-base-hint">Hero: cheese doubled</span>
@@ -1034,7 +1034,7 @@ export default function CustomOrder() {
             {breakdown.length > 0 && (
               <div className="co-breakdown">
                 <button className="co-breakdown-toggle" onClick={() => setShowBreakdown(p => !p)}>
-                  <span>{showBreakdown ? 'â–²' : 'â–¼'} breakdown</span>
+                  <span>{showBreakdown ? 'Ã¢â€“Â²' : 'Ã¢â€“Â¼'} breakdown</span>
                 </button>
                 {showBreakdown && (
                   <div className="co-breakdown-list">
@@ -1077,7 +1077,7 @@ export default function CustomOrder() {
               }
             </button>
 
-            {/* Save to account â€” logged-in + base selected */}
+            {/* Save to account Ã¢â‚¬â€ logged-in + base selected */}
             {isLoggedIn && cfg.base && (
               <div className="co-save-row">
                 {!showSaveInput ? (
@@ -1096,9 +1096,9 @@ export default function CustomOrder() {
                       autoFocus
                     />
                     <button className="co-save-confirm" onClick={handleSave} disabled={!saveName.trim() || saveStatus === 'saving'}>
-                      {saveStatus === 'saving' ? 'â€¦' : saveStatus === 'saved' ? 'âœ“' : saveStatus === 'error' ? '!' : 'â†µ'}
+                      {saveStatus === 'saving' ? 'Ã¢â‚¬Â¦' : saveStatus === 'saved' ? 'Ã¢Å“â€œ' : saveStatus === 'error' ? '!' : 'Ã¢â€ Âµ'}
                     </button>
-                    <button className="co-save-cancel" onClick={() => setShowSaveInput(false)}>âœ•</button>
+                    <button className="co-save-cancel" onClick={() => setShowSaveInput(false)}>Ã¢Å“â€¢</button>
                   </div>
                 )}
               </div>
@@ -1106,7 +1106,7 @@ export default function CustomOrder() {
 
             {warnProtein && (
               <div className="co-protein-warn">
-                <p className="co-protein-warn-msg">âš ï¸ No protein selected â€” your order will be veggie only.</p>
+                <p className="co-protein-warn-msg">Ã¢Å¡Â Ã¯Â¸Â No protein selected Ã¢â‚¬â€ your order will be veggie only.</p>
                 <div className="co-protein-warn-actions">
                   <button className="co-protein-warn-pick"
                     onClick={() => {
@@ -1124,14 +1124,14 @@ export default function CustomOrder() {
             )}
           </div>
 
-          {/* â”€â”€ Make it a meal nudge â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬ Make it a meal nudge Ã¢â€â‚¬Ã¢â€â‚¬ */}
           {cfg.base &&
            Object.keys(cfg.proteins).length > 0 &&
            Object.keys(cfg.extras).length === 0 &&
            Object.values(cfg.drinks).reduce((a, b) => a + b, 0) === 0 &&
            (extras.length > 0 || drinks.length > 0) && (
             <div className="co-meal-nudge">
-              <p className="co-meal-nudge-title">ðŸŸ Make it a meal?</p>
+              <p className="co-meal-nudge-title">Ã°Å¸ÂÅ¸ Make it a meal?</p>
               <p className="co-meal-nudge-sub">Add a side or drink</p>
               <div className="co-meal-nudge-chips">
                 {extras.slice(0, 2).map(item => {
@@ -1159,18 +1159,18 @@ export default function CustomOrder() {
           )}
         </aside>
 
-        {/* â”€â”€ Right: configuration groups â”€â”€ */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Right: configuration groups Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <main className="co-groups">
 
-          {/* â”€â”€ My Saved Orders (logged-in only) â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬ My Saved Orders (logged-in only) Ã¢â€â‚¬Ã¢â€â‚¬ */}
           {isLoggedIn && savedOrders.length > 0 && (
             <div className="co-saved-section">
-              <p className="co-presets-label">ðŸ”– My Saved Orders</p>
+              <p className="co-presets-label">Ã°Å¸â€â€“ My Saved Orders</p>
               <div className="co-presets-track">
                 {savedOrders.map(order => (
                   <div key={order.id} className="co-saved-card">
                     <button className="co-saved-load" onClick={() => loadSaved(order)}>
-                      <span className="co-preset-emoji">ðŸ½ï¸</span>
+                      <span className="co-preset-emoji">Ã°Å¸ÂÂ½Ã¯Â¸Â</span>
                       <span className="co-preset-name">{order.name}</span>
                       <span className="co-preset-desc">{order.config?.base?.label || 'Custom order'}</span>
                     </button>
@@ -1183,12 +1183,12 @@ export default function CustomOrder() {
             </div>
           )}
 
-          {/* â”€â”€ Dietary filters â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬ Dietary filters Ã¢â€â‚¬Ã¢â€â‚¬ */}
           <div className="co-diet-filters">
             {[
-              { key: 'vegetarian', label: 'Vegetarian',  emoji: 'ðŸ¥—' },
-              { key: 'dairyFree',  label: 'Dairy-Free',  emoji: 'ðŸ¥›' },
-              { key: 'glutenFree', label: 'Gluten-Free', emoji: 'ðŸŒ¾' },
+              { key: 'vegetarian', label: 'Vegetarian',  emoji: 'Ã°Å¸Â¥â€”' },
+              { key: 'dairyFree',  label: 'Dairy-Free',  emoji: 'Ã°Å¸Â¥â€º' },
+              { key: 'glutenFree', label: 'Gluten-Free', emoji: 'Ã°Å¸Å’Â¾' },
             ].map(({ key, label, emoji }) => (
               <button
                 key={key}
@@ -1200,9 +1200,9 @@ export default function CustomOrder() {
             ))}
           </div>
 
-          {/* â”€â”€ Staff picks â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬ Staff picks Ã¢â€â‚¬Ã¢â€â‚¬ */}
           <div className="co-presets">
-            <p className="co-presets-label">â­ Staff Picks â€” tap to pre-fill</p>
+            <p className="co-presets-label">Ã¢Â­Â Staff Picks Ã¢â‚¬â€ tap to pre-fill</p>
             <div className="co-presets-track">
               {PRESETS.map(preset => (
                 <button
@@ -1218,8 +1218,8 @@ export default function CustomOrder() {
             </div>
           </div>
 
-          {/* 1 â€” BASE */}
-          <Section id="base" title="Choose Your Base" icon="ðŸž"
+          {/* 1 Ã¢â‚¬â€ BASE */}
+          <Section id="base" title="Choose Your Base" icon="Ã°Å¸ÂÅ¾"
             badge={badges.base} open={open.has('base')} onToggle={toggleSection}>
             <div className="co-base-grid">
               {BASES.map(base => (
@@ -1239,8 +1239,8 @@ export default function CustomOrder() {
             </div>
           </Section>
 
-          {/* 2 â€” CHEESE */}
-          <Section id="cheese" title="Cheese" icon="ðŸ§€"
+          {/* 2 Ã¢â‚¬â€ CHEESE */}
+          <Section id="cheese" title="Cheese" icon="Ã°Å¸Â§â‚¬"
             badge={badges.cheese} open={open.has('cheese')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-4">
               {CHEESE_OPTS.map(opt => (
@@ -1266,8 +1266,8 @@ export default function CustomOrder() {
             )}
           </Section>
 
-          {/* 3 â€” VEGETABLES */}
-          <Section id="vegetables" title="Vegetables & Fillings" icon="ðŸ¥—"
+          {/* 3 Ã¢â‚¬â€ VEGETABLES */}
+          <Section id="vegetables" title="Vegetables & Fillings" icon="Ã°Å¸Â¥â€”"
             badge={badges.vegetables} open={open.has('vegetables')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-3">
               {VEG_OPTS.map(veg => {
@@ -1297,11 +1297,11 @@ export default function CustomOrder() {
                 );
               })}
             </div>
-            <p className="co-qty-legend">Low Â· Regular Â· Extra Â· Double â€” price updates in running total above</p>
+            <p className="co-qty-legend">Low Ã‚Â· Regular Ã‚Â· Extra Ã‚Â· Double Ã¢â‚¬â€ price updates in running total above</p>
           </Section>
 
-          {/* 4 â€” PROTEIN */}
-          <Section id="proteins" title="Protein (All Halal)" icon="ðŸ¥©"
+          {/* 4 Ã¢â‚¬â€ PROTEIN */}
+          <Section id="proteins" title="Protein (All Halal)" icon="Ã°Å¸Â¥Â©"
             badge={badges.proteins} open={open.has('proteins')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-2">
               {PROTEIN_OPTS.map(prot => {
@@ -1335,8 +1335,8 @@ export default function CustomOrder() {
             </div>
           </Section>
 
-          {/* 5 â€” SAUCES */}
-          <Section id="sauces" title="Sauces" icon="ðŸ«™"
+          {/* 5 Ã¢â‚¬â€ SAUCES */}
+          <Section id="sauces" title="Sauces" icon="Ã°Å¸Â«â„¢"
             badge={badges.sauces} open={open.has('sauces')} onToggle={toggleSection}>
             <div className="co-sauce-note">
               <Info size={14} />
@@ -1351,7 +1351,12 @@ export default function CustomOrder() {
                       className={`co-opt-card${sel ? ' selected' : ''}${isSauceExcluded(sauce.id) ? ' co-filtered' : ''}`}
                       onClick={() => !isSauceExcluded(sauce.id) && toggleSauce(sauce.id)}
                     >
-                      <span className="co-opt-emoji">{sauce.emoji}</span>
+                      {sauce.img
+                        ? <div className="co-opt-thumb" style={{ backgroundImage: `url(${sauce.img})` }}
+                            onError={e => { e.currentTarget.style.backgroundImage='none'; }}
+                          />
+                        : <span className="co-opt-emoji">{sauce.emoji}</span>
+                      }
                       <span className="co-opt-name">{sauce.label}</span>
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
@@ -1393,8 +1398,8 @@ export default function CustomOrder() {
             </div>
           </Section>
 
-          {/* 6 â€” FRESH ADDITIONS ON SIDE */}
-          <Section id="extras" title="Fresh Addition on the Side" icon="ðŸŸ"
+          {/* 6 Ã¢â‚¬â€ FRESH ADDITIONS ON SIDE */}
+          <Section id="extras" title="Fresh Addition on the Side" icon="Ã°Å¸ÂÅ¸"
             badge={badges.extras} open={open.has('extras')} onToggle={toggleSection}>
             {extras.length === 0 ? (
               <p className="co-empty-msg">Side items will appear here once the menu is loaded.</p>
@@ -1422,8 +1427,8 @@ export default function CustomOrder() {
             )}
           </Section>
 
-          {/* 7 â€” DRINKS */}
-          <Section id="drinks" title="Drink" icon="ðŸ¥¤"
+          {/* 7 Ã¢â‚¬â€ DRINKS */}
+          <Section id="drinks" title="Drink" icon="Ã°Å¸Â¥Â¤"
             badge={badges.drinks} open={open.has('drinks')} onToggle={toggleSection}>
             {drinks.length === 0 ? (
               <p className="co-empty-msg">Drinks will appear here once the menu is loaded.</p>
@@ -1454,7 +1459,7 @@ export default function CustomOrder() {
         </main>
       </div>
 
-      {/* â”€â”€ Sticky cart strip (same as Menu page) â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Sticky cart strip (same as Menu page) Ã¢â€â‚¬Ã¢â€â‚¬ */}
       {cartItems.length > 0 && (
         <div className="menu-cart-strip">
           <div className="menu-cart-strip-left">
@@ -1468,12 +1473,12 @@ export default function CustomOrder() {
             </span>
           </div>
           <Link to="/checkout" className="menu-cart-strip-btn">
-            View Cart Â· ${subtotal.toFixed(2)}
+            View Cart Ã‚Â· ${subtotal.toFixed(2)}
           </Link>
         </div>
       )}
 
-      {/* â”€â”€ Sticky mobile footer â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Sticky mobile footer Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <div className="co-mobile-footer">
         <div className="co-mobile-total">
           <span>Total</span>
