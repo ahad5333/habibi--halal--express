@@ -24,8 +24,8 @@ export const initGA = (measurementId) => {
 };
 
 export const initPixel = (pixelId) => {
-  if (!pixelId || pixelId === '123456789012345') {
-    console.log('%c[FB Pixel Simulator] Initialized with Mock ID: 123456789012345', 'color: #3b82f6; font-weight: bold; padding: 4px;');
+  if (!pixelId) {
+    console.log('%c[FB Pixel] No Pixel ID configured — skipping.', 'color: #3b82f6; font-weight: bold; padding: 4px;');
     return;
   }
 
@@ -58,7 +58,7 @@ export const initPixel = (pixelId) => {
 
 export const trackPageView = (path) => {
   const isMockGA = !import.meta.env.VITE_GA_MEASUREMENT_ID || import.meta.env.VITE_GA_MEASUREMENT_ID === 'G-MOCKTRACKER';
-  const isMockPixel = !import.meta.env.VITE_FB_PIXEL_ID || import.meta.env.VITE_FB_PIXEL_ID === '123456789012345';
+  const isMockPixel = !import.meta.env.VITE_FB_PIXEL_ID;
 
   if (isMockGA) {
     console.log(`%c[GA4 Simulator] Page View tracked: ${path}`, 'color: #0ea5e9; font-style: italic;');
@@ -76,7 +76,7 @@ export const trackPageView = (path) => {
 // ── Ecommerce conversion events ──────────────────────────────────────────────
 
 const _mockGA  = () => !import.meta.env.VITE_GA_MEASUREMENT_ID || import.meta.env.VITE_GA_MEASUREMENT_ID === 'G-MOCKTRACKER';
-const _mockPx  = () => !import.meta.env.VITE_FB_PIXEL_ID || import.meta.env.VITE_FB_PIXEL_ID === '123456789012345';
+const _mockPx  = () => !import.meta.env.VITE_FB_PIXEL_ID;
 
 export const trackAddToCart = (item) => {
   const value = parseFloat(item.price || 0);
@@ -142,7 +142,7 @@ export const trackPurchase = (orderNumber, cartItems, total) => {
 
 export const trackEvent = (action, category, label, value) => {
   const isMockGA = !import.meta.env.VITE_GA_MEASUREMENT_ID || import.meta.env.VITE_GA_MEASUREMENT_ID === 'G-MOCKTRACKER';
-  const isMockPixel = !import.meta.env.VITE_FB_PIXEL_ID || import.meta.env.VITE_FB_PIXEL_ID === '123456789012345';
+  const isMockPixel = !import.meta.env.VITE_FB_PIXEL_ID;
 
   if (isMockGA) {
     console.log(`%c[GA4 Simulator] Custom Event -> Action: ${action}, Category: ${category}, Label: ${label || 'N/A'}${value ? `, Value: ${value}` : ''}`, 'color: #0ea5e9; font-weight: 500;');
