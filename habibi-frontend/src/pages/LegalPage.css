@@ -29,6 +29,12 @@
   }
 }
 
+@media (max-width: 640px) {
+  .legal-hero {
+    padding: 0rem 1rem 2.5rem;
+  }
+}
+
 /* Gradient fade at the bottom so the hero bleeds into the dark body */
 .legal-hero::after {
   content: '';
