@@ -59,22 +59,27 @@ const CAT_ORDER = [
 ];
 
 const BOWL_BASE_OPTIONS = [
-  { id: 'rice',   label: 'Rice',   image: '/images/builder/base_rice.webp' },
-  { id: 'salad',  label: 'Salad',  image: '/images/builder/base_salad.webp' },
-  { id: 'hummus', label: 'Hummus', image: '/images/builder/base_hummus.webp' },
+  { id: 'rice',        label: 'Rice',        image: '/images/byo/ing/rice.webp',    type: 'bowl' },
+  { id: 'hummus',      label: 'Hummus',      image: '/images/byo/ing/hummus.webp',  type: 'bowl' },
+  { id: 'platter',     label: 'Platter',     image: '/images/menu/G1.jpg',          type: 'platter' },
+  { id: 'family-tray', label: 'Family Tray', image: '/images/menu/G9.jpg',          type: 'platter' },
 ];
 const BOWL_PROTEIN_OPTIONS = [
-  { id: 'chicken', label: 'Chicken', image: '/images/builder/protein_chicken.webp' },
-  { id: 'beef',    label: 'Beef',    image: '/images/builder/protein_beef.webp' },
-  { id: 'falafel', label: 'Falafel', image: '/images/builder/protein_falafel.webp' },
+  { id: 'chicken',    label: 'Chicken',    image: '/images/byo/ing/chicken.webp' },
+  { id: 'lamb-gyro',  label: 'Lamb Gyro',  image: '/images/byo/ing/lamb-gyro.webp' },
+  { id: 'beef-kabab', label: 'Beef Kabab', image: '/images/byo/ing/beef-kabab.webp' },
+  { id: 'falafel',    label: 'Falafel',    image: '/images/byo/ing/falafel.webp' },
 ];
 const BOWL_TOPPING_OPTIONS = [
-  { id: 'feta',   label: 'Feta Cheese', image: '/images/builder/topping_feta.webp' },
-  { id: 'olives', label: 'Olives',      image: '/images/builder/topping_olives.webp' },
+  { id: 'lettuce',  label: 'Lettuce',  image: '/images/byo/ing/lettuce.webp' },
+  { id: 'tomato',   label: 'Tomato',   image: '/images/byo/ing/tomato.webp' },
+  { id: 'cucumber', label: 'Cucumber', image: '/images/byo/ing/cucumber.webp' },
+  { id: 'onion',    label: 'Onion',    image: '/images/byo/ing/onion.webp' },
 ];
 const BOWL_SAUCE_OPTIONS = [
-  { id: 'white', label: 'White Sauce', image: '/images/builder/sauce_white.webp' },
-  { id: 'hot',   label: 'Hot Sauce',   image: '/images/builder/sauce_hot.webp' },
+  { id: 'white', label: 'White Sauce', image: '/images/byo/ing/sauce-white-bowl.webp' },
+  { id: 'hot',   label: 'Hot Sauce',   image: '/images/byo/ing/sauce-hot-bowl.webp' },
+  { id: 'bbq',   label: 'BBQ Sauce',   image: '/images/byo/ing/sauce-bbq.webp' },
 ];
 const BYO_ITEM = { id: 'byo-menu', name: 'Build Your Own Bowl', price: '12.99', category: 'Build Your Own', img: '/images/personalized-bowls.jpg' };
 
@@ -453,6 +458,7 @@ const Menu = () => {
   const selectedProtein = BOWL_PROTEIN_OPTIONS.find(o => o.id === bowlProtein);
   const selectedTopping = BOWL_TOPPING_OPTIONS.find(o => o.id === bowlTopping);
   const selectedSauce   = BOWL_SAUCE_OPTIONS.find(o => o.id === bowlSauce);
+  const isPlatterBase   = selectedBase?.type === 'platter';
   const bowlReady = !!bowlBase && !!bowlProtein && !!bowlTopping && !!bowlSauce;
 
   const handleAddComposedBowl = () => {
@@ -979,22 +985,57 @@ const Menu = () => {
               </div>
               <div className="bowl-preview-panel">
                 <div className="bowl-plate-wrap">
-                  <div className="bowl-plate" style={{ backgroundColor: selectedBase ? '#fef9ef' : '#f5f0e8' }}>
-                    {!selectedBase && !selectedProtein && !selectedTopping && !selectedSauce ? (
-                      <div className="bowl-empty-state">
-                        <img src="/images/builder/realistic-3d-bowl.webp" alt="Bowl" className="bowl-empty-img-rotate" />
-                        <p className="bowl-empty-text">Your bowl awaits</p>
+
+                  {/* ── Platter / Family Tray mode ── */}
+                  {isPlatterBase ? (
+                    <div className="bowl-plate bowl-plate--platter">
+                      {/* Platter photo as background */}
+                      {selectedBase && (
+                        <div className="bowl-platter-bg">
+                          <img src={selectedBase.image} alt={selectedBase.label} />
+                        </div>
+                      )}
+                      {!selectedBase && (
+                        <div className="bowl-empty-state">
+                          <p className="bowl-empty-text">Choose a base above</p>
+                        </div>
+                      )}
+                      {/* Food zone — centered plate circle on top of platter */}
+                      {selectedBase && (
+                        <div className="bowl-food-zone">
+                          {!selectedProtein && !selectedTopping && !selectedSauce ? (
+                            <div className="bowl-food-zone-hint">Add protein</div>
+                          ) : (
+                            <>
+                              {selectedProtein && <div className="bowl-layer bowl-protein-layer"><img src={selectedProtein.image} alt={selectedProtein.label} className="bowl-layer-image" /></div>}
+                              {selectedTopping && <div className="bowl-layer bowl-topping-layer"><img src={selectedTopping.image} alt={selectedTopping.label} className="bowl-layer-image" /></div>}
+                              {selectedSauce   && <div className="bowl-layer bowl-sauce-layer">  <img src={selectedSauce.image}   alt={selectedSauce.label}   className="bowl-layer-image" /></div>}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* ── Bowl mode (rice / hummus) ── */
+                    <>
+                      <div className="bowl-plate" style={{ backgroundColor: selectedBase ? '#fef9ef' : '#f5f0e8' }}>
+                        {!selectedBase && !selectedProtein && !selectedTopping && !selectedSauce ? (
+                          <div className="bowl-empty-state">
+                            <img src="/images/builder/realistic-3d-bowl.webp" alt="Bowl" className="bowl-empty-img-rotate" />
+                            <p className="bowl-empty-text">Your bowl awaits</p>
+                          </div>
+                        ) : (
+                          <>
+                            {selectedBase    && <div className="bowl-layer bowl-base-layer">   <img src={selectedBase.image}    alt={selectedBase.label}    className="bowl-layer-image" /></div>}
+                            {selectedProtein && <div className="bowl-layer bowl-protein-layer"><img src={selectedProtein.image} alt={selectedProtein.label} className="bowl-layer-image" /></div>}
+                            {selectedTopping && <div className="bowl-layer bowl-topping-layer"><img src={selectedTopping.image} alt={selectedTopping.label} className="bowl-layer-image" /></div>}
+                            {selectedSauce   && <div className="bowl-layer bowl-sauce-layer">  <img src={selectedSauce.image}   alt={selectedSauce.label}   className="bowl-layer-image" /></div>}
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <>
-                        {selectedBase    && <div className="bowl-layer bowl-base-layer">   <img src={selectedBase.image}    alt={selectedBase.label}    className="bowl-layer-image" /></div>}
-                        {selectedProtein && <div className="bowl-layer bowl-protein-layer"><img src={selectedProtein.image} alt={selectedProtein.label} className="bowl-layer-image" /></div>}
-                        {selectedTopping && <div className="bowl-layer bowl-topping-layer"><img src={selectedTopping.image} alt={selectedTopping.label} className="bowl-layer-image" /></div>}
-                        {selectedSauce   && <div className="bowl-layer bowl-sauce-layer">  <img src={selectedSauce.image}   alt={selectedSauce.label}   className="bowl-layer-image" /></div>}
-                      </>
-                    )}
-                  </div>
-                  <div className="bowl-rim" />
+                      <div className="bowl-rim" />
+                    </>
+                  )}
                 </div>
                 <div className="bowl-summary">
                   <div className={`bowl-tag-pill ${selectedBase    ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedBase    ? <><img src={selectedBase.image}    className="summary-img" alt="" />{selectedBase.label}</>    : '① Base'}</div>

@@ -1598,6 +1598,95 @@
   margin-top: 0.2rem;
 }
 
+/* ── Platter / Family Tray preview mode ──────────────────────── */
+.bowl-plate--platter {
+  width: 300px;
+  height: 200px;
+  border-radius: 20px;
+  border: 3px solid rgba(229,182,78,0.45);
+  background: #111 !important;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+
+/* Full-bleed platter photo, slightly dimmed */
+.bowl-platter-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.bowl-platter-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  filter: brightness(0.85) saturate(1.1);
+}
+
+/* Circular "plate" in the center of the platter where food appears */
+.bowl-food-zone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fffdf5, #f5e8c8);
+  box-shadow:
+    0 0 0 5px rgba(229,182,78,0.5),
+    0 0 0 8px rgba(229,182,78,0.15),
+    0 8px 32px rgba(0,0,0,0.55);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.bowl-food-zone-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: rgba(0,0,0,0.4);
+  font-style: italic;
+}
+
+/* Ingredient layers inside food zone — centered, no offset */
+.bowl-food-zone .bowl-protein-layer { z-index: 20; }
+.bowl-food-zone .bowl-protein-layer .bowl-layer-image {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  border-radius: 50%;
+  transform: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.bowl-food-zone .bowl-topping-layer { z-index: 30; }
+.bowl-food-zone .bowl-topping-layer .bowl-layer-image {
+  width: 44%;
+  height: 44%;
+  object-fit: contain;
+  border-radius: 50%;
+  transform: translate(-26px, 22px);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+}
+
+.bowl-food-zone .bowl-sauce-layer { z-index: 40; }
+.bowl-food-zone .bowl-sauce-layer .bowl-layer-image {
+  width: 40%;
+  height: 40%;
+  object-fit: contain;
+  border-radius: 50%;
+  transform: translate(26px, 22px);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
 /* Summary pills */
 .bowl-summary {
   display: flex;
