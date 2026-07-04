@@ -1466,28 +1466,36 @@
     border-top: 1px solid rgba(255,255,255,0.08);
   }
 
-  /* 4-column grid — all categories visible, no scrolling */
+  /* Horizontal scroll one-liner strip */
   .menu-cats-track {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    overflow: visible;
-    padding: 0.35rem 0.4rem;
-    gap: 0.2rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.55rem 0.75rem;
+    gap: 0.4rem;
   }
+  .menu-cats-track::-webkit-scrollbar { display: none; }
+
   .menu-cat-tab {
-    flex-direction: column;
+    flex: 0 0 auto;
+    flex-direction: row;
     align-items: center;
-    padding: 0.3rem 0.15rem;
-    border-radius: 8px;
-    font-size: 0.55rem;
-    gap: 0.12rem;
-    white-space: normal;
-    text-align: center;
-    letter-spacing: 0;
-    flex-shrink: unset;
+    padding: 0.42rem 0.9rem;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    gap: 0.35rem;
+    white-space: nowrap;
+    text-align: left;
+    letter-spacing: 0.03em;
+    scroll-snap-align: start;
   }
-  .menu-cat-emoji { font-size: 1.15rem; }
-  .menu-cat-tab--byo { grid-column: span 2; }
+  .menu-cat-emoji { font-size: 0.95rem; }
+  .menu-cat-tab--byo { /* no special span needed in flex */ }
 
   .menu-layout { display: block; }
   .menu-list      { grid-template-columns: 1fr; overflow-x: hidden; }
