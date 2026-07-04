@@ -110,21 +110,29 @@ const VideoCard = ({ video, large = false }) => {
   const [playing, setPlaying] = useState(false);
   const isIG = video.type === 'instagram';
 
-  const embedSrc = isIG
-    ? `https://www.instagram.com/reel/${video.id}/embed/`
-    : `https://www.youtube.com/embed/${video.id}?autoplay=1`;
+  const embedSrc = `https://www.youtube.com/embed/${video.id}?autoplay=1&mute=1&rel=0`;
+  const igUrl    = `https://www.instagram.com/reel/${video.id}/`;
 
   const thumbnail = isIG
     ? '/images/food/background.png'
     : `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`;
 
+  const handleClick = () => {
+    if (isIG) {
+      window.open(igUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      setPlaying(true);
+    }
+  };
+
   return (
     <div className={`vid-card ${large ? 'vid-card-large' : ''} ${isIG ? 'vid-card-ig' : ''}`}>
-      <div className="vid-thumb" onClick={() => setPlaying(true)}>
-        {playing ? (
+      <div className="vid-thumb" onClick={handleClick}>
+        {playing && !isIG ? (
           <iframe
             src={embedSrc}
             title={video.title}
+            frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
@@ -136,9 +144,12 @@ const VideoCard = ({ video, large = false }) => {
               onError={e => { e.target.src = '/images/food/kitchen.jpg'; }}
             />
             <div className="vid-overlay">
-              <button className="vid-play-btn" aria-label="Play video">
-                <Play size={large ? 32 : 22} fill="currentColor" />
+              <button className="vid-play-btn" aria-label={isIG ? 'View on Instagram' : 'Play video'}>
+                {isIG
+                  ? <IGIcon size={large ? 28 : 20} />
+                  : <Play size={large ? 32 : 22} fill="currentColor" />}
               </button>
+              {isIG && <span className="vid-ig-cta">View on Instagram</span>}
             </div>
             {isIG && (
               <span className="vid-platform-badge">
