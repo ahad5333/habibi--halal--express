@@ -4,9 +4,9 @@
 .legal-hero {
   position: relative;
   width: 100%;
-  height: 28vh;
-  min-height: 200px;
-  max-height: 320px;
+  height: 42vh;
+  min-height: 260px;
+  max-height: 480px;
   overflow: hidden;
   background: #0d0d0d;
 }
@@ -16,22 +16,22 @@
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center 40%;
+  object-position: center 58%;
 }
 
 @media (max-width: 768px) {
   .legal-hero {
-    height: 25vh;
-    min-height: 160px;
-    max-height: 240px;
+    height: 38vh;
+    min-height: 220px;
+    max-height: 380px;
   }
 }
 
 @media (max-width: 480px) {
   .legal-hero {
-    height: 22vh;
-    min-height: 140px;
-    max-height: 200px;
+    height: 34vh;
+    min-height: 180px;
+    max-height: 300px;
   }
 }
 
