@@ -7,6 +7,19 @@ export default class ErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
+    const msg = error?.message || '';
+    const isChunkLoad =
+      error?.name === 'ChunkLoadError' ||
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Importing a module script failed') ||
+      msg.includes('error loading dynamically imported module') ||
+      msg.includes('Unable to preload CSS');
+
+    if (isChunkLoad && !sessionStorage.getItem('_chunk_reload')) {
+      sessionStorage.setItem('_chunk_reload', '1');
+      window.location.reload();
+    }
+
     return { hasError: true, error };
   }
 
