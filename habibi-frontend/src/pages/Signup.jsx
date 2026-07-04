@@ -141,7 +141,7 @@ const Signup = () => {
       <div className="signup-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ maxWidth: 480, padding: '2.5rem', background: '#141414', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 20, textAlign: 'center' }}>
           <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📧</div>
-          <h2 style={{ color: '#F97316', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.6rem' }}>Account Created — Check Your Email</h2>
+          <h2 style={{ color: '#F97316', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.6rem' }}>Account Created, Check Your Email</h2>
           <p style={{ color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: '0.5rem' }}>
             We sent a verification link to
           </p>

@@ -869,7 +869,7 @@ export default function CustomOrder() {
 
             {warnProtein && (
               <div className="co-protein-warn">
-                <p className="co-protein-warn-msg">⚠️ No protein selected — your order will be veggie only.</p>
+                <p className="co-protein-warn-msg">⚠️ No protein selected, your order will be veggie only.</p>
                 <div className="co-protein-warn-actions">
                   <button className="co-protein-warn-pick"
                     onClick={() => {
@@ -965,7 +965,7 @@ export default function CustomOrder() {
 
           {/* ── Staff picks ── */}
           <div className="co-presets">
-            <p className="co-presets-label">⭐ Staff Picks — tap to pre-fill</p>
+            <p className="co-presets-label">⭐ Staff Picks, tap to pre-fill</p>
             <div className="co-presets-track">
               {PRESETS.map(preset => (
                 <button
@@ -1060,7 +1060,7 @@ export default function CustomOrder() {
                 );
               })}
             </div>
-            <p className="co-qty-legend">Low · Regular · Extra · Double — price updates in running total above</p>
+            <p className="co-qty-legend">Low · Regular · Extra · Double, price updates in running total above</p>
           </Section>
 
           {/* 4 — PROTEIN */}

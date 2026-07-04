@@ -557,7 +557,7 @@ const Checkout = () => {
           <div className="dine-in-banner">
             <span className="dine-in-banner-icon">🍽️</span>
             <div>
-              <p className="dine-in-banner-title">Dine-In Order — {dineInTable?.table_name || 'Your Table'}</p>
+              <p className="dine-in-banner-title">Dine-In Order, {dineInTable?.table_name || 'Your Table'}</p>
               <p className="dine-in-banner-sub">Food will be brought to your table · No delivery fee</p>
             </div>
           </div>

@@ -910,102 +910,33 @@ const Menu = () => {
         </div>
 
 
-        {/* ── BYO Bowl Builder ──────────────────────────── */}
+        {/* ── BYO — Launch full builder ──────────────────── */}
         {activeCategory === 'byo' && (
           <div className="byo-builder-wrap">
             <div className="bowls-container">
               <div className="bowls-content">
-                <p className="section-eyebrow text-gold">PERSONALIZED BOWLS</p>
-                <h2 className="heading-2">Build Your Own Bowl</h2>
-                <p className="section-desc">Create your perfect bowl step by step. Fresh, authentic and made entirely how you like it.</p>
-                <div className="bowl-builder">
-                  <div className="builder-step">
-                    <p className="step-title">1. CHOOSE YOUR BASE</p>
-                    <div className="step-options">
-                      {BOWL_BASE_OPTIONS.map(opt => (
-                        <button key={opt.id} className={`btn-option${bowlBase === opt.id ? ' active' : ''}`} onClick={() => setBowlBase(opt.id)}>
-                          <img src={opt.image} alt={opt.label} className="btn-option-image" />
-                          {opt.label}
-                          {bowlBase === opt.id && <span className="btn-option-check"><Check size={12} /></span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="builder-step">
-                    <p className="step-title">2. SELECT PROTEIN</p>
-                    <div className="step-options">
-                      {BOWL_PROTEIN_OPTIONS.map(opt => (
-                        <button key={opt.id} className={`btn-option${bowlProtein === opt.id ? ' active' : ''}`} onClick={() => setBowlProtein(opt.id)}>
-                          <img src={opt.image} alt={opt.label} className="btn-option-image" />
-                          {opt.label}
-                          {bowlProtein === opt.id && <span className="btn-option-check"><Check size={12} /></span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="builder-step">
-                    <p className="step-title">3. ADD TOPPINGS</p>
-                    <div className="step-options">
-                      {BOWL_TOPPING_OPTIONS.map(opt => (
-                        <button key={opt.id} className={`btn-option${bowlTopping === opt.id ? ' active' : ''}`} onClick={() => setBowlTopping(opt.id)}>
-                          <img src={opt.image} alt={opt.label} className="btn-option-image" />
-                          {opt.label}
-                          {bowlTopping === opt.id && <span className="btn-option-check"><Check size={12} /></span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="builder-step">
-                    <p className="step-title">4. CHOOSE SAUCE</p>
-                    <div className="step-options">
-                      {BOWL_SAUCE_OPTIONS.map(opt => (
-                        <button key={opt.id} className={`btn-option${bowlSauce === opt.id ? ' active' : ''}`} onClick={() => setBowlSauce(opt.id)}>
-                          <img src={opt.image} alt={opt.label} className="btn-option-image" />
-                          {opt.label}
-                          {bowlSauce === opt.id && <span className="btn-option-check"><Check size={12} /></span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    className={`btn btn-wide mt-4${bowlReady ? ' btn-primary' : ' btn-outline'}`}
-                    onClick={bowlReady ? handleAddComposedBowl : undefined}
-                    disabled={!bowlReady}
-                  >
-                    {bowlReady ? `ADD BOWL TO CART — $${BYO_ITEM.price}` : 'SELECT OPTIONS TO BUILD'}
-                  </button>
-                  {bowlReady && <p className="bowl-hint">Perfect! Your bowl is ready to be ordered.</p>}
-                </div>
+                <p className="section-eyebrow text-gold">FULLY CUSTOMIZABLE</p>
+                <h2 className="heading-2">Build Your Own</h2>
+                <p className="section-desc">
+                  Choose your base, proteins, vegetables, sauces, and sides. Every ingredient is shown live as you build.
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem', color: 'rgba(255,255,255,0.82)', fontSize: '0.95rem' }}>
+                  <li>✅ 10 bases — Hero, Pita, Wrap, Platter, Family Tray &amp; more</li>
+                  <li>✅ 19 halal proteins with quantity options</li>
+                  <li>✅ Cheese, vegetables, sauces &amp; fresh sides</li>
+                  <li>✅ Live canvas preview of your creation</li>
+                  <li>✅ Real-time pricing</li>
+                </ul>
+                <Link to="/custom-order" className="btn btn-primary btn-wide mt-4">
+                  Launch Full Builder →
+                </Link>
               </div>
               <div className="bowl-preview-panel">
-                <div className="bowl-plate-wrap">
-                  <div className="bowl-plate" style={{ backgroundColor: selectedBase ? '#fef9ef' : '#f5f0e8' }}>
-                    {!selectedBase && !selectedProtein && !selectedTopping && !selectedSauce ? (
-                      <div className="bowl-empty-state">
-                        <img src="/images/builder/realistic-3d-bowl.webp" alt="Bowl" className="bowl-empty-img-rotate" />
-                        <p className="bowl-empty-text">Your bowl awaits</p>
-                      </div>
-                    ) : (
-                      <>
-                        {selectedBase    && <div className="bowl-layer bowl-base-layer">   <img src={selectedBase.image}    alt={selectedBase.label}    className="bowl-layer-image" /></div>}
-                        {selectedProtein && <div className="bowl-layer bowl-protein-layer"><img src={selectedProtein.image} alt={selectedProtein.label} className="bowl-layer-image" /></div>}
-                        {selectedTopping && <div className="bowl-layer bowl-topping-layer"><img src={selectedTopping.image} alt={selectedTopping.label} className="bowl-layer-image" /></div>}
-                        {selectedSauce   && <div className="bowl-layer bowl-sauce-layer">  <img src={selectedSauce.image}   alt={selectedSauce.label}   className="bowl-layer-image" /></div>}
-                      </>
-                    )}
-                  </div>
-                  <div className="bowl-rim" />
-                </div>
-                <div className="bowl-summary">
-                  <div className={`bowl-tag-pill ${selectedBase    ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedBase    ? <><img src={selectedBase.image}    className="summary-img" alt="" />{selectedBase.label}</>    : '① Base'}</div>
-                  <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedProtein ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedProtein ? <><img src={selectedProtein.image} className="summary-img" alt="" />{selectedProtein.label}</> : '② Protein'}</div>
-                  <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedTopping ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedTopping ? <><img src={selectedTopping.image} className="summary-img" alt="" />{selectedTopping.label}</> : '③ Toppings'}</div>
-                  <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedSauce   ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedSauce   ? <><img src={selectedSauce.image}   className="summary-img" alt="" />{selectedSauce.label}</>   : '④ Sauce'}</div>
-                </div>
-                {bowlReady && <p className="bowl-preview-cta">Looking good! Complete in the next step.</p>}
+                <img
+                  src="/images/personalized-bowls.jpg"
+                  alt="Build Your Own"
+                  style={{ width: '100%', borderRadius: 16, objectFit: 'cover', aspectRatio: '4/3', display: 'block' }}
+                />
               </div>
             </div>
           </div>

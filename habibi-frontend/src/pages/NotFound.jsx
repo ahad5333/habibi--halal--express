@@ -9,7 +9,7 @@ export default function NotFound() {
         <p className="nf-code">404</p>
         <h1 className="nf-title">Page Not Found</h1>
         <p className="nf-sub">
-          Looks like this page wandered off — probably looking for more food.
+          Looks like this page wandered off, probably looking for more food.
         </p>
         <div className="nf-actions">
           <Link to="/"     className="btn btn-primary nf-btn">Back to Home</Link>

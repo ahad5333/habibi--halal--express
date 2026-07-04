@@ -691,7 +691,7 @@ const Home = () => {
               <p className="quote-text">
                 "Habibi Halal Express has put a modern, upscale spin on Mediterranean classics, delivering fantastic flavor and artisan presentation."
               </p>
-              <p className="quote-author">— NY FOODIE MAG</p>
+              <p className="quote-author">NY FOODIE MAG</p>
             </div>
           </div>
         </div>
@@ -800,7 +800,7 @@ const Home = () => {
             <div className="rb-pull-quote">
               <span className="rb-pull-quote-mark">"</span>
               <p>The Bronx's crown jewel of authentic Halal cuisine, bold flavors, perfect every single time.</p>
-              <p className="rb-pull-quote-author">— NY Foodie Magazine</p>
+              <p className="rb-pull-quote-author">NY Foodie Magazine</p>
             </div>
           </div>
         </div>

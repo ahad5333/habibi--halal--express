@@ -274,7 +274,7 @@ const Navbar = () => {
           </Link>
 
           <img
-            src="/images/logos/halal-certified-premium.png"
+            src="/images/logos/halal-cert-round.jpg"
             alt="Halal Certified"
             className="navbar-halal-badge"
           />

@@ -522,7 +522,7 @@ const Payment = () => {
               </div>
               <p className="pay-success-email">A receipt has been emailed to the address on file.</p>
               <div className="pay-success-btns">
-                <button className="btn btn-outline" onClick={() => { setStep(1); setOrderRef(''); setFoundOrder(null); setAmount(''); setPayReason(''); setPayNote(''); setIntentReady(false); setClientSecret(''); }}>
+                <button className="btn btn-outline" onClick={() => { setStep(2); setOrderRef(''); setFoundOrder(null); setAmount(''); setPayReason(''); setPayNote(''); setIntentReady(false); setClientSecret(''); }}>
                   Make Another Payment
                 </button>
                 <a href="/" className="btn btn-primary">Back to Home</a>

@@ -5,9 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
 
-/* ── Universal addon groups: Sauces / Make it a Meal! / Add a Drink ──
-   These 3 groups appear on every item (client spec).
-   "More Meat" and other item-specific groups come from the DB first. ── */
+/* ── Universal addon groups: Sauces / Make it a Meal! / Add a Drink / More Meat ──
+   These 4 groups appear on every item (client spec). ── */
 const UNIVERSAL_SAUCES = {
   id: '__sauces__',
   title: 'Sauces',
@@ -20,6 +19,24 @@ const UNIVERSAL_SAUCES = {
     { id: '__s6__', title: 'Special Green Sauce',  price: 0.50 },
     { id: '__s7__', title: 'Mayonnaise',           price: 0.50 },
     { id: '__s8__', title: 'Blue Cheese',          price: 0.50 },
+  ],
+};
+
+const UNIVERSAL_MORE_MEAT = {
+  id: '__moremeat__',
+  title: 'More Meat',
+  options: [
+    { id: '__mm1__',  title: 'Extra Grilled Chicken',   price: 3.00 },
+    { id: '__mm2__',  title: 'Extra Lamb Gyro',         price: 3.00 },
+    { id: '__mm3__',  title: 'Extra Beef',              price: 3.00 },
+    { id: '__mm4__',  title: 'Extra Turkey',            price: 3.00 },
+    { id: '__mm5__',  title: 'Extra Bacon',             price: 2.00 },
+    { id: '__mm6__',  title: 'Extra Hot Dog',           price: 2.00 },
+    { id: '__mm7__',  title: 'Extra Hot Sausage',       price: 3.00 },
+    { id: '__mm8__',  title: 'Extra Italian Sausage',   price: 5.00 },
+    { id: '__mm9__',  title: 'Extra Falafel',           price: 2.50 },
+    { id: '__mm10__', title: 'Extra Shrimp',            price: 3.00 },
+    { id: '__mm11__', title: 'Extra Fish Fillet',       price: 3.00 },
   ],
 };
 
@@ -145,6 +162,8 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
             })),
           });
         }
+
+        uGroups.push(UNIVERSAL_MORE_MEAT);
 
         setUniversalGroups(itemData?.exclude_global_addons ? [] : uGroups);
       })
