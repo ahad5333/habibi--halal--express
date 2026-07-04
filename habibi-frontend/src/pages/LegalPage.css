@@ -14,12 +14,12 @@
 
 @media (min-width: 901px) {
   .legal-hero {
-    height: auto;
+    height: 75vh;
     padding: 1.5rem 0;
   }
   .legal-hero-img {
     width: 72%;
-    height: auto;
+    height: 100%;
     object-fit: contain;
     border-radius: 12px;
   }
