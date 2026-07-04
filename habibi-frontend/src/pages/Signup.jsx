@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Phone, Lock, Eye, EyeOff, Check } from 'lucide-react';
 import LegalModal from '../components/LegalModal';
@@ -11,6 +11,7 @@ const Signup = () => {
   const rawRedirect = searchParams.get('redirect') || '/';
   const redirectTo = /^\/(?!\/)/.test(rawRedirect) ? rawRedirect : '/';
   const { register } = useAuth();
+  const location = useLocation();
 
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState('');
@@ -38,7 +39,7 @@ const Signup = () => {
     setAgreeTerms(false); setAgreeSms(false);
   }, []);
 
-  useEffect(() => { resetForm(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { resetForm(); }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handler = (e) => { if (e.persisted) resetForm(); };
