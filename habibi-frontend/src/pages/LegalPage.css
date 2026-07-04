@@ -7,6 +7,22 @@
   height: clamp(220px, 40vw, 480px);
   overflow: hidden;
   background: #0d0d0d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 901px) {
+  .legal-hero {
+    height: auto;
+    padding: 1.5rem 0;
+  }
+  .legal-hero-img {
+    width: 72%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+  }
 }
 
 .legal-hero-img {
