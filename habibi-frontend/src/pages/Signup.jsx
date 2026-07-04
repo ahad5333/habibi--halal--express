@@ -16,6 +16,7 @@ const Signup = () => {
   const [error, setError]                   = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
   const [verifyEmail, setVerifyEmail]       = useState('');
+  const [accountCreated, setAccountCreated] = useState(null); // { name, identifier }
   const [showPass, setShowPass]             = useState(false);
   const [showConfirm, setShowConfirm]       = useState(false);
   const [signupMethod, setSignupMethod]     = useState('phone'); // 'email' | 'phone'
@@ -95,7 +96,12 @@ const Signup = () => {
         resetForm();
         setVerificationSent(true);
       } else {
-        navigate(redirectTo !== '/' ? redirectTo : '/');
+        // Show confirmation screen immediately, then redirect after 3s
+        const name = `${firstName} ${lastName}`.trim();
+        const identifier = signupMethod === 'phone' ? phone.trim() : email.trim();
+        resetForm();
+        setAccountCreated({ name, identifier, method: signupMethod });
+        setTimeout(() => navigate(redirectTo !== '/' ? redirectTo : '/'), 3500);
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -103,6 +109,31 @@ const Signup = () => {
       setLoading(false);
     }
   };
+
+  if (accountCreated) {
+    return (
+      <div className="signup-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 480, padding: '2.5rem', background: '#141414', border: '1px solid rgba(249,115,22,0.35)', borderRadius: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎉</div>
+          <h2 style={{ color: '#F97316', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.5rem' }}>Welcome to Habibi!</h2>
+          <p style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.4rem' }}>{accountCreated.name}</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            {accountCreated.method === 'phone' ? '📱 ' : '📧 '}{accountCreated.identifier}
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, marginBottom: '1.75rem', fontSize: '0.92rem' }}>
+            Your account has been created. You're now logged in and ready to order!
+          </p>
+          <button
+            onClick={() => navigate(redirectTo !== '/' ? redirectTo : '/')}
+            style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '0.75rem 2rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', width: '100%' }}
+          >
+            Start Ordering →
+          </button>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.25)', marginTop: '1rem' }}>Redirecting automatically…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (verificationSent) {
     return (
