@@ -20,7 +20,7 @@ const CATEGORIES = [
   { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕' },
   { label: 'Drinks',          shortLabel: 'Drinks',    value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
   { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
-  { label: 'Build Your Own!', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
+  { label: 'Build your Bowl', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
 ];
 
 const CATEGORY_IMAGES = {
@@ -59,10 +59,9 @@ const CAT_ORDER = [
 ];
 
 const BOWL_BASE_OPTIONS = [
-  { id: 'rice',        label: 'Rice',        image: '/images/byo/ing/rice.webp',    type: 'bowl' },
-  { id: 'hummus',      label: 'Hummus',      image: '/images/byo/ing/hummus.webp',  type: 'bowl' },
-  { id: 'platter',     label: 'Platter',     image: '/images/menu/G1.jpg',          type: 'platter' },
-  { id: 'family-tray', label: 'Family Tray', image: '/images/menu/G9.jpg',          type: 'platter' },
+  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.webp',   type: 'bowl' },
+  { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp', type: 'bowl' },
+  { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp', type: 'bowl' },
 ];
 const BOWL_PROTEIN_OPTIONS = [
   { id: 'chicken',    label: 'Chicken',    image: '/images/byo/ing/chicken.webp' },
