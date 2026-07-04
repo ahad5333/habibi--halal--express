@@ -231,6 +231,8 @@ const Menu = () => {
   }, [items]);
 
   // Group items by category for "All" view — items can appear in multiple sections
+  const HIDDEN_CATS = ['build your own sandwich'];
+
   const normalizeCat = (cat) => {
     if (!cat) return cat;
     if (cat.toLowerCase().includes('breakfast')) return 'Breakfast at Your Time';
@@ -246,6 +248,7 @@ const Menu = () => {
         item.category,
       ].filter(Boolean).map(normalizeCat));
       allCats.forEach(cat => {
+        if (HIDDEN_CATS.includes(cat.toLowerCase())) return;
         if (!groups[cat]) groups[cat] = [];
         if (!groups[cat].find(i => i.id === item.id)) groups[cat].push(item);
       });
