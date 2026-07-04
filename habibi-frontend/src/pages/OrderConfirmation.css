@@ -147,7 +147,17 @@
   height: 2px;
   background: #e5e7eb;
   z-index: 0;
+  transition: background 0.4s ease;
 }
+.orc-step-line.line-done { background: #E5B64E; }
+
+/* Done step: gold filled dot with checkmark */
+.orc-step.done .orc-step-dot {
+  background: #E5B64E;
+  border-color: #E5B64E;
+  color: #111;
+}
+.orc-step.done .orc-step-label { color: #374151; }
 
 .orc-step.active ~ .orc-step .orc-step-dot { opacity: 0.4; }
 

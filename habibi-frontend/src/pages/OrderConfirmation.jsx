@@ -1,8 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Clock, MapPin, ChevronRight, ShoppingBag, Star } from 'lucide-react';
+import { io } from 'socket.io-client';
 import { trackPurchase } from '../utils/analytics';
 import './OrderConfirmation.css';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const STATUS_TO_STEP = {
+  pending: 0, received: 0,
+  accepted: 0, confirmed: 0,
+  preparing: 1, cooking: 1,
+  on_the_way: 2, in_transit: 2, 'in-transit': 2,
+  nearby: 2,
+  delivered: 3, completed: 3,
+};
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -95,7 +107,9 @@ export default function OrderConfirmation() {
   const [params]  = useSearchParams();
   const orderNum  = params.get('order') || localStorage.getItem('last_order_number') || 'HHE-' + Math.floor(Math.random() * 90000 + 10000);
   const method    = params.get('method') || 'delivery';
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed]       = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const socketRef = useRef(null);
   const ETA_MIN = 25, ETA_MAX = 40;
 
   useEffect(() => {
@@ -114,6 +128,19 @@ export default function OrderConfirmation() {
     const t = setInterval(() => setElapsed(e => e + 1), 60000);
     return () => clearInterval(t);
   }, []);
+
+  // Live status via Socket.IO — advances the step tracker in real-time
+  useEffect(() => {
+    if (!orderNum) return;
+    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'], withCredentials: true });
+    socketRef.current = socket;
+    socket.on('connect', () => socket.emit('join_order', orderNum));
+    socket.on('order_status_updated', ({ status }) => {
+      const step = STATUS_TO_STEP[(status || '').toLowerCase()];
+      if (step !== undefined) setCurrentStep(step);
+    });
+    return () => socket.disconnect();
+  }, [orderNum]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const etaMin = Math.max(0, ETA_MIN - elapsed);
   const etaMax = Math.max(0, ETA_MAX - elapsed);
@@ -166,16 +193,20 @@ export default function OrderConfirmation() {
         <div className="orc-tracker">
           <h3 className="orc-tracker-title">Live Order Status</h3>
           <div className="orc-steps">
-            {STEPS.map((step, i) => (
-              <div key={step.id} className={`orc-step ${i === 0 ? 'active' : 'pending'}`}>
+            {STEPS.map((step, i) => {
+              const done   = i < currentStep;
+              const active = i === currentStep;
+              return (
+              <div key={step.id} className={`orc-step ${done ? 'done' : active ? 'active' : 'pending'}`}>
                 <div className="orc-step-dot">
-                  <span>{step.icon}</span>
+                  <span>{done ? '✓' : step.icon}</span>
                 </div>
-                {i < STEPS.length - 1 && <div className="orc-step-line" />}
+                {i < STEPS.length - 1 && <div className={`orc-step-line${done ? ' line-done' : ''}`} />}
                 <p className="orc-step-label">{step.label}</p>
                 <p className="orc-step-desc">{step.desc}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
