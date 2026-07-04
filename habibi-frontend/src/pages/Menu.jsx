@@ -184,8 +184,8 @@ const Menu = () => {
     if (!cat || cat === 'all') return;
     if (loading) return; // re-fires when loading flips to false
     if (cat === 'byo') { setActiveCategory('byo'); return; }
-    setActiveCategory('grid');
-    setPendingScrollCat(cat);
+    setActiveCategory(cat);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), loading]);
 
