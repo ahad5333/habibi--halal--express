@@ -726,6 +726,15 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
     return `BYO: ${protein} on ${base}${sauce && sauce !== 'No Sauce' ? ` w/ ${sauce}` : ''}`;
   };
 
+  const getOptionPrice = (stepId, optId) => {
+    if (stepId === 'protein') {
+      if (optId === 'mixed') return calcIngPrice('chicken', family) + calcIngPrice('lamb-gyro', family);
+      return calcIngPrice(optId, family);
+    }
+    if (stepId === 'toppings') return calcIngPrice(optId, family);
+    return 0;
+  };
+
   const buildNote = () => {
     const tops = ADD_ON_STEPS[1].options
       .filter(o => selections.toppings.includes(o.id))
@@ -890,6 +899,12 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
                   <span className="byo-emoji">{opt.emoji}</span>
                   <span className="byo-opt-label">{opt.label}</span>
                   {opt.desc && <span className="byo-opt-desc">{opt.desc}</span>}
+                  {step.id !== 'sauce' && (() => {
+                    const p = getOptionPrice(step.id, opt.id);
+                    return p > 0
+                      ? <span className="byo-opt-price">+${p.toFixed(2)}</span>
+                      : <span className="byo-opt-price byo-opt-price--free">Free</span>;
+                  })()}
                   {selected && <span className="byo-check"><Check size={12} /></span>}
                 </button>
               );
