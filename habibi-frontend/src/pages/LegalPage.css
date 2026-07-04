@@ -10,10 +10,11 @@
 
 .legal-hero-img {
   width: 100%;
-  max-height: 380px;
-  object-fit: cover;
+  max-height: 520px;
+  object-fit: contain;
   object-position: center;
   display: block;
+  background: #0d0d0d;
 }
 
 /* Gradient fade at the bottom so the hero bleeds into the dark body */
