@@ -11,7 +11,7 @@ import './Menu.css';
 
 const CATEGORIES = [
   { label: 'All Categories',  shortLabel: 'All',      value: 'grid',      match: null,             emoji: '🍽️' },
-  { label: 'Breakfast',       shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast',      emoji: '🌅' },
+  { label: 'Breakfast at Your Time', shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast', emoji: '🌅' },
   { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
   { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
   { label: 'Bergers',         shortLabel: 'Bergers',   value: 'burgers',   match: 'Bergers',        emoji: '🍔' },
@@ -54,7 +54,7 @@ const getCategoryBanner = dbCat => {
 
 // Ordered list of DB category strings for section sorting
 const CAT_ORDER = [
-  'Breakfast','Platter','Sandwich','Bergers','Taco','Tacos',
+  'Breakfast at Your Time','Breakfast','Platter','Sandwich','Bergers','Taco','Tacos',
   'Habibi Specials','Specials','Extras','Drinks','Family Tray','Build Your Own',
 ];
 
@@ -231,6 +231,12 @@ const Menu = () => {
   }, [items]);
 
   // Group items by category for "All" view — items can appear in multiple sections
+  const normalizeCat = (cat) => {
+    if (!cat) return cat;
+    if (cat.toLowerCase() === 'breakfast') return 'Breakfast at Your Time';
+    return cat;
+  };
+
   const categoryGroups = useMemo(() => {
     if (activeCategory !== 'all' && activeCategory !== 'grid') return [];
     const groups = {};
@@ -238,7 +244,7 @@ const Menu = () => {
       const allCats = new Set([
         ...(Array.isArray(item.categories) ? item.categories : []),
         item.category,
-      ].filter(Boolean));
+      ].filter(Boolean).map(normalizeCat));
       allCats.forEach(cat => {
         if (!groups[cat]) groups[cat] = [];
         if (!groups[cat].find(i => i.id === item.id)) groups[cat].push(item);
