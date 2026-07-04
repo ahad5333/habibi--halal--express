@@ -12,9 +12,9 @@
 .art-hero {
   position: relative;
   width: 100%;
-  height: 90vh;
-  min-height: 560px;
-  max-height: 820px;
+  height: 92vh;
+  min-height: 580px;
+  max-height: 900px;
   overflow: hidden;
 }
 
@@ -24,18 +24,39 @@
   object-fit: cover;
   object-position: center 30%;
   display: block;
+  transform: scale(1.04);
+  transition: transform 9s ease;
 }
+.art-hero:hover .art-hero-img { transform: scale(1.0); }
 
 .art-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(13,5,0,0.15) 0%,
-    rgba(13,5,0,0.35) 40%,
-    rgba(13,5,0,0.82) 75%,
-    rgba(13,5,0,1.0) 100%
-  );
+  background:
+    linear-gradient(105deg,
+      rgba(13,5,0,0.96) 0%,
+      rgba(13,5,0,0.72) 38%,
+      rgba(13,5,0,0.22) 65%,
+      rgba(13,5,0,0.08) 100%
+    ),
+    linear-gradient(to bottom,
+      rgba(13,5,0,0.30) 0%,
+      transparent        45%,
+      rgba(13,5,0,0.90) 88%,
+      rgba(13,5,0,1.00) 100%
+    );
+}
+
+/* Gold shimmer line across bottom */
+.art-hero-overlay::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #e5b64e 35%, #f97316 65%, transparent);
+  opacity: 0.7;
 }
 
 .art-hero-content {
@@ -43,12 +64,9 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 2.5rem 2rem 3rem;
-  max-width: 860px;
-  margin: 0 auto;
-  left: 0;
-  right: 0;
+  justify-content: center;
+  padding: 5rem 3.5rem 3rem;
+  max-width: 680px;
 }
 
 .art-back {
@@ -83,21 +101,24 @@
 }
 
 .art-hero-title {
-  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-size: clamp(2.6rem, 5.5vw, 4.4rem);
   font-weight: 900;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: #fff;
-  margin: 0 0 0.6rem;
-  text-shadow: 0 2px 24px rgba(0,0,0,0.4);
+  margin: 0 0 0.75rem;
+  text-shadow: 0 4px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(0,0,0,0.8);
 }
 
 .art-hero-subtitle {
-  font-size: clamp(1rem, 2vw, 1.3rem);
-  color: rgba(255,255,255,0.75);
-  margin: 0 0 1.25rem;
+  font-size: clamp(1rem, 1.8vw, 1.25rem);
+  color: rgba(255,255,255,0.72);
+  margin: 0 0 1.5rem;
   font-weight: 400;
   font-style: italic;
+  border-left: 3px solid #e5b64e;
+  padding-left: 0.85rem;
+  line-height: 1.5;
 }
 
 .art-hero-meta {
@@ -304,8 +325,9 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .art-hero { height: 70vh; min-height: 460px; }
-  .art-hero-content { padding: 2rem 1.25rem 2.5rem; }
+  .art-hero { height: 80vh; min-height: 500px; }
+  .art-hero-content { padding: 4.5rem 1.5rem 2.5rem; max-width: 100%; }
+  .art-hero-subtitle { font-size: 1rem; }
   .art-back { top: 1.25rem; left: 1.25rem; }
   .art-body { padding-top: 2.5rem; }
   .art-cta-box { padding: 1.75rem 1.25rem; }
