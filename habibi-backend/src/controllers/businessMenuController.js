@@ -31,7 +31,7 @@ const createBusinessMenu = async (req, res) => {
 
     let image_url = req.body.image_url || "";
     if (req.file) {
-      image_url = `/uploads/menus/${req.file.filename}`;
+      image_url = req.file.path?.startsWith('http') ? req.file.path : `/uploads/menus/${req.file.filename}`;
     }
 
     const result = await pool.query(
@@ -61,7 +61,7 @@ const updateBusinessMenu = async (req, res) => {
 
     let image_url = req.body.image_url || currentItem.rows[0].image_url;
     if (req.file) {
-      image_url = `/uploads/menus/${req.file.filename}`;
+      image_url = req.file.path?.startsWith('http') ? req.file.path : `/uploads/menus/${req.file.filename}`;
     }
 
     const result = await pool.query(

@@ -21,8 +21,8 @@
   --radius: 8px;
   --radius-lg: 12px;
 
-  --font-heading: Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-serif: 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
 }
 

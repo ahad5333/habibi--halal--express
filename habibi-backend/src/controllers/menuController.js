@@ -96,7 +96,7 @@ const createMenu = async (req, res) => {
 
     let image_url = req.body.image_url || "";
     if (req.file) {
-      image_url = `/uploads/menus/${req.file.filename}`;
+      image_url = req.file.path?.startsWith('http') ? req.file.path : `/uploads/menus/${req.file.filename}`;
     }
 
     // Parse categories array (from JSON string or already array)
@@ -181,7 +181,7 @@ const updateMenu = async (req, res) => {
     const cur = current.rows[0];
 
     let image_url = req.body.image_url || cur.image_url;
-    if (req.file) image_url = `/uploads/menus/${req.file.filename}`;
+    if (req.file) image_url = req.file.path?.startsWith('http') ? req.file.path : `/uploads/menus/${req.file.filename}`;
 
     let parsedCategories = cur.categories || [];
     if (categories !== undefined) {

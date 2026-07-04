@@ -61,7 +61,7 @@ const createArticle = async (req, res) => {
     let media_url = req.body.media_url || null;
     let media_type = 'image';
     if (req.file) {
-      media_url  = `/uploads/articles/${req.file.filename}`;
+      media_url  = req.file.path?.startsWith('http') ? req.file.path : `/uploads/articles/${req.file.filename}`;
       media_type = req.file.mimetype?.startsWith('video') ? 'video' : 'image';
     }
 
@@ -96,7 +96,7 @@ const updateArticle = async (req, res) => {
     let media_url  = req.body.media_url !== undefined ? req.body.media_url : cur.media_url;
     let media_type = cur.media_type;
     if (req.file) {
-      media_url  = `/uploads/articles/${req.file.filename}`;
+      media_url  = req.file.path?.startsWith('http') ? req.file.path : `/uploads/articles/${req.file.filename}`;
       media_type = req.file.mimetype?.startsWith('video') ? 'video' : 'image';
     }
 

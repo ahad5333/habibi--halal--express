@@ -1,17 +1,5 @@
 require("dotenv").config();
-
-// Sentry must be initialized before any other require
-const Sentry = require("@sentry/node");
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || "development",
-    tracesSampleRate: 0.2,
-  });
-  console.log("[Sentry] Error monitoring active");
-} else {
-  console.log("[Sentry] SENTRY_DSN not set — monitoring disabled");
-}
+require("./instrument"); // Sentry — must load before express/http
 
 const http = require("http");
 const app = require("./src/app");

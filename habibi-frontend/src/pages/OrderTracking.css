@@ -891,6 +891,70 @@
 }
 .ot-tracking-link:hover { text-decoration: underline; }
 
+/* ── Rider badge label ───────────────────────────────────────── */
+.ot-rider-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-bottom: 3px;
+}
+
+/* ── Call button accent ──────────────────────────────────────── */
+.ot-driver-btn-call {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.25);
+  color: #4ade80;
+}
+.ot-driver-btn-call:hover {
+  background: rgba(74,222,128,0.15);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+.ot-driver-btn-call:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── Finding rider state ─────────────────────────────────────── */
+.ot-finding-rider {
+  background: var(--color-surface);
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ot-finding-scooter {
+  font-size: 1.75rem;
+  animation: findingBounce 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes findingBounce {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(6px); }
+}
+
+.ot-finding-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.ot-finding-sub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
 /* ── Receipt ─────────────────────────────────────────────────── */
 .ot-receipt {
   background: var(--color-surface);

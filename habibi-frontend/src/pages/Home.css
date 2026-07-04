@@ -236,7 +236,7 @@
 }
 
 .hero-title-exact {
-  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
   font-size: clamp(1.8rem, 3vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
@@ -294,7 +294,7 @@
 }
 
 .hero-creative-line {
-  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.95);
   letter-spacing: 1.5px;
@@ -3708,7 +3708,7 @@
   left: 1rem;
   font-size: 4rem;
   color: #f97316;
-  font-family: Georgia, serif;
+  font-family: var(--font-heading);
   line-height: 1;
   opacity: 0.5;
 }

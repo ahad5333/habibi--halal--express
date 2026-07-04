@@ -16,7 +16,7 @@
   display: block;
 }
 
-/* Gradient fade at the bottom so the hero bleeds into the body */
+/* Gradient fade at the bottom so the hero bleeds into the dark body */
 .legal-hero::after {
   content: '';
   position: absolute;
@@ -24,19 +24,19 @@
   left: 0;
   right: 0;
   height: 100px;
-  background: linear-gradient(to bottom, transparent, #fff);
+  background: linear-gradient(to bottom, transparent, #0d0d0d);
   pointer-events: none;
 }
 
 /* Subtitle under the image */
 .legal-hero-sub {
-  background: #fff;
+  background: #0d0d0d;
   text-align: center;
   padding: 1.25rem 1rem 0;
 }
 .legal-subtitle {
   font-size: 1rem;
-  color: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.55);
   max-width: 560px;
   margin: 0 auto;
   line-height: 1.6;
@@ -74,7 +74,7 @@
 .legal-hero--text .legal-subtitle { color: rgba(255,255,255,0.6); }
 
 /* ── Body ── */
-.legal-body { background: #fff; }
+.legal-body { background: #0d0d0d; }
 
 .legal-container {
   max-width: 780px;
@@ -83,7 +83,7 @@
 
 .legal-intro {
   font-size: 1rem;
-  color: #374151;
+  color: rgba(255,255,255,0.7);
   line-height: 1.75;
   border-left: 3px solid #E5B64E;
   padding-left: 1.25rem;
@@ -94,7 +94,7 @@
 
 .legal-section {
   padding-bottom: 2rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .legal-section:last-child { border-bottom: none; }
 
@@ -108,13 +108,13 @@
 .legal-section-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: #f0ede8;
   margin: 0;
 }
 
 .legal-section-body {
   font-size: 0.92rem;
-  color: #4b5563;
+  color: rgba(255,255,255,0.6);
   line-height: 1.75;
   margin: 0;
 }
@@ -129,7 +129,7 @@
 }
 .legal-list li {
   font-size: 0.92rem;
-  color: #4b5563;
+  color: rgba(255,255,255,0.6);
   line-height: 1.7;
   padding-left: 1.25rem;
   position: relative;
@@ -148,9 +148,9 @@
 .legal-updated {
   margin-top: 3rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(255,255,255,0.08);
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: rgba(255,255,255,0.35);
   text-align: center;
 }
 .legal-updated a { color: #E5B64E; text-decoration: none; }

@@ -536,7 +536,7 @@ const createGuestOrder = async (req, res) => {
       { orderNumber: order_number, type: 'new_order', channelId: 'new-orders' }
     ).catch(err => console.error('[Push] Merchant alert failed:', err.message));
 
-    res.status(201).json({ success: true, db_id });
+    res.status(201).json({ success: true, db_id, order_number });
   } catch (err) {
     console.error("createGuestOrder error:", err.message);
     res.status(500).json(safeError(err));

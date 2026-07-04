@@ -51,6 +51,7 @@ const Checkout = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [driverNote, setDriverNote]       = useState('');
+  const [aptUnit, setAptUnit]             = useState('');
   const [couponCode, setCouponCode]         = useState('');
   const [couponApplied, setCouponApplied]   = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -66,6 +67,11 @@ const Checkout = () => {
   const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
+  const [deliveryDuration, setDeliveryDuration] = useState('');
+  const [addressValidated, setAddressValidated] = useState(false);
+  const [addressLatLng, setAddressLatLng]       = useState(null);
+  const [locating, setLocating]                 = useState(false);
+  const [locationError, setLocationError]       = useState('');
   const [feeLoading, setFeeLoading]             = useState(false);
   const [feeMsg, setFeeMsg]                     = useState('');
   const [upsellItems, setUpsellItems]           = useState([]);
@@ -75,8 +81,12 @@ const Checkout = () => {
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [storeOpen, setStoreOpen]               = useState(true);
-  const feeTimerRef = useRef(null);
+  const feeTimerRef     = useRef(null);
   const addressInputRef = useRef(null);
+  const mapContainerRef    = useRef(null);
+  const mapInstanceRef     = useRef(null);
+  const mapMarkerRef       = useRef(null);
+  const addressConfirmedRef = useRef(false); // true when address set via autocomplete or geolocation
 
   const { items, addItem, updateQty, removeItem, clearCart, subtotal } = useCart();
   const { isLoggedIn, user } = useAuth();
@@ -168,9 +178,18 @@ const Checkout = () => {
   useEffect(() => {
     if (deliveryMode !== 'delivery' || !address.trim()) {
       setDeliveryFee(0);
+      setDeliveryDuration('');
+      setAddressValidated(false);
       setFeeMsg('');
       return;
     }
+    // Only reset validation if the address change came from manual typing (not autocomplete/geolocation)
+    if (addressConfirmedRef.current) {
+      addressConfirmedRef.current = false;
+    } else {
+      setAddressValidated(false);
+    }
+    setDeliveryDuration('');
     clearTimeout(feeTimerRef.current);
     feeTimerRef.current = setTimeout(async () => {
       setFeeLoading(true);
@@ -184,9 +203,12 @@ const Checkout = () => {
         const data = await res.json();
         if (data.out_of_range) {
           setDeliveryFee(0);
-          setFeeMsg('⚠ Address may be outside delivery range — fee calculated at checkout.');
+          setFeeMsg('⚠ This address is outside our delivery area. Please enter a Bronx/NYC address.');
         } else if (data.fee != null) {
           setDeliveryFee(parseFloat(data.fee));
+          if (data.duration) setDeliveryDuration(data.duration);
+          // When no Maps key (dev), allow fee API to validate; on prod autocomplete handles it
+          if (!import.meta.env.VITE_GOOGLE_MAPS_KEY) setAddressValidated(true);
           setFeeMsg(`📍 ${data.distance_text || ''} — delivery fee applied`);
         } else {
           setDeliveryFee(0);
@@ -211,10 +233,21 @@ const Checkout = () => {
       const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
+        fields: ['formatted_address', 'geometry'],
       });
       ac.addListener('place_changed', () => {
         const place = ac.getPlace();
-        if (place?.formatted_address) setAddress(place.formatted_address);
+        if (place?.formatted_address) {
+          addressConfirmedRef.current = true;
+          setAddress(place.formatted_address);
+          setAddressValidated(true);
+          if (place.geometry?.location) {
+            setAddressLatLng({
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            });
+          }
+        }
       });
     };
     if (window.google?.maps?.places) {
@@ -228,6 +261,34 @@ const Checkout = () => {
       document.head.appendChild(script);
     }
   }, [deliveryMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize real Google Maps when a valid address lat/lng is available
+  useEffect(() => {
+    if (!addressLatLng || !mapContainerRef.current) return;
+    const init = () => {
+      if (!window.google?.maps) return;
+      if (!mapInstanceRef.current) {
+        mapInstanceRef.current = new window.google.maps.Map(mapContainerRef.current, {
+          center: addressLatLng,
+          zoom: 16,
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: 'cooperative',
+        });
+      } else {
+        mapInstanceRef.current.panTo(addressLatLng);
+        mapInstanceRef.current.setZoom(16);
+      }
+      if (mapMarkerRef.current) mapMarkerRef.current.setMap(null);
+      mapMarkerRef.current = new window.google.maps.Marker({
+        position: addressLatLng,
+        map: mapInstanceRef.current,
+        title: 'Delivery location',
+        animation: window.google.maps.Animation.DROP,
+      });
+    };
+    if (window.google?.maps) init();
+  }, [addressLatLng]);
 
   // ── Coupon ────────────────────────────────────────────────────────────────
   const handleApplyCoupon = async (codeOverride) => {
@@ -260,7 +321,7 @@ const Checkout = () => {
       ? ''
       : deliveryMode === 'pickup'
       ? (selectedLocation ? `${selectedLocation.title} - ${selectedLocation.brief_address}` : 'Store Pickup')
-      : address,
+      : (aptUnit.trim() ? `${address}, ${aptUnit.trim()}` : address),
     delivery_city:         '',
     delivery_zip:          '',
     delivery_state:        'NY',
@@ -312,12 +373,70 @@ const Checkout = () => {
     navigate(`/order-confirmation?order=${orderNumber}&method=${methodParam}${extraParam}`);
   };
 
+  // Use browser geolocation → reverse geocode → fill address
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Location not supported by your browser.');
+      return;
+    }
+    setLocating(true);
+    setLocationError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const latlng = { lat: latitude, lng: longitude };
+        const geocode = () => {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            setLocating(false);
+            if (status === 'OK' && results[0]) {
+              addressConfirmedRef.current = true;
+              setAddress(results[0].formatted_address);
+              setAddressLatLng(latlng);
+              setAddressValidated(true);
+              setLocationError('');
+            } else {
+              setLocationError('Could not resolve your address. Please type it manually.');
+            }
+          });
+        };
+        if (window.google?.maps) {
+          geocode();
+        } else {
+          const script = document.getElementById('gm-places-script');
+          if (script) { script.addEventListener('load', geocode); }
+          else { setLocating(false); setLocationError('Maps not loaded. Please type your address.'); }
+        }
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) setLocationError('Location access denied. Please type your address or allow location in browser settings.');
+        else setLocationError('Could not get your location. Please type your address.');
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  // Auto-detect location if Chrome already has permission granted (like Zepto/Blinkit)
+  useEffect(() => {
+    if (deliveryMode !== 'delivery' || address || !navigator.geolocation || !navigator.permissions) return;
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'granted') handleUseMyLocation();
+    }).catch(() => {});
+  }, [deliveryMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Shared pre-flight validation — run before any payment path fires
   const validateOrder = () => {
     if (!receiverName.trim()) { setOrderError('Please enter your name.'); return false; }
-    if (!customerPhone.trim()) { setOrderError('Please enter a phone number.'); return false; }
-    if (!/^\+?[\d\s\-().]{7,20}$/.test(customerPhone.trim()) || (customerPhone.match(/\d/g) || []).length < 7) { setOrderError('Please enter a valid phone number.'); return false; }
-    if (deliveryMode === 'delivery' && !address.trim()) { setOrderError('Please enter a delivery address.'); return false; }
+    if (!customerPhone.trim()) { setOrderError('Please enter a US phone number.'); return false; }
+    const digits = (customerPhone.match(/\d/g) || []).join('');
+    const usDigits = digits.startsWith('1') && digits.length === 11 ? digits.slice(1) : digits;
+    if (usDigits.length !== 10) { setOrderError('Please enter a valid 10-digit US phone number, e.g. (718) 555-0100.'); return false; }
+    if (!isDineIn && deliveryMode === 'delivery') {
+      if (!address.trim()) { setOrderError('Please enter your delivery address.'); return false; }
+      if (feeLoading) { setOrderError('Please wait while we calculate the delivery fee.'); return false; }
+      if (!addressValidated) { setOrderError('Please enter a complete delivery address so we can calculate your fee.'); return false; }
+    }
     setOrderError('');
     return true;
   };
@@ -348,8 +467,8 @@ const Checkout = () => {
   const handleAuthNetSuccess = async (transactionId) => {
     setPlacing(true); setOrderError('');
     try {
-      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
-      await finishOrder(pendingOrderNum);
+      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      await finishOrder(result?.order_number || pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order could not be saved. Contact support.');
     } finally {
@@ -363,8 +482,8 @@ const Checkout = () => {
   const handlePayPalSuccess = async (details) => {
     setPlacing(true); setOrderError('');
     try {
-      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
-      await finishOrder(pendingOrderNum);
+      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      await finishOrder(result?.order_number || pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Order save failed after PayPal payment.');
     } finally {
@@ -386,8 +505,8 @@ const Checkout = () => {
     setShowOfflineModal(false);
     setPlacing(true); setOrderError('');
     try {
-      await ordersAPI.createGuest(buildPayload(pendingOrderNum));
-      await finishOrder(pendingOrderNum);
+      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      await finishOrder(result?.order_number || pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
     } finally {
@@ -611,7 +730,28 @@ const Checkout = () => {
                   {deliveryMode === 'delivery' && (
                     <>
                       <div className="form-group mb-4">
-                        <label className="form-label">DELIVERY ADDRESS</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <label className="form-label" style={{ margin: 0 }}>DELIVERY ADDRESS</label>
+                          {'geolocation' in navigator && (
+                            <button
+                              type="button"
+                              onClick={handleUseMyLocation}
+                              disabled={locating}
+                              style={{
+                                background: 'none', border: 'none', cursor: locating ? 'default' : 'pointer',
+                                color: locating ? 'rgba(255,255,255,0.4)' : 'var(--color-primary)',
+                                fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                padding: 0, letterSpacing: '0.02em',
+                              }}
+                            >
+                              <MapPin size={12} />
+                              {locating ? 'Locating…' : 'Use my location'}
+                            </button>
+                          )}
+                        </div>
+                        {locationError && (
+                          <p style={{ fontSize: '0.72rem', color: '#f87171', marginBottom: '0.4rem' }}>{locationError}</p>
+                        )}
                         {/* Pre-selected addresses quick-pick */}
                         {selectedLocation && Array.isArray(selectedLocation.delivery_addresses) && selectedLocation.delivery_addresses.length > 0 && (
                           <div className="preset-addr-list">
@@ -632,17 +772,53 @@ const Checkout = () => {
                         )}
                         <div className="address-input-wrapper">
                           <MapPin size={14} className="address-icon text-muted" />
-                          <input ref={addressInputRef} type="text" className="form-input address-input" placeholder="Enter your full delivery address" value={address} onChange={e => setAddress(e.target.value)} autoComplete="street-address" />
+                          <input ref={addressInputRef} type="text" className="form-input address-input" placeholder="Start typing your address…" value={address} onChange={e => { setAddress(e.target.value); setAddressValidated(false); setAddressLatLng(null); if (mapInstanceRef.current) { mapInstanceRef.current = null; } }} autoComplete="off" />
                         </div>
+                        {address.trim() && !addressValidated && !feeLoading && import.meta.env.VITE_GOOGLE_MAPS_KEY && (
+                          <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
+                            Select your address from the dropdown to confirm it
+                          </p>
+                        )}
                         {!import.meta.env.VITE_GOOGLE_MAPS_KEY && import.meta.env.DEV && (
                           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
                             💡 Tip: Add <code>VITE_GOOGLE_MAPS_KEY</code> to .env for address autocomplete
                           </p>
                         )}
                       </div>
-                      <div className="address-map-placeholder mb-4">
-                        <div className="map-pin-center"><MapPin size={24} className="text-primary" fill="currentColor" /></div>
-                        <p className="text-xs text-muted absolute bottom-2 left-2">DELIVERY MAP</p>
+
+                      {/* Real Google Maps — slides in after address is selected */}
+                      <div
+                        ref={mapContainerRef}
+                        style={{
+                          height: addressLatLng ? '190px' : '0',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          marginBottom: addressLatLng ? '1rem' : '0',
+                          transition: 'height 0.35s ease',
+                          border: addressLatLng ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                        }}
+                      />
+                      {!addressLatLng && (
+                        <div className="address-map-placeholder mb-4">
+                          <div className="map-pin-center"><MapPin size={24} className="text-primary" fill="currentColor" /></div>
+                          <p className="text-xs text-muted absolute bottom-2 left-2">SELECT ADDRESS FROM SUGGESTIONS</p>
+                        </div>
+                      )}
+
+                      {/* Apt / Suite / Gate / Floor */}
+                      <div className="form-group mb-4">
+                        <label className="form-label">APT / SUITE / FLOOR / GATE #</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Apt 4B, Floor 3, Gate 12"
+                          value={aptUnit}
+                          onChange={e => setAptUnit(e.target.value)}
+                          autoComplete="address-line2"
+                        />
+                        <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
+                          Helps your driver find you faster
+                        </p>
                       </div>
 
                       {/* Estimated delivery time badge */}
@@ -653,19 +829,19 @@ const Checkout = () => {
                         <div className="eta-badge-text">
                           {feeLoading ? (
                             <span className="eta-badge-time">Calculating…</span>
-                          ) : address.trim() ? (
+                          ) : addressValidated && deliveryDuration ? (
                             <>
-                              <span className="eta-badge-time">25–40 min</span>
+                              <span className="eta-badge-time">{deliveryDuration}</span>
                               <span className="eta-badge-label">estimated delivery</span>
                             </>
                           ) : (
                             <>
-                              <span className="eta-badge-time">30–45 min</span>
-                              <span className="eta-badge-label">once address is entered</span>
+                              <span className="eta-badge-time">—</span>
+                              <span className="eta-badge-label">enter your address to see ETA</span>
                             </>
                           )}
                         </div>
-                        {address.trim() && !feeLoading && (
+                        {addressValidated && deliveryDuration && !feeLoading && (
                           <span className="eta-badge-live">LIVE</span>
                         )}
                       </div>
@@ -676,8 +852,8 @@ const Checkout = () => {
                           <input type="text" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">PHONE NUMBER</label>
-                          <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                          <label className="form-label">US PHONE NUMBER</label>
+                          <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
                         </div>
                       </div>
                       <div className="form-row two-col mb-6">
@@ -818,7 +994,7 @@ const Checkout = () => {
                 <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
                   <div className="flex items-center gap-3">
                     <CreditCard size={18} className="text-primary" />
-                    <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Stripe secure encryption</p></div>
+                    <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secured by Authorize.net</p></div>
                   </div>
                   <div className="flex items-center gap-2">
                     <img src="/images/partners/visa.png" alt="Visa" className="pay-brand-icon" />
@@ -887,32 +1063,32 @@ const Checkout = () => {
             <h3 className="summary-title">Order Summary</h3>
 
             {(() => {
-              const summaryReady = isLoggedIn && (isDineIn || deliveryMode === 'pickup' || !!address.trim());
-              if (!summaryReady) {
+              // Show locked state only when not logged in
+              if (!isLoggedIn) {
                 return (
                   <div className="summary-locked">
                     <MapPin size={28} style={{ color: 'var(--color-primary)', marginBottom: '0.75rem' }} />
-                    <p className="summary-locked-title">
-                      {!isLoggedIn ? 'Sign in to see your total' : 'Enter your delivery address'}
-                    </p>
+                    <p className="summary-locked-title">Sign in to see your total</p>
                     <p className="summary-locked-sub">
-                      {!isLoggedIn
-                        ? 'Log in or create an account, then enter your address so we can calculate the delivery fee and show your full order total.'
-                        : 'Enter your delivery address above so we can calculate the delivery fee and show your full order total.'}
+                      Log in or create an account to place your order and track it in real time.
                     </p>
-                    {!isLoggedIn && items.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-                        <Link to="/login?redirect=/checkout" className="btn btn-primary place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                          Log In
+                    {items.length > 0 && (
+                      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                        <Link to="/login?redirect=/checkout" className="btn btn-primary place-order-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                          Sign in to order
                         </Link>
-                        <Link to="/signup?redirect=/checkout" className="btn btn-outline place-order-btn" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                          Sign Up
-                        </Link>
+                        <p style={{ marginTop: '0.65rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
+                          New here?{' '}
+                          <Link to="/signup?redirect=/checkout" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
+                            Create an account →
+                          </Link>
+                        </p>
                       </div>
                     )}
                   </div>
                 );
               }
+              const needsAddress = !isDineIn && deliveryMode === 'delivery' && !addressValidated;
               return (
                 <>
                   <div className="summary-lines">
@@ -923,6 +1099,8 @@ const Checkout = () => {
                       <span>{isDineIn ? 'Delivery Fee (Dine-In)' : `Delivery Fee${deliveryMode === 'pickup' ? ' (Pickup)' : ''}`}</span>
                       {isDineIn || deliveryMode === 'pickup' ? (
                         <span className="text-primary font-bold">FREE</span>
+                      ) : needsAddress ? (
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Enter address above</span>
                       ) : feeLoading ? (
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Calculating…</span>
                       ) : deliveryFee > 0 ? (
@@ -1143,8 +1321,8 @@ const Checkout = () => {
                     <button
                       className="btn btn-primary place-order-btn"
                       onClick={handlePlaceOrder}
-                      disabled={placing || items.length === 0 || !storeOpen}
-                      title={!storeOpen ? "We're currently closed" : undefined}
+                      disabled={placing || items.length === 0 || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!addressValidated || feeLoading))}
+                      title={!storeOpen ? "We're currently closed" : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter a valid delivery address to continue' : undefined}
                     >
                       {!storeOpen ? "Currently Closed" : ctaLabel()}
                     </button>
@@ -1198,9 +1376,9 @@ const Checkout = () => {
             <button
               className="ck-sticky-btn"
               onClick={handlePlaceOrder}
-              disabled={placing || !storeOpen}
+              disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!addressValidated || feeLoading))}
             >
-              {!storeOpen ? 'Currently Closed' : placing ? 'Please wait…' : 'Place Order →'}
+              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : placing ? 'Please wait…' : 'Place Order →'}
             </button>
           ) : null}
         </div>

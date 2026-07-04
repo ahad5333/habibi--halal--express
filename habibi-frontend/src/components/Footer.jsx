@@ -112,7 +112,7 @@ const Footer = () => {
           <div className="footer-column">
             <h4>Legal &amp; Support</h4>
             <Link to="/contact">Contact Us</Link>
-            <Link to="/health-safety">Health &amp; Safety</Link>
+            <Link to="/health-safety">Our Standards</Link>
             <Link to="/privacy-policy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
             <Link to="/sms-terms">SMS Terms</Link>

@@ -409,7 +409,7 @@ export default function OrderTracking() {
             <Search size={15} className="ot-lookup-icon" />
             <input
               className="ot-lookup-input"
-              placeholder="Enter order number (e.g. HAB-1234567890)"
+              placeholder="Enter order number (e.g. HBB-1234567890-ABC123)"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value.toUpperCase())}
             />
@@ -429,7 +429,7 @@ export default function OrderTracking() {
       {notFound && (
         <div className="container ot-not-found">
           <p>Order not found. Check your order number and try again.</p>
-          <p className="ot-not-found-sub">Look for <strong>HAB-</strong> in your confirmation email.</p>
+          <p className="ot-not-found-sub">Look for <strong>HBB-</strong> in your confirmation email.</p>
         </div>
       )}
 
@@ -650,49 +650,53 @@ export default function OrderTracking() {
                   )}
                 </div>
 
-                {/* Driver Card */}
-                {currentStep >= 4 && currentStep < 6 && (
-                  <div className="ot-driver-card">
-                    <div className="ot-driver-avatar">
-                      <span className="driver-emoji">🧑</span>
-                    </div>
-                    <div className="ot-driver-info">
-                      <p className="ot-driver-name">{driverInfo?.name || DRIVER.name}</p>
-                      <p className="ot-driver-meta">
-                        {driverInfo?.rating && (
-                          <><Star size={11} fill="var(--color-primary)" stroke="none" />
-                          {driverInfo.rating} · </>
+                {/* Rider Section — always visible for delivery orders */}
+                {isDeliveryOrder && !isDelivered && (
+                  (driverInfo || currentStep >= 4) ? (
+                    /* ── Driver assigned card ── */
+                    <div className="ot-driver-card">
+                      <div className="ot-driver-avatar">
+                        <span className="driver-emoji">
+                          {driverInfo?.source === 'doordash' ? '🚗' : driverInfo?.source === 'roadie' ? '📦' : '🧑'}
+                        </span>
+                      </div>
+                      <div className="ot-driver-info">
+                        <span className="ot-rider-badge">YOUR RIDER</span>
+                        <p className="ot-driver-name">{driverInfo?.name || DRIVER.name}</p>
+                        <p className="ot-driver-meta">
+                          <Star size={11} fill="var(--color-primary)" stroke="none" />
+                          {driverInfo?.rating || DRIVER.rating}
+                          {driverLatLng && <> · <span className="ot-gps-live">GPS live</span></>}
+                          {!driverLatLng && driverInfo?.source === 'doordash' && <> · <span>DoorDash Drive</span></>}
+                          {!driverLatLng && driverInfo?.source === 'roadie'   && <> · <span>Roadie Courier</span></>}
+                          {driverInfo?.eta && (
+                            <> · <Clock size={10} /> {new Date(driverInfo.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                          )}
+                        </p>
+                        {driverInfo?.tracking_url && (
+                          <a href={driverInfo.tracking_url} target="_blank" rel="noopener noreferrer" className="ot-tracking-link">
+                            Track on DoorDash →
+                          </a>
                         )}
-                        {driverInfo?.eta && (
-                          <span>ETA: {new Date(driverInfo.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · </span>
-                        )}
-                        {driverLatLng
-                          ? <span className="ot-gps-live">GPS live</span>
-                          : driverInfo?.source === 'doordash'
-                            ? <span>DoorDash Drive</span>
-                            : driverInfo?.source === 'roadie'
-                              ? <span>Roadie Courier</span>
-                              : null
+                      </div>
+                      <div className="ot-driver-actions">
+                        {driverInfo?.phone
+                          ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call"><Phone size={16} /></a>
+                          : <button className="ot-driver-btn ot-driver-btn-call" disabled><Phone size={16} /></button>
                         }
-                      </p>
-                      {driverInfo?.tracking_url && (
-                        <a
-                          href={driverInfo.tracking_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ot-tracking-link"
-                        >
-                          Track on DoorDash →
-                        </a>
-                      )}
+                        <button className="ot-driver-btn"><MessageSquare size={16} /></button>
+                      </div>
                     </div>
-                    <div className="ot-driver-actions">
-                      {driverInfo?.phone && (
-                        <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn"><Phone size={16} /></a>
-                      )}
-                      <button className="ot-driver-btn"><MessageSquare size={16} /></button>
+                  ) : (
+                    /* ── Finding rider state (steps 1–3, no driver yet) ── */
+                    <div className="ot-finding-rider">
+                      <div className="ot-finding-scooter">🛵</div>
+                      <div className="ot-finding-text">
+                        <p className="ot-finding-title">Finding your rider…</p>
+                        <p className="ot-finding-sub">A driver will be assigned once your order is ready</p>
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
 
                 {/* Receipt */}

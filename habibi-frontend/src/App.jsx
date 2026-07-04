@@ -70,6 +70,7 @@ function isNoIndexPath(pathname) {
 
 function Layout() {
   const location = useLocation();
+  const { user } = useAuth();
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname);
 
   useEffect(() => {
@@ -84,6 +85,18 @@ function Layout() {
     // Track page views on location change
     trackPageView(location.pathname);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    if (sessionStorage.getItem('push_prompted')) return;
+    sessionStorage.setItem('push_prompted', '1');
+    const t = setTimeout(async () => {
+      const { requestPushPermission, isFirebaseConfigured } = await import('./utils/pushNotifications.js');
+      if (isFirebaseConfigured()) requestPushPermission();
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [user]);
 
   return (
     <>

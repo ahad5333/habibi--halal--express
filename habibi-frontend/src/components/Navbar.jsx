@@ -89,12 +89,16 @@ const RIGHT_ITEMS = [
   },
   {
     id: 'staff',
-    label: 'Careers & Staff',
+    label: 'Staff',
     path: '/staff',
     panel: { bg: 'linear-gradient(160deg,#fffbeb 0%,#fde68a 100%)', emoji: '👨‍🍳', caption: 'Meet Our Amazing Team' },
     sub: [
-      { label: 'Meet Our Team', path: '/staff' },
-      { label: 'Open Positions', path: '/careers', highlight: true },
+      { label: 'Management Staff', path: '/staff#management' },
+      { label: 'Kitchen Staff',    path: '/staff#kitchen' },
+      { label: 'Serving Staff',    path: '/staff#serving' },
+      { label: 'Delivery Staff',   path: '/staff#delivery' },
+      { label: 'Stock Staff',      path: '/staff#stock' },
+      { label: 'We Are Hiring! 🌟', path: '/careers', highlight: true },
     ],
   },
   {

@@ -228,11 +228,8 @@ app.get("/", (req, res)=>{
 });
 
 // ── Sentry error handler (must be after all routes, before other error handlers) ──
-if (process.env.SENTRY_DSN) {
-  const Sentry = require("@sentry/node");
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
-  Sentry.setupExpressErrorHandler(app);
-}
+const Sentry = require("@sentry/node");
+Sentry.setupExpressErrorHandler(app);
 
 // ── Multer / upload error handler ────────────────────────────────────────────
 const multer = require("multer");

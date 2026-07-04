@@ -78,9 +78,8 @@ const Login = () => {
     setLoading(true);
     try {
       await register(name, email, password);
-      // Switch to login tab with success message
+      // Switch to login tab — keep email pre-filled so user doesn't have to retype
       setTab('login');
-      setEmail('');
       setPassword('');
       setName('');
       setSuccessMsg('Account created! Please log in below.');
@@ -287,7 +286,7 @@ const Login = () => {
       <div className="login-footer">
         <span>© 2024 Habibi Halal Express. Artisanal Halal Dining.</span>
         <div className="flex gap-6">
-          <Link to="/health-safety">HEALTH &amp; SAFETY</Link>
+          <Link to="/health-safety">OUR STANDARDS</Link>
           <Link to="/privacy-policy">PRIVACY POLICY</Link>
           <Link to="/terms">TERMS OF SERVICE</Link>
         </div>

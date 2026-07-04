@@ -18,6 +18,7 @@ const Signup = () => {
   const [verifyEmail, setVerifyEmail]       = useState('');
   const [showPass, setShowPass]             = useState(false);
   const [showConfirm, setShowConfirm]       = useState(false);
+  const [signupMethod, setSignupMethod]     = useState('phone'); // 'email' | 'phone'
 
   const [firstName, setFirstName]           = useState('');
   const [lastName, setLastName]             = useState('');
@@ -51,9 +52,17 @@ const Signup = () => {
     if (!firstName.trim() || !lastName.trim()) {
       setError('First and last name are required.'); return;
     }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Please enter a valid email address.'); return;
+
+    if (signupMethod === 'email') {
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError('Please enter a valid email address.'); return;
+      }
+    } else {
+      if (!phone.trim()) {
+        setError('Please enter your phone number.'); return;
+      }
     }
+
     if (!password || password.length < 8) {
       setError('Password must be at least 8 characters.'); return;
     }
@@ -70,19 +79,22 @@ const Signup = () => {
     const submittedEmail = email;
     setLoading(true);
     try {
-      const result = await register(`${firstName} ${lastName}`.trim(), email, password, {
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone.trim() || null,
-      });
+      const result = await register(
+        `${firstName} ${lastName}`.trim(),
+        signupMethod === 'email' ? email : '',
+        password,
+        {
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone.trim() || null,
+        }
+      );
 
-      // If backend requires email verification (no auto-login token returned)
       if (result?.requiresVerification || !result?.user) {
         setVerifyEmail(submittedEmail);
         resetForm();
         setVerificationSent(true);
       } else {
-        // Auto-logged-in — go straight to the destination
         navigate(redirectTo !== '/' ? redirectTo : '/');
       }
     } catch (err) {
@@ -155,6 +167,24 @@ const Signup = () => {
           <h2 className="sp-form-title">Create an Account</h2>
           <p className="sp-form-sub">Already have one? <Link to={`/login${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-primary">Sign in</Link></p>
 
+          {/* Method toggle */}
+          <div className="signup-method-toggle">
+            <button
+              type="button"
+              className={`signup-method-btn${signupMethod === 'phone' ? ' active' : ''}`}
+              onClick={() => { setSignupMethod('phone'); setError(''); }}
+            >
+              <Phone size={14} /> Phone Number
+            </button>
+            <button
+              type="button"
+              className={`signup-method-btn${signupMethod === 'email' ? ' active' : ''}`}
+              onClick={() => { setSignupMethod('email'); setError(''); }}
+            >
+              <Mail size={14} /> Email Address
+            </button>
+          </div>
+
           {error && <div className="signup-error">⚠ {error}</div>}
 
           <form onSubmit={handleSubmit} noValidate>
@@ -183,37 +213,59 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Email */}
-            <div className="form-group">
-              <label className="form-label">EMAIL ADDRESS <span className="req">*</span></label>
-              <div className="input-icon-wrap">
-                <Mail size={15} className="input-icon" />
-                <input
-                  type="email"
-                  className="form-input with-icon"
-                  placeholder="ahmad@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
+            {/* Phone (primary — phone mode) */}
+            {signupMethod === 'phone' && (
+              <div className="form-group">
+                <label className="form-label">PHONE NUMBER <span className="req">*</span></label>
+                <div className="input-icon-wrap">
+                  <Phone size={15} className="input-icon" />
+                  <input
+                    type="tel"
+                    className="form-input with-icon"
+                    placeholder="+1 (718) 555-0100"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Phone (optional) */}
-            <div className="form-group">
-              <label className="form-label">PHONE NUMBER <span className="opt">(Optional — used for order updates)</span></label>
-              <div className="input-icon-wrap">
-                <Phone size={15} className="input-icon" />
-                <input
-                  type="tel"
-                  className="form-input with-icon"
-                  placeholder="+1 (718) 555-0100"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  autoComplete="tel"
-                />
+            {/* Email (primary — email mode) */}
+            {signupMethod === 'email' && (
+              <div className="form-group">
+                <label className="form-label">EMAIL ADDRESS <span className="req">*</span></label>
+                <div className="input-icon-wrap">
+                  <Mail size={15} className="input-icon" />
+                  <input
+                    type="email"
+                    className="form-input with-icon"
+                    placeholder="ahmad@example.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Phone (secondary — email mode, optional) */}
+            {signupMethod === 'email' && (
+              <div className="form-group">
+                <label className="form-label">PHONE NUMBER <span className="opt">(Optional — for order updates)</span></label>
+                <div className="input-icon-wrap">
+                  <Phone size={15} className="input-icon" />
+                  <input
+                    type="tel"
+                    className="form-input with-icon"
+                    placeholder="+1 (718) 555-0100"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Password */}
             <div className="form-group">

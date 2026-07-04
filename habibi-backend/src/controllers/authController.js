@@ -18,13 +18,14 @@ function setAuthCookie(res, token, maxAgeMs) {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, dob, first_name, last_name } = req.body;
+    const { name, password, phone, dob, first_name, last_name } = req.body;
+    let { email } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email and password are required.' });
+    if (!name || !password) {
+      return res.status(400).json({ message: 'Name and password are required.' });
     }
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ message: 'Invalid email address.' });
+    if (name.length > 100) {
+      return res.status(400).json({ message: 'Name too long.' });
     }
     if (typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters.' });
@@ -32,25 +33,39 @@ const registerUser = async (req, res) => {
     if (!/[0-9]/.test(password)) {
       return res.status(400).json({ message: 'Password must contain at least one number.' });
     }
-    if (name.length > 100) {
-      return res.status(400).json({ message: 'Name too long.' });
-    }
 
-    const existingUser = await pool.query(
-      "SELECT * FROM users WHERE email=$1",
-      [email]
-    );
+    const isPhoneSignup = !email || !String(email).trim();
 
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: "User already exists" });
+    if (isPhoneSignup) {
+      // Phone-only path: require phone, generate a placeholder email
+      if (!phone || !String(phone).trim()) {
+        return res.status(400).json({ message: 'Either email or phone number is required.' });
+      }
+      const cleaned = String(phone).replace(/\D/g, '');
+      if (cleaned.length < 7 || cleaned.length > 15) {
+        return res.status(400).json({ message: 'Invalid phone number.' });
+      }
+      // Check phone not already in use
+      const phoneExists = await pool.query(
+        'SELECT id FROM users WHERE phone_number=$1 OR phone_number=$2',
+        [String(phone).trim(), cleaned]
+      );
+      if (phoneExists.rows.length > 0) {
+        return res.status(400).json({ message: 'An account with this phone number already exists.' });
+      }
+      email = `phone_${cleaned}@habibi.internal`;
+    } else {
+      email = String(email).trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Invalid email address.' });
+      }
+      const existingUser = await pool.query('SELECT id FROM users WHERE email=$1', [email]);
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Generate email verification token (expires in 24 h)
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 86400000);
-
     const dobValue = dob && /^\d{4}-\d{2}-\d{2}$/.test(dob) ? dob : null;
     const phoneValue = phone ? String(phone).trim().slice(0, 20) : null;
 
@@ -63,7 +78,6 @@ const registerUser = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Issue JWT immediately so the user is logged in right after signup
     const token = jwt.sign(
       { id: user.id, role: user.role, is_partner: false, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
@@ -71,10 +85,12 @@ const registerUser = async (req, res) => {
     );
     setAuthCookie(res, token, 24 * 60 * 60 * 1000);
 
-    // Send welcome email (non-blocking — login is NOT gated on this)
-    emailService.sendEmailVerification(email, name, `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu`).catch(err => {
-      console.error('Failed to send welcome email:', err.message);
-    });
+    // Send welcome email only for real email signups
+    if (!isPhoneSignup) {
+      emailService.sendEmailVerification(email, name, `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu`).catch(err => {
+        console.error('Failed to send welcome email:', err.message);
+      });
+    }
 
     res.status(201).json({
       token,

@@ -653,16 +653,15 @@ export default function BuildYourOwn({ item, onClose, onAdd, initialSelections =
   const isBasePicker  = stepIdx === -1;
   const step          = !isBasePicker ? ADD_ON_STEPS[stepIdx] : null;
   const isLast        = stepIdx === ADD_ON_STEPS.length - 1;
+  const basePrice     = selectedBase ? selectedBase.price : 0;
+  const family        = selectedBase?.family || 'standard';
   const isPlatterBase = family === 'platter' || family === 'familyTray';
-  const totalSteps   = ADD_ON_STEPS.length + 1;
-  const displayStep  = stepIdx + 2;
+  const totalSteps    = ADD_ON_STEPS.length + 1;
+  const displayStep   = stepIdx + 2;
 
   const canAdvance = isBasePicker
     ? !!selectedBase
     : (step.type === 'multi' || !!selections[step.id]);
-
-  const basePrice = selectedBase ? selectedBase.price : 0;
-  const family    = selectedBase?.family || 'standard';
 
   const calcTotal = () => {
     let total = basePrice;
