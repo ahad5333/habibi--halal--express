@@ -91,6 +91,20 @@ export function CartProvider({ children }) {
     persist(updated);
   };
 
+  const removeAddon = useCallback((itemId, addonIdx) => {
+    setItems(prev => {
+      const updated = prev.map(item => {
+        if (item.id !== itemId) return item;
+        const addons = [...(item.addons || [])];
+        const [removed] = addons.splice(addonIdx, 1);
+        const reduction = removed ? (parseFloat(removed.price) || 0) * (removed.qty || 1) : 0;
+        return { ...item, addons, price: Math.max(0, item.price - reduction) };
+      });
+      localStorage.setItem('habibi_cart', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const updateQty = (id, qty) => {
     if (qty < 1) { removeItem(id); return; }
     const updated = items.map(i => i.id === id ? { ...i, qty } : i);
@@ -105,7 +119,7 @@ export function CartProvider({ children }) {
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clearCart, totalItems, subtotal }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, removeAddon, updateQty, clearCart, totalItems, subtotal }}>
       {children}
     </CartContext.Provider>
   );

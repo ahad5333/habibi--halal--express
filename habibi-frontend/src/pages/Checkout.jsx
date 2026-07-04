@@ -88,7 +88,7 @@ const Checkout = () => {
   const mapMarkerRef       = useRef(null);
   const addressConfirmedRef = useRef(false); // true when address set via autocomplete or geolocation
 
-  const { items, addItem, updateQty, removeItem, clearCart, subtotal } = useCart();
+  const { items, addItem, updateQty, removeItem, removeAddon, clearCart, subtotal } = useCart();
   const { isLoggedIn, user } = useAuth();
   const { isDineIn, table: dineInTable } = useDineIn();
   const navigate = useNavigate();
@@ -629,7 +629,18 @@ const Checkout = () => {
                         {addons.map((addon, idx) => (
                           <div key={`${item.id}-addon-${idx}`} className="cart-addon-row">
                             <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>
-                            <span className="cart-addon-price">${(addon.price * addon.qty * item.qty).toFixed(2)}</span>
+                            <span className="cart-addon-price">
+                              {parseFloat(addon.price) > 0
+                                ? `$${(addon.price * (addon.qty || 1) * item.qty).toFixed(2)}`
+                                : 'Free'}
+                            </span>
+                            {parseFloat(addon.price) > 0 && (
+                              <button
+                                className="cart-addon-remove"
+                                onClick={() => removeAddon(item.id, idx)}
+                                title="Remove add-on"
+                              >×</button>
+                            )}
                           </div>
                         ))}
                       </React.Fragment>

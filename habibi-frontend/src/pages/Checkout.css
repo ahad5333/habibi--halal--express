@@ -108,6 +108,18 @@
   white-space: nowrap;
 }
 
+.cart-addon-remove {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 0.4rem;
+  transition: color 0.15s;
+}
+.cart-addon-remove:hover { color: #ef4444; }
+
 .summary-locked {
   display: flex;
   flex-direction: column;
