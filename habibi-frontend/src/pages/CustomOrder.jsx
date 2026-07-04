@@ -710,6 +710,15 @@ export default function CustomOrder() {
        price = full total (used for subtotal/cart-strip).
        baseItemPrice = base+ingredients only (displayed in checkout).
        addons = sides+drinks shown as indented sub-rows in checkout. */
+    /* Build visual layers for checkout preview:
+       base photo + up to 3 ingredient transparent PNGs */
+    const customLayers = [
+      cfg.base.img,
+      ...Object.keys(cfg.proteins).map(id => CO_ING_DB[id]?.src),
+      cfg.cheese.type && cfg.cheese.type !== 'none' ? CO_ING_DB[cfg.cheese.type]?.src : null,
+      ...Object.keys(cfg.vegetables).map(id => CO_ING_DB[id]?.src),
+    ].filter(Boolean).slice(0, 5);
+
     addItem({
       id:            `custom-${cfg.base.id}-${Date.now()}`,
       name:          `Custom ${cfg.base.label}`,
@@ -717,6 +726,7 @@ export default function CustomOrder() {
       baseItemPrice: Math.max(0, total - addonsTotal),
       note:          buildNote(),
       img:           cfg.base.img,
+      customLayers,
       addons,
       qty,
     });

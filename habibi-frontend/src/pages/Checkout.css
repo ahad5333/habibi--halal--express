@@ -270,6 +270,34 @@
   flex-shrink: 0;
 }
 
+/* CustomOrder layered preview in cart */
+.cart-item-custom-preview {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #111;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+}
+.cart-item-custom-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Layer 0 — base photo: full cover */
+.cart-item-custom-layer:nth-child(1) { object-fit: cover; }
+/* Layer 1 — primary protein: centered, 70% size */
+.cart-item-custom-layer:nth-child(2) { object-fit: contain; transform: scale(0.72) translate(0%, 4%); }
+/* Layer 2 — cheese/veg: offset lower-left */
+.cart-item-custom-layer:nth-child(3) { object-fit: contain; transform: scale(0.5) translate(-34%, 36%); }
+/* Layer 3 — second veg: offset lower-right */
+.cart-item-custom-layer:nth-child(4) { object-fit: contain; transform: scale(0.45) translate(38%, 36%); }
+/* Layer 4 — extra: small top-right hint */
+.cart-item-custom-layer:nth-child(5) { object-fit: contain; transform: scale(0.35) translate(48%, -40%); }
+
 /* BYO bowl layered preview in cart */
 .cart-item-bowl-preview {
   position: relative;

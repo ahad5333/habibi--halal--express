@@ -603,6 +603,12 @@ const Checkout = () => {
                                 <img key={li} src={src} alt="" className="cart-item-bowl-layer" style={{ zIndex: li + 1 }} />
                               ))}
                             </div>
+                          ) : item.customLayers?.length ? (
+                            <div className="cart-item-custom-preview">
+                              {item.customLayers.map((src, li) => (
+                                <img key={li} src={src} alt="" className="cart-item-custom-layer" style={{ zIndex: li + 1 }} />
+                              ))}
+                            </div>
                           ) : (
                             <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
                           )}
