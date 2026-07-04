@@ -1381,83 +1381,49 @@
   .cat-banner-title { font-size: 2rem; }
 }
 
-/* ── Mobile: convert cat-grid to horizontal scroll pills (matches menu-cat-tab style) ── */
+/* ── Mobile: 2-column gradient card grid ── */
 @media (max-width: 900px) {
   .cat-grid-wrap { padding: 1.5rem 0 1.75rem; }
   .cat-grid-title { font-size: 1.4rem; margin-bottom: 1.25rem; }
 
   .cat-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 0.5rem;
-    padding: 0.25rem 1rem 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    padding: 0 1rem;
     max-width: 100%;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
   }
-  .cat-grid::-webkit-scrollbar { display: none; }
 
-  /* Match exact menu-cat-tab pill style — override all gradients */
-  .cat-grid-card,
-  .cat-grid-card[data-cat="breakfast"],
-  .cat-grid-card[data-cat="platter"],
-  .cat-grid-card[data-cat="sandwich"],
-  .cat-grid-card[data-cat="burgers"],
-  .cat-grid-card[data-cat="tacos"],
-  .cat-grid-card[data-cat="specials"],
-  .cat-grid-card[data-cat="extras"],
-  .cat-grid-card[data-cat="drinks"],
-  .cat-grid-card[data-cat="family"],
-  .cat-grid-card[data-cat="byo"] {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: unset;
-    height: auto;
-    padding: 0.5rem 1.1rem;
-    border-radius: 50px;
-    background: rgba(255,255,255,0.04);
-    border: 1.5px solid rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    transform: none !important;
-    box-shadow: none !important;
+  /* BYO spans full width */
+  .cat-grid-card--byo {
+    grid-column: span 2;
+    aspect-ratio: 5/2;
   }
+
+  .cat-grid-card {
+    aspect-ratio: 4/3;
+    border-radius: 14px;
+  }
+
   .cat-grid-card:hover,
   .cat-grid-card[data-cat]:hover {
-    background: rgba(249,115,22,0.07);
-    border-color: rgba(249,115,22,0.4);
-    color: #fff;
-    transform: none !important;
-    box-shadow: none !important;
+    transform: translateY(-3px) scale(1.01);
   }
-  .cat-grid-card:active { opacity: 0.85; }
+  .cat-grid-card:active { opacity: 0.88; transform: scale(0.98); }
 
-  /* Hide big decorative emoji on mobile pills */
-  .cat-grid-deco { display: none; }
+  .cat-grid-deco {
+    font-size: 2.8rem;
+    top: 10px;
+    right: 10px;
+    opacity: 0.18;
+  }
 
-  /* Inline pill content — matches menu-cat-tab layout */
   .cat-grid-info {
-    position: static;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0;
-    background: none;
-    border-radius: 0;
+    padding: 0.75rem;
   }
-  .cat-grid-emoji { font-size: 0.9rem; }
-  .cat-grid-name  {
-    font-size: 0.78rem;
-    font-weight: 700;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: inherit;
-  }
+
+  .cat-grid-emoji { font-size: 1.3rem; }
+  .cat-grid-name  { font-size: 0.72rem; }
 }
 
 @media (max-width: 480px) {
