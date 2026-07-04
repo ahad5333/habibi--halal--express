@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../services/emailService");
 const { sendAdminOTP } = require('../services/emailService');
+const { sendSMS } = require('../services/smsService');
 
 function setAuthCookie(res, token, maxAgeMs) {
   const isProd = process.env.NODE_ENV === 'production';
@@ -85,10 +86,14 @@ const registerUser = async (req, res) => {
     );
     setAuthCookie(res, token, 24 * 60 * 60 * 1000);
 
-    // Send welcome email only for real email signups
+    // Send welcome email for email signups, welcome SMS for phone signups
     if (!isPhoneSignup) {
       emailService.sendEmailVerification(email, name, `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu`).catch(err => {
         console.error('Failed to send welcome email:', err.message);
+      });
+    } else {
+      sendSMS(phoneValue, `Welcome to Habibi Halal Express, ${name}! Your account has been created. Start ordering at habibihe.com`).catch(err => {
+        console.error('Failed to send signup SMS:', err.message);
       });
     }
 
@@ -447,8 +452,6 @@ const resetPassword = async (req, res) => {
 };
 
 /* ── SMS 5-digit recovery code ──────────────────────────────────────── */
-const { sendSMS } = require('../services/smsService');
-
 const sendSmsRecoveryCode = async (req, res) => {
   try {
     const { phone } = req.body;
