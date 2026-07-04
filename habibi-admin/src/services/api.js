@@ -232,6 +232,10 @@ export const adminAPI = {
   getReviews:    (status = '') => req(`/api/admin/reviews${status ? `?status=${status}` : ''}`),
   updateReview:  (id, body)   => req(`/api/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteReview:  (id)         => req(`/api/admin/reviews/${id}`, { method: 'DELETE' }),
+
+  // Global Add-ons
+  getGlobalAddons:   ()          => req('/api/admin/global-addons'),
+  updateGlobalAddon: (id, body)  => req(`/api/admin/global-addons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export const chatAPI = {
@@ -246,7 +250,4 @@ export const loyaltyAPI = {
   adjustPoints:  (userId, points, reason = '')   => req('/api/admin/loyalty/adjust', { method: 'POST', body: JSON.stringify({ user_id: userId, points, reason }) }),
   getConfig:     ()                              => req('/api/admin/loyalty/config'),
   updateConfig:  (earn_rate, redeem_rate)        => req('/api/admin/loyalty/config', { method: 'PUT', body: JSON.stringify({ earn_rate, redeem_rate }) }),
-
-  getGlobalAddons:    ()          => req('/api/admin/global-addons'),
-  updateGlobalAddon:  (id, body)  => req(`/api/admin/global-addons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
