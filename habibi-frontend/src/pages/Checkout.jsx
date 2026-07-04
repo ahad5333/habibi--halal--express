@@ -597,7 +597,15 @@ const Checkout = () => {
                     return (
                       <React.Fragment key={item.id}>
                         <div className={`cart-item${pendingRemove === item.id ? ' cart-item--removing' : ''}`}>
-                          <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
+                          {item.bowlLayers?.length ? (
+                            <div className="cart-item-bowl-preview">
+                              {item.bowlLayers.map((src, li) => (
+                                <img key={li} src={src} alt="" className="cart-item-bowl-layer" style={{ zIndex: li + 1 }} />
+                              ))}
+                            </div>
+                          ) : (
+                            <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
+                          )}
                           <div className="cart-item-info">
                             <h4 className="cart-item-name">{item.name}</h4>
                             {item.note && <p className="cart-item-modifiers">{item.note}</p>}

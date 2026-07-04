@@ -270,6 +270,29 @@
   flex-shrink: 0;
 }
 
+/* BYO bowl layered preview in cart */
+.cart-item-bowl-preview {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 40% 35%, #fffdf5, #f5e8c8);
+  box-shadow: 0 0 0 3px rgba(229,182,78,0.45), 0 4px 16px rgba(0,0,0,0.4);
+}
+.cart-item-bowl-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cart-item-bowl-layer:nth-child(1) { object-fit: cover; opacity: 1; }
+.cart-item-bowl-layer:nth-child(2) { object-fit: contain; transform: scale(0.8); }
+.cart-item-bowl-layer:nth-child(3) { object-fit: contain; transform: scale(0.55) translate(-18%, 22%); }
+.cart-item-bowl-layer:nth-child(4) { object-fit: contain; transform: scale(0.45) translate(28%, 22%); }
+
 .cart-item-info {
   flex: 1;
 }

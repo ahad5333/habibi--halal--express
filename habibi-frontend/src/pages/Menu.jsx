@@ -464,7 +464,13 @@ const Menu = () => {
     if (!bowlReady) return;
     const name = `BYO Bowl: ${selectedProtein.label} over ${selectedBase.label}`;
     const note = `Toppings: ${selectedTopping.label} | Sauce: ${selectedSauce.label}`;
-    addItem({ ...BYO_ITEM, name, note, qty: 1 });
+    const bowlLayers = [
+      selectedBase?.image,
+      selectedProtein?.image,
+      selectedTopping?.image,
+      selectedSauce?.image,
+    ].filter(Boolean);
+    addItem({ ...BYO_ITEM, name, note, qty: 1, bowlLayers });
     setBowlBase(''); setBowlProtein(''); setBowlTopping(''); setBowlSauce('');
   };
 
