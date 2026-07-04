@@ -233,7 +233,7 @@ const Menu = () => {
   // Group items by category for "All" view — items can appear in multiple sections
   const normalizeCat = (cat) => {
     if (!cat) return cat;
-    if (cat.toLowerCase() === 'breakfast') return 'Breakfast at Your Time';
+    if (cat.toLowerCase().includes('breakfast')) return 'Breakfast at Your Time';
     return cat;
   };
 
