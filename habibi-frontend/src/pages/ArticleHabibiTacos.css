@@ -33,14 +33,18 @@
   overflow: hidden;
 }
 
-/* Left: photo panel — 58% width */
+/* Right: photo panel — 55% width */
 .art-hero-photo {
-  flex: 0 0 58%;
+  flex: 0 0 55%;
+  min-width: 0;
   position: relative;
   overflow: hidden;
+  align-self: stretch;
 }
 
 .art-hero-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -68,9 +72,10 @@
     );
 }
 
-/* Left: dark editorial panel — 42% width */
+/* Left: dark editorial panel — 45% width */
 .art-hero-panel {
-  flex: 0 0 42%;
+  flex: 0 0 45%;
+  min-width: 0;
   background: #0d0500;
   display: flex;
   flex-direction: column;
