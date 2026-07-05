@@ -85,47 +85,55 @@ export default function ArticleHabibiTacos() {
 
       {/* ── Hero ── */}
       <div className="art-hero">
-        <img src={ARTICLE.hero} alt="Habibi Taco" className="art-hero-img" />
-        <div className="art-hero-overlay" aria-hidden="true" />
-        <div className="art-hero-vignette" aria-hidden="true" />
 
-        <Link to="/articles" className="art-back">
-          <ArrowLeft size={14} /> All Articles
-        </Link>
-        <button className="art-share-btn art-share-btn--corner" onClick={share} aria-label="Share">
-          <Share2 size={14} /> Share
-        </button>
-
-        <div className="art-hero-content">
-          <p className="art-hero-brand">✦ Habibi Halal Express ✦</p>
-
-          <div className="art-hero-rule-row">
-            <span className="art-hero-rule-line" />
-            <span className="art-hero-badge">New on the Menu</span>
-            <span className="art-hero-rule-line" />
-          </div>
-
-          <h1 className="art-hero-title">
-            <em className="art-hero-introducing">Introducing</em>
-            <span className="art-hero-name">Habibi Tacos</span>
-          </h1>
-
-          <p className="art-hero-subtitle">{ARTICLE.subtitle}</p>
-
-          <div className="art-hero-meta">
-            <span><Clock size={13} /> {ARTICLE.readTime}</span>
-            <span className="art-meta-sep">·</span>
-            <span>{ARTICLE.date}</span>
-          </div>
+        {/* Left: full photo */}
+        <div className="art-hero-photo">
+          <img src={ARTICLE.hero} alt="Habibi Taco" className="art-hero-img" />
+          <div className="art-hero-photo-edge" aria-hidden="true" />
         </div>
 
-        <div className="art-hero-bottom-bar">
-          <span>Fresh</span>
-          <span className="art-hero-dot">◆</span>
-          <span>Premium Halal</span>
-          <span className="art-hero-dot">◆</span>
-          <span>Built Your Way</span>
+        {/* Right: editorial text panel */}
+        <div className="art-hero-panel">
+          <Link to="/articles" className="art-back">
+            <ArrowLeft size={14} /> All Articles
+          </Link>
+
+          <div className="art-hero-content">
+            <p className="art-hero-brand">✦ Habibi Halal Express ✦</p>
+
+            <div className="art-hero-rule-row">
+              <span className="art-hero-rule-line" />
+              <span className="art-hero-badge">New on the Menu</span>
+              <span className="art-hero-rule-line" />
+            </div>
+
+            <h1 className="art-hero-title">
+              <em className="art-hero-introducing">Introducing</em>
+              <span className="art-hero-name">Habibi<br/>Tacos</span>
+            </h1>
+
+            <p className="art-hero-subtitle">{ARTICLE.subtitle}</p>
+
+            <div className="art-hero-meta">
+              <span><Clock size={13} /> {ARTICLE.readTime}</span>
+              <span className="art-meta-sep">·</span>
+              <span>{ARTICLE.date}</span>
+            </div>
+          </div>
+
+          <div className="art-hero-bottom-bar">
+            <span>Fresh</span>
+            <span className="art-hero-dot">◆</span>
+            <span>Premium Halal</span>
+            <span className="art-hero-dot">◆</span>
+            <span>Built Your Way</span>
+          </div>
+
+          <button className="art-share-btn--corner" onClick={share} aria-label="Share">
+            <Share2 size={13} /> Share
+          </button>
         </div>
+
       </div>
 
       {/* ── Article body ── */}

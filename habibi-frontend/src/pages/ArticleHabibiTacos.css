@@ -10,282 +10,253 @@
 
 /* ── Hero ── */
 @keyframes artKenBurns {
-  from { transform: scale(1.08); }
+  from { transform: scale(1.06); }
   to   { transform: scale(1.0); }
 }
-
 @keyframes artFadeUp {
-  from { opacity: 0; transform: translateY(22px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes artFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-@keyframes artRuleGrow {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+/* ── Split-screen hero ── */
+.art-hero {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 92vh;
+  min-height: 580px;
+  max-height: 920px;
+  overflow: hidden;
 }
 
-.art-hero {
+/* Left: photo panel — 58% width */
+.art-hero-photo {
+  flex: 0 0 58%;
   position: relative;
-  width: 100%;
-  height: 95vh;
-  min-height: 620px;
-  max-height: 980px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .art-hero-img {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 35%;
+  object-position: center 30%;
   display: block;
   animation: artKenBurns 14s ease-out forwards;
 }
 
-/* Dark base fade from bottom + top */
-.art-hero-overlay {
+/* Blends photo into the dark right panel */
+.art-hero-photo-edge {
   position: absolute;
   inset: 0;
   background:
+    linear-gradient(to right,
+      transparent 55%,
+      rgba(13,5,0,0.55) 78%,
+      rgba(13,5,0,0.95) 93%,
+      #0d0500 100%
+    ),
     linear-gradient(to bottom,
-      rgba(13,5,0,0.55) 0%,
-      rgba(13,5,0,0.0) 30%,
-      rgba(13,5,0,0.0) 55%,
-      rgba(13,5,0,0.88) 82%,
-      rgba(13,5,0,1.00) 100%
+      rgba(13,5,0,0.45) 0%,
+      transparent 18%,
+      transparent 80%,
+      rgba(13,5,0,0.6) 100%
     );
-  z-index: 1;
 }
 
-/* Deep edge vignette from all sides */
-.art-hero-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse 80% 70% at 50% 50%,
-    transparent 30%,
-    rgba(0,0,0,0.55) 80%,
-    rgba(0,0,0,0.82) 100%
-  );
-  z-index: 2;
+/* Right: dark editorial panel — 42% width */
+.art-hero-panel {
+  flex: 0 0 42%;
+  background: #0d0500;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  padding: 3.5rem 3rem 3.5rem 2.5rem;
+  border-left: 1px solid rgba(229,182,78,0.12);
 }
 
-/* Gold shimmer line at very bottom */
-.art-hero-vignette::after {
+/* Subtle gold glow on the left edge of the panel */
+.art-hero-panel::before {
   content: '';
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent 0%, #c8942a 20%, #f5c842 50%, #e5943a 80%, transparent 100%);
-  opacity: 0.75;
+  left: -1px;
+  top: 15%;
+  bottom: 15%;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    transparent, #e5b64e 40%, #e5943a 60%, transparent);
+  opacity: 0.55;
 }
 
-/* ── Navigation chrome ── */
+/* ── Back link (inside panel, top) ── */
 .art-back {
   position: absolute;
   top: 2rem;
-  left: 2rem;
-  z-index: 10;
+  left: 2.5rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.4);
   text-decoration: none;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   transition: color 0.2s;
-  animation: artFadeIn 0.8s ease both;
+  animation: artFadeIn 0.6s ease both;
 }
 .art-back:hover { color: #e5b64e; }
 
+/* Share button (inside panel, bottom-right) */
 .art-share-btn--corner {
   position: absolute;
-  top: 2rem;
+  bottom: 2rem;
   right: 2rem;
-  z-index: 10;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.45);
   border-radius: 99px;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.75rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.72rem;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   cursor: pointer;
   transition: all 0.2s;
-  animation: artFadeIn 0.8s ease both;
+  animation: artFadeIn 1s 0.9s ease both;
 }
 .art-share-btn--corner:hover {
-  background: rgba(229,182,78,0.18);
-  border-color: rgba(229,182,78,0.5);
+  background: rgba(229,182,78,0.15);
+  border-color: rgba(229,182,78,0.4);
   color: #e5b64e;
 }
 
-/* ── Center editorial block ── */
+/* ── Editorial content stack ── */
 .art-hero-content {
-  position: relative;
-  z-index: 5;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 0 2rem;
-  max-width: 900px;
-  width: 100%;
+  align-items: flex-start;
 }
 
-/* Brand name */
 .art-hero-brand {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #e5b64e;
-  margin: 0 0 1.25rem;
-  animation: artFadeUp 0.7s 0.1s ease both;
+  margin: 0 0 1.4rem;
+  animation: artFadeUp 0.6s 0.1s ease both;
 }
 
-/* Rule row: line — badge — line */
+/* Rule: line — badge — line */
 .art-hero-rule-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   width: 100%;
-  max-width: 480px;
-  margin: 0 0 1.5rem;
-  animation: artFadeIn 0.8s 0.25s ease both;
+  margin: 0 0 1.75rem;
+  animation: artFadeIn 0.7s 0.2s ease both;
 }
-
 .art-hero-rule-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(229,182,78,0.6), transparent);
-  transform-origin: center;
+  background: rgba(229,182,78,0.3);
 }
-
 .art-hero-badge {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #0d0500;
   background: linear-gradient(135deg, #f5c842, #e5943a);
-  padding: 0.28rem 0.85rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 99px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-/* ── The big title ── */
+/* ── Two-tier title ── */
 .art-hero-title {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.1em;
-  margin: 0 0 1.25rem;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0 0 1.5rem;
   line-height: 1;
 }
 
 .art-hero-introducing {
   display: block;
-  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-size: clamp(1rem, 2.2vw, 1.6rem);
   font-weight: 200;
   font-style: italic;
-  letter-spacing: 0.18em;
-  color: rgba(255,255,255,0.72);
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.6);
   text-transform: uppercase;
-  animation: artFadeUp 0.8s 0.35s ease both;
+  margin-bottom: 0.15em;
+  animation: artFadeUp 0.7s 0.3s ease both;
 }
 
 .art-hero-name {
   display: block;
-  font-size: clamp(3.8rem, 10vw, 8.5rem);
+  font-size: clamp(3rem, 6vw, 5.8rem);
   font-weight: 900;
   letter-spacing: -0.03em;
-  line-height: 0.93;
-  background: linear-gradient(140deg, #f5d060 0%, #e5943a 40%, #f5c842 70%, #c8822a 100%);
+  line-height: 0.9;
+  background: linear-gradient(145deg, #f5d060 0%, #e5943a 45%, #f5c842 75%, #c8822a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 4px 32px rgba(229,148,58,0.35));
-  animation: artFadeUp 0.9s 0.45s ease both;
+  filter: drop-shadow(0 2px 18px rgba(229,148,58,0.3));
+  animation: artFadeUp 0.8s 0.4s ease both;
 }
 
 .art-hero-subtitle {
-  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-  color: rgba(255,255,255,0.62);
-  margin: 0 0 1.5rem;
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  color: rgba(255,255,255,0.5);
+  margin: 0 0 1.75rem;
   font-style: italic;
   font-weight: 300;
-  letter-spacing: 0.03em;
-  animation: artFadeUp 0.8s 0.6s ease both;
+  line-height: 1.6;
+  border-left: 2px solid rgba(229,182,78,0.4);
+  padding-left: 0.85rem;
+  animation: artFadeUp 0.7s 0.55s ease both;
 }
 
 .art-hero-meta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.45);
-  animation: artFadeUp 0.8s 0.75s ease both;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+  animation: artFadeUp 0.7s 0.7s ease both;
 }
 .art-hero-meta span { display: flex; align-items: center; gap: 0.3rem; }
-.art-meta-sep { opacity: 0.4; }
+.art-meta-sep { opacity: 0.35; }
 
-/* ── Bottom tagline bar ── */
+/* Bottom tagline inside panel */
 .art-hero-bottom-bar {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  font-size: 0.62rem;
+  gap: 0.65rem;
+  margin-top: 2.5rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-  white-space: nowrap;
-  animation: artFadeIn 1.2s 1.0s ease both;
+  color: rgba(255,255,255,0.28);
+  animation: artFadeIn 0.8s 0.9s ease both;
 }
 .art-hero-dot {
-  font-size: 0.45rem;
+  font-size: 0.38rem;
   color: #e5b64e;
-  opacity: 0.7;
+  opacity: 0.55;
 }
-
-/* legacy .art-share-btn still used in body if ever */
-.art-share-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.7);
-  border-radius: 99px;
-  padding: 0.3rem 0.85rem;
-  font-size: 0.78rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.art-share-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
 
 /* ── Body ── */
 .art-body-wrap {
@@ -466,12 +437,40 @@
 .art-back-footer:hover { color: var(--color-primary, #e5b64e); }
 
 /* ── Responsive ── */
-@media (max-width: 768px) {
-  .art-hero { height: 88vh; min-height: 540px; }
-  .art-hero-content { padding: 0 1.25rem; }
-  .art-back { top: 1.25rem; left: 1.25rem; }
-  .art-share-btn--corner { top: 1.25rem; right: 1.25rem; }
-  .art-hero-bottom-bar { bottom: 1.75rem; gap: 0.6rem; font-size: 0.58rem; }
+@media (max-width: 900px) {
+  /* Stack: photo top, panel bottom */
+  .art-hero {
+    flex-direction: column;
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+  }
+  .art-hero-photo {
+    flex: 0 0 52vw;
+    height: 52vw;
+    min-height: 260px;
+    max-height: 420px;
+    width: 100%;
+  }
+  .art-hero-photo-edge {
+    background:
+      linear-gradient(to bottom,
+        transparent 55%,
+        rgba(13,5,0,0.7) 85%,
+        #0d0500 100%
+      );
+  }
+  .art-hero-panel {
+    flex: none;
+    width: 100%;
+    padding: 2.5rem 1.75rem 2rem;
+    border-left: none;
+    border-top: 1px solid rgba(229,182,78,0.12);
+  }
+  .art-hero-panel::before { display: none; }
+  .art-back { top: 1rem; left: 1.25rem; }
+  .art-share-btn--corner { bottom: 1.25rem; right: 1.25rem; }
+  .art-hero-bottom-bar { margin-top: 1.5rem; }
   .art-body { padding-top: 2.5rem; }
   .art-cta-box { padding: 1.75rem 1.25rem; }
   .art-cta-title { font-size: 1.3rem; }
@@ -480,9 +479,8 @@
 }
 
 @media (max-width: 480px) {
-  .art-hero { height: 80vh; min-height: 480px; }
+  .art-hero-panel { padding: 2rem 1.25rem 1.75rem; }
   .art-hero-brand { letter-spacing: 0.2em; }
-  .art-hero-rule-row { max-width: 280px; }
   .art-hero-bottom-bar { display: none; }
   .art-lead { font-size: 1rem; }
   .art-heading { font-size: 1.2rem; }
