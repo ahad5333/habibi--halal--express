@@ -1,8 +1,9 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-function handle401(res) {
+function handle401(res, path) {
   if (res.status === 401) {
-    // Session expired — clear local storage and redirect to login
+    // Don't redirect on the initial session check — AuthContext handles that
+    if (path === '/api/auth/me') return;
     localStorage.removeItem('habibi_admin_user');
     if (!window.location.pathname.startsWith('/login')) {
       window.location.href = '/login';
@@ -19,9 +20,13 @@ async function req(path, opts = {}) {
       ...(opts.headers || {}),
     },
   });
-  if (res.status === 401) handle401(res);
+  if (res.status === 401) handle401(res, path);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data.message || data.error || `${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
