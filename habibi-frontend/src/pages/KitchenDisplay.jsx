@@ -7,6 +7,7 @@ const POLL_MS  = 15000;
 
 // Status → kanban column
 const COLUMN_MAP = {
+  pending_verification: 'new',
   pending:   'new',
   confirmed: 'new',
   preparing: 'preparing',
@@ -16,6 +17,7 @@ const COLUMN_MAP = {
 
 // What the bump button does for each status
 const BUMP_NEXT = {
+  pending_verification: 'confirmed',
   pending:   'preparing',
   confirmed: 'preparing',
   preparing: 'ready',
@@ -45,7 +47,7 @@ function elapsedLabel(placedAt) {
   return `${diff} min`;
 }
 
-// Simple Web Audio API beep — no external files needed
+// Regular new-order beep
 function beep() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -59,6 +61,28 @@ function beep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.4);
+  } catch (_) {}
+}
+
+// 3-tone ascending chime for Zelle/CashApp payment-pending orders
+function zelleChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const tones = [523, 659, 784]; // C5 → E5 → G5 (major chord ascending)
+    tones.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.45, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.start(t);
+      osc.stop(t + 0.35);
+    });
   } catch (_) {}
 }
 
@@ -80,10 +104,15 @@ export default function KitchenDisplay() {
       if (!res.ok) throw new Error(`Server ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
-      // Detect new orders and beep
+      // Detect new orders — play distinct chime for payment-pending
       const newIds = new Set(list.map(o => o.id));
-      const hasNew = list.some(o => !prevIds.current.has(o.id));
-      if (hasNew && prevIds.current.size > 0) beep();
+      if (prevIds.current.size > 0) {
+        const incoming = list.filter(o => !prevIds.current.has(o.id));
+        const hasZelle = incoming.some(o => o.order_status === 'pending_verification');
+        const hasOther = incoming.some(o => o.order_status !== 'pending_verification');
+        if (hasZelle) zelleChime();
+        else if (hasOther) beep();
+      }
       prevIds.current = newIds;
       setOrders(list);
       setLastSync(new Date());
@@ -261,9 +290,18 @@ function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping
 function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
   const mins = minutesOld(order.placed_at);
   const urgency = mins >= 20 ? 'urgent' : mins >= 10 ? 'warn' : '';
+  const isPaymentPending = order.order_status === 'pending_verification';
+  const effectiveBumpLabel = isPaymentPending ? 'Confirm Payment ✓' : bumpLabel;
 
   return (
     <div className={`kd-card kd-status--${order.order_status} ${urgency ? `kd-urgency--${urgency}` : ''}`}>
+
+      {isPaymentPending && (
+        <div className="kd-verify-banner">
+          💙 AWAITING PAYMENT — Check Zelle / Cash App then confirm
+        </div>
+      )}
+
       <div className="kd-card-header">
         <div>
           <p className="kd-order-num">#{order.order_number}</p>
@@ -277,7 +315,7 @@ function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
         </div>
         <div className="kd-card-badges">
           <span className={`kd-badge kd-status--${order.order_status}`}>
-            {order.order_status?.replace('_', ' ')}
+            {order.order_status?.replace(/_/g, ' ')}
           </span>
         </div>
       </div>
@@ -302,11 +340,11 @@ function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
           {urgency === 'urgent' && ' ⚠'}
         </span>
         <button
-          className="kd-bump-btn"
+          className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
           onClick={() => onBump(order)}
           disabled={bumping}
         >
-          {bumping ? '…' : bumpLabel}
+          {bumping ? '…' : effectiveBumpLabel}
           {!bumping && <ChevronRight size={13} />}
         </button>
       </div>

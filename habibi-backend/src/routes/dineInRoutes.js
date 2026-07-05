@@ -73,6 +73,7 @@ router.get('/kitchen-all', kitchenAuth, async (req, res) => {
 
 // ── Kitchen bump: advance order status ────────────────────────────────────────
 const KITCHEN_STATUS_FLOW = {
+  pending_verification: 'confirmed',
   pending:    'preparing',
   confirmed:  'preparing',
   preparing:  'ready',

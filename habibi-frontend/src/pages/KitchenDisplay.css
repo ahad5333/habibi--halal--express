@@ -202,11 +202,41 @@
   gap: .65rem;
   transition: border-color .2s;
 }
+.kd-card.kd-status--pending_verification { border-color: #3b82f6; animation: kdZellePulse 1.6s ease-in-out infinite; }
 .kd-card.kd-status--pending   { border-color: #ca8a04; }
 .kd-card.kd-status--confirmed { border-color: #2563eb; }
 .kd-card.kd-status--preparing,
 .kd-card.kd-status--cooking   { border-color: #ea580c; }
 .kd-card.kd-status--ready     { border-color: #16a34a; }
+
+@keyframes kdZellePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  50%       { box-shadow: 0 0 0 5px rgba(59,130,246,0.25); }
+}
+
+/* Payment-pending verify banner */
+.kd-verify-banner {
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 6px;
+  color: #93c5fd;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.6rem;
+  text-align: center;
+}
+
+/* Confirm-payment bump button variant */
+.kd-bump-btn--verify {
+  background: #1d4ed8 !important;
+  border-color: #3b82f6 !important;
+  color: #fff !important;
+}
+.kd-bump-btn--verify:hover:not(:disabled) {
+  background: #2563eb !important;
+}
 
 /* Urgency overrides */
 .kd-card.kd-urgency--warn   { background: #1a1508; }
@@ -253,6 +283,7 @@
   border-radius: 100px;
   white-space: nowrap;
 }
+.kd-badge.kd-status--pending_verification { background: rgba(59,130,246,.2); color: #93c5fd; }
 .kd-badge.kd-status--pending   { background: rgba(202,138,4,.15);   color: #fbbf24; }
 .kd-badge.kd-status--confirmed { background: rgba(37,99,235,.15);   color: #60a5fa; }
 .kd-badge.kd-status--preparing,
