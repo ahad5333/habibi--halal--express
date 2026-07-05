@@ -56,6 +56,10 @@ export default function DriverView() {
   // Accept/reject
   const [rejectOpen, setRejectOpen]       = useState(false);
   const [rejectReason, setRejectReason]   = useState('');
+  // COD cash collection
+  const [cashCollected, setCashCollected] = useState(null);
+  // Today's running total across all COD deliveries
+  const [cashSummary, setCashSummary]     = useState(null);
 
   const photoInputRef = useRef(null);
   const watchRef      = useRef(null);
@@ -72,6 +76,17 @@ export default function DriverView() {
   }, [driverId, apiFetch]);
 
   useEffect(() => { loadAssignment(); }, [loadAssignment]);
+
+  // Load today's cash total for this driver
+  const loadCashSummary = useCallback(async () => {
+    if (!driverId) return;
+    try {
+      const data = await apiFetch(`/api/dispatch/drivers/${driverId}/cash-summary`);
+      setCashSummary(data);
+    } catch (_) {}
+  }, [driverId, apiFetch]);
+
+  useEffect(() => { loadCashSummary(); }, [loadCashSummary]);
 
   // ── Socket.IO ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -176,6 +191,21 @@ export default function DriverView() {
     } catch (e) { setError(e.message); }
   };
 
+  const markCashCollected = async () => {
+    if (!assignment?.id) return;
+    try {
+      const data = await apiFetch(`/api/dispatch/assignments/${assignment.id}/collect-cash`, {
+        method: 'PATCH',
+        body: JSON.stringify({ driver_id: driverId, driver_name: assignment.driver_name }),
+      });
+      stopTracking();
+      setCashCollected(data.amount_collected);
+      setAssignment(prev => ({ ...prev, status: 'delivered' }));
+      setDeliveryPhase(null);
+      loadCashSummary();
+    } catch (e) { setError(e.message); }
+  };
+
   const handlePhotoCapture = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -268,7 +298,9 @@ export default function DriverView() {
     ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(assignment.delivery_address)}`
     : null;
   const notYetAccepted = !assignment.accepted_at && assignment.status === 'assigned';
-  const tip = parseFloat(assignment.tip_amount || 0);
+  const tip    = parseFloat(assignment.tip_amount  || 0);
+  const isCod  = assignment.payment_method === 'cod';
+  const codAmt = parseFloat(assignment.order_total || 0);
 
   return (
     <div className="dv-shell">
@@ -288,6 +320,16 @@ export default function DriverView() {
       </div>
 
       <div className="dv-content">
+
+        {/* ── Today's cash summary ── */}
+        {cashSummary && cashSummary.total_collected > 0 && (
+          <div className="dv-cash-summary-bar">
+            <DollarSign size={16}/>
+            <span>Today's cash: <strong>${parseFloat(cashSummary.total_collected).toFixed(2)}</strong></span>
+            <span className="dv-cash-summary-orders">({cashSummary.orders.length} order{cashSummary.orders.length !== 1 ? 's' : ''})</span>
+            <span className="dv-cash-summary-note">Hand in to manager at end of shift</span>
+          </div>
+        )}
 
         {/* ── Accept / Reject prompt ── */}
         {notYetAccepted && !rejectOpen && (
@@ -338,6 +380,16 @@ export default function DriverView() {
               <div>
                 <p className="dv-label">Tip</p>
                 <p className="dv-value dv-tip">${tip.toFixed(2)}</p>
+              </div>
+            </div>
+          )}
+
+          {isCod && assignment.status !== 'delivered' && (
+            <div className="dv-cod-banner">
+              <DollarSign size={18}/>
+              <div>
+                <p className="dv-cod-label">COLLECT CASH FROM CUSTOMER</p>
+                <p className="dv-cod-amount">${codAmt.toFixed(2)}</p>
               </div>
             </div>
           )}
@@ -423,18 +475,33 @@ export default function DriverView() {
                     </a>
                   )}
                 </div>
-                <div className="dv-contact-divider"><span>Customer responded?</span></div>
+                <div className="dv-contact-divider"><span>{isCod ? 'Collected cash?' : 'Customer responded?'}</span></div>
                 <div className="dv-btn-row">
-                  <button className="dv-btn dv-btn-delivered" onClick={markDelivered}>
-                    <CheckCircle size={18}/> Yes — Delivered ✓
-                  </button>
-                  <button className="dv-btn dv-btn-noanswer" onClick={() => setDeliveryPhase('no_answer')}>
-                    No Answer
-                  </button>
+                  {isCod ? (
+                    <button className="dv-btn dv-btn-cash-collect" onClick={markCashCollected}>
+                      <DollarSign size={18}/> Cash Collected — ${codAmt.toFixed(2)} ✓
+                    </button>
+                  ) : (
+                    <button className="dv-btn dv-btn-delivered" onClick={markDelivered}>
+                      <CheckCircle size={18}/> Yes — Delivered ✓
+                    </button>
+                  )}
+                  {/* COD: cannot leave at door without collecting cash */}
+                  {!isCod && (
+                    <button className="dv-btn dv-btn-noanswer" onClick={() => setDeliveryPhase('no_answer')}>
+                      No Answer
+                    </button>
+                  )}
+                  {isCod && (
+                    <button className="dv-btn dv-btn-cod-noanswer" onClick={() => setDeliveryPhase('cod_noanswer')}>
+                      Customer Not Home
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
+            {/* Non-COD: leave at door flow */}
             {deliveryPhase === 'no_answer' && (
               <div className="dv-card dv-proof-card">
                 <div className="dv-proof-header">
@@ -476,6 +543,28 @@ export default function DriverView() {
                 <button className="dv-btn dv-btn-back" onClick={() => setDeliveryPhase('arrived')}>← Back</button>
               </div>
             )}
+
+            {/* COD: customer not home — cannot leave, must call manager */}
+            {deliveryPhase === 'cod_noanswer' && (
+              <div className="dv-card dv-cod-blocked-card">
+                <p className="dv-card-title">⚠ Cannot Leave — Cash Order</p>
+                <p className="dv-cod-blocked-msg">
+                  This is a Cash on Delivery order. You cannot leave the food without collecting{' '}
+                  <strong>${codAmt.toFixed(2)}</strong>.
+                </p>
+                <p className="dv-cod-blocked-sub">Call the manager for instructions before returning the order.</p>
+                <div className="dv-contact-btns" style={{ marginTop: '1rem' }}>
+                  {assignment.customer_phone && (
+                    <a className="dv-btn dv-btn-call" href={`tel:${assignment.customer_phone}`}>
+                      <Phone size={18}/> Try Customer Again
+                    </a>
+                  )}
+                </div>
+                <button className="dv-btn dv-btn-back" style={{ marginTop: '0.75rem' }} onClick={() => setDeliveryPhase('arrived')}>
+                  ← Back
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -486,6 +575,12 @@ export default function DriverView() {
             <p className="dv-muted">
               Delivered at {assignment.delivered_at ? new Date(assignment.delivered_at).toLocaleTimeString() : 'just now'}
             </p>
+            {cashCollected != null && (
+              <div className="dv-cash-confirmed">
+                <DollarSign size={18}/>
+                <span>Cash collected: ${parseFloat(cashCollected).toFixed(2)}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

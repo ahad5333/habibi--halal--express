@@ -210,6 +210,10 @@ export const adminAPI = {
   calculateDeliveryFee: (customer_address, location_id) =>
     req('/api/dispatch/calculate-fee', { method: 'POST', body: JSON.stringify({ customer_address, location_id }) }),
 
+  // COD cash accountability
+  getCashReport:    (date) => req(`/api/dispatch/cash-report${date ? `?date=${date}` : ''}`),
+  recordCashHandin: (body) => req('/api/dispatch/cash-handins', { method: 'POST', body: JSON.stringify(body) }),
+
   // Wholesale / Business Menu catalog
   getBusinessMenus:    () => req('/api/admin/business-menus'),
   createBusinessMenu:  (fd) => upload('/api/admin/business-menus', fd),

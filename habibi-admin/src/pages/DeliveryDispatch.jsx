@@ -164,8 +164,11 @@ function AssignCard({ assignment, onStatusChange }) {
     : assignment.delivery_address
       ? `https://www.google.com/maps/search/${encodeURIComponent(assignment.delivery_address)}`
       : null;
-  const tip       = parseFloat(assignment.tip_amount || 0);
-  const proofUrl  = assignment.proof_photo_url
+  const tip          = parseFloat(assignment.tip_amount  || 0);
+  const isCod        = assignment.payment_method === 'cod';
+  const orderTotal   = parseFloat(assignment.order_total || 0);
+  const cashClaimed  = assignment.cash_collected_at;
+  const proofUrl     = assignment.proof_photo_url
     ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${assignment.proof_photo_url}`
     : null;
   const [proofOpen, setProofOpen] = useState(false);
@@ -177,7 +180,10 @@ function AssignCard({ assignment, onStatusChange }) {
           <p className="dd-order-num">{assignment.order_number || `#${assignment.order_id}`}</p>
           <p className="dd-timestamp">{elapsed(assignment.assigned_at)}</p>
         </div>
-        <span className={`dd-badge ${badge}`}>{statusLabel(assignment.status)}</span>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {isCod && <span className="dd-badge dd-badge-cod">💵 COD</span>}
+          <span className={`dd-badge ${badge}`}>{statusLabel(assignment.status)}</span>
+        </div>
       </div>
 
       <div className="dd-card-body">
@@ -215,6 +221,18 @@ function AssignCard({ assignment, onStatusChange }) {
                 {assignment.proof_note && <p className="dd-proof-note">{assignment.proof_note}</p>}
               </div>
             )}
+          </div>
+        )}
+        {cashClaimed && (
+          <div className="dd-info-row dd-cash-confirmed">
+            ✅ Cash collected: <strong>${orderTotal.toFixed(2)}</strong>
+            {assignment.cash_collected_by && <> by {assignment.cash_collected_by}</>}
+            <span className="dd-gps-time">{fmtTime(cashClaimed)}</span>
+          </div>
+        )}
+        {isCod && assignment.status === 'delivered' && !cashClaimed && (
+          <div className="dd-info-row dd-cash-unconfirmed">
+            ⚠ COD — cash collection not confirmed by driver
           </div>
         )}
       </div>

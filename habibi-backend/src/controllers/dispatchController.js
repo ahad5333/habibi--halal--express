@@ -19,9 +19,12 @@ const getAssignments = async (req, res) => {
     const result = await pool.query(`
       SELECT da.*,
              sm.name  AS driver_full_name,
-             sm.phone AS driver_phone_number
+             sm.phone AS driver_phone_number,
+             go.payment_method,
+             go.total AS order_total
       FROM delivery_assignments da
       LEFT JOIN staff_members sm ON sm.id = da.driver_id
+      LEFT JOIN guest_orders  go ON go.order_number = da.order_number
       ORDER BY da.assigned_at DESC
       LIMIT 100
     `);
@@ -131,9 +134,11 @@ const getDriverAssignment = async (req, res) => {
   const { driver_id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT * FROM delivery_assignments
-       WHERE driver_id=$1 AND status IN ('assigned','en_route')
-       ORDER BY assigned_at DESC
+      `SELECT da.*, go.payment_method, go.total AS order_total
+       FROM delivery_assignments da
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE da.driver_id=$1 AND da.status IN ('assigned','en_route')
+       ORDER BY da.assigned_at DESC
        LIMIT 1`,
       [driver_id]
     );
@@ -348,6 +353,174 @@ const calculateDeliveryFee = async (req, res) => {
   }
 };
 
+// ── Admin: daily COD cash report ────────────────────────────────────
+const getCashReport = async (req, res) => {
+  // date param: YYYY-MM-DD, defaults to today (server TZ)
+  const date = req.query.date || new Date().toISOString().slice(0, 10);
+  try {
+    // Individual COD deliveries collected on that date
+    const deliveries = await pool.query(
+      `SELECT da.id, da.order_number, da.driver_id, da.driver_name,
+              da.status, da.cash_collected_at, da.cash_collected_by,
+              da.delivered_at, go.total AS order_total, go.payment_method
+       FROM delivery_assignments da
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE go.payment_method = 'cod'
+         AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $1
+       ORDER BY da.assigned_at ASC`,
+      [date]
+    );
+
+    // Hand-ins recorded on that date
+    const handins = await pool.query(
+      `SELECT * FROM driver_cash_handins
+       WHERE DATE(created_at AT TIME ZONE 'America/New_York') = $1
+       ORDER BY created_at ASC`,
+      [date]
+    );
+
+    // Roll up per-driver
+    const byDriver = {};
+    for (const row of deliveries.rows) {
+      const key = row.driver_id || row.driver_name || 'Unknown';
+      if (!byDriver[key]) {
+        byDriver[key] = {
+          driver_id:       row.driver_id,
+          driver_name:     row.driver_name || 'Unknown',
+          orders:          [],
+          total_collected: 0,
+          confirmed_count: 0,
+          total_handed_in: 0,
+          handins:         [],
+        };
+      }
+      const amt = parseFloat(row.order_total || 0);
+      byDriver[key].orders.push(row);
+      if (row.cash_collected_at) {
+        byDriver[key].total_collected += amt;
+        byDriver[key].confirmed_count += 1;
+      }
+    }
+
+    for (const h of handins.rows) {
+      const key = h.driver_id || h.driver_name || 'Unknown';
+      if (byDriver[key]) {
+        byDriver[key].total_handed_in += parseFloat(h.amount || 0);
+        byDriver[key].handins.push(h);
+      }
+    }
+
+    for (const d of Object.values(byDriver)) {
+      d.outstanding = Math.max(0, d.total_collected - d.total_handed_in);
+    }
+
+    res.json({
+      date,
+      drivers:   Object.values(byDriver),
+      deliveries: deliveries.rows,
+      handins:   handins.rows,
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Admin: record cash hand-in from driver ──────────────────────────
+const recordCashHandin = async (req, res) => {
+  const { driver_id, driver_name, amount, order_count, confirmed_by, notes } = req.body;
+  if (!amount || isNaN(parseFloat(amount))) {
+    return res.status(400).json({ message: 'amount is required' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO driver_cash_handins
+         (driver_id, driver_name, amount, order_count, confirmed_by, notes)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING *`,
+      [driver_id || null, driver_name || null, parseFloat(amount),
+       order_count || 0, confirmed_by || null, notes || null]
+    );
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('cash_handed_in', result.rows[0]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Driver: get my cash summary for today ───────────────────────────
+const getDriverCashSummary = async (req, res) => {
+  const { driver_id } = req.params;
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const result = await pool.query(
+      `SELECT da.id, da.order_number, da.cash_collected_at, go.total AS order_total
+       FROM delivery_assignments da
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE da.driver_id = $1
+         AND go.payment_method = 'cod'
+         AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $2
+         AND da.cash_collected_at IS NOT NULL`,
+      [driver_id, today]
+    );
+    const total = result.rows.reduce((s, r) => s + parseFloat(r.order_total || 0), 0);
+    res.json({ orders: result.rows, total_collected: total, date: today });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Driver: confirm cash collected for COD order ────────────────────
+const collectCash = async (req, res) => {
+  const { id } = req.params;
+  const { driver_id, driver_name } = req.body;
+  try {
+    const asgn = await pool.query(
+      `SELECT da.*, go.payment_method, go.total AS order_total
+       FROM delivery_assignments da
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE da.id = $1`,
+      [id]
+    );
+    if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found' });
+    const assignment = asgn.rows[0];
+    if (assignment.payment_method !== 'cod') {
+      return res.status(400).json({ message: 'Not a COD order' });
+    }
+
+    const collectedBy = driver_name || assignment.driver_name || `Driver #${driver_id}`;
+
+    await pool.query(
+      `UPDATE delivery_assignments
+         SET status='delivered', delivered_at=NOW(),
+             cash_collected_at=NOW(), cash_collected_by=$1
+       WHERE id=$2`,
+      [collectedBy, id]
+    );
+
+    if (assignment.order_number) {
+      await pool.query(
+        `UPDATE guest_orders
+           SET order_status='delivered', payment_status='paid', updated_at=NOW()
+         WHERE order_number=$1`,
+        [assignment.order_number]
+      );
+    }
+
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('cash_collected', {
+      assignment_id: parseInt(id),
+      order_number:  assignment.order_number,
+      amount:        assignment.order_total,
+      driver:        collectedBy,
+    });
+
+    res.json({ success: true, amount_collected: assignment.order_total });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getAssignments,
   assignDriver,
@@ -360,4 +533,8 @@ module.exports = {
   setDriverDuty,
   getDeliveryDrivers,
   calculateDeliveryFee,
+  collectCash,
+  getCashReport,
+  recordCashHandin,
+  getDriverCashSummary,
 };

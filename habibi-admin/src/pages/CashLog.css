@@ -1,0 +1,383 @@
+/* ===== COD Cash Log Page ===== */
+.cl-root {
+  padding: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ─ Page header ─────────────────────────────────────────── */
+.cl-page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.cl-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-text, #111);
+  margin: 0;
+}
+.cl-subtitle {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0.3rem 0 0;
+}
+.cl-hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.cl-date-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.875rem;
+  color: #111;
+  background: #fff;
+}
+.cl-date-input:focus { outline: none; border-color: #d4a853; }
+
+/* ─ Summary cards ───────────────────────────────────────── */
+.cl-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.cl-summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+.cl-summary-card.cl-card-warn  { border-color: #fbbf24; background: #fffbeb; }
+.cl-summary-card.cl-card-alert { border-color: #fb923c; background: #fff7ed; }
+.cl-summary-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+}
+.cl-summary-amt {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.cl-summary-sub {
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+/* ─ Colours ─────────────────────────────────────────────── */
+.cl-green  { color: #16a34a; }
+.cl-red    { color: #dc2626; }
+.cl-orange { color: #ea580c; }
+.cl-muted  { color: #9ca3af; }
+
+/* ─ Error / empty ───────────────────────────────────────── */
+.cl-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+}
+.cl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+/* ─ Driver cards ────────────────────────────────────────── */
+.cl-drivers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cl-driver-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cl-driver-card.cl-settled    { border-color: #bbf7d0; }
+.cl-driver-card.cl-outstanding { border-color: #fca5a5; }
+
+.cl-driver-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  cursor: pointer;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.cl-driver-hdr:hover { background: #f9fafb; }
+
+.cl-driver-left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.cl-driver-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #d4a853;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.cl-driver-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+.cl-driver-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0.15rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cl-warn-pill {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 100px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.cl-driver-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.cl-amount-block {
+  text-align: right;
+}
+.cl-amount-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 0.15rem;
+}
+.cl-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+.cl-amount-lg {
+  font-size: 1.15rem;
+}
+.cl-driver-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cl-chevron {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+}
+
+/* ─ Orders table ────────────────────────────────────────── */
+.cl-orders-table {
+  border-top: 1px solid #f3f4f6;
+  padding: 0 1.25rem 1.25rem;
+}
+.cl-orders-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+}
+.cl-orders-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+.cl-orders-table td {
+  padding: 0.55rem 0.5rem;
+  color: #374151;
+  border-bottom: 1px solid #f9fafb;
+}
+.cl-orders-table tr.cl-row-warn td { background: #fffbeb; }
+.cl-orders-table tr:last-child td  { border-bottom: none; }
+
+.cl-pill-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 100px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.cl-pill-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 100px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* ─ Hand-ins section ───────────────────────────────────── */
+.cl-handins-section {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #e5e7eb;
+}
+.cl-handins-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+.cl-handin-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #374151;
+  padding: 0.3rem 0;
+}
+.cl-green-icon { color: #16a34a; flex-shrink: 0; }
+
+/* ─ Modal ───────────────────────────────────────────────── */
+.cl-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.cl-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.cl-modal-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+}
+.cl-modal-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+.cl-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: -0.25rem;
+}
+.cl-input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  font-size: 0.9rem;
+  color: #111;
+  background: #fff;
+  font-family: inherit;
+}
+.cl-input:focus { outline: none; border-color: #d4a853; }
+.cl-err {
+  color: #dc2626;
+  font-size: 0.8rem;
+  background: #fee2e2;
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+}
+.cl-modal-btns {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+/* ─ Buttons ─────────────────────────────────────────────── */
+.cl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.15s;
+}
+.cl-btn-primary { background: #d4a853; color: #fff; }
+.cl-btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.cl-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.cl-btn-muted   { background: #f1f5f9; color: #374151; border: 1px solid #e5e7eb; }
+.cl-btn-muted:hover { background: #e5e7eb; }
+.cl-btn-sm      { padding: 0.35rem 0.75rem; font-size: 0.78rem; border-radius: 6px; }
+
+@media (max-width: 640px) {
+  .cl-driver-hdr  { flex-direction: column; align-items: flex-start; }
+  .cl-driver-right { justify-content: space-between; width: 100%; }
+  .cl-summary-row { grid-template-columns: 1fr 1fr; }
+}

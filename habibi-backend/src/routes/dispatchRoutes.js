@@ -49,6 +49,10 @@ const {
   setDriverDuty,
   getDeliveryDrivers,
   calculateDeliveryFee,
+  collectCash,
+  getCashReport,
+  recordCashHandin,
+  getDriverCashSummary,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
@@ -91,8 +95,10 @@ router.get   ('/driver/:driver_id',                driverOrAdmin,              g
 router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  updateDriverGPS);
 router.patch ('/assignments/:id/status',           driverOrAdmin,              updateAssignmentStatus);
 router.patch ('/assignments/:id/respond',          driverOrAdmin,              respondToAssignment);
+router.patch ('/assignments/:id/collect-cash',     driverOrAdmin,              collectCash);
 router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.single('photo'), uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
+router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 
 // ── Public routes ──────────────────────────────────────────────────
 router.post('/calculate-fee',         calculateDeliveryFee);
@@ -103,6 +109,8 @@ router.use(protect, admin);
 router.get ('/assignments',  getAssignments);
 router.get ('/drivers',      getDeliveryDrivers);
 router.post('/assign',       assignDriver);
+router.get ('/cash-report',  getCashReport);
+router.post('/cash-handins', recordCashHandin);
 
 // Scheduled orders waiting for dispatch
 router.get('/scheduled', async (req, res) => {
