@@ -59,10 +59,75 @@ const getIntegrationStatus = (req, res) => {
   ]);
 };
 
+// ── Admin: upsert Zelle email + Cash App cashtag into payment_settings ──
+const updateOfflineHandles = async (req, res) => {
+  const { zelle_email, cashapp_cashtag } = req.body;
+
+  if (zelle_email !== undefined && zelle_email !== '') {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(zelle_email)) {
+      return res.status(400).json({ message: 'Zelle email must be a valid email address' });
+    }
+  }
+  if (cashapp_cashtag !== undefined && cashapp_cashtag !== '') {
+    if (!cashapp_cashtag.startsWith('$')) {
+      return res.status(400).json({ message: 'Cash App cashtag must start with $ (e.g. $HabibiHalal)' });
+    }
+  }
+
+  async function upsertHandle(provider, label, config) {
+    const existing = await pool.query(
+      `SELECT id FROM payment_settings WHERE provider = $1 LIMIT 1`, [provider]
+    );
+    if (existing.rows.length) {
+      await pool.query(
+        `UPDATE payment_settings SET config = $1, label = $2 WHERE provider = $3`,
+        [JSON.stringify(config), label, provider]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO payment_settings (label, provider, is_active, config) VALUES ($1,$2,TRUE,$3)`,
+        [label, provider, JSON.stringify(config)]
+      );
+    }
+  }
+
+  try {
+    if (zelle_email !== undefined)    await upsertHandle('zelle',   'Zelle',    { email: zelle_email });
+    if (cashapp_cashtag !== undefined) await upsertHandle('cashapp', 'Cash App', { cashtag: cashapp_cashtag });
+
+    const result = await pool.query(
+      `SELECT * FROM payment_settings WHERE provider IN ('zelle','cashapp') ORDER BY provider`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+// ── Public: get Zelle / CashApp handles from DB (with env fallback) ─
+const getOfflineHandles = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT provider, config FROM payment_settings WHERE provider IN ('zelle','cashapp')`
+    );
+    const rows = result.rows;
+    const zelleRow   = rows.find(r => r.provider === 'zelle');
+    const cashappRow = rows.find(r => r.provider === 'cashapp');
+    res.json({
+      zelle:   { email:   zelleRow?.config?.email   || process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      cashapp: { cashtag: cashappRow?.config?.cashtag || process.env.CASHAPP_CASHTAG || '$HabibiHalal' },
+    });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 module.exports = {
   getPaymentSettings,
   getAdminPaymentSettings,
   updatePaymentSetting,
+  updateOfflineHandles,
+  getOfflineHandles,
   getCheckoutSettings,
   getIntegrationStatus,
 };

@@ -5,6 +5,13 @@ const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
 const safeError = require('../utils/safeError');
 
+// Add verification audit columns if not present
+pool.query(`
+  ALTER TABLE guest_orders
+    ADD COLUMN IF NOT EXISTS payment_verified_at  TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS payment_verified_by  VARCHAR(100)
+`).catch(() => {});
+
 // Kitchen tablets authenticate with X-Kitchen-Token header.
 // If KITCHEN_TOKEN env var is not set, the check is skipped (backwards-compatible).
 function kitchenAuth(req, res, next) {
@@ -33,7 +40,7 @@ router.get('/kitchen', kitchenAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, order_number, customer_name, table_number, items,
-              sub_total, total, order_status, placed_at, updated_at
+              sub_total, total, order_status, payment_method, placed_at, updated_at
        FROM guest_orders
        WHERE delivery_method = 'dine_in'
          AND order_status NOT IN ('delivered', 'cancelled')
@@ -55,7 +62,8 @@ router.get('/kitchen-all', kitchenAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, order_number, customer_name, table_number, delivery_method, items,
-              sub_total, total, order_status, placed_at, updated_at, special_instructions
+              sub_total, total, order_status, payment_method, placed_at, updated_at,
+              special_instructions, payment_verified_at, payment_verified_by
        FROM guest_orders
        WHERE order_status NOT IN ('delivered', 'cancelled', 'refunded')
        ORDER BY placed_at ASC`
@@ -90,10 +98,20 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     if (!status || status !== allowed) {
       return res.status(400).json({ message: `Cannot transition from '${currentStatus}' to '${status}'. Expected: '${allowed}'.` });
     }
-    await pool.query(
-      `UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2`,
-      [status, req.params.id]
-    );
+    if (currentStatus === 'pending_verification') {
+      await pool.query(
+        `UPDATE guest_orders
+           SET order_status=$1, updated_at=NOW(),
+               payment_verified_at=NOW(), payment_verified_by='Kitchen Staff'
+         WHERE id=$2`,
+        [status, req.params.id]
+      );
+    } else {
+      await pool.query(
+        `UPDATE guest_orders SET order_status=$1, updated_at=NOW() WHERE id=$2`,
+        [status, req.params.id]
+      );
+    }
     res.json({ id: Number(req.params.id), order_status: status });
   } catch (err) {
     res.status(500).json(safeError(err));

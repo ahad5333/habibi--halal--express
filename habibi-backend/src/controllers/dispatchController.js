@@ -427,10 +427,12 @@ const getCashReport = async (req, res) => {
 
 // ── Admin: record cash hand-in from driver ──────────────────────────
 const recordCashHandin = async (req, res) => {
-  const { driver_id, driver_name, amount, order_count, confirmed_by, notes } = req.body;
+  const { driver_id, driver_name, amount, order_count, notes } = req.body;
   if (!amount || isNaN(parseFloat(amount))) {
     return res.status(400).json({ message: 'amount is required' });
   }
+  // Use the logged-in admin's identity — never trust the client for this
+  const confirmedBy = req.user?.name || req.user?.email || 'Manager';
   try {
     const result = await pool.query(
       `INSERT INTO driver_cash_handins
@@ -438,7 +440,7 @@ const recordCashHandin = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6)
        RETURNING *`,
       [driver_id || null, driver_name || null, parseFloat(amount),
-       order_count || 0, confirmed_by || null, notes || null]
+       order_count || 0, confirmedBy, notes || null]
     );
     const io = req.app.get('io');
     if (io) io.to('admins').emit('cash_handed_in', result.rows[0]);
@@ -451,7 +453,7 @@ const recordCashHandin = async (req, res) => {
 // ── Driver: get my cash summary for today ───────────────────────────
 const getDriverCashSummary = async (req, res) => {
   const { driver_id } = req.params;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   try {
     const result = await pool.query(
       `SELECT da.id, da.order_number, da.cash_collected_at, go.total AS order_total
@@ -479,24 +481,31 @@ const collectCash = async (req, res) => {
       `SELECT da.*, go.payment_method, go.total AS order_total
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
-       WHERE da.id = $1`,
-      [id]
+       WHERE da.id = $1 AND da.driver_id = $2`,
+      [id, driver_id]
     );
-    if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found' });
+    if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found or not yours' });
     const assignment = asgn.rows[0];
     if (assignment.payment_method !== 'cod') {
       return res.status(400).json({ message: 'Not a COD order' });
     }
+    if (assignment.cash_collected_at) {
+      return res.status(409).json({ message: 'Cash already recorded for this order', amount_collected: assignment.order_total });
+    }
 
     const collectedBy = driver_name || assignment.driver_name || `Driver #${driver_id}`;
 
-    await pool.query(
+    const updated = await pool.query(
       `UPDATE delivery_assignments
          SET status='delivered', delivered_at=NOW(),
              cash_collected_at=NOW(), cash_collected_by=$1
-       WHERE id=$2`,
+       WHERE id=$2 AND cash_collected_at IS NULL
+       RETURNING id`,
       [collectedBy, id]
     );
+    if (!updated.rows.length) {
+      return res.status(409).json({ message: 'Cash already recorded for this order', amount_collected: assignment.order_total });
+    }
 
     if (assignment.order_number) {
       await pool.query(
@@ -521,6 +530,47 @@ const collectCash = async (req, res) => {
   }
 };
 
+// ── Driver: record failed COD delivery (customer not home) ──────────
+const codDeliveryFailed = async (req, res) => {
+  const { id } = req.params;
+  const { driver_id } = req.body;
+  try {
+    const asgn = await pool.query(
+      `SELECT da.*, go.payment_method, go.total AS order_total
+       FROM delivery_assignments da
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE da.id = $1 AND da.driver_id = $2`,
+      [id, driver_id]
+    );
+    if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found or not yours' });
+    const assignment = asgn.rows[0];
+    if (assignment.payment_method !== 'cod') {
+      return res.status(400).json({ message: 'Not a COD order' });
+    }
+
+    await pool.query(
+      `UPDATE delivery_assignments
+         SET status='cancelled',
+             delivery_note='COD failed — customer not home, order returned to store'
+       WHERE id=$1`,
+      [id]
+    );
+
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('cod_delivery_failed', {
+      assignment_id: parseInt(id),
+      order_number:  assignment.order_number,
+      amount:        assignment.order_total,
+      driver_id:     assignment.driver_id,
+      driver_name:   assignment.driver_name,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getAssignments,
   assignDriver,
@@ -534,6 +584,7 @@ module.exports = {
   getDeliveryDrivers,
   calculateDeliveryFee,
   collectCash,
+  codDeliveryFailed,
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,

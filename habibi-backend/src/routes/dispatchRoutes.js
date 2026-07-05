@@ -50,6 +50,7 @@ const {
   getDeliveryDrivers,
   calculateDeliveryFee,
   collectCash,
+  codDeliveryFailed,
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,
@@ -96,6 +97,7 @@ router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  u
 router.patch ('/assignments/:id/status',           driverOrAdmin,              updateAssignmentStatus);
 router.patch ('/assignments/:id/respond',          driverOrAdmin,              respondToAssignment);
 router.patch ('/assignments/:id/collect-cash',     driverOrAdmin,              collectCash);
+router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              codDeliveryFailed);
 router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.single('photo'), uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);

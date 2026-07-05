@@ -298,7 +298,17 @@ function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
 
       {isPaymentPending && (
         <div className="kd-verify-banner">
-          💙 AWAITING PAYMENT — Check Zelle / Cash App then confirm
+          {order.payment_method === 'cashapp'
+            ? '💚 AWAITING PAYMENT — Check Cash App then confirm'
+            : order.payment_method === 'zelle'
+            ? '💙 AWAITING PAYMENT — Check Zelle then confirm'
+            : '💙 AWAITING PAYMENT — Verify payment then confirm'}
+        </div>
+      )}
+
+      {order.payment_verified_at && (
+        <div className="kd-verified-stamp">
+          ✓ Payment verified at {new Date(order.payment_verified_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       )}
 

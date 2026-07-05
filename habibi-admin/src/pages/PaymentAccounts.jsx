@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Plus, Pencil, Trash2, X, Check, ShieldCheck, AlertCircle } from 'lucide-react';
+import { CreditCard, Plus, Pencil, Trash2, X, Check, ShieldCheck, AlertCircle, Smartphone } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './PaymentAccounts.css';
 
@@ -10,6 +10,109 @@ const BLANK = {
   client_key: '',
   environment: 'production',
 };
+
+// ── Digital Payment Handles (Zelle / Cash App) ─────────────────────
+function OfflineHandlesCard() {
+  const [handles, setHandles]   = useState({ zelle: {}, cashapp: {} });
+  const [editing, setEditing]   = useState(false);
+  const [form, setForm]         = useState({ zelle_email: '', cashapp_cashtag: '' });
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [err, setErr]           = useState('');
+
+  const load = async () => {
+    try {
+      const data = await adminAPI.getOfflineHandles();
+      setHandles(data);
+      setForm({ zelle_email: data.zelle?.email || '', cashapp_cashtag: data.cashapp?.cashtag || '' });
+    } catch (_) {}
+  };
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    if (form.zelle_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.zelle_email)) {
+      setErr('Zelle email must be a valid email address'); return;
+    }
+    if (form.cashapp_cashtag && !form.cashapp_cashtag.startsWith('$')) {
+      setErr('Cash App cashtag must start with $ (e.g. $HabibiHalal)'); return;
+    }
+    setSaving(true); setErr('');
+    try {
+      await adminAPI.updateOfflineHandles(form);
+      await load();
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) { setErr(e.message || 'Save failed'); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: '2rem' }}>
+      <div className="an-card-top" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1rem' }}>
+        <div className="an-card-info">
+          <Smartphone size={18}/>
+          <div>
+            <div className="an-nickname">Digital Payment Handles</div>
+            <div className="an-meta" style={{ marginTop: 2 }}>Zelle email and Cash App $cashtag shown to customers at checkout</div>
+          </div>
+        </div>
+        <div className="an-actions">
+          {saved && <span className="badge badge-success"><Check size={11}/> Saved</span>}
+          {!editing
+            ? <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setEditing(true)}><Pencil size={13}/> Edit</button>
+            : <>
+                <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
+                  {saving ? <div className="spinner spinner-sm"/> : <><Check size={13}/> Save</>}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); setErr(''); }}>Cancel</button>
+              </>
+          }
+        </div>
+      </div>
+
+      {err && <div className="an-err" style={{ marginBottom: '1rem' }}><AlertCircle size={14}/> {err}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        {/* Zelle */}
+        <div>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b7280', marginBottom: '0.4rem' }}>
+            💙 Zelle Email
+          </p>
+          {editing
+            ? <input className="input" placeholder="e.g. payments@habibihalal.com"
+                value={form.zelle_email}
+                onChange={e => setForm(f => ({ ...f, zelle_email: e.target.value }))} />
+            : <p style={{ fontWeight: 600, color: handles.zelle?.email ? '#111' : '#9ca3af' }}>
+                {handles.zelle?.email || 'Not set'}
+              </p>
+          }
+        </div>
+
+        {/* Cash App */}
+        <div>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b7280', marginBottom: '0.4rem' }}>
+            💚 Cash App $Cashtag
+          </p>
+          {editing
+            ? <input className="input" placeholder="e.g. $HabibiHalal"
+                value={form.cashapp_cashtag}
+                onChange={e => setForm(f => ({ ...f, cashapp_cashtag: e.target.value }))} />
+            : <p style={{ fontWeight: 600, color: handles.cashapp?.cashtag ? '#111' : '#9ca3af' }}>
+                {handles.cashapp?.cashtag || 'Not set'}
+              </p>
+          }
+        </div>
+      </div>
+
+      {!editing && (
+        <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '1rem' }}>
+          These are shown to customers when they choose Zelle or Cash App at checkout. Click Edit to update them anytime — no server restart needed.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function PaymentAccounts() {
   const [accounts, setAccounts] = useState([]);
@@ -99,6 +202,8 @@ export default function PaymentAccounts() {
           <span>No active account — card payments are disabled. Add an account and click "Set Active".</span>
         </div>
       )}
+
+      <OfflineHandlesCard />
 
       {loading ? (
         <div style={{display:'flex',justifyContent:'center',padding:'4rem'}}><div className="spinner"/></div>

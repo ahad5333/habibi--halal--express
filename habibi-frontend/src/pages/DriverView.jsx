@@ -203,7 +203,17 @@ export default function DriverView() {
       setAssignment(prev => ({ ...prev, status: 'delivered' }));
       setDeliveryPhase(null);
       loadCashSummary();
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      // 409 = already recorded (double-tap) — treat as success
+      if (e.message.includes('already recorded') || e.message === '409') {
+        stopTracking();
+        setAssignment(prev => ({ ...prev, status: 'delivered' }));
+        setDeliveryPhase(null);
+        loadCashSummary();
+      } else {
+        setError(e.message);
+      }
+    }
   };
 
   const handlePhotoCapture = (e) => {
@@ -241,6 +251,18 @@ export default function DriverView() {
       setDeliveryPhase(null);
     } catch (e) { setProofError(e.message); }
     setSubmitting(false);
+  };
+
+  const markCodFailed = async () => {
+    if (!assignment?.id) return;
+    try {
+      await apiFetch(`/api/dispatch/assignments/${assignment.id}/cod-failed`, {
+        method: 'PATCH',
+        body: JSON.stringify({ driver_id: driverId }),
+      });
+      setAssignment(prev => ({ ...prev, status: 'cancelled' }));
+      setDeliveryPhase(null);
+    } catch (e) { setError(e.message); }
   };
 
   // ── Render ─────────────────────────────────────────────────────────
@@ -552,7 +574,7 @@ export default function DriverView() {
                   This is a Cash on Delivery order. You cannot leave the food without collecting{' '}
                   <strong>${codAmt.toFixed(2)}</strong>.
                 </p>
-                <p className="dv-cod-blocked-sub">Call the manager for instructions before returning the order.</p>
+                <p className="dv-cod-blocked-sub">Try the customer one more time, then return the order to the store.</p>
                 <div className="dv-contact-btns" style={{ marginTop: '1rem' }}>
                   {assignment.customer_phone && (
                     <a className="dv-btn dv-btn-call" href={`tel:${assignment.customer_phone}`}>
@@ -560,7 +582,14 @@ export default function DriverView() {
                     </a>
                   )}
                 </div>
-                <button className="dv-btn dv-btn-back" style={{ marginTop: '0.75rem' }} onClick={() => setDeliveryPhase('arrived')}>
+                <button
+                  className="dv-btn dv-btn-danger"
+                  style={{ marginTop: '1rem', width: '100%' }}
+                  onClick={markCodFailed}
+                >
+                  Returning Order to Store
+                </button>
+                <button className="dv-btn dv-btn-back" style={{ marginTop: '0.5rem' }} onClick={() => setDeliveryPhase('arrived')}>
                   ← Back
                 </button>
               </div>

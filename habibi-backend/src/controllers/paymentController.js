@@ -223,12 +223,26 @@ const refundOrder = async (req, res) => {
   }
 };
 
-// ─── Get Zelle / CashApp payment info (public) ────────────────���─────────────
+// ─── Get Zelle / CashApp payment info — reads from DB, falls back to env ────
 const getOfflinePaymentInfo = async (req, res) => {
-  res.json({
-    zelle: { email: process.env.ZELLE_EMAIL || "payments@habibihalal.com" },
-    cashapp: { cashtag: process.env.CASHAPP_CASHTAG || "$HabibiHalal" },
-  });
+  try {
+    const result = await pool.query(
+      `SELECT provider, config FROM payment_settings WHERE provider IN ('zelle','cashapp')`
+    );
+    const rows       = result.rows;
+    const zelleRow   = rows.find(r => r.provider === 'zelle');
+    const cashappRow = rows.find(r => r.provider === 'cashapp');
+    res.json({
+      zelle:   { email:   zelleRow?.config?.email    || process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      cashapp: { cashtag: cashappRow?.config?.cashtag || process.env.CASHAPP_CASHTAG || '$HabibiHalal' },
+    });
+  } catch {
+    // Fallback to env if DB fails
+    res.json({
+      zelle:   { email:   process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      cashapp: { cashtag: process.env.CASHAPP_CASHTAG  || '$HabibiHalal' },
+    });
+  }
 };
 
 // ─── PayPal create order (mobile: returns approvalUrl for WebView) ──────────

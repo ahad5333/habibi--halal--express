@@ -27,15 +27,19 @@ function HandinModal({ driver, onConfirm, onClose }) {
   const [error, setError]       = useState('');
 
   const submit = async () => {
-    if (!amount || isNaN(parseFloat(amount))) { setError('Enter a valid amount'); return; }
+    const parsed = parseFloat(amount);
+    if (!amount || isNaN(parsed) || parsed <= 0) { setError('Enter a valid amount'); return; }
+    if (parsed > driver.outstanding + 0.01) {
+      setError(`Amount $${parsed.toFixed(2)} exceeds what's outstanding ($${driver.outstanding.toFixed(2)})`);
+      return;
+    }
     setLoading(true); setError('');
     try {
       await onConfirm({
-        driver_id:    driver.driver_id,
-        driver_name:  driver.driver_name,
-        amount:       parseFloat(amount),
-        order_count:  driver.confirmed_count,
-        confirmed_by: 'Manager',
+        driver_id:   driver.driver_id,
+        driver_name: driver.driver_name,
+        amount:      parseFloat(amount),
+        order_count: driver.confirmed_count,
         notes,
       });
       onClose();
