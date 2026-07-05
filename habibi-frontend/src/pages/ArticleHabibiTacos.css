@@ -49,12 +49,12 @@
   animation: artKenBurns 14s ease-out forwards;
 }
 
-/* Blends photo into the dark right panel */
+/* Blends photo into the dark left panel */
 .art-hero-photo-edge {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to right,
+    linear-gradient(to left,
       transparent 55%,
       rgba(13,5,0,0.55) 78%,
       rgba(13,5,0,0.95) 93%,
@@ -68,7 +68,7 @@
     );
 }
 
-/* Right: dark editorial panel — 42% width */
+/* Left: dark editorial panel — 42% width */
 .art-hero-panel {
   flex: 0 0 42%;
   background: #0d0500;
@@ -77,14 +77,14 @@
   justify-content: center;
   position: relative;
   padding: 3.5rem 3rem 3.5rem 2.5rem;
-  border-left: 1px solid rgba(229,182,78,0.12);
+  border-right: 1px solid rgba(229,182,78,0.12);
 }
 
-/* Subtle gold glow on the left edge of the panel */
+/* Subtle gold glow on the right edge of the panel */
 .art-hero-panel::before {
   content: '';
   position: absolute;
-  left: -1px;
+  right: -1px;
   top: 15%;
   bottom: 15%;
   width: 1px;

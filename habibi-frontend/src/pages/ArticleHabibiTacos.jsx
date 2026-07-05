@@ -86,13 +86,7 @@ export default function ArticleHabibiTacos() {
       {/* ── Hero ── */}
       <div className="art-hero">
 
-        {/* Left: full photo */}
-        <div className="art-hero-photo">
-          <img src={ARTICLE.hero} alt="Habibi Taco" className="art-hero-img" />
-          <div className="art-hero-photo-edge" aria-hidden="true" />
-        </div>
-
-        {/* Right: editorial text panel */}
+        {/* Left: editorial text panel */}
         <div className="art-hero-panel">
           <Link to="/articles" className="art-back">
             <ArrowLeft size={14} /> All Articles
@@ -132,6 +126,12 @@ export default function ArticleHabibiTacos() {
           <button className="art-share-btn--corner" onClick={share} aria-label="Share">
             <Share2 size={13} /> Share
           </button>
+        </div>
+
+        {/* Right: full photo */}
+        <div className="art-hero-photo">
+          <img src={ARTICLE.hero} alt="Habibi Taco" className="art-hero-img" />
+          <div className="art-hero-photo-edge" aria-hidden="true" />
         </div>
 
       </div>
