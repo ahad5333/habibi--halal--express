@@ -8,18 +8,31 @@
   color: #f5f0e8;
 }
 
-/* ── Hero ── */
-@keyframes artKenBurns {
-  from { transform: scale(1.06); }
-  to   { transform: scale(1.0); }
+/* ── Hero animations ── */
+
+/* Image: fade in + slow Ken Burns zoom in one pass */
+@keyframes artImgReveal {
+  0%   { opacity: 0; transform: scale(1.10); }
+  18%  { opacity: 1; transform: scale(1.07); }
+  100% { opacity: 1; transform: scale(1.00); }
 }
-@keyframes artFadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+/* Text: slide from left, ease-out */
+@keyframes artSlideIn {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0);     }
 }
+
+/* Simple fade for non-directional elements */
 @keyframes artFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Gold border glow breathe */
+@keyframes artGoldBreath {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.85; }
 }
 
 /* ── Split-screen hero ── */
@@ -55,7 +68,15 @@
     0 0 0 1px rgba(229,182,78,0.15),
     0 24px 64px rgba(0,0,0,0.7),
     0 8px 24px rgba(0,0,0,0.5);
-  animation: artKenBurns 14s ease-out forwards;
+  animation: artImgReveal 16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: box-shadow 0.5s ease, filter 0.5s ease;
+}
+.art-hero-photo:hover .art-hero-img {
+  filter: brightness(1.08) saturate(1.1);
+  box-shadow:
+    0 0 0 2px rgba(229,182,78,0.35),
+    0 28px 72px rgba(0,0,0,0.75),
+    0 0 40px rgba(229,148,58,0.15);
 }
 
 /* no edge overlay needed — image is padded inside */
@@ -74,7 +95,7 @@
   border-right: 1px solid rgba(229,182,78,0.12);
 }
 
-/* Subtle gold glow on the right edge of the panel */
+/* Gold glow on the right edge — slow breathe */
 .art-hero-panel::before {
   content: '';
   position: absolute;
@@ -84,7 +105,7 @@
   width: 1px;
   background: linear-gradient(to bottom,
     transparent, #e5b64e 40%, #e5943a 60%, transparent);
-  opacity: 0.55;
+  animation: artGoldBreath 3.5s ease-in-out infinite;
 }
 
 /* ── Back link (inside panel, top) ── */
@@ -144,7 +165,7 @@
   text-transform: uppercase;
   color: #e5b64e;
   margin: 0 0 1.4rem;
-  animation: artFadeUp 0.6s 0.1s ease both;
+  animation: artSlideIn 0.7s 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* Rule: line — badge — line */
@@ -193,7 +214,7 @@
   color: rgba(255,255,255,0.6);
   text-transform: uppercase;
   margin-bottom: 0.15em;
-  animation: artFadeUp 0.7s 0.3s ease both;
+  animation: artSlideIn 0.7s 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .art-hero-name {
@@ -207,7 +228,7 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   filter: drop-shadow(0 2px 18px rgba(229,148,58,0.3));
-  animation: artFadeUp 0.8s 0.4s ease both;
+  animation: artSlideIn 0.8s 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .art-hero-subtitle {
@@ -219,7 +240,7 @@
   line-height: 1.6;
   border-left: 2px solid rgba(229,182,78,0.4);
   padding-left: 0.85rem;
-  animation: artFadeUp 0.7s 0.55s ease both;
+  animation: artSlideIn 0.7s 0.58s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .art-hero-meta {
@@ -228,7 +249,7 @@
   gap: 0.6rem;
   font-size: 0.75rem;
   color: rgba(255,255,255,0.35);
-  animation: artFadeUp 0.7s 0.7s ease both;
+  animation: artSlideIn 0.7s 0.74s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 .art-hero-meta span { display: flex; align-items: center; gap: 0.3rem; }
 .art-meta-sep { opacity: 0.35; }
