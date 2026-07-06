@@ -8,20 +8,22 @@ const { logAudit } = require('./auditController');
 // 1. Dashboard Analytics
 const getDashboardStats = async (req, res) => {
   try {
-    const revenueRes = await pool.query(
-      "SELECT COALESCE(SUM(total), 0) as total FROM guest_orders WHERE order_status IN ('delivered', 'completed')"
-    );
-    const ordersRes = await pool.query("SELECT COUNT(*) as total FROM guest_orders");
-    const pendingRes = await pool.query(
-      "SELECT COUNT(*) as total FROM guest_orders WHERE order_status NOT IN ('delivered', 'completed', 'cancelled')"
-    );
-    const menuRes = await pool.query("SELECT COUNT(*) as total FROM menus WHERE is_active IS NOT FALSE");
+    const [revenueRes, ordersRes, pendingRes, menuRes, todayRevRes, todayOrdRes] = await Promise.all([
+      pool.query("SELECT COALESCE(SUM(total), 0) as total FROM guest_orders WHERE order_status IN ('delivered', 'completed')"),
+      pool.query("SELECT COUNT(*) as total FROM guest_orders"),
+      pool.query("SELECT COUNT(*) as total FROM guest_orders WHERE order_status NOT IN ('delivered', 'completed', 'cancelled')"),
+      pool.query("SELECT COUNT(*) as total FROM menus WHERE is_active IS NOT FALSE"),
+      pool.query("SELECT COALESCE(SUM(total), 0) as total FROM guest_orders WHERE order_status IN ('delivered', 'completed') AND placed_at >= CURRENT_DATE"),
+      pool.query("SELECT COUNT(*) as total FROM guest_orders WHERE placed_at >= CURRENT_DATE"),
+    ]);
 
     res.json({
-      revenue: parseFloat(revenueRes.rows[0].total || 0).toFixed(2),
-      orders: parseInt(ordersRes.rows[0].total || 0),
-      pending: parseInt(pendingRes.rows[0].total || 0),
-      menus: parseInt(menuRes.rows[0].total || 0)
+      revenue:        parseFloat(revenueRes.rows[0].total  || 0).toFixed(2),
+      orders:         parseInt(ordersRes.rows[0].total     || 0),
+      pending:        parseInt(pendingRes.rows[0].total    || 0),
+      menus:          parseInt(menuRes.rows[0].total       || 0),
+      today_revenue:  parseFloat(todayRevRes.rows[0].total || 0).toFixed(2),
+      today_orders:   parseInt(todayOrdRes.rows[0].total   || 0),
     });
   } catch (error) {
     res.status(500).json(safeError(error));

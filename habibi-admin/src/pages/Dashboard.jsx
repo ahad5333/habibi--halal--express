@@ -55,13 +55,13 @@ export default function Dashboard() {
       <div className="dash-stats">
         <StatCard
           icon={<DollarSign size={20} />} color="#22c55e"
-          label="Total Revenue" value={`$${parseFloat(stats?.revenue || 0).toLocaleString()}`}
-          sub="All time"
+          label="Today's Revenue" value={`$${parseFloat(stats?.today_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          sub={`$${parseFloat(stats?.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} all time`}
         />
         <StatCard
           icon={<ShoppingBag size={20} />} color="#3b82f6"
-          label="Total Orders" value={parseInt(stats?.orders || 0).toLocaleString()}
-          sub="All time"
+          label="Today's Orders" value={parseInt(stats?.today_orders || 0).toLocaleString()}
+          sub={`${parseInt(stats?.orders || 0).toLocaleString()} all time`}
         />
         <StatCard
           icon={<Clock size={20} />} color="#f59e0b"
