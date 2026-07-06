@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Utensils, Users, Tag,
@@ -40,9 +40,27 @@ const NAV = [
   { to: '/business-hours', icon: <Clock size={17} />,           label: 'Business Hours' },
 ];
 
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+function usePendingCount() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const fetch_ = () =>
+      fetch(`${BASE}/api/admin/stats`, { credentials: 'include', cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.pending != null) setCount(parseInt(d.pending)); })
+        .catch(() => {});
+    fetch_();
+    const t = setInterval(fetch_, 30_000);
+    return () => clearInterval(t);
+  }, []);
+  return count;
+}
+
 export default function Sidebar({ open, onClose }) {
   const { admin, logout } = useAdminAuth();
   const location = useLocation();
+  const pending = usePendingCount();
 
   return (
     <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
@@ -72,7 +90,9 @@ export default function Sidebar({ open, onClose }) {
           >
             <span className="sidebar-link-icon">{item.icon}</span>
             <span className="sidebar-link-label">{item.label}</span>
-            {item.badge === 'live' && <span className="sidebar-live-dot" />}
+            {item.to === '/orders' && pending > 0
+              ? <span className="sidebar-count-badge">{pending > 99 ? '99+' : pending}</span>
+              : item.badge === 'live' && <span className="sidebar-live-dot" />}
           </NavLink>
         ))}
       </nav>
