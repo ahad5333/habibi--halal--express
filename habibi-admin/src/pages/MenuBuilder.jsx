@@ -3,7 +3,8 @@ import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, ImageOff, Eye
 import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API      = import.meta.env.VITE_API_URL      || 'http://localhost:5001';
+const FRONTEND = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5174';
 const ALL_CATEGORIES = [
   'Breakfast','Platter','Sandwich','Bergers','Tacos','Habibi Specials',
   'Extras','Drinks','Family Tray','Build Your Own',
@@ -19,7 +20,11 @@ function parseJsonSafe(v) {
 
 function imgSrc(url) {
   if (!url) return null;
-  return url.startsWith('http') ? url : `${API}${url}`;
+  if (url.startsWith('http')) return url;
+  // Static frontend images (/images/menu/...) live on the frontend domain
+  if (url.startsWith('/images/')) return `${FRONTEND}${url}`;
+  // Admin-uploaded files (/uploads/...) live on the backend domain
+  return `${API}${url}`;
 }
 
 /* ── Add / Edit Modal ─────────────────────────────────────────── */
