@@ -127,7 +127,7 @@ const updateOrderStatus = async (req, res) => {
            cancellation_reason = CASE WHEN $1='cancelled' THEN $3 ELSE cancellation_reason END,
            estimated_minutes   = CASE WHEN $4 IS NOT NULL THEN $4 ELSE estimated_minutes END
        WHERE order_number=$2 OR CAST(id AS TEXT)=$2
-       RETURNING customer_phone, customer_email, order_number`,
+       RETURNING customer_phone, customer_email, order_number, user_id`,
       [status.toLowerCase(), id, cancellation_reason || null, parsedMinutes]
     );
 
@@ -169,11 +169,9 @@ const updateOrderStatus = async (req, res) => {
       }
 
       // Fire FCM push + in-app notification if user exists
-      if (customer_email) {
-        pool.query("SELECT id FROM users WHERE email = $1", [customer_email]).then(userRes => {
-          if (userRes.rows.length > 0) {
-            const userId = userRes.rows[0].id;
-
+      // Prefer user_id stored on the order; fall back to email lookup for older orders
+      const resolvedUserId = row.user_id || null;
+      const doFCM = (userId) => {
             fcmService.sendOrderPushNotification(userId, orderNum, status).catch(err => {
               console.error('[Admin Override] Failed to send push notification:', err.message);
             });
@@ -195,6 +193,16 @@ const updateOrderStatus = async (req, res) => {
               `INSERT INTO user_notifications (user_id, title, body) VALUES ($1, $2, $3)`,
               [userId, `Order Update — #${orderNum}`, body]
             ).catch(err => console.error('[Admin Override] Notification insert failed:', err.message));
+      };
+
+      if (resolvedUserId) {
+        doFCM(resolvedUserId);
+      } else if (customer_email) {
+        pool.query("SELECT id FROM users WHERE email = $1", [customer_email]).then(userRes => {
+          if (userRes.rows.length > 0) {
+            const userId = userRes.rows[0].id;
+
+            doFCM(userId);
           }
         }).catch(err => console.error('[Admin Override] FCM lookup error:', err.message));
       }

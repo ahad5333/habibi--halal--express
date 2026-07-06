@@ -21,8 +21,12 @@ export function AuthProvider({ children }) {
         setUser(userData);
         safePersist(userData);
       })
-      .catch(() => {
-        localStorage.removeItem('habibi_user');
+      .catch((err) => {
+        // Only wipe cached data on explicit auth rejection, not server/network errors
+        const status = err?.status;
+        if (!status || status === 401 || status === 403) {
+          localStorage.removeItem('habibi_user');
+        }
       })
       .finally(() => setLoading(false));
   }, []);

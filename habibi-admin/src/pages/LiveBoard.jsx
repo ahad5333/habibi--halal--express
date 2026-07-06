@@ -72,10 +72,10 @@ function showNotification(count) {
   });
 }
 
-const BOARD_STATUSES = ['received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered'];
-const STATUS_LABEL  = { received: 'New', pending: 'New', confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On The Way', delivered: 'Delivered' };
-const STATUS_COLOR  = { received: 'lv-pending', pending: 'lv-pending', confirmed: 'lv-confirmed', preparing: 'lv-preparing', on_the_way: 'lv-on-the-way', delivered: 'lv-delivered' };
-const STATUS_ICON   = { on_the_way: <Truck size={13}/>, delivered: <CheckCircle2 size={13}/> };
+const BOARD_STATUSES = ['pending', 'accepted', 'preparing', 'cooking', 'out_for_delivery', 'delivered'];
+const STATUS_LABEL  = { pending: 'New', accepted: 'Accepted', preparing: 'Preparing', cooking: 'Cooking', out_for_delivery: 'On The Way', delivered: 'Delivered' };
+const STATUS_COLOR  = { pending: 'lv-pending', accepted: 'lv-confirmed', preparing: 'lv-preparing', cooking: 'lv-preparing', out_for_delivery: 'lv-on-the-way', delivered: 'lv-delivered' };
+const STATUS_ICON   = { out_for_delivery: <Truck size={13}/>, delivered: <CheckCircle2 size={13}/> };
 
 function elapsed(dateStr) {
   if (!dateStr) return '—';
@@ -86,8 +86,8 @@ function elapsed(dateStr) {
 }
 
 function OrderCard({ order, onAdvance, advancing }) {
-  const nexts      = { received: 'confirmed', pending: 'confirmed', confirmed: 'preparing', preparing: 'on_the_way', on_the_way: 'delivered' };
-  const nextLabel  = { received: 'Accept', pending: 'Accept', confirmed: 'Start Cooking', preparing: 'Out for Delivery', on_the_way: 'Mark Delivered' };
+  const nexts      = { pending: 'accepted', accepted: 'preparing', preparing: 'out_for_delivery', cooking: 'out_for_delivery', out_for_delivery: 'delivered' };
+  const nextLabel  = { pending: 'Accept', accepted: 'Start Cooking', preparing: 'Out for Delivery', cooking: 'Out for Delivery', out_for_delivery: 'Mark Delivered' };
   const next = nexts[order.status];
   const age = Math.floor((Date.now() - new Date(order.created_at)) / 60000);
   const isUrgent = age > 20 && order.status !== 'preparing';
@@ -97,11 +97,12 @@ function OrderCard({ order, onAdvance, advancing }) {
       <div className="lv-card-hdr">
         <span className="lv-order-num">{order.id}</span>
         <span className={`badge ${
-          order.status==='pending'    ? 'badge-warning' :
-          order.status==='confirmed'  ? 'badge-info' :
-          order.status==='on_the_way' ? 'badge-primary' :
-          order.status==='delivered'  ? 'badge-success' :
-          'badge-success'
+          order.status==='pending'          ? 'badge-warning' :
+          order.status==='accepted'         ? 'badge-info' :
+          order.status==='out_for_delivery' ? 'badge-primary' :
+          order.status==='delivered'        ? 'badge-success' :
+          order.status==='cancelled'        ? 'badge-error' :
+          'badge-info'
         }`}>
           {STATUS_ICON[order.status]} {STATUS_LABEL[order.status] || order.status}
         </span>
@@ -178,12 +179,12 @@ export default function LiveBoard() {
       live.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
 
       // Count unaccepted orders
-      const unaccepted = live.filter(o => o.status === 'received' || o.status === 'pending');
+      const unaccepted = live.filter(o => o.status === 'pending');
 
       // Detect brand-new orders (skip first load)
       if (knownIds.current !== null) {
         const incoming = live.filter(o =>
-          (o.status === 'received' || o.status === 'pending') &&
+          o.status === 'pending' &&
           !knownIds.current.has(o.id)
         );
         if (incoming.length > 0) {

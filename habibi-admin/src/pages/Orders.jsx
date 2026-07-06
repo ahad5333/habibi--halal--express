@@ -36,25 +36,25 @@ const CANCEL_REASONS = [
   'Order placed by mistake',
 ];
 
-const STATUSES = ['all', 'received', 'pending', 'confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
+const STATUSES = ['all', 'pending', 'accepted', 'preparing', 'cooking', 'out_for_delivery', 'delivered', 'cancelled'];
 const STATUS_BADGE = {
-  received:   'badge-warning',
-  pending:    'badge-warning',
-  confirmed:  'badge-info',
-  preparing:  'badge-warning',
-  on_the_way: 'badge-info',
-  delivered:  'badge-success',
-  completed:  'badge-success',
-  cancelled:  'badge-error',
+  pending:          'badge-warning',
+  accepted:         'badge-info',
+  preparing:        'badge-warning',
+  cooking:          'badge-warning',
+  out_for_delivery: 'badge-info',
+  delivered:        'badge-success',
+  completed:        'badge-success',
+  cancelled:        'badge-error',
 };
 const NEXT_STEPS = {
-  received:   ['confirmed', 'cancelled'],
-  pending:    ['confirmed', 'cancelled'],
-  confirmed:  ['preparing', 'cancelled'],
-  preparing:  ['on_the_way', 'cancelled'],
-  on_the_way: ['delivered'],
-  delivered:  [],
-  cancelled:  [],
+  pending:          ['accepted', 'cancelled'],
+  accepted:         ['preparing', 'cancelled'],
+  preparing:        ['cooking', 'out_for_delivery', 'cancelled'],
+  cooking:          ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered'],
+  delivered:        [],
+  cancelled:        [],
 };
 
 function CancelReasonPicker({ onConfirm, onDismiss }) {

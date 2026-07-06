@@ -161,6 +161,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Disable ETags for API routes so LiveBoard always gets fresh order data (no 304 caching)
+app.set('etag', false);
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 app.use(cookieParser());
 app.use(express.json({ limit: '500kb' }))
 const staticOpts = { maxAge: '1y', etag: true, lastModified: true }
