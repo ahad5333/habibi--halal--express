@@ -209,6 +209,8 @@ app.use("/api/referrals",   referralRoutes);
 app.use("/api/articles",   articleRoutes);
 app.get("/api/settings/payments", getPaymentSettings);
 app.get("/api/settings/checkout", getCheckoutSettings);
+const { getPublicBusinessHours } = require('./controllers/businessHoursController');
+app.get('/api/business-hours', getPublicBusinessHours);
 app.use("/", seoRoutes);
 
 app.get("/health", async (req, res) => {

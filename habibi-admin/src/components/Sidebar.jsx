@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShoppingBag, Utensils, Users, Tag,
   BarChart2, Settings, LogOut, Zap, CreditCard,
   UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation,
-  CalendarDays, Star, Shield, X,
+  CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
@@ -36,7 +36,8 @@ const NAV = [
   { to: '/chat',       icon: <MessageSquare size={17} />,   label: 'Customer Chat', live: true },
   { to: '/loyalty',    icon: <Gift size={17} />,            label: 'Loyalty Program' },
   { to: '/audit-log',  icon: <Shield size={17} />,          label: 'Audit Log' },
-  { to: '/settings',   icon: <Settings size={17} />,        label: 'Settings' },
+  { to: '/settings',       icon: <Settings size={17} />,        label: 'Settings' },
+  { to: '/business-hours', icon: <Clock size={17} />,           label: 'Business Hours' },
 ];
 
 export default function Sidebar({ open, onClose }) {

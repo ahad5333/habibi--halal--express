@@ -250,6 +250,10 @@ export const adminAPI = {
   // Global Add-ons
   getGlobalAddons:   ()          => req('/api/admin/global-addons'),
   updateGlobalAddon: (id, body)  => req(`/api/admin/global-addons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  // Business Hours
+  getBusinessHours:  (locationId) => req(`/api/admin/business-hours?location_id=${locationId}`),
+  saveBusinessHours: (body)        => req('/api/admin/business-hours', { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 export const chatAPI = {

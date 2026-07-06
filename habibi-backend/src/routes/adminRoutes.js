@@ -350,6 +350,11 @@ router.post("/loyalty/adjust",           adjustLoyaltyPoints);
 router.get("/loyalty/config",            getLoyaltyConfig);
 router.put("/loyalty/config",            updateLoyaltyConfig);
 
+// Business Hours
+const { getBusinessHours, saveBusinessHours } = require('../controllers/businessHoursController');
+router.get('/business-hours', getBusinessHours);
+router.put('/business-hours', saveBusinessHours);
+
 // ── Authorize.net merchant accounts ──────────────────────────────────────
 const {
   listAccounts,
