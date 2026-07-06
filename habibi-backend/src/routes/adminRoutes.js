@@ -364,5 +364,5 @@ router.put("/authnet/accounts/:id",        updateAccount);
 router.delete("/authnet/accounts/:id",     deleteAccount);
 router.post("/authnet/accounts/:id/activate", setActiveAccount);
 
-module.exports = router;
 
+module.exports = router;

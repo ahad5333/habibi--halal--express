@@ -46,6 +46,8 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_hash          VARCHAR(255)`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_expires       TIMESTAMPTZ`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_otp_attempts      INTEGER DEFAULT 0`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_partner             BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_id             INTEGER`);
 
     // ── Coupons: safe migration columns ───────────────────────────
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title               VARCHAR(255)`);
@@ -335,6 +337,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS loyalty_points_redeemed INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
+    await client.query(`ALTER TABLE guest_orders ALTER COLUMN order_status SET DEFAULT 'pending'`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);

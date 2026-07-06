@@ -346,8 +346,8 @@ const createGuestOrder = async (req, res) => {
          delivery_method, delivery_address, delivery_city, delivery_zip,
          delivery_state, delivery_instructions, payment_method,
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
-         coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
+         coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending')
        RETURNING id`,
       [
         order_number,
