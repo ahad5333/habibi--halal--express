@@ -191,10 +191,6 @@ const Careers = () => {
               </div>
             </div>
 
-            <div className="hiring-actions flex gap-4 mt-10">
-              <button className="btn btn-primary" onClick={() => openModal()}>Submit Resume</button>
-              <button className="btn btn-outline" onClick={scrollToRoles}>View Open Roles</button>
-            </div>
           </div>
 
           <div className="hiring-image-col">
