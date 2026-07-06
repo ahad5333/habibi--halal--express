@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, Upload, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { adminAPI } from '../services/api';
 import './ArticlesAdmin.css';
 
