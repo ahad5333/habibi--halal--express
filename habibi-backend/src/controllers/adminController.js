@@ -122,10 +122,11 @@ const updateOrderStatus = async (req, res) => {
 
     const updated = await pool.query(
       `UPDATE guest_orders
-       SET order_status=$1, updated_at=NOW(),
-           cancellation_reason = CASE WHEN $1='cancelled' THEN $3 ELSE cancellation_reason END,
-           estimated_minutes   = CASE WHEN $4 IS NOT NULL THEN $4 ELSE estimated_minutes END
-       WHERE order_number=$2 OR CAST(id AS TEXT)=$2
+       SET order_status        = $1::varchar,
+           updated_at          = NOW(),
+           cancellation_reason = CASE WHEN $1::varchar = 'cancelled' THEN $3::text ELSE cancellation_reason END,
+           estimated_minutes   = CASE WHEN $4::integer IS NOT NULL   THEN $4::integer ELSE estimated_minutes END
+       WHERE order_number = $2 OR CAST(id AS TEXT) = $2
        RETURNING customer_phone, customer_email, order_number, user_id`,
       [status.toLowerCase(), id, cancellation_reason || null, parsedMinutes]
     );
