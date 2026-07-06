@@ -86,8 +86,8 @@ function elapsed(dateStr) {
 }
 
 function OrderCard({ order, onAdvance, advancing }) {
-  const nexts      = { pending: 'accepted', accepted: 'preparing', preparing: 'out_for_delivery', cooking: 'out_for_delivery', out_for_delivery: 'delivered' };
-  const nextLabel  = { pending: 'Accept', accepted: 'Start Cooking', preparing: 'Out for Delivery', cooking: 'Out for Delivery', out_for_delivery: 'Mark Delivered' };
+  const nexts      = { pending: 'accepted', accepted: 'preparing', preparing: 'cooking', cooking: 'out_for_delivery', out_for_delivery: 'delivered' };
+  const nextLabel  = { pending: 'Accept', accepted: 'Preparing', preparing: 'Cooking', cooking: 'Out for Delivery', out_for_delivery: 'Mark Delivered' };
   const next = nexts[order.status];
   const age = Math.floor((Date.now() - new Date(order.created_at)) / 60000);
   const isUrgent = age > 20 && order.status !== 'preparing';
