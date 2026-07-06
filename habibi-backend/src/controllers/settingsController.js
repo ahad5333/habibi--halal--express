@@ -51,7 +51,6 @@ const getCheckoutSettings = (req, res) => {
 const getIntegrationStatus = (req, res) => {
   res.json([
     { name: 'Square Payments',  status: !!process.env.SQUARE_ACCESS_TOKEN   ? 'configured' : 'pending', detail: !!process.env.SQUARE_ACCESS_TOKEN   ? 'API key configured'        : 'Add SQUARE_ACCESS_TOKEN to .env'   },
-    { name: 'Stripe',           status: !!process.env.STRIPE_SECRET_KEY      ? 'configured' : 'pending', detail: !!process.env.STRIPE_SECRET_KEY      ? 'Payments configured'       : 'Add STRIPE_SECRET_KEY to .env'     },
     { name: 'Twilio SMS',       status: !!process.env.TWILIO_ACCOUNT_SID     ? 'configured' : 'pending', detail: !!process.env.TWILIO_ACCOUNT_SID     ? 'Credentials active'        : 'Add TWILIO_* credentials to .env'  },
     { name: 'DoorDash Drive',   status: !!process.env.DOORDASH_DEVELOPER_ID  ? 'configured' : 'pending', detail: !!process.env.DOORDASH_DEVELOPER_ID  ? 'Webhook active'            : 'Add DOORDASH_* credentials to .env'},
     { name: 'Uber Eats',        status: !!process.env.UBER_CLIENT_ID         ? 'configured' : 'pending', detail: !!process.env.UBER_CLIENT_ID         ? 'Webhook active'            : 'Add UBER_* credentials to .env'    },
