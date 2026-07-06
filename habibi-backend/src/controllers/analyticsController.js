@@ -3,8 +3,19 @@ const pool = require("../config/db");
 
 const getRevenueAnalytics = async (req, res) => {
   try {
+    const start = req.query.start || null;
+    const end   = req.query.end   || null;
+
+    const dateFilter = start && end
+      ? `AND placed_at::date BETWEEN $1 AND $2`
+      : start
+      ? `AND placed_at::date >= $1`
+      : end
+      ? `AND placed_at::date <= $1`
+      : `AND placed_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    const dateParams = start && end ? [start, end] : start ? [start] : end ? [end] : [];
+
     const [dailyRes, byCatRes] = await Promise.all([
-      // Daily revenue last 7 days from guest_orders
       pool.query(`
         SELECT
           TO_CHAR(placed_at, 'Mon DD') AS date,
@@ -12,10 +23,10 @@ const getRevenueAnalytics = async (req, res) => {
           COUNT(*)::int AS order_count
         FROM guest_orders
         WHERE order_status IN ('delivered', 'completed')
-          AND placed_at >= CURRENT_DATE - INTERVAL '7 days'
+          ${dateFilter}
         GROUP BY TO_CHAR(placed_at, 'Mon DD'), DATE_TRUNC('day', placed_at)
         ORDER BY DATE_TRUNC('day', placed_at) ASC
-      `),
+      `, dateParams),
       // Revenue by category extracted from JSONB items
       pool.query(`
         SELECT

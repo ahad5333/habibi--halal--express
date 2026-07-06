@@ -103,7 +103,7 @@ export const adminAPI = {
 
   urgent:      () => req('/api/urgent-requests'),
 
-  revenue:     () => req('/api/admin/analytics/revenue'),
+  revenue:     (start, end) => req(`/api/admin/analytics/revenue${start||end ? `?start=${start||''}&end=${end||''}` : ''}`),
   growth:      () => req('/api/admin/analytics/growth'),
 
   tiers:       () => req('/api/admin/delivery-tiers'),

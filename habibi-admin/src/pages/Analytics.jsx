@@ -42,13 +42,12 @@ export default function Analytics() {
 
   const load = useCallback((s = start, e = end) => {
     setLoading(true);
-    Promise.allSettled([adminAPI.revenue(), adminAPI.growth(), adminAPI.payments()])
+    Promise.allSettled([adminAPI.revenue(s, e), adminAPI.growth(), adminAPI.payments()])
       .then(([rv, gv, pv]) => {
         if (rv.status === 'fulfilled') setRevenue(rv.value);
         if (gv.status === 'fulfilled') setGrowth(gv.value);
         if (pv.status === 'fulfilled') {
           const v = pv.value;
-          // Filter client-side by date range since payments endpoint doesn't support qs yet
           const all = Array.isArray(v) ? v : (Array.isArray(v?.transactions) ? v.transactions : []);
           const filtered = all.filter(p => {
             const d = p.created_at ? p.created_at.slice(0, 10) : '';
@@ -96,8 +95,35 @@ export default function Analytics() {
         <StatBox label="New Customers" value={growth?.new_customers ?? '—'} sub={growth?.period || 'This month'} color="var(--color-warning)" />
       </div>
 
+      {/* Daily revenue bar chart */}
+      {revenue?.daily_revenue?.length > 0 && (
+        <div className="card analytics-chart-card">
+          <p className="analytics-section-title">Daily Revenue</p>
+          <div className="analytics-daily-chart">
+            {(() => {
+              const rows = revenue.daily_revenue;
+              const maxRev = Math.max(...rows.map(r => parseFloat(r.revenue)), 1);
+              return rows.map((r, i) => (
+                <div key={i} className="analytics-daily-col">
+                  <span className="analytics-daily-val">${parseFloat(r.revenue).toFixed(0)}</span>
+                  <div className="analytics-daily-bar-track">
+                    <div
+                      className="analytics-daily-bar-fill"
+                      style={{ height: `${Math.max(4, (parseFloat(r.revenue) / maxRev) * 100)}%` }}
+                      title={`${r.date}: $${parseFloat(r.revenue).toFixed(2)} · ${r.order_count} orders`}
+                    />
+                  </div>
+                  <span className="analytics-daily-count">{r.order_count} orders</span>
+                  <span className="analytics-daily-label">{r.date}</span>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* Revenue by category (from revenue endpoint if available) */}
-      {revenue?.by_category && (
+      {revenue?.by_category && Object.keys(revenue.by_category).length > 0 && (
         <div className="card analytics-chart-card">
           <p className="analytics-section-title">Revenue by Category</p>
           <div className="analytics-bars">
