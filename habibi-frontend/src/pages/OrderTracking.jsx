@@ -13,19 +13,19 @@ const RESTAURANT_LAT = 40.8804;
 const RESTAURANT_LNG = -73.8827;
 
 const STEPS = [
-  { id: 1, key: 'pending',    label: 'Received',   icon: '📋', animClass: 'anim-received'  },
-  { id: 2, key: 'accepted',   label: 'Accepted',   icon: '✅', animClass: 'anim-accepted'  },
-  { id: 3, key: 'preparing',  label: 'Preparing',  icon: '🍳', animClass: 'anim-preparing' },
-  { id: 4, key: 'on_the_way', label: 'On the Way', icon: '🛵', animClass: 'anim-on-way'   },
-  { id: 5, key: 'nearby',     label: 'Nearby',     icon: '📍', animClass: 'anim-nearby'   },
-  { id: 6, key: 'delivered',  label: 'Delivered',  icon: '🎉', animClass: 'anim-delivered' },
+  { id: 1, key: 'pending',          label: 'Received',   icon: '📋', animClass: 'anim-received'  },
+  { id: 2, key: 'accepted',         label: 'Accepted',   icon: '✅', animClass: 'anim-accepted'  },
+  { id: 3, key: 'preparing',        label: 'Preparing',  icon: '🍳', animClass: 'anim-preparing' },
+  { id: 4, key: 'out_for_delivery', label: 'On the Way', icon: '🛵', animClass: 'anim-on-way'   },
+  { id: 5, key: 'nearby',           label: 'Nearby',     icon: '📍', animClass: 'anim-nearby'   },
+  { id: 6, key: 'delivered',        label: 'Delivered',  icon: '🎉', animClass: 'anim-delivered' },
 ];
 
 const STATUS_STEP = {
   pending: 1,
   accepted: 2, confirmed: 2,
   preparing: 3, cooking: 3,
-  on_the_way: 4, 'in-transit': 4, in_transit: 4,
+  out_for_delivery: 4, on_the_way: 4, 'in-transit': 4, in_transit: 4,
   nearby: 5,
   delivered: 6, completed: 6,
 };
@@ -123,7 +123,7 @@ export default function OrderTracking() {
   const [loading, setLoading]           = useState(false);
   const [notFound, setNotFound]         = useState(false);
   const [currentStep, setCurrentStep]   = useState(1);
-  const [etaSeconds, setEtaSeconds]     = useState(30 * 60);
+  const [etaSeconds, setEtaSeconds]     = useState(null);
   const [etaFromGPS, setEtaFromGPS]     = useState(null); // recalculated from live GPS
   const [showItems, setShowItems]       = useState(false);
   const [driverProgress, setDriverProgress] = useState(0);
@@ -164,6 +164,12 @@ export default function OrderTracking() {
       const step = statusToStep(data.order_status);
       setCurrentStep(step);
       setOrderNum(data.order_number || num.trim().toUpperCase());
+      // Seed ETA from server estimate; fall back to 30 min
+      if (data.estimated_minutes && step < 6) {
+        setEtaSeconds(data.estimated_minutes * 60);
+      } else if (step < 6) {
+        setEtaSeconds(30 * 60);
+      }
       // Fetch queue position for orders still in the kitchen queue
       if (['pending', 'accepted', 'preparing'].includes((data.order_status || '').toLowerCase())) {
         fetchQueuePosition(data.order_number || num.trim().toUpperCase());
@@ -220,12 +226,12 @@ export default function OrderTracking() {
     if (initial) fetchOrder(initial);
   }, []); // eslint-disable-line
 
-  // ── ETA countdown (static until GPS available) ───────────
+  // ── ETA countdown ────────────────────────────────────────
   useEffect(() => {
-    if (currentStep >= 6 || !order) return;
+    if (currentStep >= 6 || etaSeconds === null) return;
     timerRef.current = setInterval(() => setEtaSeconds(s => Math.max(0, s - 1)), 1000);
     return () => clearInterval(timerRef.current);
-  }, [currentStep, order]);
+  }, [currentStep, etaSeconds !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Socket.IO ────────────────────────────────────────────
   useEffect(() => {
@@ -462,7 +468,9 @@ export default function OrderTracking() {
                     ? 'Delivered ✓'
                     : etaFromGPS != null
                       ? `~${etaFromGPS} min away`
-                      : `ETA ${fmtEta(etaSeconds)}`}
+                      : etaSeconds != null
+                        ? `ETA ${fmtEta(etaSeconds)}`
+                        : 'Estimating…'}
                 </span>
               </div>
             </div>
@@ -569,7 +577,7 @@ export default function OrderTracking() {
                   {!isDelivered && (
                     <div className="ot-eta-block">
                       <span className="ot-eta-num">
-                        {etaFromGPS != null ? `~${etaFromGPS}` : fmtEta(etaSeconds)}
+                        {etaFromGPS != null ? `~${etaFromGPS}` : etaSeconds != null ? fmtEta(etaSeconds) : '—'}
                       </span>
                       <span className="ot-eta-label">
                         {etaFromGPS != null ? 'minutes away · GPS live' : 'estimated arrival'}

@@ -133,8 +133,13 @@ const updateOrderStatus = async (req, res) => {
       [status.toLowerCase(), id, cancellation_reason || null, parsedMinutes]
     );
 
+    const orderNumber = updated.rows[0]?.order_number;
     if (io) {
-      io.to(`order_${id}`).emit("order_status_updated", { order_id: id, status: status.toLowerCase() });
+      const payload = { order_id: id, order_number: orderNumber, status: status.toLowerCase() };
+      // Emit to the order_number room (used by the customer tracking page)
+      if (orderNumber) io.to(`order_${orderNumber}`).emit("order_status_updated", payload);
+      // Also emit to the integer-id room for any legacy listeners
+      if (String(id) !== orderNumber) io.to(`order_${id}`).emit("order_status_updated", payload);
       try {
         const activeOrders = await pool.query(
           `SELECT order_number FROM guest_orders WHERE order_status = ANY($1) ORDER BY placed_at ASC`,

@@ -77,7 +77,7 @@ router.get("/track/:orderNumber", async (req, res) => {
     const [orderRes, roadieRes, ddRes, inHouseRes] = await Promise.all([
       pool.query(
         `SELECT order_number, customer_name,
-                delivery_method, delivery_city,
+                delivery_method, delivery_address, delivery_city,
                 sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
                 order_status, items, placed_at, updated_at, expected_time,
