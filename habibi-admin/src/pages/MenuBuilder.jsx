@@ -10,7 +10,7 @@ const ALL_CATEGORIES = [
   'Extras','Drinks','Family Tray','Build Your Own',
 ];
 
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '', sort_order: 0 };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -48,6 +48,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
     temperature: item.temperature || 'hot',
     exclude_global_addons: item.exclude_global_addons || false,
     quota_required: item.quota_required || '',
+    sort_order: item.sort_order ?? 0,
   } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -82,6 +83,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('temperature', form.temperature || 'hot');
       fd.append('exclude_global_addons', form.exclude_global_addons ? 'true' : 'false');
       fd.append('quota_required', form.quota_required || '');
+      fd.append('sort_order', form.sort_order ?? 0);
       if (form.image) fd.append('image', form.image);
       if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
       if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
@@ -134,6 +136,10 @@ function MenuModal({ item, categories, onClose, onSave }) {
               <div className="field">
                 <label>Partner Price</label>
                 <input type="number" min="0" step="0.01" className="input" placeholder="0.00" value={form.partner_price} onChange={e => set('partner_price', e.target.value)} />
+              </div>
+              <div className="field" style={{ width: 80 }}>
+                <label title="Lower number = appears first within its category">Sort #</label>
+                <input type="number" min="0" step="1" className="input" placeholder="0" value={form.sort_order} onChange={e => set('sort_order', parseInt(e.target.value) || 0)} />
               </div>
             </div>
 
@@ -399,11 +405,13 @@ export default function MenuBuilder() {
 
   const categories = ['all', ...new Set(items.map(i => i.category).filter(Boolean))];
 
-  const visible = items.filter(i => {
-    if (catFilter !== 'all' && i.category !== catFilter) return false;
-    if (search) return (i.name + (i.description || '') + (i.category || '')).toLowerCase().includes(search.toLowerCase());
-    return true;
-  });
+  const visible = items
+    .filter(i => {
+      if (catFilter !== 'all' && i.category !== catFilter) return false;
+      if (search) return (i.name + (i.description || '') + (i.category || '')).toLowerCase().includes(search.toLowerCase());
+      return true;
+    })
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id);
 
   const handleSave = async (fd, id) => {
     if (id) {
@@ -590,6 +598,7 @@ export default function MenuBuilder() {
                 <th>Category</th>
                 <th style={{ width: 90 }}>Price</th>
                 <th style={{ width: 100 }}>Partner</th>
+                <th style={{ width: 55 }} title="Sort order within category">#</th>
                 <th style={{ width: 90 }}>Status</th>
                 <th style={{ width: 110 }}>Actions</th>
               </tr>
@@ -627,6 +636,7 @@ export default function MenuBuilder() {
                   <td className="mb-price mb-partner">
                     {item.partner_price ? `$${parseFloat(item.partner_price).toFixed(2)}` : '—'}
                   </td>
+                  <td className="text-muted" style={{ fontSize: '0.75rem', textAlign: 'center' }}>{item.sort_order ?? 0}</td>
                   <td>
                     <span className={`badge ${item.is_active !== false && item.is_available !== false ? 'badge-success' : 'badge-danger'}`}>
                       {item.is_active !== false && item.is_available !== false ? 'Active' : 'Inactive'}
