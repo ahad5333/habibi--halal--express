@@ -15,7 +15,6 @@ const NAV = [
   { to: '/orders',     icon: <ShoppingBag size={17} />,     label: 'Orders',          badge: 'live' },
   { to: '/liveboard',  icon: <Monitor size={17} />,         label: 'Live Board',      badge: 'live' },
   { to: '/tables',        icon: <QrCode size={17} />,       label: 'Dine-In Tables' },
-  { to: '/reservations',  icon: <CalendarDays size={17} />, label: 'Table Reservations', badge: 'live' },
   { to: '/catering',      icon: <CalendarDays size={17} />, label: 'Catering Quotes' },
   { to: '/menu',           icon: <Utensils size={17} />,    label: 'Menu Builder' },
   { to: '/global-addons',  icon: <Package size={17} />,    label: 'Global Add-ons' },

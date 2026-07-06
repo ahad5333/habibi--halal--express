@@ -53,7 +53,6 @@ const BusinessMenuAdmin= lazy(() => import('./pages/BusinessMenuAdmin'));
 const PartnerOrders    = lazy(() => import('./pages/PartnerOrders'));
 const TableManager     = lazy(() => import('./pages/TableManager'));
 const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
-const TableReservations= lazy(() => import('./pages/TableReservations'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
 const Integrations     = lazy(() => import('./pages/Integrations'));
@@ -90,7 +89,6 @@ function AdminLayout() {
             <Route path="/wholesale-catalog" element={<BusinessMenuAdmin />} />
             <Route path="/partner-orders"    element={<PartnerOrders />} />
             <Route path="/tables"           element={<TableManager />} />
-            <Route path="/reservations"     element={<TableReservations />} />
             <Route path="/catering"         element={<CateringAdmin />} />
           <Route path="/careers"          element={<CareersAdmin />} />
             <Route path="/reviews"          element={<Reviews />} />
