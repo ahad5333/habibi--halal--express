@@ -133,10 +133,10 @@ export default function Dashboard() {
       {/* Quick links */}
       <div className="dash-quick">
         {[
-          { to: '/menu',     label: 'Add Menu Item',      icon: <Utensils size={16} />,   color: '#E5B64E' },
-          { to: '/coupons',  label: 'Create Coupon',      icon: <TrendingUp size={16} />, color: '#3b82f6' },
-          { to: '/partners', label: 'Review Applications',icon: <Circle size={16} />,     color: '#22c55e' },
-          { to: '/urgent',   label: 'Urgent Inbox',       icon: <Clock size={16} />,      color: '#ef4444' },
+          { to: '/liveboard',  label: 'Live Board',     icon: <Utensils size={16} />,   color: '#E5B64E' },
+          { to: '/menu',       label: 'Menu Builder',   icon: <TrendingUp size={16} />, color: '#3b82f6' },
+          { to: '/coupons',    label: 'Coupons',        icon: <Circle size={16} />,     color: '#22c55e' },
+          { to: '/broadcasts', label: 'Broadcasts',     icon: <Clock size={16} />,      color: '#ef4444' },
         ].map(q => (
           <Link key={q.to} to={q.to} className="dash-quick-card">
             <div className="dash-quick-icon" style={{ color: q.color, background: q.color + '18' }}>

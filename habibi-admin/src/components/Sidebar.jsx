@@ -2,9 +2,9 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Utensils, Users, Tag,
-  Handshake, BarChart2, AlertTriangle, Settings, LogOut, Zap, CreditCard,
-  UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation, Store,
-  Briefcase, ClipboardList, QrCode, CalendarDays, Link2, KeyRound, Star, Shield, X,
+  BarChart2, Settings, LogOut, Zap, CreditCard,
+  UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation,
+  CalendarDays, Star, Shield, X,
   MessageSquare, Gift, BookOpen, DollarSign,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
@@ -14,7 +14,6 @@ const NAV = [
   { to: '/',           icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
   { to: '/orders',     icon: <ShoppingBag size={17} />,     label: 'Orders',          badge: 'live' },
   { to: '/liveboard',  icon: <Monitor size={17} />,         label: 'Live Board',      badge: 'live' },
-  { to: '/tables',        icon: <QrCode size={17} />,       label: 'Dine-In Tables' },
   { to: '/catering',      icon: <CalendarDays size={17} />, label: 'Catering Quotes' },
   { to: '/menu',           icon: <Utensils size={17} />,    label: 'Menu Builder' },
   { to: '/global-addons',  icon: <Package size={17} />,    label: 'Global Add-ons' },
@@ -28,14 +27,7 @@ const NAV = [
   { to: '/zones',      icon: <Truck size={17} />,           label: 'Delivery Zones' },
   { to: '/dispatch',   icon: <Navigation size={17} />,      label: 'Dispatch',        badge: 'live' },
   { to: '/cash-log',   icon: <DollarSign size={17} />,     label: 'Cash Log' },
-  { to: '/roadie',     icon: <Truck size={17} />,          label: 'Roadie' },
-  { to: '/marketplace',    icon: <Store size={17} />,    label: 'Marketplace' },
-  { to: '/integrations',   icon: <Link2 size={17} />,    label: 'Integrations' },
-  { to: '/credentials',    icon: <KeyRound size={17} />, label: 'API Keys' },
   { to: '/coupons',    icon: <Tag size={17} />,             label: 'Coupons' },
-  { to: '/partners',         icon: <Handshake size={17} />,      label: 'Partners' },
-  { to: '/wholesale-catalog',icon: <Briefcase size={17} />,     label: 'Wholesale Catalog' },
-  { to: '/partner-orders',   icon: <ClipboardList size={17} />, label: 'Partner Orders' },
   { to: '/analytics',  icon: <BarChart2 size={17} />,       label: 'Analytics' },
   { to: '/reports',    icon: <FileText size={17} />,        label: 'Reports' },
   { to: '/payments',        icon: <CreditCard size={17} />, label: 'Payments' },
@@ -43,7 +35,6 @@ const NAV = [
   { to: '/broadcasts', icon: <Bell size={17} />,            label: 'Broadcasts' },
   { to: '/chat',       icon: <MessageSquare size={17} />,   label: 'Customer Chat', live: true },
   { to: '/loyalty',    icon: <Gift size={17} />,            label: 'Loyalty Program' },
-  { to: '/urgent',     icon: <AlertTriangle size={17} />,   label: 'Urgent Requests', urgent: true },
   { to: '/audit-log',  icon: <Shield size={17} />,          label: 'Audit Log' },
   { to: '/settings',   icon: <Settings size={17} />,        label: 'Settings' },
 ];

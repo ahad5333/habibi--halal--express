@@ -33,9 +33,7 @@ const Orders           = lazy(() => import('./pages/Orders'));
 const MenuBuilder      = lazy(() => import('./pages/MenuBuilder'));
 const Customers        = lazy(() => import('./pages/Customers'));
 const Coupons          = lazy(() => import('./pages/Coupons'));
-const Partners         = lazy(() => import('./pages/Partners'));
 const Analytics        = lazy(() => import('./pages/Analytics'));
-const UrgentRequests   = lazy(() => import('./pages/UrgentRequests'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const Payments         = lazy(() => import('./pages/Payments'));
 const Staff            = lazy(() => import('./pages/Staff'));
@@ -46,18 +44,11 @@ const Reports          = lazy(() => import('./pages/Reports'));
 const LiveBoard        = lazy(() => import('./pages/LiveBoard'));
 const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
 const DeliveryDispatch = lazy(() => import('./pages/DeliveryDispatch'));
-const MarketplaceOrders= lazy(() => import('./pages/MarketplaceOrders'));
-const RoadieDeliveries = lazy(() => import('./pages/RoadieDeliveries'));
 const DriverView       = lazy(() => import('./pages/Driver'));
-const BusinessMenuAdmin= lazy(() => import('./pages/BusinessMenuAdmin'));
-const PartnerOrders    = lazy(() => import('./pages/PartnerOrders'));
-const TableManager     = lazy(() => import('./pages/TableManager'));
 const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
-const Integrations     = lazy(() => import('./pages/Integrations'));
 const PaymentAccounts  = lazy(() => import('./pages/PaymentAccounts'));
-const PlatformCredentials = lazy(() => import('./pages/PlatformCredentials'));
 const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
@@ -85,16 +76,11 @@ function AdminLayout() {
             <Route path="/menu"      element={<MenuBuilder />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/coupons"   element={<Coupons />} />
-            <Route path="/partners"        element={<Partners />} />
-            <Route path="/wholesale-catalog" element={<BusinessMenuAdmin />} />
-            <Route path="/partner-orders"    element={<PartnerOrders />} />
-            <Route path="/tables"           element={<TableManager />} />
             <Route path="/catering"         element={<CateringAdmin />} />
           <Route path="/careers"          element={<CareersAdmin />} />
             <Route path="/reviews"          element={<Reviews />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/payments"  element={<Payments />} />
-            <Route path="/urgent"    element={<UrgentRequests />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/staff"     element={<Staff />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -105,11 +91,7 @@ function AdminLayout() {
             <Route path="/broadcasts"  element={<Broadcasts />} />
             <Route path="/dispatch"   element={<DeliveryDispatch />} />
             <Route path="/cash-log"   element={<CashLog />} />
-            <Route path="/marketplace"   element={<MarketplaceOrders />} />
-            <Route path="/roadie"   element={<RoadieDeliveries />} />
-            <Route path="/integrations"   element={<Integrations />} />
             <Route path="/payment-accounts" element={<PaymentAccounts />} />
-            <Route path="/credentials"    element={<PlatformCredentials />} />
             <Route path="/audit-log"      element={<AuditLog />} />
             <Route path="/chat"           element={<ChatInbox />} />
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
