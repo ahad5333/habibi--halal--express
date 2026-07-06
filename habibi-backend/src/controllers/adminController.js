@@ -118,7 +118,6 @@ const updateOrderStatus = async (req, res) => {
     }
 
     const io = req.app.get("io");
-
     const parsedMinutes = estimated_minutes != null ? parseInt(estimated_minutes, 10) : null;
 
     const updated = await pool.query(
@@ -133,84 +132,81 @@ const updateOrderStatus = async (req, res) => {
 
     if (io) {
       io.to(`order_${id}`).emit("order_status_updated", { order_id: id, status: status.toLowerCase() });
-
-      // Re-rank all still-active orders and push each their new queue position
       try {
-        const activeStatuses = ['pending', 'accepted', 'preparing'];
         const activeOrders = await pool.query(
-          `SELECT order_number FROM guest_orders
-           WHERE order_status = ANY($1)
-           ORDER BY placed_at ASC`,
-          [activeStatuses]
+          `SELECT order_number FROM guest_orders WHERE order_status = ANY($1) ORDER BY placed_at ASC`,
+          [['pending', 'accepted', 'preparing']]
         );
-        activeOrders.rows.forEach((ord, idx) => {
-          io.to(`order_${ord.order_number}`).emit("queue_update", { position: idx });
+        activeOrders.rows.forEach((ord, i) => {
+          io.to(`order_${ord.order_number}`).emit("queue_update", { position: i });
         });
       } catch (_) {}
     }
 
-    const row = updated.rows[0];
-    if (row) {
-      const { customer_phone, customer_email, order_number } = row;
-      const orderNum = order_number || id;
-
-      // Fire SMS notification if customer has a phone number
-      if (customer_phone) {
-        sendOrderUpdate(customer_phone, orderNum, status).catch(err => {
-          console.error('[Admin Override] Failed to send SMS update:', err.message);
-        });
-      }
-
-      // Fire Email notification if customer has an email
-      if (customer_email) {
-        emailService.sendOrderStatusUpdate(customer_email, orderNum, status).catch(err => {
-          console.error('[Admin Override] Failed to send Email update:', err.message);
-        });
-      }
-
-      // Fire FCM push + in-app notification if user exists
-      // Prefer user_id stored on the order; fall back to email lookup for older orders
-      const resolvedUserId = row.user_id || null;
-      const doFCM = (userId) => {
-            fcmService.sendOrderPushNotification(userId, orderNum, status).catch(err => {
-              console.error('[Admin Override] Failed to send push notification:', err.message);
-            });
-
-            const STATUS_BODY = {
-              received:         'Your order has been received and is being reviewed.',
-              pending:          'Your order is awaiting confirmation.',
-              accepted:         'Great news — the kitchen has accepted your order!',
-              preparing:        'The kitchen is now preparing your food.',
-              cooking:          'Your food is being cooked to perfection.',
-              ready:            'Your order is ready! Pickup or on its way.',
-              picked_up:        'A driver has picked up your order.',
-              out_for_delivery: 'Your order is out for delivery. Hang tight!',
-              delivered:        'Your order has been delivered. Enjoy your meal! 🍽️',
-              cancelled:        'Your order has been cancelled. Contact us if you need help.',
-            };
-            const body = STATUS_BODY[status.toLowerCase()] || `Your order status is now: ${status}.`;
-            pool.query(
-              `INSERT INTO user_notifications (user_id, title, body) VALUES ($1, $2, $3)`,
-              [userId, `Order Update — #${orderNum}`, body]
-            ).catch(err => console.error('[Admin Override] Notification insert failed:', err.message));
-      };
-
-      if (resolvedUserId) {
-        doFCM(resolvedUserId);
-      } else if (customer_email) {
-        pool.query("SELECT id FROM users WHERE email = $1", [customer_email]).then(userRes => {
-          if (userRes.rows.length > 0) {
-            const userId = userRes.rows[0].id;
-
-            doFCM(userId);
-          }
-        }).catch(err => console.error('[Admin Override] FCM lookup error:', err.message));
-      }
-    }
-
+    // Respond immediately — notifications fire after
     logAudit(pool, req.user?.id, req.user?.name, 'update_order_status', 'order', String(id), { status }, req.ip);
     res.json({ message: "Status updated successfully" });
+
+    // Fire-and-forget notifications — completely isolated from the response
+    const row = updated.rows[0];
+    if (!row) return;
+
+    const { customer_phone, customer_email, order_number } = row;
+    const orderNum = order_number || id;
+
+    if (customer_phone) {
+      void (async () => {
+        try { await sendOrderUpdate(customer_phone, orderNum, status); }
+        catch (err) { console.error('[Admin] SMS failed:', err.message); }
+      })();
+    }
+
+    if (customer_email) {
+      void (async () => {
+        try { await emailService.sendOrderStatusUpdate(customer_email, orderNum, status); }
+        catch (err) { console.error('[Admin] Email failed:', err.message); }
+      })();
+    }
+
+    const STATUS_BODY = {
+      received:         'Your order has been received and is being reviewed.',
+      pending:          'Your order is awaiting confirmation.',
+      accepted:         'Great news — the kitchen has accepted your order!',
+      preparing:        'The kitchen is now preparing your food.',
+      cooking:          'Your food is being cooked to perfection.',
+      ready:            'Your order is ready! Pickup or on its way.',
+      picked_up:        'A driver has picked up your order.',
+      out_for_delivery: 'Your order is out for delivery. Hang tight!',
+      delivered:        'Your order has been delivered. Enjoy your meal!',
+      cancelled:        'Your order has been cancelled. Contact us if you need help.',
+    };
+    const notifBody  = STATUS_BODY[status.toLowerCase()] || `Your order status is now: ${status}.`;
+    const notifTitle = `Order Update — #${orderNum}`;
+
+    const sendFCM = async (userId) => {
+      try { await fcmService.sendOrderPushNotification(userId, orderNum, status); }
+      catch (err) { console.error('[Admin] FCM failed:', err.message); }
+      try {
+        await pool.query(
+          `INSERT INTO user_notifications (user_id, title, body) VALUES ($1, $2, $3)`,
+          [userId, notifTitle, notifBody]
+        );
+      } catch (err) { console.error('[Admin] Notification insert failed:', err.message); }
+    };
+
+    const resolvedUserId = row.user_id || null;
+    if (resolvedUserId) {
+      void sendFCM(resolvedUserId);
+    } else if (customer_email) {
+      void (async () => {
+        try {
+          const userRes = await pool.query("SELECT id FROM users WHERE email = $1", [customer_email]);
+          if (userRes.rows.length > 0) await sendFCM(userRes.rows[0].id);
+        } catch (err) { console.error('[Admin] FCM lookup failed:', err.message); }
+      })();
+    }
   } catch (error) {
+    console.error("[updateOrderStatus ERROR]", error.message, error.stack);
     res.status(500).json(safeError(error));
   }
 };
