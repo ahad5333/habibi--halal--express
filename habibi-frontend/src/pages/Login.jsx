@@ -36,12 +36,57 @@ const Login = () => {
   const [legalModal, setLegalModal] = useState(null);
   const [socialToast, setSocialToast] = useState('');
 
-  const handleSocialLogin = (provider) => {
-    setSocialToast(`${provider} login is coming soon. Please use email & password for now.`);
-    setTimeout(() => setSocialToast(''), 4000);
+  const handleSocialLogin = async (provider) => {
+    setError('');
+    setLoading(true);
+    try {
+      const { isFirebaseConfigured, getFirebaseAuth } = await import('../utils/firebase');
+      if (!isFirebaseConfigured()) {
+        setError('Social login is not configured yet. Please use email & password.');
+        return;
+      }
+      const auth = await getFirebaseAuth();
+      let firebaseUser;
+      if (provider === 'Google') {
+        const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        firebaseUser = result.user;
+      } else {
+        const { OAuthProvider, signInWithPopup } = await import('firebase/auth');
+        const appleProvider = new OAuthProvider('apple.com');
+        appleProvider.addScope('email');
+        appleProvider.addScope('name');
+        const result = await signInWithPopup(auth, appleProvider);
+        firebaseUser = result.user;
+      }
+
+      const idToken = await firebaseUser.getIdToken();
+      const API = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API}/api/auth/social`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: idToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Social login failed.');
+      if (data?.birthday_coupon) {
+        localStorage.setItem('habibi_birthday_coupon', JSON.stringify(data.birthday_coupon));
+      }
+      socialLogin(data);
+      navigate(redirectTo);
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        // User closed popup — no error needed
+      } else {
+        setError(err.message || `${provider} login failed. Please try again.`);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { login, register } = useAuth();
+  const { login, register, socialLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawRedirect = searchParams.get('redirect') || '/';

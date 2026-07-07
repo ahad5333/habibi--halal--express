@@ -40,6 +40,7 @@ const {
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
+  socialAuth,
 } = require("../controllers/authController");
 const protect = require('../middleware/authMiddleware');
 const { revokeToken } = require('../middleware/authMiddleware');
@@ -86,6 +87,9 @@ router.get("/verify-email", verifyEmail);
 // SMS 5-digit recovery code
 router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
 router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
+
+// Social login — Google & Apple via Firebase ID token
+router.post('/social', body('id_token').notEmpty().withMessage('ID token required.'), handleValidation, socialAuth);
 
 // Return current user info from the httpOnly cookie — used by frontend on page load
 router.get('/me', protect, getMe);

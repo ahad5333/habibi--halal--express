@@ -575,6 +575,102 @@ const getMe = async (req, res) => {
   }
 };
 
+/* ── Social login (Google / Apple via Firebase) ─────────────────────── */
+let _firebaseAdmin = null;
+async function getFirebaseAdmin() {
+  if (_firebaseAdmin) return _firebaseAdmin;
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw) return null;
+  try {
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
+    }
+    _firebaseAdmin = admin;
+    return admin;
+  } catch (err) {
+    console.error('[Firebase Admin] init failed:', err.message);
+    return null;
+  }
+}
+
+const socialAuth = async (req, res) => {
+  try {
+    const { id_token } = req.body;
+    if (!id_token || typeof id_token !== 'string') {
+      return res.status(400).json({ message: 'Firebase ID token is required.' });
+    }
+
+    const admin = await getFirebaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ message: 'Social login is not configured on this server yet.' });
+    }
+
+    // Verify the Firebase ID token
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(id_token);
+    } catch (_) {
+      return res.status(401).json({ message: 'Invalid or expired token. Please try again.' });
+    }
+
+    const { uid, email, name: fbName, picture, firebase } = decoded;
+    const provider = firebase?.sign_in_provider || 'unknown'; // google.com | apple.com
+
+    if (!email) {
+      return res.status(400).json({ message: 'No email address associated with this account.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const displayName = (fbName || cleanEmail.split('@')[0]).slice(0, 100);
+
+    // Find existing user or create one
+    let user = (await pool.query(
+      `SELECT id, name, email, role, is_partner, partner_id, date_of_birth, birthday_rewarded_year
+         FROM users WHERE email = $1`,
+      [cleanEmail]
+    )).rows[0];
+
+    if (!user) {
+      // New user — insert with a random un-guessable password hash (they won't use password login)
+      const dummyHash = await bcrypt.hash(crypto.randomUUID(), 12);
+      user = (await pool.query(
+        `INSERT INTO users (name, email, password_hash, email_verified, provider, provider_id)
+         VALUES ($1, $2, $3, TRUE, $4, $5)
+         RETURNING id, name, email, role, is_partner, partner_id, date_of_birth, birthday_rewarded_year`,
+        [displayName, cleanEmail, dummyHash, provider, uid]
+      )).rows[0];
+    } else {
+      // Update social info in case they previously registered with email/password
+      await pool.query(
+        `UPDATE users SET provider = COALESCE(provider, $1), provider_id = COALESCE(provider_id, $2), email_verified = TRUE WHERE id = $3`,
+        [provider, uid, user.id]
+      );
+    }
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    setAuthCookie(res, token, 7 * 24 * 60 * 60 * 1000);
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_partner: !!user.is_partner,
+        partner_id: user.partner_id || null,
+      },
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -585,4 +681,5 @@ module.exports = {
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
+  socialAuth,
 };

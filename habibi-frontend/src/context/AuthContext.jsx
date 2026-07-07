@@ -49,6 +49,15 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // Called after social login (Google/Apple) — data comes from /api/auth/social
+  const socialLogin = (data) => {
+    if (data?.user) {
+      setUser(data.user);
+      safePersist(data.user);
+    }
+    return data;
+  };
+
   const logout = async () => {
     try { await authAPI.logout(); } catch (_) { /* server unreachable — proceed with local cleanup */ }
     localStorage.removeItem('habibi_user');
@@ -65,7 +74,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, isLoggedIn: !!user, isPartner: !!user?.is_partner }}>
+    <AuthContext.Provider value={{ user, loading, login, register, socialLogin, logout, refreshUser, isLoggedIn: !!user, isPartner: !!user?.is_partner }}>
       {children}
     </AuthContext.Provider>
   );
