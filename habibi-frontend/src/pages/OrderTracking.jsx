@@ -132,6 +132,7 @@ export default function OrderTracking() {
   const [leafletReady, setLeafletReady]     = useState(false);
   const [queuePosition, setQueuePosition]   = useState(null); // null = not in queue, 0 = next up, N = N orders ahead
   const [driverInfo, setDriverInfo]         = useState(null); // { name, phone, rating } from dispatch
+  const [nearbyToast, setNearbyToast]       = useState(false);
 
   const socketRef            = useRef(null);
   const timerRef             = useRef(null);
@@ -261,6 +262,14 @@ export default function OrderTracking() {
     // Live queue position updates broadcast whenever any order status changes
     socket.on('queue_update', ({ position }) => {
       setQueuePosition(position ?? null);
+    });
+
+    // Driver nearby alert — emitted by backend when driver < 500m from customer
+    socket.on('driver_nearby', ({ order_number: on }) => {
+      if (on && on !== orderNum) return;
+      setCurrentStep(prev => Math.max(prev, 5));
+      setNearbyToast(true);
+      setTimeout(() => setNearbyToast(false), 10000);
     });
 
     // Real GPS from driver app (backend emits 'driver_location_update')
@@ -405,6 +414,14 @@ export default function OrderTracking() {
 
   return (
     <div className="ot-page">
+
+      {/* ── Driver Nearby Toast ── */}
+      {nearbyToast && (
+        <div className="ot-nearby-toast">
+          <span>📍 Your driver is almost there! Please be ready.</span>
+          <button className="ot-nearby-close" onClick={() => setNearbyToast(false)}>×</button>
+        </div>
+      )}
 
       {/* ── Order lookup bar ── */}
       <div className="ot-lookup-bar">

@@ -40,6 +40,8 @@ const proofUpload = multer({
 const {
   getAssignments,
   assignDriver,
+  broadcastOrderToDrivers,
+  claimOrder,
   respondToAssignment,
   getDriverAssignment,
   getAssignmentForOrder,
@@ -92,6 +94,8 @@ function driverOrAdmin(req, res, next) {
 }
 
 // ── Driver-facing routes ───────────────────────────────────────────
+// Claim a broadcast order — first driver wins
+router.post  ('/assignments/claim',                driverOrAdmin,              claimOrder);
 router.get   ('/driver/:driver_id',                driverOrAdmin,              getDriverAssignment);
 router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  updateDriverGPS);
 router.patch ('/assignments/:id/status',           driverOrAdmin,              updateAssignmentStatus);
@@ -108,9 +112,11 @@ router.get ('/order/:order_number',   getAssignmentForOrder);
 
 // ── Admin-only routes ──────────────────────────────────────────────
 router.use(protect, admin);
-router.get ('/assignments',  getAssignments);
-router.get ('/drivers',      getDeliveryDrivers);
-router.post('/assign',       assignDriver);
+router.get ('/assignments',                    getAssignments);
+router.get ('/drivers',                        getDeliveryDrivers);
+router.post('/assign',                         assignDriver);
+// Broadcast an order to all online drivers simultaneously
+router.post('/broadcast/:order_number',        broadcastOrderToDrivers);
 router.get ('/cash-report',  getCashReport);
 router.post('/cash-handins', recordCashHandin);
 

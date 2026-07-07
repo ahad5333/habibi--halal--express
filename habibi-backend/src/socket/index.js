@@ -138,13 +138,42 @@ module.exports = (io) => {
       console.log(`[SOCKET] Driver ${id} joined room driver_${id} (${socket.id})`);
     });
 
+    // ── join_drivers_online ───────────────────────────────────────────────────
+    // Drivers join this shared room to receive new order broadcasts.
+    // Auth: JWT role=driver OR HMAC token (same scheme as REST endpoints).
+    socket.on("join_drivers_online", ({ driver_id, hmac_token } = {}) => {
+      const user = socket.data.user;
+      const isJwtDriver  = user?.role === "driver";
+      const isJwtAdmin   = user?.role === "admin";
+      // HMAC token validation (drivers open via SMS link, no JWT)
+      let isHmacValid = false;
+      if (driver_id && hmac_token) {
+        try {
+          const crypto = require("crypto");
+          const salt   = process.env.DRIVER_SECRET_SALT || "habibi-driver-default";
+          const expected = crypto.createHmac("sha256", salt).update(String(driver_id)).digest("hex");
+          isHmacValid = hmac_token === expected;
+        } catch (_) {}
+      }
+      if (!isJwtDriver && !isJwtAdmin && !isHmacValid) {
+        socket.emit("error", { message: "Driver auth required for broadcast room." });
+        return;
+      }
+      socket.join("drivers_online");
+      // Store driver_id on socket for later reference
+      if (driver_id) socket.data.driver_id = parseInt(driver_id);
+      console.log(`[SOCKET] Driver ${driver_id || user?.id} joined drivers_online`);
+    });
+
     // ── update_location ───────────────────────────────────────────────────────
     // Only authenticated drivers or admins may push GPS updates.
-    socket.on("update_location", (data) => {
+    // Looks up order_number from order_id to emit to the correct customer room.
+    socket.on("update_location", async (data) => {
       const role = socket.data.user?.role;
       if (role !== "driver" && role !== "admin") return;
-      const { order_id, lat, lng, progress } = data;
-      io.to(`order_${order_id}`).emit("driver_location_update", { order_id, lat, lng, progress });
+      const { order_id, order_number, lat, lng, progress } = data;
+      const room = order_number ? `order_${order_number}` : `order_${order_id}`;
+      io.to(room).emit("driver_location_update", { order_id, order_number, lat, lng, progress });
     });
 
     // ── send_message ──────────────────────────────────────────────────────────

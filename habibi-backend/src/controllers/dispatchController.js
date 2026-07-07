@@ -169,12 +169,15 @@ const updateDriverGPS = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      // Fetch order_number so we can emit only to the tracking room for that order
       const asgn = await pool.query(
-        `SELECT order_number FROM delivery_assignments WHERE id=$1`,
+        `SELECT da.order_number, go.delivery_address, go.delivery_city
+           FROM delivery_assignments da
+           LEFT JOIN guest_orders go ON go.order_number = da.order_number
+          WHERE da.id=$1`,
         [assignment_id]
       );
-      const orderNumber = asgn.rows[0]?.order_number;
+      const orderNumber   = asgn.rows[0]?.order_number;
+      const deliveryAddr  = [asgn.rows[0]?.delivery_address, asgn.rows[0]?.delivery_city].filter(Boolean).join(', ');
       const payload = {
         assignment_id: parseInt(assignment_id),
         driver_id,
@@ -184,6 +187,31 @@ const updateDriverGPS = async (req, res) => {
       };
       if (orderNumber) {
         io.to(`order_${orderNumber}`).emit('driver_location_update', payload);
+
+        // Nearby detection — geocode delivery address and check if within 500m
+        if (deliveryAddr) {
+          try {
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(deliveryAddr)}`,
+              { headers: { 'User-Agent': 'HabibiHalalExpress/1.0', 'Accept-Language': 'en' } }
+            );
+            const geoData = await geoRes.json();
+            if (geoData[0]) {
+              const destLat = parseFloat(geoData[0].lat);
+              const destLng = parseFloat(geoData[0].lon);
+              const dLat = (parseFloat(lat) - destLat) * Math.PI / 180;
+              const dLng = (parseFloat(lng) - destLng) * Math.PI / 180;
+              const a = Math.sin(dLat/2)**2 + Math.cos(destLat*Math.PI/180)*Math.cos(parseFloat(lat)*Math.PI/180)*Math.sin(dLng/2)**2;
+              const distMeters = 6371000 * 2 * Math.asin(Math.sqrt(a));
+              if (distMeters < 500) {
+                io.to(`order_${orderNumber}`).emit('driver_nearby', {
+                  order_number: orderNumber,
+                  distance_meters: Math.round(distMeters),
+                });
+              }
+            }
+          } catch (_) {}
+        }
       }
       io.to('admins').emit('driver_location_update', payload);
     }
@@ -194,11 +222,117 @@ const updateDriverGPS = async (req, res) => {
   }
 };
 
+// ── Admin: broadcast a new order to all on-duty drivers ────────────
+const broadcastOrderToDrivers = async (req, res) => {
+  const { order_number } = req.params;
+  try {
+    const orderRes = await pool.query(
+      `SELECT order_number, customer_name, delivery_address, delivery_city, total, items
+         FROM guest_orders WHERE order_number=$1`,
+      [order_number]
+    );
+    if (!orderRes.rows.length) return res.status(404).json({ message: 'Order not found' });
+
+    const order = orderRes.rows[0];
+    let itemCount = 0;
+    try { itemCount = (typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []).length; } catch (_) {}
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('drivers_online').emit('new_order_broadcast', {
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        delivery_address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', '),
+        total: parseFloat(order.total || 0),
+        item_count: itemCount,
+        broadcast_at: new Date().toISOString(),
+      });
+    }
+    res.json({ ok: true, broadcast_to: 'drivers_online' });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Driver: claim a broadcast order (first-accept-wins) ────────────
+const claimOrder = async (req, res) => {
+  const { order_number, driver_id, driver_name } = req.body;
+  if (!order_number || !driver_id) return res.status(400).json({ message: 'order_number and driver_id required' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Lock: check if already claimed by another driver
+    const existing = await client.query(
+      `SELECT id, driver_id FROM delivery_assignments
+        WHERE order_number=$1 AND status NOT IN ('cancelled')
+        FOR UPDATE`,
+      [order_number]
+    );
+    if (existing.rows.length) {
+      await client.query('ROLLBACK');
+      const takenBy = existing.rows[0].driver_id;
+      if (String(takenBy) === String(driver_id)) {
+        // Same driver double-tapped — return their existing assignment
+        return res.json({ claimed: true, yours: true, assignment_id: existing.rows[0].id });
+      }
+      return res.status(409).json({ claimed: false, message: 'Order already taken by another driver.' });
+    }
+
+    // Fetch order details for the assignment record
+    const orderRes = await client.query(
+      `SELECT id, customer_name, customer_phone, delivery_address, delivery_city, tip
+         FROM guest_orders WHERE order_number=$1`,
+      [order_number]
+    );
+    if (!orderRes.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    const o = orderRes.rows[0];
+    const deliveryAddress = [o.delivery_address, o.delivery_city].filter(Boolean).join(', ');
+
+    // Fetch driver details
+    const driverRes = await client.query(
+      `SELECT name, phone FROM staff_members WHERE id=$1`,
+      [driver_id]
+    );
+    const dName = driverRes.rows[0]?.name || driver_name || 'Driver';
+
+    const result = await client.query(
+      `INSERT INTO delivery_assignments
+         (order_id, order_number, driver_id, driver_name, status,
+          delivery_address, customer_name, customer_phone, tip_amount)
+       VALUES ($1,$2,$3,$4,'assigned',$5,$6,$7,$8)
+       RETURNING id`,
+      [o.id, order_number, driver_id, dName, deliveryAddress, o.customer_name, o.customer_phone, o.tip || 0]
+    );
+    await client.query('COMMIT');
+
+    const assignment_id = result.rows[0].id;
+
+    // Notify all other drivers this order is gone
+    const io = req.app.get('io');
+    if (io) {
+      io.to('drivers_online').emit('order_claimed', { order_number, driver_id: parseInt(driver_id) });
+      io.to('admins').emit('assignment_created', { order_number, driver_id: parseInt(driver_id), driver_name: dName });
+    }
+
+    res.json({ claimed: true, yours: true, assignment_id });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json(safeError(err));
+  } finally {
+    client.release();
+  }
+};
+
 // ── Driver/Admin: update assignment status ──────────────────────────
 const updateAssignmentStatus = async (req, res) => {
   const { id } = req.params;
   const { status, note } = req.body;
-  const allowed = ['assigned', 'en_route', 'delivered', 'cancelled'];
+  const allowed = ['assigned', 'en_route', 'picked_up', 'delivered', 'cancelled'];
   if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
 
   try {
@@ -211,11 +345,35 @@ const updateAssignmentStatus = async (req, res) => {
       params
     );
 
+    // When driver picks up → mirror to guest_orders as out_for_delivery
+    if (status === 'picked_up') {
+      const asgn = await pool.query(
+        `SELECT order_number FROM delivery_assignments WHERE id=$1`, [id]
+      );
+      if (asgn.rows[0]?.order_number) {
+        await pool.query(
+          `UPDATE guest_orders SET order_status='out_for_delivery' WHERE order_number=$1`,
+          [asgn.rows[0].order_number]
+        );
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`order_${asgn.rows[0].order_number}`).emit('order_status_updated', {
+            order_number: asgn.rows[0].order_number,
+            status: 'out_for_delivery',
+          });
+          io.to('admins').emit('order_status_updated', {
+            order_number: asgn.rows[0].order_number,
+            status: 'out_for_delivery',
+          });
+        }
+      }
+    }
+
     const io = req.app.get('io');
     if (io) io.emit('assignment_status_update', { id: parseInt(id), status });
 
     // Notify customer when driver starts moving
-    if (status === 'en_route') {
+    if (status === 'en_route' || status === 'picked_up') {
       const row = await pool.query(
         `SELECT customer_phone, order_number FROM delivery_assignments WHERE id=$1`,
         [id]
@@ -225,7 +383,7 @@ const updateAssignmentStatus = async (req, res) => {
         const trackUrl = `${base}/order-tracking?order=${row.rows[0].order_number}`;
         sendSMS(
           row.rows[0].customer_phone,
-          `Your Habibi driver is on the way! Track live: ${trackUrl}`
+          `Your Habibi driver has picked up your order and is on the way! Track live: ${trackUrl}`
         ).catch(() => {});
       }
     }
@@ -574,6 +732,8 @@ const codDeliveryFailed = async (req, res) => {
 module.exports = {
   getAssignments,
   assignDriver,
+  broadcastOrderToDrivers,
+  claimOrder,
   respondToAssignment,
   getDriverAssignment,
   getAssignmentForOrder,

@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import {
   Navigation, MapPin, CheckCircle, AlertCircle, Clock, User,
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
-  ThumbsUp, ThumbsDown, Power, DollarSign,
+  ThumbsUp, ThumbsDown, Power, DollarSign, Bell,
 } from 'lucide-react';
 import './DriverView.css';
 
@@ -25,8 +25,25 @@ function makeApiFetch(driverId, token) {
   };
 }
 
+function playBell() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.6, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 1.5);
+  } catch (_) {}
+}
+
 const STATUS_LABELS = {
   assigned:  { label: 'Assigned',  cls: 'dv-badge-warn' },
+  picked_up: { label: 'Picked Up', cls: 'dv-badge-info' },
   en_route:  { label: 'En Route',  cls: 'dv-badge-info' },
   delivered: { label: 'Delivered', cls: 'dv-badge-success' },
   cancelled: { label: 'Cancelled', cls: 'dv-badge-muted' },
@@ -60,11 +77,28 @@ export default function DriverView() {
   const [cashCollected, setCashCollected] = useState(null);
   // Today's running total across all COD deliveries
   const [cashSummary, setCashSummary]     = useState(null);
+  // Broadcast order notification (new order available to claim)
+  const [broadcastOrder, setBroadcastOrder] = useState(null);
+  const [claimCountdown, setClaimCountdown] = useState(30);
+  const [claimLoading, setClaimLoading]     = useState(false);
+  const [claimResult, setClaimResult]       = useState(null); // 'won' | 'lost'
 
-  const photoInputRef = useRef(null);
-  const watchRef      = useRef(null);
-  const intervalRef   = useRef(null);
-  const socketRef     = useRef(null);
+  const photoInputRef  = useRef(null);
+  const watchRef       = useRef(null);
+  const intervalRef    = useRef(null);
+  const socketRef      = useRef(null);
+  const countdownRef   = useRef(null);
+  const wakeLockRef    = useRef(null);
+
+  // ── Screen Wake Lock — keep phone screen on ───────────────────────
+  useEffect(() => {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen')
+        .then(lock => { wakeLockRef.current = lock; })
+        .catch(() => {});
+    }
+    return () => { wakeLockRef.current?.release(); };
+  }, []);
 
   const loadAssignment = useCallback(async () => {
     if (!driverId) return;
@@ -94,9 +128,19 @@ export default function DriverView() {
     const socket = io(API_BASE, { transports: ['websocket', 'polling'], reconnectionAttempts: 10 });
     socketRef.current = socket;
 
-    socket.on('connect', () => socket.emit('join_driver', driverId));
-    socket.on('assignment_created',      () => loadAssignment());
+    socket.on('connect', () => {
+      socket.emit('join_driver', driverId);
+      // Join broadcast room so new orders ring this driver
+      socket.emit('join_drivers_online', { driver_id: driverId, hmac_token: token });
+    });
+    socket.on('assignment_created',       () => loadAssignment());
     socket.on('assignment_status_update', () => loadAssignment());
+    socket.on('new_order_broadcast', (data) => {
+      setBroadcastOrder(data);
+      setClaimCountdown(30);
+      setClaimResult(null);
+      playBell();
+    });
 
     return () => socket.disconnect();
   }, [driverId, loadAssignment]);
@@ -142,6 +186,56 @@ export default function DriverView() {
 
   useEffect(() => () => stopTracking(), []);
 
+  // ── Broadcast countdown — auto-dismisses after 30s ────────────────
+  useEffect(() => {
+    if (!broadcastOrder) return;
+    countdownRef.current = setInterval(() => {
+      setClaimCountdown(c => {
+        if (c <= 1) {
+          clearInterval(countdownRef.current);
+          setBroadcastOrder(null);
+          return 30;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(countdownRef.current);
+  }, [broadcastOrder?.order_number]); // eslint-disable-line
+
+  // ── Claim a broadcast order (first-come first-served) ─────────────
+  const claimBroadcastOrder = async () => {
+    if (!broadcastOrder) return;
+    setClaimLoading(true);
+    try {
+      const data = await apiFetch('/api/dispatch/assignments/claim', {
+        method: 'POST',
+        body: JSON.stringify({ order_number: broadcastOrder.order_number, driver_id: driverId }),
+      });
+      if (data.claimed) {
+        setClaimResult('won');
+        clearInterval(countdownRef.current);
+        setBroadcastOrder(null);
+        await loadAssignment();
+        if (!tracking) startTracking();
+      } else {
+        setClaimResult('lost');
+      }
+    } catch (e) {
+      if (e.message.includes('409') || e.message.toLowerCase().includes('already') || e.message.toLowerCase().includes('taken')) {
+        setClaimResult('lost');
+      } else {
+        setError(e.message);
+      }
+    }
+    setClaimLoading(false);
+  };
+
+  const dismissBroadcast = () => {
+    clearInterval(countdownRef.current);
+    setBroadcastOrder(null);
+    setClaimResult(null);
+  };
+
   // ── On-duty toggle ─────────────────────────────────────────────────
   const toggleDuty = async () => {
     setDutyLoading(true);
@@ -153,6 +247,19 @@ export default function DriverView() {
       setOnDuty(v => !v);
     } catch (e) { setError(e.message); }
     setDutyLoading(false);
+  };
+
+  // ── Mark order picked up from restaurant ──────────────────────────
+  const markPickedUp = async () => {
+    if (!assignment?.id) return;
+    try {
+      await apiFetch(`/api/dispatch/assignments/${assignment.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'picked_up', driver_id: driverId }),
+      });
+      setAssignment(prev => ({ ...prev, status: 'en_route' }));
+      if (!tracking) startTracking();
+    } catch (e) { setError(e.message); }
   };
 
   // ── Accept / reject ────────────────────────────────────────────────
@@ -326,6 +433,41 @@ export default function DriverView() {
 
   return (
     <div className="dv-shell">
+
+      {/* ── New Order Broadcast Modal ── */}
+      {broadcastOrder && (
+        <div className="dv-broadcast-overlay">
+          <div className="dv-broadcast-modal">
+            <div className="dv-broadcast-bell"><Bell size={32}/></div>
+            <h3 className="dv-broadcast-title">New Order Available!</h3>
+            <div className="dv-broadcast-info">
+              <p className="dv-broadcast-ordernum">{broadcastOrder.order_number}</p>
+              <p className="dv-broadcast-name">{broadcastOrder.customer_name}</p>
+              {broadcastOrder.delivery_address && (
+                <p className="dv-broadcast-addr"><MapPin size={12}/> {broadcastOrder.delivery_address}</p>
+              )}
+              <p className="dv-broadcast-total">${parseFloat(broadcastOrder.total || 0).toFixed(2)}</p>
+            </div>
+            <div className={`dv-broadcast-countdown ${claimCountdown <= 10 ? 'dv-countdown-urgent' : ''}`}>
+              {claimCountdown}s
+            </div>
+            {claimResult === 'lost' ? (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: '#f87171', marginBottom: '0.75rem' }}>Order taken by another driver</p>
+                <button className="dv-btn" onClick={dismissBroadcast}>Close</button>
+              </div>
+            ) : (
+              <div className="dv-btn-row">
+                <button className="dv-btn dv-btn-primary" onClick={claimBroadcastOrder} disabled={claimLoading}>
+                  {claimLoading ? 'Claiming…' : <><CheckCircle size={16}/> Accept</>}
+                </button>
+                <button className="dv-btn dv-btn-danger" onClick={dismissBroadcast}>Skip</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="dv-header">
         <div className="dv-brand"><Navigation size={20}/><span>Driver Delivery</span></div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -445,6 +587,13 @@ export default function DriverView() {
             </div>
           </div>
         </div>
+
+        {/* ── Picked Up button — after accepting, before GPS en_route ── */}
+        {assignment.accepted_at && assignment.status === 'assigned' && (
+          <button className="dv-btn dv-btn-pickup" onClick={markPickedUp}>
+            <Package size={18}/> Order Picked Up from Restaurant
+          </button>
+        )}
 
         {/* ── GPS Tracking ── */}
         {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (

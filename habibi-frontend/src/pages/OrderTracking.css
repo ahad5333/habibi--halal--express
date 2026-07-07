@@ -1502,3 +1502,46 @@
   .ot-hero-title { font-size: 1.75rem; }
   .ot-step-label { font-size: 0.68rem; }
 }
+
+/* ── Driver Nearby Toast ─────────────────────────────────────── */
+.ot-nearby-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  border-radius: 40px;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 24px rgba(249,115,22,0.5);
+  animation: otToastIn 0.3s ease;
+}
+@keyframes otToastIn {
+  from { transform: translateX(-50%) translateY(-12px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);     opacity: 1; }
+}
+.ot-nearby-close {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+@media (max-width: 500px) {
+  .ot-nearby-toast { font-size: 0.82rem; padding: 0.65rem 1rem; white-space: normal; max-width: 90vw; }
+}
