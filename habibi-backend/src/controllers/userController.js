@@ -122,9 +122,9 @@ const getMyOrders = async (req, res) => {
     const phone = userResult.rows[0]?.phone_number;
     if (!email && !phone) return res.json([]);
 
-    // Match by user_id (most reliable) OR email (case-insensitive) OR phone number.
-    // user_id covers orders placed while logged in; email/phone cover guest orders
-    // and orders placed before the user_id column was added.
+    // Only match by user_id — orders placed while logged in.
+    // Email/phone matching was removed to prevent showing another person's
+    // guest orders when they happen to share the same contact details.
     const result = await pool.query(
       `SELECT order_number, customer_name, delivery_method,
               order_status, total, sub_total, tax, service_fee,
@@ -132,11 +132,9 @@ const getMyOrders = async (req, res) => {
               delivery_address, delivery_city, delivery_state, delivery_zip,
               placed_at, items
          FROM guest_orders
-        WHERE user_id = $3
-           OR ($1::text IS NOT NULL AND LOWER(customer_email) = LOWER($1))
-           OR ($2::text IS NOT NULL AND customer_phone = $2)
+        WHERE user_id = $1
         ORDER BY placed_at DESC`,
-      [email || null, phone || null, req.user.id]
+      [req.user.id]
     );
 
     // Enrich items with menu names so the mobile reorder feature works
