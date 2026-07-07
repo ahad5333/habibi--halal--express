@@ -164,6 +164,8 @@ export default function OrderTracking() {
       const step = statusToStep(data.order_status);
       setCurrentStep(step);
       setOrderNum(data.order_number || num.trim().toUpperCase());
+      // Clear persisted order number once delivered so a new session starts fresh
+      if (step >= 6) localStorage.removeItem('last_order_number');
       // Seed ETA from server estimate; fall back to 30 min
       if (data.estimated_minutes && step < 6) {
         setEtaSeconds(data.estimated_minutes * 60);

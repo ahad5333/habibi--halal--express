@@ -36,6 +36,7 @@ export function AuthProvider({ children }) {
     if (data.user) {
       setUser(data.user);
       safePersist(data.user);
+      localStorage.removeItem('last_order_number');
     }
     return data;
   };
@@ -54,6 +55,7 @@ export function AuthProvider({ children }) {
     if (data?.user) {
       setUser(data.user);
       safePersist(data.user);
+      localStorage.removeItem('last_order_number');
     }
     return data;
   };
@@ -61,6 +63,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try { await authAPI.logout(); } catch (_) { /* server unreachable — proceed with local cleanup */ }
     localStorage.removeItem('habibi_user');
+    localStorage.removeItem('last_order_number');
     setUser(null);
   };
 
