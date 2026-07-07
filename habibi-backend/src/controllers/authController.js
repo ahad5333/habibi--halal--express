@@ -19,8 +19,8 @@ function setAuthCookie(res, token, maxAgeMs) {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, password, phone, dob, first_name, last_name } = req.body;
-    let { email } = req.body;
+    const { name, password, dob, first_name, last_name } = req.body;
+    let { email, phone } = req.body;
 
     if (!name || !password) {
       return res.status(400).json({ message: 'Name and password are required.' });
@@ -33,6 +33,14 @@ const registerUser = async (req, res) => {
     }
     if (!/[0-9]/.test(password)) {
       return res.status(400).json({ message: 'Password must contain at least one number.' });
+    }
+
+    // If user typed a phone number into the email field, move it to phone
+    const emailVal = email ? String(email).trim() : '';
+    const looksLikePhone = emailVal && /^\+?[\d\s\-(). ]{7,20}$/.test(emailVal) && !emailVal.includes('@');
+    if (looksLikePhone) {
+      phone = phone || emailVal;
+      email = '';
     }
 
     const isPhoneSignup = !email || !String(email).trim();

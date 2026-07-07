@@ -47,7 +47,17 @@ const { revokeToken } = require('../middleware/authMiddleware');
 
 router.post("/register",
   rules.name(),
-  rules.email(),
+  // Accept a valid email OR a phone number (user can sign up with either)
+  body('email')
+    .optional({ checkFalsy: true })
+    .trim()
+    .custom(val => {
+      if (!val) return true; // phone-only signup — controller handles it
+      const isPhone = /^\+?[\d\s\-(). ]{7,20}$/.test(val) && !val.includes('@');
+      if (isPhone) return true;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) throw new Error('Must be a valid email address.');
+      return true;
+    }),
   rules.password(8),
   handleValidation,
   registerUser
