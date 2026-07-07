@@ -117,7 +117,7 @@ export default function OrderTracking() {
   const navigate = useNavigate();
   const urlOrder = params.get('order') || '';
 
-  const [searchInput, setSearchInput]   = useState(urlOrder || localStorage.getItem('last_order_number') || '');
+  const [searchInput, setSearchInput]   = useState(urlOrder || '');
   const [orderNum, setOrderNum]         = useState('');
   const [order, setOrder]               = useState(null);
   const [loading, setLoading]           = useState(false);
@@ -224,8 +224,7 @@ export default function OrderTracking() {
   };
 
   useEffect(() => {
-    const initial = urlOrder || localStorage.getItem('last_order_number') || '';
-    if (initial) fetchOrder(initial);
+    if (urlOrder) fetchOrder(urlOrder);
   }, []); // eslint-disable-line
 
   // ── ETA countdown ────────────────────────────────────────
