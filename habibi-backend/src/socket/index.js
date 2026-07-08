@@ -160,8 +160,11 @@ module.exports = (io) => {
         return;
       }
       socket.join("drivers_online");
-      // Store driver_id on socket for later reference
-      if (driver_id) socket.data.driver_id = parseInt(driver_id);
+      if (driver_id) {
+        socket.data.driver_id = parseInt(driver_id);
+        // Also join personal room so dispatch can send direct messages/replies
+        socket.join(`driver_${driver_id}`);
+      }
       console.log(`[SOCKET] Driver ${driver_id || user?.id} joined drivers_online`);
     });
 

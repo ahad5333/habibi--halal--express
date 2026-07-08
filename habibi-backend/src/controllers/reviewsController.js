@@ -4,7 +4,7 @@ const safeError = require('../utils/safeError');
 // Public: GET /api/reviews
 const getReviews = async (req, res) => {
   try {
-    const { limit = 20, rating, sort = 'newest', featured } = req.query;
+    const { limit = 20, offset = 0, rating, sort = 'newest', featured } = req.query;
 
     const params = [];
     const conditions = ['is_approved = TRUE'];
@@ -20,6 +20,7 @@ const getReviews = async (req, res) => {
     const sortMap = { rating: 'rating DESC, created_at DESC', newest: 'created_at DESC' };
     const orderBy = sortMap[sort] || 'created_at DESC';
     params.push(Math.min(parseInt(limit, 10) || 20, 100));
+    params.push(Math.max(parseInt(offset, 10) || 0, 0));
 
     const [rows, stats] = await Promise.all([
       pool.query(
@@ -27,7 +28,7 @@ const getReviews = async (req, res) => {
          FROM reviews
          WHERE ${conditions.join(' AND ')}
          ORDER BY ${orderBy}
-         LIMIT $${params.length}`,
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
         params
       ),
       pool.query(

@@ -60,11 +60,16 @@ const {
   driverSetPin,
   driverSendSetupSms,
   saveDriverFcmToken,
+  getDriverChat,
+  sendDriverChat,
+  sendDispatchChat,
+  getChatThreads,
+  markChatRead,
+  getDriverPerformance,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
 // Accepts admin/driver JWT (Bearer) OR HMAC token in X-Driver-Token header.
-// Token = HMAC-SHA256(DRIVER_SECRET_SALT, driver_id) — embedded in SMS link.
 function driverOrAdmin(req, res, next) {
   // 1. JWT Bearer token
   const authHeader = req.headers.authorization || '';
@@ -72,7 +77,7 @@ function driverOrAdmin(req, res, next) {
     try {
       const jwt     = require('jsonwebtoken');
       const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-      if (decoded.role === 'admin' || decoded.role === 'driver') {
+      if (decoded.role === 'admin' || decoded.role === 'driver' || decoded.role === 'delivery') {
         req.user = decoded;
         return next();
       }
@@ -97,8 +102,17 @@ function driverOrAdmin(req, res, next) {
   return res.status(401).json({ message: 'Driver authentication required' });
 }
 
-// ── Driver-facing routes ───────────────────────────────────────────
-// Claim a broadcast order — first driver wins
+// ── Public routes ──────────────────────────────────────────────────
+router.post('/calculate-fee',       calculateDeliveryFee);
+router.get ('/order/:order_number', getAssignmentForOrder);
+
+// ── Driver PIN auth — no token needed ─────────────────────────────
+router.post('/driver/login',          driverLogin);
+router.post('/driver/set-pin',        driverOrAdmin, driverSetPin);
+router.post('/driver/send-setup-sms', protect, admin, driverSendSetupSms);
+router.post('/driver/fcm-token',      saveDriverFcmToken);
+
+// ── Driver-facing routes (HMAC or JWT) ────────────────────────────
 router.post  ('/assignments/claim',                driverOrAdmin,              claimOrder);
 router.get   ('/driver/:driver_id',                driverOrAdmin,              getDriverAssignment);
 router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  updateDriverGPS);
@@ -110,22 +124,24 @@ router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.si
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 
-// ── Public routes ──────────────────────────────────────────────────
-router.post('/calculate-fee',         calculateDeliveryFee);
-router.get ('/order/:order_number',   getAssignmentForOrder);
+// ── Driver ↔ Dispatch chat ─────────────────────────────────────────
+router.get  ('/driver/:driver_id/chat',       driverOrAdmin,        getDriverChat);
+router.post ('/driver/:driver_id/chat',       driverOrAdmin,        sendDriverChat);
+router.patch('/driver/:driver_id/chat/read',  protect, admin,       markChatRead);
+router.post ('/driver/:driver_id/chat/reply', protect, admin,       sendDispatchChat);
+router.get  ('/chat/threads',                 protect, admin,       getChatThreads);
 
 // ── Admin-only routes ──────────────────────────────────────────────
-router.use(protect, admin);
-router.get ('/assignments',                    getAssignments);
-router.get ('/drivers',                        getDeliveryDrivers);
-router.post('/assign',                         assignDriver);
-// Broadcast an order to all online drivers simultaneously
-router.post('/broadcast/:order_number',        broadcastOrderToDrivers);
-router.get ('/cash-report',  getCashReport);
-router.post('/cash-handins', recordCashHandin);
+router.get ('/assignments',              protect, admin, getAssignments);
+router.get ('/drivers',                  protect, admin, getDeliveryDrivers);
+router.post('/assign',                   protect, admin, assignDriver);
+router.post('/broadcast/:order_number',  protect, admin, broadcastOrderToDrivers);
+router.get ('/cash-report',              protect, admin, getCashReport);
+router.post('/cash-handins',             protect, admin, recordCashHandin);
+router.get ('/driver-performance',       protect, admin, getDriverPerformance);
 
 // Scheduled orders waiting for dispatch
-router.get('/scheduled', async (req, res) => {
+router.get('/scheduled', protect, admin, async (req, res) => {
   const pool = require('../config/db');
   try {
     const result = await pool.query(
@@ -145,12 +161,5 @@ router.get('/scheduled', async (req, res) => {
     res.status(500).json({ message: process.env.NODE_ENV === 'production' ? 'Internal server error.' : err.message });
   }
 });
-
-// ── Driver PIN auth — public (no token needed) ─────────────────────
-router.post('/driver/login',         driverLogin);
-router.post('/driver/set-pin',       driverOrAdmin, driverSetPin);
-router.post('/driver/send-setup-sms', protect,      driverSendSetupSms);
-// FCM push token — auth via X-Driver-Token (validated inside handler)
-router.post('/driver/fcm-token',     saveDriverFcmToken);
 
 module.exports = router;

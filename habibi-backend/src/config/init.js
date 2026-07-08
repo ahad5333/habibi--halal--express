@@ -982,6 +982,21 @@ const createTables = async () => {
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_lockout_until TIMESTAMPTZ`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_fcm_token    TEXT`);
 
+    // ── driver_messages: driver ↔ dispatch chat ───────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS driver_messages (
+        id          SERIAL PRIMARY KEY,
+        driver_id   INTEGER NOT NULL,
+        driver_name TEXT,
+        message     TEXT NOT NULL,
+        direction   VARCHAR(10) NOT NULL DEFAULT 'inbound',
+        sent_by     TEXT,
+        read_at     TIMESTAMPTZ,
+        sent_at     TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_driver_messages_driver ON driver_messages(driver_id, sent_at DESC)`);
+
     // ── Seed default data (only if tables are empty) ──────────────
     await seedDefaults();
 

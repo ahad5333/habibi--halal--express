@@ -4,13 +4,13 @@ import { io } from 'socket.io-client';
 import {
   Navigation, MapPin, CheckCircle, AlertCircle, Clock, User,
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
-  ThumbsUp, ThumbsDown, Power, DollarSign, Bell,
+  ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
+  Zap, Star,
 } from 'lucide-react';
 import './DriverView.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-// All driver API calls include X-Driver-Token and driver_id for authentication
 function makeApiFetch(driverId, token) {
   return async function apiFetch(path, opts = {}) {
     const headers = {
@@ -49,10 +49,53 @@ const STATUS_LABELS = {
   cancelled: { label: 'Cancelled', cls: 'dv-badge-muted' },
 };
 
+const DELIVERY_STEPS = [
+  { key: 'assigned',  label: 'Assigned',  emoji: '📋' },
+  { key: 'picked_up', label: 'Picked Up', emoji: '🛵' },
+  { key: 'en_route',  label: 'En Route',  emoji: '🔥' },
+  { key: 'delivered', label: 'Done',      emoji: '✅' },
+];
+const STEP_ORDER = ['assigned', 'picked_up', 'en_route', 'delivered'];
+
+// SVG circular countdown ring
+function CountdownRing({ seconds, total = 30 }) {
+  const r = 44;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - seconds / total);
+  const urgent = seconds <= 10;
+  return (
+    <div className="dv-countdown-ring">
+      <svg viewBox="0 0 100 100" className="dv-ring-svg">
+        <circle className="dv-ring-bg"  cx="50" cy="50" r={r} />
+        <circle
+          className={`dv-ring-progress ${urgent ? 'dv-ring-urgent' : ''}`}
+          cx="50" cy="50" r={r}
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className={`dv-ring-label ${urgent ? 'dv-ring-label-urgent' : ''}`}>{seconds}s</span>
+    </div>
+  );
+}
+
+// Floating confetti stars for success screen
+function SuccessStars() {
+  return (
+    <div className="dv-confetti" aria-hidden="true">
+      {[...Array(12)].map((_, i) => (
+        <span key={i} className="dv-star-particle" style={{ '--i': i }}>
+          {['⭐','🌟','✨','💫'][i % 4]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function DriverView() {
   const [params] = useSearchParams();
   const driverId = params.get('id');
-  const token    = params.get('token');   // HMAC auth token embedded in SMS link
+  const token    = params.get('token');
 
   const apiFetch = useCallback(makeApiFetch(driverId, token), [driverId, token]);
 
@@ -64,24 +107,25 @@ export default function DriverView() {
   const [lastPos, setLastPos]             = useState(null);
   const [onDuty, setOnDuty]               = useState(false);
   const [dutyLoading, setDutyLoading]     = useState(false);
-  // Delivery flow: null | 'arrived' | 'no_answer'
   const [deliveryPhase, setDeliveryPhase] = useState(null);
   const [proofFile, setProofFile]         = useState(null);
   const [proofPreview, setProofPreview]   = useState(null);
   const [submitting, setSubmitting]       = useState(false);
   const [proofError, setProofError]       = useState('');
-  // Accept/reject
   const [rejectOpen, setRejectOpen]       = useState(false);
   const [rejectReason, setRejectReason]   = useState('');
-  // COD cash collection
   const [cashCollected, setCashCollected] = useState(null);
-  // Today's running total across all COD deliveries
   const [cashSummary, setCashSummary]     = useState(null);
-  // Broadcast order notification (new order available to claim)
   const [broadcastOrder, setBroadcastOrder] = useState(null);
   const [claimCountdown, setClaimCountdown] = useState(30);
   const [claimLoading, setClaimLoading]     = useState(false);
-  const [claimResult, setClaimResult]       = useState(null); // 'won' | 'lost'
+  const [claimResult, setClaimResult]       = useState(null);
+  const [chatOpen, setChatOpen]       = useState(false);
+  const [chatMsgs, setChatMsgs]       = useState([]);
+  const [chatInput, setChatInput]     = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [chatUnread, setChatUnread]   = useState(0);
+  const chatEndRef = useRef(null);
 
   const photoInputRef  = useRef(null);
   const watchRef       = useRef(null);
@@ -90,15 +134,26 @@ export default function DriverView() {
   const countdownRef   = useRef(null);
   const wakeLockRef    = useRef(null);
 
-  // ── PWA: swap to driver manifest ─────────────────────────────────
   useEffect(() => {
-    const link = document.querySelector('link[rel="manifest"]');
-    const orig = link?.href;
-    if (link) link.href = '/driver-manifest.json';
-    return () => { if (link && orig) link.href = orig; };
+    // Swap PWA manifest
+    const manifest = document.querySelector('link[rel="manifest"]');
+    const origManifest = manifest?.href;
+    if (manifest) manifest.href = '/driver-manifest.json';
+
+    // Swap favicon to scooter icon for driver app
+    const favicons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+    const origFavs = [];
+    favicons.forEach(fav => {
+      origFavs.push({ el: fav, href: fav.href });
+      fav.href = '/images/icons/delivery.png';
+    });
+
+    return () => {
+      if (manifest && origManifest) manifest.href = origManifest;
+      origFavs.forEach(({ el, href }) => { el.href = href; });
+    };
   }, []);
 
-  // ── Push notifications: register FCM token ────────────────────────
   useEffect(() => {
     if (!driverId || !token) return;
     const t = setTimeout(async () => {
@@ -110,7 +165,6 @@ export default function DriverView() {
     return () => clearTimeout(t);
   }, [driverId, token]);
 
-  // ── Screen Wake Lock — keep phone screen on ───────────────────────
   useEffect(() => {
     if ('wakeLock' in navigator) {
       navigator.wakeLock.request('screen')
@@ -119,6 +173,17 @@ export default function DriverView() {
     }
     return () => { wakeLockRef.current?.release(); };
   }, []);
+
+  useEffect(() => {
+    if (!driverId) return;
+    apiFetch(`/api/dispatch/driver/${driverId}/chat`)
+      .then(data => setChatMsgs(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [driverId, apiFetch]);
+
+  useEffect(() => {
+    if (chatOpen) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMsgs, chatOpen]);
 
   const loadAssignment = useCallback(async () => {
     if (!driverId) return;
@@ -131,7 +196,6 @@ export default function DriverView() {
 
   useEffect(() => { loadAssignment(); }, [loadAssignment]);
 
-  // Load today's cash total for this driver
   const loadCashSummary = useCallback(async () => {
     if (!driverId) return;
     try {
@@ -142,7 +206,6 @@ export default function DriverView() {
 
   useEffect(() => { loadCashSummary(); }, [loadCashSummary]);
 
-  // ── Socket.IO ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!driverId) return;
     const socket = io(API_BASE, { transports: ['websocket', 'polling'], reconnectionAttempts: 10 });
@@ -150,7 +213,6 @@ export default function DriverView() {
 
     socket.on('connect', () => {
       socket.emit('join_driver', driverId);
-      // Join broadcast room so new orders ring this driver
       socket.emit('join_drivers_online', { driver_id: driverId, hmac_token: token });
     });
     socket.on('assignment_created',       () => loadAssignment());
@@ -160,7 +222,6 @@ export default function DriverView() {
       setClaimCountdown(30);
       setClaimResult(null);
       playBell();
-      // Show system notification so driver is alerted even if phone screen is dim
       if (Notification.permission === 'granted') {
         try {
           new Notification('🔔 New Delivery Order', {
@@ -173,10 +234,18 @@ export default function DriverView() {
       }
     });
 
+    socket.on('dispatch_chat_reply', (msg) => {
+      setChatMsgs(prev => [...prev, msg]);
+      setChatOpen(prev => {
+        if (!prev) setChatUnread(n => n + 1);
+        return prev;
+      });
+      try { playBell(); } catch (_) {}
+    });
+
     return () => socket.disconnect();
   }, [driverId, loadAssignment]);
 
-  // ── GPS ────────────────────────────────────────────────────────────
   const sendGPS = useCallback(async (lat, lng) => {
     if (!assignment?.id) return;
     try {
@@ -217,7 +286,6 @@ export default function DriverView() {
 
   useEffect(() => () => stopTracking(), []);
 
-  // ── Broadcast countdown — auto-dismisses after 30s ────────────────
   useEffect(() => {
     if (!broadcastOrder) return;
     countdownRef.current = setInterval(() => {
@@ -233,7 +301,6 @@ export default function DriverView() {
     return () => clearInterval(countdownRef.current);
   }, [broadcastOrder?.order_number]); // eslint-disable-line
 
-  // ── Claim a broadcast order (first-come first-served) ─────────────
   const claimBroadcastOrder = async () => {
     if (!broadcastOrder) return;
     setClaimLoading(true);
@@ -267,7 +334,6 @@ export default function DriverView() {
     setClaimResult(null);
   };
 
-  // ── On-duty toggle ─────────────────────────────────────────────────
   const toggleDuty = async () => {
     setDutyLoading(true);
     try {
@@ -280,7 +346,6 @@ export default function DriverView() {
     setDutyLoading(false);
   };
 
-  // ── Mark order picked up from restaurant ──────────────────────────
   const markPickedUp = async () => {
     if (!assignment?.id) return;
     try {
@@ -293,7 +358,6 @@ export default function DriverView() {
     } catch (e) { setError(e.message); }
   };
 
-  // ── Accept / reject ────────────────────────────────────────────────
   const acceptAssignment = async () => {
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/respond`, {
@@ -315,7 +379,6 @@ export default function DriverView() {
     } catch (e) { setError(e.message); }
   };
 
-  // ── Delivery completion ────────────────────────────────────────────
   const markDelivered = async () => {
     if (!assignment?.id) return;
     try {
@@ -342,7 +405,6 @@ export default function DriverView() {
       setDeliveryPhase(null);
       loadCashSummary();
     } catch (e) {
-      // 409 = already recorded (double-tap) — treat as success
       if (e.message.includes('already recorded') || e.message === '409') {
         stopTracking();
         setAssignment(prev => ({ ...prev, status: 'delivered' }));
@@ -378,7 +440,6 @@ export default function DriverView() {
         body: form,
       });
     } catch (_) {}
-    // Mark delivered regardless of photo upload success
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/status`, {
         method: 'PATCH',
@@ -403,11 +464,75 @@ export default function DriverView() {
     } catch (e) { setError(e.message); }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────
+  const openChat = () => { setChatOpen(true); setChatUnread(0); };
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatSending) return;
+    setChatSending(true);
+    try {
+      const row = await apiFetch(`/api/dispatch/driver/${driverId}/chat`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: msg,
+          driver_name: assignment?.driver_name || assignment?.driver_full_name || 'Driver',
+        }),
+      });
+      setChatMsgs(prev => [...prev, row]);
+      setChatInput('');
+    } catch (_) {}
+    setChatSending(false);
+  };
+
+  // ── Shared chat overlay (used in both idle + active) ───────────────
+  const chatOverlay = chatOpen && (
+    <div className="dv-chat-overlay">
+      <div className="dv-chat-panel">
+        <div className="dv-chat-header">
+          <div className="dv-chat-header-left">
+            <MessageSquare size={16}/>
+            <span>Dispatch Chat</span>
+          </div>
+          <button className="dv-chat-close" onClick={() => setChatOpen(false)}><X size={18}/></button>
+        </div>
+        <div className="dv-chat-messages">
+          {chatMsgs.length === 0 && (
+            <p className="dv-chat-empty">No messages yet. Send a message to dispatch below.</p>
+          )}
+          {chatMsgs.map(m => (
+            <div key={m.id} className={`dv-chat-bubble ${m.direction === 'inbound' ? 'dv-bubble-driver' : 'dv-bubble-dispatch'}`}>
+              {m.direction === 'outbound' && (
+                <p className="dv-bubble-label">{m.sent_by || 'Dispatch'}</p>
+              )}
+              <p className="dv-bubble-text">{m.message}</p>
+              <p className="dv-bubble-time">{new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+          ))}
+          <div ref={chatEndRef}/>
+        </div>
+        <div className="dv-chat-input-row">
+          <input
+            className="dv-chat-input"
+            placeholder="Message dispatch…"
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendChat()}
+            disabled={chatSending}
+            maxLength={500}
+          />
+          <button className="dv-chat-send" onClick={sendChat} disabled={chatSending || !chatInput.trim()}>
+            <Send size={16}/>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Guard screens ──────────────────────────────────────────────────
   if (!driverId) {
     return (
       <div className="dv-shell dv-center">
-        <AlertCircle size={40}/>
+        <div className="dv-guard-icon">🚫</div>
         <p>No driver ID in URL. Use the link provided by dispatch.</p>
       </div>
     );
@@ -417,7 +542,7 @@ export default function DriverView() {
     return (
       <div className="dv-shell dv-center">
         <div className="dv-spinner"/>
-        <p>Loading assignment…</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>Loading your assignment…</p>
       </div>
     );
   }
@@ -425,48 +550,108 @@ export default function DriverView() {
   if (error) {
     return (
       <div className="dv-shell dv-center">
-        <AlertCircle size={40}/>
+        <div className="dv-guard-icon">⚠️</div>
         <p>{error}</p>
       </div>
     );
   }
 
+  // ── Idle screen (no active assignment) ────────────────────────────
   if (!assignment) {
     const hasEarnings = cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0);
+    const now = new Date();
+    const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
+    const shiftTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return (
       <div className="dv-shell dv-idle">
+        {chatOverlay}
+
         {/* Header */}
         <div className="dv-header">
-          <div className="dv-brand"><Navigation size={20}/><span>Driver Dashboard</span></div>
-          <button
-            className={`dv-badge ${onDuty ? 'dv-badge-success' : 'dv-badge-muted'} dv-duty-mini`}
-            onClick={toggleDuty}
-            disabled={dutyLoading}
-          >
-            <Power size={11}/> {onDuty ? 'On Duty' : 'Off Duty'}
-          </button>
-        </div>
-
-        <div className="dv-content">
-          {/* Duty toggle card */}
-          <div className="dv-card dv-duty-card">
+          <div className="dv-brand">
+            <img src="/images/logos/logo.png" className="dv-brand-logo" alt="Habibi" onError={e => e.target.style.display='none'}/>
+            <span>Driver</span>
+          </div>
+          <div className="dv-header-right">
+            <button className="dv-chat-fab-mini" onClick={openChat} title="Message dispatch">
+              <MessageSquare size={13}/>
+              {chatUnread > 0 && <span className="dv-chat-badge">{chatUnread}</span>}
+            </button>
             <button
-              className={`dv-btn dv-duty-btn ${onDuty ? 'dv-duty-on' : 'dv-duty-off'}`}
+              className={`dv-badge ${onDuty ? 'dv-badge-success' : 'dv-badge-muted'} dv-duty-mini`}
               onClick={toggleDuty}
               disabled={dutyLoading}
             >
-              <Power size={18}/> {onDuty ? 'On Duty — tap to go off duty' : 'Go On Duty'}
+              <Power size={11}/> {onDuty ? 'On Duty' : 'Off Duty'}
             </button>
+          </div>
+        </div>
+
+        {/* ── Hero with real background image ── */}
+        <div className={`dv-idle-hero ${onDuty ? 'dv-hero-on-duty' : ''}`}>
+          <div className="dv-hero-bg-image" />
+          <div className="dv-hero-bg-overlay" />
+          <div className="dv-hero-inner">
+            {/* Driver badge */}
+            <div className="dv-badge-container">
+              <img src="/images/driver-badge.png" alt="Habibi Driver" className="dv-badge-img" />
+            </div>
+            <div className="dv-greeting-strip">
+              <span className="dv-greeting-text">{greeting} 👋</span>
+              <span className="dv-shift-time">🕐 {shiftTime}</span>
+            </div>
+            {/* Road scene */}
+            <div className="dv-hero-scene">
+              <div className="dv-hero-road-container">
+                <div className="dv-road-surface">
+                  <div className="dv-road-stripe"/>
+                </div>
+                <div className={`dv-scooter ${onDuty ? 'dv-scooter-riding' : ''}`}>🛵</div>
+                {onDuty && (
+                  <>
+                    <div className="dv-scooter-exhaust">💨</div>
+                    <div className="dv-speed-lines">
+                      {[...Array(4)].map((_, i) => <div key={i} className="dv-speed-line" style={{ '--i': i }}/>)}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <h2 className="dv-hero-title">
+              {onDuty ? '🔥 Waiting for Orders' : '👋 Ready to Roll?'}
+            </h2>
+            <p className="dv-hero-sub">
+              {onDuty
+                ? "You'll be notified the moment a new order comes in"
+                : 'Go on duty to start receiving delivery orders'
+              }
+            </p>
             {onDuty && (
-              <p className="dv-live-waiting" style={{ marginTop: '0.75rem' }}>
-                <span className="dv-live-dot"/> Waiting for orders — you'll be notified
-              </p>
+              <div className="dv-live-radar">
+                <div className="dv-radar-ring dv-radar-1"/>
+                <div className="dv-radar-ring dv-radar-2"/>
+                <div className="dv-radar-ring dv-radar-3"/>
+                <div className="dv-radar-dot"><Zap size={12}/></div>
+              </div>
             )}
           </div>
+        </div>
 
-          {/* Today's Earnings card */}
+        <div className="dv-content">
+          {/* Duty mega-button */}
+          <button
+            className={`dv-duty-mega ${onDuty ? 'dv-duty-mega-on' : 'dv-duty-mega-off'}`}
+            onClick={toggleDuty}
+            disabled={dutyLoading}
+          >
+            {onDuty && <div className="dv-duty-glow-ring"/>}
+            <Power size={22}/>
+            <span>{dutyLoading ? 'Updating…' : onDuty ? 'On Duty — Tap to go Off' : 'Go On Duty'}</span>
+          </button>
+
+          {/* ── Earnings Card with progress bar ── */}
           <div className="dv-card dv-earnings-card">
-            <p className="dv-card-title" style={{ marginBottom: '1rem' }}>Today's Earnings</p>
+            <p className="dv-card-title"><Star size={11} style={{ marginRight: 4 }}/>Today's Earnings</p>
             <div className="dv-earnings-grid">
               <div className="dv-earnings-item">
                 <span className="dv-earnings-icon">📦</span>
@@ -478,30 +663,134 @@ export default function DriverView() {
                 <span className="dv-earnings-val dv-earnings-green">
                   ${hasEarnings ? cashSummary.total_tips.toFixed(2) : '0.00'}
                 </span>
-                <span className="dv-earnings-label">Tips Earned</span>
+                <span className="dv-earnings-label">Tips</span>
               </div>
               <div className="dv-earnings-item">
                 <span className="dv-earnings-icon">💰</span>
                 <span className="dv-earnings-val dv-earnings-gold">
                   ${hasEarnings ? cashSummary.total_cod.toFixed(2) : '0.00'}
                 </span>
-                <span className="dv-earnings-label">Cash to Hand In</span>
+                <span className="dv-earnings-label">Cash</span>
               </div>
             </div>
+            {/* Goal progress bar */}
+            <div className="dv-goal-bar-wrap">
+              <div className="dv-goal-bar-labels">
+                <span>Daily Goal</span>
+                <span className="dv-goal-bar-pct">{Math.min(100, Math.round(((hasEarnings ? cashSummary.deliveries_count : 0) / 10) * 100))}%</span>
+              </div>
+              <div className="dv-goal-bar-track">
+                <div className="dv-goal-bar-fill" style={{ width: `${Math.min(100, ((hasEarnings ? cashSummary.deliveries_count : 0) / 10) * 100)}%` }} />
+              </div>
+              <p className="dv-goal-bar-sub">{hasEarnings ? cashSummary.deliveries_count : 0} / 10 deliveries</p>
+            </div>
             {hasEarnings && cashSummary.total_cod > 0 && (
-              <p className="dv-earnings-note">
-                Hand in ${cashSummary.total_cod.toFixed(2)} cash to manager at end of shift
-              </p>
+              <p className="dv-earnings-note">💼 Hand in ${cashSummary.total_cod.toFixed(2)} to manager at end of shift</p>
             )}
-            {!hasEarnings && (
-              <p className="dv-earnings-empty">No deliveries completed yet today</p>
-            )}
+            {!hasEarnings && <p className="dv-earnings-empty">No deliveries completed yet today</p>}
+          </div>
+
+          {/* ── Rank Card with image background ── */}
+          <div className="dv-rank-card">
+            <img src="/images/driver-rank-bg.jpg" alt="" className="dv-rank-card-bg" />
+            <div className="dv-rank-card-overlay" />
+            <div className="dv-rank-card-content">
+              <div className="dv-rank-left">
+                <span className="dv-rank-crown">👑</span>
+                <div>
+                  <p className="dv-rank-label">Driver Rank</p>
+                  <p className="dv-rank-title">
+                    {!hasEarnings ? 'Rookie' :
+                     cashSummary.deliveries_count < 5 ? 'Rookie' :
+                     cashSummary.deliveries_count < 10 ? '🔥 Hot Shot' :
+                     cashSummary.deliveries_count < 20 ? '⭐ Star Driver' :
+                     '💎 Elite Driver'}
+                  </p>
+                </div>
+              </div>
+              <div className="dv-rank-stars">
+                {[1,2,3,4,5].map(s => (
+                  <span key={s} className={`dv-rank-star ${(hasEarnings ? cashSummary.deliveries_count : 0) >= s * 2 ? 'dv-star-lit' : ''}`}>★</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Motivational Banner ── */}
+          <div className="dv-motive-banner">
+            <img src="/images/driver-motivation.jpg" alt="Keep going" className="dv-motive-img" />
+            <div className="dv-motive-overlay">
+              <p className="dv-motive-quote">"Every delivery is a step closer to your goal"</p>
+              <p className="dv-motive-brand">— Habibi Halal Express</p>
+            </div>
+          </div>
+
+          {/* ── Quick Actions Grid ── */}
+          <div className="dv-quick-actions">
+            <p className="dv-card-title" style={{ marginBottom: '0.75rem' }}>⚡ Quick Actions</p>
+            <div className="dv-quick-grid">
+              <button className="dv-quick-btn" onClick={openChat}>
+                <span className="dv-quick-icon">💬</span>
+                <span>Chat Dispatch</span>
+              </button>
+              <a className="dv-quick-btn" href="https://maps.google.com" target="_blank" rel="noreferrer">
+                <span className="dv-quick-icon">🗺️</span>
+                <span>Open Maps</span>
+              </a>
+              <a className="dv-quick-btn" href="tel:7184000443">
+                <span className="dv-quick-icon">📞</span>
+                <span>Call Store</span>
+              </a>
+              <button className="dv-quick-btn" onClick={toggleDuty} disabled={dutyLoading}>
+                <span className="dv-quick-icon">{onDuty ? '🔴' : '🟢'}</span>
+                <span>{onDuty ? 'Go Off' : 'Go On'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ── Achievement badges strip ── */}
+          <div className="dv-achievements-strip">
+            <p className="dv-card-title" style={{ padding: '0 0 0.75rem' }}>🏆 Today's Badges</p>
+            <div className="dv-achievements-row">
+              <div className="dv-achievement-badge dv-badge-unlocked">
+                <span className="dv-ach-icon">🛵</span>
+                <span className="dv-ach-label">First Drop</span>
+              </div>
+              <div className={`dv-achievement-badge ${hasEarnings && cashSummary.deliveries_count >= 5 ? 'dv-badge-unlocked' : 'dv-badge-locked'}`}>
+                <span className="dv-ach-icon">{hasEarnings && cashSummary.deliveries_count >= 5 ? '🔥' : '🔒'}</span>
+                <span className="dv-ach-label">5 Drops</span>
+              </div>
+              <div className={`dv-achievement-badge ${hasEarnings && cashSummary.deliveries_count >= 10 ? 'dv-badge-unlocked' : 'dv-badge-locked'}`}>
+                <span className="dv-ach-icon">{hasEarnings && cashSummary.deliveries_count >= 10 ? '⭐' : '🔒'}</span>
+                <span className="dv-ach-label">10 Drops</span>
+              </div>
+              <div className={`dv-achievement-badge ${hasEarnings && cashSummary.total_tips >= 20 ? 'dv-badge-unlocked' : 'dv-badge-locked'}`}>
+                <span className="dv-ach-icon">{hasEarnings && cashSummary.total_tips >= 20 ? '💎' : '🔒'}</span>
+                <span className="dv-ach-label">$20 Tips</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Pro Tips Card ── */}
+          <div className="dv-tips-card">
+            <div className="dv-tips-header">
+              <span className="dv-tips-icon">⚡</span>
+              <span className="dv-tips-title">Pro Driver Tips</span>
+            </div>
+            <div className="dv-tips-list">
+              <div className="dv-tip-item"><span>🗺️</span><span>Check traffic before heading out</span></div>
+              <div className="dv-tip-item"><span>📱</span><span>Keep GPS active during deliveries</span></div>
+              <div className="dv-tip-item"><span>😊</span><span>A smile earns better tips every time</span></div>
+              <div className="dv-tip-item"><span>⚡</span><span>Fast &amp; accurate = 5 star ratings</span></div>
+              <div className="dv-tip-item"><span>🧊</span><span>Keep hot food hot — always use the bag</span></div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // ── Active delivery screen ─────────────────────────────────────────
   const { label: statusLabel, cls: statusCls } = STATUS_LABELS[assignment.status] || { label: assignment.status, cls: 'dv-badge-muted' };
   const mapsUrl = assignment.delivery_address
     ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(assignment.delivery_address)}`
@@ -511,47 +800,61 @@ export default function DriverView() {
   const isCod  = assignment.payment_method === 'cod';
   const codAmt = parseFloat(assignment.order_total || 0);
 
+  const currentStepIdx = STEP_ORDER.indexOf(assignment.status);
+
   return (
     <div className="dv-shell">
+
+      {chatOverlay}
 
       {/* ── New Order Broadcast Modal ── */}
       {broadcastOrder && (
         <div className="dv-broadcast-overlay">
           <div className="dv-broadcast-modal">
-            <div className="dv-broadcast-bell"><Bell size={32}/></div>
+            <div className="dv-broadcast-pulse-ring"/>
+            <div className="dv-broadcast-bell"><Bell size={28}/></div>
             <h3 className="dv-broadcast-title">New Order Available!</h3>
+
             <div className="dv-broadcast-info">
-              <p className="dv-broadcast-ordernum">{broadcastOrder.order_number}</p>
+              <p className="dv-broadcast-ordernum"># {broadcastOrder.order_number}</p>
               <p className="dv-broadcast-name">{broadcastOrder.customer_name}</p>
               {broadcastOrder.delivery_address && (
                 <p className="dv-broadcast-addr"><MapPin size={12}/> {broadcastOrder.delivery_address}</p>
               )}
               <p className="dv-broadcast-total">${parseFloat(broadcastOrder.total || 0).toFixed(2)}</p>
             </div>
-            <div className={`dv-broadcast-countdown ${claimCountdown <= 10 ? 'dv-countdown-urgent' : ''}`}>
-              {claimCountdown}s
-            </div>
+
+            <CountdownRing seconds={claimCountdown} total={30}/>
+
             {claimResult === 'lost' ? (
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: '#f87171', marginBottom: '0.75rem' }}>Order taken by another driver</p>
+              <div className="dv-broadcast-result">
+                <p className="dv-broadcast-lost">Order taken by another driver</p>
                 <button className="dv-btn" onClick={dismissBroadcast}>Close</button>
               </div>
             ) : (
               <div className="dv-btn-row">
-                <button className="dv-btn dv-btn-primary" onClick={claimBroadcastOrder} disabled={claimLoading}>
-                  {claimLoading ? 'Claiming…' : <><CheckCircle size={16}/> Accept</>}
+                <button className="dv-btn dv-btn-claim" onClick={claimBroadcastOrder} disabled={claimLoading}>
+                  {claimLoading ? 'Claiming…' : <><CheckCircle size={16}/> Accept Order</>}
                 </button>
-                <button className="dv-btn dv-btn-danger" onClick={dismissBroadcast}>Skip</button>
+                <button className="dv-btn dv-btn-skip" onClick={dismissBroadcast}>Skip</button>
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Header */}
       <div className="dv-header">
-        <div className="dv-brand"><Navigation size={20}/><span>Driver Delivery</span></div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="dv-brand">
+          <img src="/images/logos/logo.png" className="dv-brand-logo" alt="Habibi" onError={e => e.target.style.display='none'}/>
+          <span>Delivery</span>
+        </div>
+        <div className="dv-header-right">
           <span className={`dv-badge ${statusCls}`}>{statusLabel}</span>
+          <button className="dv-chat-fab-mini" onClick={openChat} title="Message dispatch">
+            <MessageSquare size={13}/>
+            {chatUnread > 0 && <span className="dv-chat-badge">{chatUnread}</span>}
+          </button>
           <button
             className={`dv-badge ${onDuty ? 'dv-badge-success' : 'dv-badge-muted'} dv-duty-mini`}
             onClick={toggleDuty}
@@ -563,9 +866,33 @@ export default function DriverView() {
         </div>
       </div>
 
+      {/* Delivery progress stepper */}
+      {assignment.status !== 'cancelled' && (
+        <div className="dv-stepper">
+          {DELIVERY_STEPS.map((step, i) => {
+            const stepIdx = STEP_ORDER.indexOf(step.key);
+            const isDone   = stepIdx < currentStepIdx;
+            const isActive = stepIdx === currentStepIdx;
+            return (
+              <React.Fragment key={step.key}>
+                <div className={`dv-step ${isDone ? 'dv-step-done' : ''} ${isActive ? 'dv-step-active' : ''}`}>
+                  <div className="dv-step-dot">
+                    {isDone ? <CheckCircle size={14}/> : <span className="dv-step-emoji">{step.emoji}</span>}
+                  </div>
+                  <span className="dv-step-label">{step.label}</span>
+                </div>
+                {i < DELIVERY_STEPS.length - 1 && (
+                  <div className={`dv-step-line ${isDone ? 'dv-step-line-done' : isActive ? 'dv-step-line-active' : ''}`}/>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
+
       <div className="dv-content">
 
-        {/* ── Today's earnings strip ── */}
+        {/* Today's cash strip */}
         {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0) && (
           <div className="dv-cash-summary-bar">
             <DollarSign size={15}/>
@@ -574,15 +901,16 @@ export default function DriverView() {
               <span className="dv-tip-pill">+${cashSummary.total_tips.toFixed(2)} tips</span>
             )}
             {cashSummary.total_cod > 0 && (
-              <span className="dv-cash-summary-orders">· ${cashSummary.total_cod.toFixed(2)} COD to hand in</span>
+              <span className="dv-cash-summary-orders">· ${cashSummary.total_cod.toFixed(2)} COD</span>
             )}
           </div>
         )}
 
-        {/* ── Accept / Reject prompt ── */}
+        {/* Accept / Reject card */}
         {notYetAccepted && !rejectOpen && (
           <div className="dv-card dv-accept-card">
-            <p className="dv-card-title">New Assignment — Accept or Reject?</p>
+            <div className="dv-accept-pulse"/>
+            <p className="dv-card-title">🚨 New Assignment — Accept or Reject?</p>
             <div className="dv-btn-row">
               <button className="dv-btn dv-btn-primary" onClick={acceptAssignment}>
                 <ThumbsUp size={16}/> Accept
@@ -610,38 +938,50 @@ export default function DriverView() {
           </div>
         )}
 
-        {/* ── Order info ── */}
-        <div className="dv-card">
-          <p className="dv-card-title">Current Assignment</p>
-
-          <div className="dv-info-row">
-            <Package size={15}/>
+        {/* Order info card */}
+        <div className="dv-card dv-order-card">
+          {/* Food banner image */}
+          <div className="dv-order-food-banner">
+            <img src="/images/food/kitchen.jpg" alt="Habibi Kitchen" className="dv-order-food-banner-img" />
+            <div className="dv-order-food-banner-overlay">
+              <span className="dv-order-banner-label">🍗 Fresh & Hot — Handle with Care</span>
+            </div>
+          </div>
+          <div className="dv-order-card-header">
+            <span className="dv-order-food-badge">🍗</span>
             <div>
-              <p className="dv-label">Order</p>
-              <p className="dv-value">{assignment.order_number || `#${assignment.order_id}`}</p>
+              <p className="dv-order-num">{assignment.order_number || `#${assignment.order_id}`}</p>
+              <p className="dv-order-time">
+                <Clock size={11}/> {new Date(assignment.assigned_at).toLocaleTimeString()}
+              </p>
             </div>
           </div>
 
-          {tip > 0 && (
-            <div className="dv-info-row">
-              <DollarSign size={15}/>
-              <div>
-                <p className="dv-label">Tip</p>
-                <p className="dv-value dv-tip">${tip.toFixed(2)}</p>
-              </div>
+          {/* Route visual */}
+          <div className="dv-route-visual">
+            <div className="dv-route-point dv-route-origin">
+              <div className="dv-route-dot dv-dot-restaurant">🏪</div>
+              <span className="dv-route-label">Restaurant</span>
             </div>
-          )}
-
-          {isCod && assignment.status !== 'delivered' && (
-            <div className="dv-cod-banner">
-              <DollarSign size={18}/>
-              <div>
-                <p className="dv-cod-label">COLLECT CASH FROM CUSTOMER</p>
-                <p className="dv-cod-amount">${codAmt.toFixed(2)}</p>
-              </div>
+            <div className="dv-route-line">
+              <div className="dv-route-moving-dot"/>
             </div>
-          )}
+            <div className="dv-route-point dv-route-dest">
+              <div className="dv-route-dot dv-dot-customer"><MapPin size={14}/></div>
+              <span className="dv-route-label">Customer</span>
+            </div>
+          </div>
 
+          {/* Address */}
+          <div className="dv-delivery-address-block">
+            <MapPin size={16} className="dv-addr-pin"/>
+            <div>
+              <p className="dv-label">Delivery Address</p>
+              <p className="dv-value dv-addr-value">{assignment.delivery_address || '—'}</p>
+            </div>
+          </div>
+
+          {/* Customer */}
           {assignment.customer_name && (
             <div className="dv-info-row">
               <User size={15}/>
@@ -655,56 +995,74 @@ export default function DriverView() {
             </div>
           )}
 
-          <div className="dv-info-row">
-            <MapPin size={15}/>
-            <div>
-              <p className="dv-label">Delivery Address</p>
-              <p className="dv-value">{assignment.delivery_address || '—'}</p>
+          {/* Tip */}
+          {tip > 0 && (
+            <div className="dv-tip-banner">
+              <span className="dv-tip-icon">💵</span>
+              <div>
+                <p className="dv-tip-label">Tip Included</p>
+                <p className="dv-tip-value">${tip.toFixed(2)}</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="dv-info-row">
-            <Clock size={15}/>
-            <div>
-              <p className="dv-label">Assigned</p>
-              <p className="dv-value">{new Date(assignment.assigned_at).toLocaleTimeString()}</p>
+          {/* COD banner */}
+          {isCod && assignment.status !== 'delivered' && (
+            <div className="dv-cod-banner">
+              <DollarSign size={20}/>
+              <div>
+                <p className="dv-cod-label">COLLECT CASH ON DELIVERY</p>
+                <p className="dv-cod-amount">${codAmt.toFixed(2)}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* ── Picked Up button — after accepting, before GPS en_route ── */}
+        {/* Pickup button */}
         {assignment.accepted_at && assignment.status === 'assigned' && (
           <button className="dv-btn dv-btn-pickup" onClick={markPickedUp}>
             <Package size={18}/> Order Picked Up from Restaurant
           </button>
         )}
 
-        {/* ── GPS Tracking ── */}
+        {/* GPS tracking card */}
         {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
-          <div className="dv-card">
-            <p className="dv-card-title">GPS Tracking</p>
-            {gpsStatus && <p className="dv-gps-status">{gpsStatus}</p>}
-            {lastPos && <p className="dv-coords">{lastPos.lat}, {lastPos.lng} · {lastPos.time}</p>}
-            <div className="dv-btn-row">
+          <div className="dv-card dv-gps-card">
+            <div className="dv-gps-header">
+              <div className={`dv-gps-icon ${tracking ? 'dv-gps-live' : ''}`}>
+                <Navigation size={16}/>
+                {tracking && <div className="dv-gps-ping"/>}
+              </div>
+              <div>
+                <p className="dv-card-title" style={{ marginBottom: 0 }}>GPS Tracking</p>
+                {gpsStatus && <p className="dv-gps-status-inline">{gpsStatus}</p>}
+              </div>
+            </div>
+            {lastPos && (
+              <p className="dv-coords">{lastPos.lat}, {lastPos.lng} · {lastPos.time}</p>
+            )}
+            <div className="dv-btn-row" style={{ marginTop: '0.75rem' }}>
               {!tracking ? (
                 <button className="dv-btn dv-btn-primary" onClick={startTracking}>
-                  <Navigation size={16}/> Start Tracking
+                  <Navigation size={16}/> Start GPS Tracking
                 </button>
               ) : (
-                <button className="dv-btn dv-btn-danger" onClick={stopTracking}>Stop Tracking</button>
+                <button className="dv-btn dv-btn-gps-stop" onClick={stopTracking}>
+                  Stop Tracking
+                </button>
               )}
             </div>
           </div>
         )}
 
-        {/* ── Navigation ── */}
+        {/* Maps navigation button */}
         {mapsUrl && (
           <a className="dv-btn dv-btn-maps" href={mapsUrl} target="_blank" rel="noreferrer">
-            <MapPin size={16}/> Open in Google Maps
+            <MapPin size={16}/> Navigate with Google Maps
           </a>
         )}
 
-        {/* ── Arrived-at-door flow ── */}
+        {/* Arrived & delivery flow */}
         {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
           <>
             {deliveryPhase === null && (
@@ -726,7 +1084,7 @@ export default function DriverView() {
                   {assignment.customer_phone && (
                     <a className="dv-btn dv-btn-sms"
                       href={`sms:${assignment.customer_phone}?body=Hi, your Habibi Halal Express delivery is here! Please come to the door.`}>
-                      <MessageSquare size={18}/> Send Message
+                      <MessageSquare size={18}/> Send SMS
                     </a>
                   )}
                 </div>
@@ -741,7 +1099,6 @@ export default function DriverView() {
                       <CheckCircle size={18}/> Yes — Delivered ✓
                     </button>
                   )}
-                  {/* COD: cannot leave at door without collecting cash */}
                   {!isCod && (
                     <button className="dv-btn dv-btn-noanswer" onClick={() => setDeliveryPhase('no_answer')}>
                       No Answer
@@ -756,7 +1113,6 @@ export default function DriverView() {
               </div>
             )}
 
-            {/* Non-COD: leave at door flow */}
             {deliveryPhase === 'no_answer' && (
               <div className="dv-card dv-proof-card">
                 <div className="dv-proof-header">
@@ -799,7 +1155,6 @@ export default function DriverView() {
               </div>
             )}
 
-            {/* COD: customer not home — cannot leave, must call manager */}
             {deliveryPhase === 'cod_noanswer' && (
               <div className="dv-card dv-cod-blocked-card">
                 <p className="dv-card-title">⚠ Cannot Leave — Cash Order</p>
@@ -830,10 +1185,14 @@ export default function DriverView() {
           </>
         )}
 
+        {/* Delivery complete success screen */}
         {assignment.status === 'delivered' && (
           <div className="dv-success">
-            <CheckCircle size={32}/>
-            <p>Delivery complete!</p>
+            <SuccessStars/>
+            <div className="dv-success-check">
+              <CheckCircle size={52}/>
+            </div>
+            <h2 className="dv-success-title">Delivery Complete! 🎉</h2>
             <p className="dv-muted">
               Delivered at {assignment.delivered_at ? new Date(assignment.delivered_at).toLocaleTimeString() : 'just now'}
             </p>

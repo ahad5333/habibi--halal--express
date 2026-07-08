@@ -224,7 +224,7 @@ export default function OrderConfirmation() {
 
         {/* CTAs */}
         <div className="orc-actions">
-          <Link to="/order-tracking" className="orc-btn-primary">
+          <Link to={`/order-tracking?order=${orderNum}`} className="orc-btn-primary">
             Track Your Order <ChevronRight size={16} />
           </Link>
           <Link to="/menu" className="orc-btn-secondary">

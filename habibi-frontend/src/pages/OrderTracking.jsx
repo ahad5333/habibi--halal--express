@@ -115,7 +115,7 @@ async function geocodeAddress(addr) {
 export default function OrderTracking() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const urlOrder = params.get('order') || '';
+  const urlOrder = params.get('order') || localStorage.getItem('last_order_number') || '';
 
   const [searchInput, setSearchInput]   = useState(urlOrder || '');
   const [orderNum, setOrderNum]         = useState('');

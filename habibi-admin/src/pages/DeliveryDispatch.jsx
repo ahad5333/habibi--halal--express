@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Truck, User, MapPin, Clock, CheckCircle, XCircle,
   RefreshCw, Navigation, ExternalLink, Phone, AlertCircle,
-  Package, ChevronDown, Bell, Map,
+  Package, ChevronDown, Bell, Map, MessageSquare, Send, BarChart2,
 } from 'lucide-react';
 import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
@@ -301,6 +301,282 @@ function FeeCalculator() {
   );
 }
 
+// ── Driver ↔ Dispatch Chat Panel ───────────────────────────────────
+function DriverChatPanel({ socket }) {
+  const [threads, setThreads]       = useState([]);
+  const [activeId, setActiveId]     = useState(null);
+  const [messages, setMessages]     = useState([]);
+  const [reply, setReply]           = useState('');
+  const [sending, setSending]       = useState(false);
+  const [newCounts, setNewCounts]   = useState({}); // driver_id → unread delta from socket
+  const messagesEndRef              = useRef(null);
+
+  const loadThreads = useCallback(async () => {
+    try { setThreads(await adminAPI.getChatThreads()); } catch (_) {}
+  }, []);
+
+  useEffect(() => { loadThreads(); }, [loadThreads]);
+
+  // Auto-scroll messages
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // Open a thread
+  const openThread = async (driver_id) => {
+    setActiveId(driver_id);
+    setNewCounts(prev => ({ ...prev, [driver_id]: 0 }));
+    try {
+      const data = await adminAPI.getDriverChat(driver_id);
+      setMessages(Array.isArray(data) ? data : []);
+      await adminAPI.markChatRead(driver_id).catch(() => {});
+      setThreads(prev => prev.map(t => t.driver_id === driver_id ? { ...t, unread_count: 0 } : t));
+    } catch (_) {}
+  };
+
+  // Real-time: new message from a driver
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (msg) => {
+      // Update thread list
+      setThreads(prev => {
+        const existing = prev.find(t => t.driver_id === msg.driver_id);
+        if (existing) {
+          return prev.map(t => t.driver_id === msg.driver_id
+            ? { ...t, last_message: msg.message, last_direction: 'inbound', last_sent: msg.sent_at, unread_count: activeId === msg.driver_id ? 0 : (parseInt(t.unread_count||0)+1) }
+            : t
+          ).sort((a, b) => new Date(b.last_sent) - new Date(a.last_sent));
+        }
+        return [{ driver_id: msg.driver_id, driver_name: msg.driver_name, last_message: msg.message, last_direction: 'inbound', last_sent: msg.sent_at, unread_count: 1 }, ...prev];
+      });
+      // If this thread is open, append message
+      if (msg.driver_id === activeId) {
+        setMessages(prev => [...prev, msg]);
+        adminAPI.markChatRead(msg.driver_id).catch(() => {});
+      } else {
+        setNewCounts(prev => ({ ...prev, [msg.driver_id]: (prev[msg.driver_id] || 0) + 1 }));
+      }
+    };
+    socket.on('driver_chat_message', handler);
+    return () => socket.off('driver_chat_message', handler);
+  }, [socket, activeId]);
+
+  const sendReply = async () => {
+    const msg = reply.trim();
+    if (!msg || !activeId || sending) return;
+    setSending(true);
+    try {
+      const row = await adminAPI.replyToDriver(activeId, msg);
+      setMessages(prev => [...prev, row]);
+      setReply('');
+      setThreads(prev => prev.map(t => t.driver_id === activeId
+        ? { ...t, last_message: msg, last_direction: 'outbound', last_sent: row.sent_at }
+        : t
+      ));
+    } catch (_) {}
+    setSending(false);
+  };
+
+  const active = threads.find(t => t.driver_id === activeId);
+  const totalUnread = threads.reduce((s, t) => s + parseInt(t.unread_count || 0), 0) + Object.values(newCounts).reduce((s, n) => s + n, 0);
+
+  return (
+    <div style={{ display: 'flex', gap: '1rem', height: 520 }}>
+      {/* Thread list */}
+      <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto' }}>
+        {threads.length === 0 && (
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '2rem' }}>
+            No driver messages yet
+          </p>
+        )}
+        {threads.map(t => {
+          const unread = parseInt(t.unread_count || 0) + (newCounts[t.driver_id] || 0);
+          return (
+            <div
+              key={t.driver_id}
+              onClick={() => openThread(t.driver_id)}
+              style={{
+                background: activeId === t.driver_id ? 'rgba(229,182,78,0.12)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${activeId === t.driver_id ? 'rgba(229,182,78,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: 10, padding: '0.65rem 0.8rem', cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#f1f1f1' }}>{t.driver_name || `Driver #${t.driver_id}`}</span>
+                {unread > 0 && (
+                  <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.65rem', fontWeight: 700, borderRadius: 8, padding: '1px 6px' }}>{unread}</span>
+                )}
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                {t.last_direction === 'outbound' ? '↩ ' : ''}{t.last_message}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Message thread */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, overflow: 'hidden' }}>
+        {!activeId ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.25)', fontSize: '0.85rem' }}>
+            Select a driver to view their messages
+          </div>
+        ) : (
+          <>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.07)', fontWeight: 600, fontSize: '0.9rem', color: '#E5B64E' }}>
+              {active?.driver_name || `Driver #${activeId}`}
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {messages.map(m => (
+                <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.direction === 'inbound' ? 'flex-start' : 'flex-end', gap: '0.1rem' }}>
+                  {m.direction === 'outbound' && (
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', paddingRight: '0.4rem' }}>{m.sent_by || 'You'}</span>
+                  )}
+                  <div style={{
+                    maxWidth: '75%', padding: '0.5rem 0.8rem', borderRadius: m.direction === 'inbound' ? '12px 12px 12px 4px' : '12px 12px 4px 12px',
+                    background: m.direction === 'inbound' ? 'rgba(255,255,255,0.09)' : '#E5B64E',
+                    color: m.direction === 'inbound' ? '#f1f1f1' : '#0a0a0a',
+                    fontSize: '0.875rem', lineHeight: 1.4, wordBreak: 'break-word',
+                  }}>{m.message}</div>
+                  <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)' }}>
+                    {new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+              <div ref={messagesEndRef}/>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <input
+                className="dd-input"
+                style={{ flex: 1 }}
+                placeholder="Reply to driver…"
+                value={reply}
+                onChange={e => setReply(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && sendReply()}
+                disabled={sending}
+                maxLength={500}
+              />
+              <button className="dd-btn-primary dd-btn-sm" onClick={sendReply} disabled={sending || !reply.trim()} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Send size={13}/> Send
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Driver Performance Panel ────────────────────────────────────────
+function DriverPerformancePanel() {
+  const [rows, setRows]   = useState([]);
+  const [days, setDays]   = useState(30);
+  const [loading, setLoading] = useState(true);
+  const [sort, setSort]   = useState({ col: 'deliveries', dir: -1 });
+
+  useEffect(() => {
+    setLoading(true);
+    adminAPI.getDriverPerformance(days)
+      .then(data => setRows(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [days]);
+
+  const sorted = [...rows].sort((a, b) => {
+    const av = parseFloat(a[sort.col]) || 0;
+    const bv = parseFloat(b[sort.col]) || 0;
+    return (av - bv) * sort.dir;
+  });
+
+  const colClick = (col) => setSort(s => ({ col, dir: s.col === col ? -s.dir : -1 }));
+  const arrow = (col) => sort.col === col ? (sort.dir === -1 ? ' ↓' : ' ↑') : '';
+
+  const thStyle = { padding: '0.6rem 0.75rem', textAlign: 'left', fontWeight: 600, fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
+  const tdStyle = { padding: '0.65rem 0.75rem', fontSize: '0.85rem', color: '#f1f1f1', borderBottom: '1px solid rgba(255,255,255,0.05)', verticalAlign: 'middle' };
+
+  return (
+    <div>
+      {/* Period filter */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>Period:</span>
+        {[{ label: '7 days', val: 7 }, { label: '30 days', val: 30 }, { label: '90 days', val: 90 }, { label: 'All time', val: 0 }].map(p => (
+          <button
+            key={p.val}
+            onClick={() => setDays(p.val)}
+            className={days === p.val ? 'dd-btn-primary dd-btn-sm' : 'dd-btn-outline dd-btn-sm'}
+          >{p.label}</button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="dd-loading"><div className="dd-spinner-lg"/></div>
+      ) : sorted.length === 0 ? (
+        <div className="dd-empty">No driver data yet for this period.</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Driver</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>Status</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('deliveries')}>Deliveries{arrow('deliveries')}</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('acceptance_rate')}>Accept Rate{arrow('acceptance_rate')}</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('avg_delivery_mins')}>Avg Time{arrow('avg_delivery_mins')}</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('total_tips')}>Tips Earned{arrow('total_tips')}</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('rejections')}>Rejections{arrow('rejections')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(d => {
+                const rate = parseFloat(d.acceptance_rate) || 0;
+                const rateColor = rate >= 85 ? '#22c55e' : rate >= 65 ? '#E5B64E' : '#ef4444';
+                const mins = parseInt(d.avg_delivery_mins) || null;
+                return (
+                  <tr key={d.id} style={{ background: 'transparent' }} onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    <td style={tdStyle}>
+                      <span style={{ fontWeight: 600 }}>{d.name}</span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 8, background: d.is_on_duty ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.07)', color: d.is_on_duty ? '#22c55e' : 'rgba(255,255,255,0.35)' }}>
+                        {d.is_on_duty ? '● On Duty' : '○ Off'}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{d.deliveries ?? 0}</span>
+                      {parseInt(d.total_dispatched) > 0 && (
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '0.35rem' }}>/ {d.total_dispatched} dispatched</span>
+                      )}
+                    </td>
+                    <td style={tdStyle}>
+                      {d.total_dispatched > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ width: 60, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                            <div style={{ width: `${rate}%`, height: '100%', background: rateColor, borderRadius: 3 }}/>
+                          </div>
+                          <span style={{ color: rateColor, fontWeight: 600, fontSize: '0.85rem' }}>{rate}%</span>
+                        </div>
+                      ) : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                    </td>
+                    <td style={tdStyle}>
+                      {mins !== null && !isNaN(mins)
+                        ? <span>{mins} min</span>
+                        : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ color: '#22c55e', fontWeight: 600 }}>${parseFloat(d.total_tips || 0).toFixed(2)}</span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ color: parseInt(d.rejections) > 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }}>{d.rejections ?? 0}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Live Driver Map (Leaflet via CDN) ──────────────────────────────
 function DriverMapPanel({ assignments }) {
   const mapDivRef     = useRef(null);
@@ -400,6 +676,7 @@ function DriverMapPanel({ assignments }) {
 // ── Main Page ───────────────────────────────────────────────────────
 export default function DeliveryDispatch() {
   const [tab, setTab]             = useState('inhouse');
+  const [socket, setSocket]       = useState(null);
   const [assignments, setAssign]  = useState([]);
   const [ddDeliveries, setDD]     = useState([]);
   const [drivers, setDrivers]     = useState([]);
@@ -439,9 +716,11 @@ export default function DeliveryDispatch() {
 
   // Real-time socket — fires when an in-house order needs a driver assigned
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5001', {
+    const sock = io(import.meta.env.VITE_API_URL || 'http://localhost:5001', {
       transports: ['websocket'],
     });
+    sock.on('connect', () => { sock.emit('join_admin'); setSocket(sock); });
+    const socket = sock;
     socket.on('inhouse_dispatch_needed', ({ order_number, miles }) => {
       setNewAlert({ order_number, miles: parseFloat(miles).toFixed(1) });
       load();
@@ -473,7 +752,7 @@ export default function DeliveryDispatch() {
     });
     // Driver rejected assignment — reload so admin can reassign
     socket.on('assignment_rejected', () => { load(); });
-    return () => socket.disconnect();
+    return () => { sock.disconnect(); setSocket(null); };
   }, [load]);
 
   const handleAssign = async (body) => {
@@ -571,6 +850,12 @@ export default function DeliveryDispatch() {
             <span className="dd-tab-badge">{activeAssign.filter(a => a.current_lat).length}</span>
           )}
         </button>
+        <button className={`dd-tab ${tab==='chat'?'active':''}`} onClick={() => setTab('chat')}>
+          <MessageSquare size={14}/> Driver Chat
+        </button>
+        <button className={`dd-tab ${tab==='performance'?'active':''}`} onClick={() => setTab('performance')}>
+          <BarChart2 size={14}/> Performance
+        </button>
       </div>
 
       {loadErr && <div className="dd-err" style={{margin:'0.75rem 1rem'}}>⚠ {loadErr} — <button className="dd-link" onClick={load}>Retry</button></div>}
@@ -645,6 +930,14 @@ export default function DeliveryDispatch() {
 
           {tab === 'map' && (
             <DriverMapPanel assignments={assignments} />
+          )}
+
+          {tab === 'chat' && (
+            <DriverChatPanel socket={socket} />
+          )}
+
+          {tab === 'performance' && (
+            <DriverPerformancePanel />
           )}
 
           {tab === 'doordash' && (

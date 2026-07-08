@@ -851,6 +851,137 @@ const driverSendSetupSms = async (req, res) => {
   }
 };
 
+// ── Driver ↔ Dispatch Chat ──────────────────────────────────────────
+
+// GET history for a single driver (driver or admin)
+const getDriverChat = async (req, res) => {
+  const { driver_id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT id, driver_id, driver_name, message, direction, sent_by, read_at, sent_at
+       FROM driver_messages WHERE driver_id=$1 ORDER BY sent_at ASC LIMIT 200`,
+      [driver_id]
+    );
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// POST — driver sends a message to dispatch
+const sendDriverChat = async (req, res) => {
+  const { driver_id } = req.params;
+  const { message, driver_name } = req.body;
+  if (!message?.trim()) return res.status(400).json({ message: 'Message required' });
+  try {
+    const result = await pool.query(
+      `INSERT INTO driver_messages (driver_id, driver_name, message, direction)
+       VALUES ($1, $2, $3, 'inbound') RETURNING *`,
+      [driver_id, driver_name || 'Driver', message.trim()]
+    );
+    const row = result.rows[0];
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('driver_chat_message', row);
+    res.json(row);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// POST — admin/dispatch replies to driver
+const sendDispatchChat = async (req, res) => {
+  const { driver_id } = req.params;
+  const { message } = req.body;
+  const sentBy = req.user?.name || req.user?.email || 'Dispatch';
+  if (!message?.trim()) return res.status(400).json({ message: 'Message required' });
+  try {
+    const result = await pool.query(
+      `INSERT INTO driver_messages (driver_id, message, direction, sent_by)
+       VALUES ($1, $2, 'outbound', $3) RETURNING *`,
+      [driver_id, message.trim(), sentBy]
+    );
+    const row = result.rows[0];
+    const io = req.app.get('io');
+    if (io) io.to(`driver_${driver_id}`).emit('dispatch_chat_reply', row);
+    res.json(row);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// GET — admin gets all driver thread summaries with unread counts
+const getChatThreads = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        dm.driver_id,
+        MAX(dm.driver_name) AS driver_name,
+        COUNT(*) FILTER (WHERE dm.direction='inbound' AND dm.read_at IS NULL) AS unread_count,
+        MAX(dm.sent_at) AS last_sent,
+        (SELECT message   FROM driver_messages WHERE driver_id=dm.driver_id ORDER BY sent_at DESC LIMIT 1) AS last_message,
+        (SELECT direction FROM driver_messages WHERE driver_id=dm.driver_id ORDER BY sent_at DESC LIMIT 1) AS last_direction
+      FROM driver_messages dm
+      GROUP BY dm.driver_id
+      ORDER BY last_sent DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// PATCH — mark all inbound messages for a driver as read
+const markChatRead = async (req, res) => {
+  const { driver_id } = req.params;
+  try {
+    await pool.query(
+      `UPDATE driver_messages SET read_at=NOW() WHERE driver_id=$1 AND direction='inbound' AND read_at IS NULL`,
+      [driver_id]
+    );
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+// ── Admin: per-driver performance stats ─────────────────────────────
+const getDriverPerformance = async (req, res) => {
+  // Optional ?days=7|30|90|all (default 30)
+  const days = parseInt(req.query.days) || 30;
+  const since = days === 0
+    ? `'1970-01-01'::timestamptz`
+    : `NOW() - INTERVAL '${days} days'`;
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        sm.id,
+        sm.name,
+        sm.is_on_duty,
+        COUNT(da.id) FILTER (WHERE da.status = 'delivered')
+          AS deliveries,
+        COUNT(da.id) FILTER (WHERE da.status = 'cancelled' AND da.rejected_at IS NOT NULL)
+          AS rejections,
+        COUNT(da.id) FILTER (WHERE da.status IN ('delivered','cancelled'))
+          AS total_dispatched,
+        ROUND(
+          100.0 * COUNT(da.id) FILTER (WHERE da.status = 'delivered') /
+          NULLIF(COUNT(da.id) FILTER (WHERE da.status IN ('delivered','cancelled')), 0),
+          1
+        ) AS acceptance_rate,
+        COALESCE(
+          SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'),
+          0
+        ) AS total_tips,
+        ROUND(
+          EXTRACT(EPOCH FROM
+            AVG(da.delivered_at - COALESCE(da.accepted_at, da.assigned_at))
+          ) / 60
+        ) AS avg_delivery_mins
+      FROM staff_members sm
+      LEFT JOIN delivery_assignments da
+        ON da.driver_id = sm.id
+        AND da.assigned_at >= ${since}
+      WHERE sm.role = 'delivery'
+      GROUP BY sm.id, sm.name, sm.is_on_duty
+      ORDER BY deliveries DESC NULLS LAST, sm.name
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Driver: save FCM push token for background notifications ────────
 const saveDriverFcmToken = async (req, res) => {
   const { driver_id, fcm_token } = req.body;
@@ -901,4 +1032,10 @@ module.exports = {
   driverSetPin,
   driverSendSetupSms,
   saveDriverFcmToken,
+  getDriverChat,
+  sendDriverChat,
+  sendDispatchChat,
+  getChatThreads,
+  markChatRead,
+  getDriverPerformance,
 };

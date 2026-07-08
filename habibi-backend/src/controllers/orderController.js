@@ -499,7 +499,7 @@ const createGuestOrder = async (req, res) => {
     }
 
     if (customer_phone) {
-      const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/order-tracking/${order_number}`;
+      const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/order-tracking?order=${order_number}`;
       smsService.sendSMS(customer_phone, `Thank you for your order! Order #${order_number} has been received. Total: $${parseFloat(total).toFixed(2)}. Track it here: ${trackingUrl}`).catch(err => {
         console.error('Failed to send order confirmation SMS:', err.message);
       });

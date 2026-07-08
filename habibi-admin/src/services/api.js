@@ -225,6 +225,13 @@ export const adminAPI = {
   // Driver PIN setup
   sendDriverSetupSms: (driver_id) => req('/api/dispatch/driver/send-setup-sms', { method: 'POST', body: JSON.stringify({ driver_id }) }),
 
+  // Driver ↔ Dispatch chat
+  getChatThreads:    ()                => req('/api/dispatch/chat/threads'),
+  getDriverChat:     (driver_id)       => req(`/api/dispatch/driver/${driver_id}/chat`),
+  replyToDriver:     (driver_id, msg)  => req(`/api/dispatch/driver/${driver_id}/chat/reply`, { method: 'POST', body: JSON.stringify({ message: msg }) }),
+  markChatRead:         (driver_id)       => req(`/api/dispatch/driver/${driver_id}/chat/read`, { method: 'PATCH' }),
+  getDriverPerformance: (days = 30)       => req(`/api/dispatch/driver-performance?days=${days}`),
+
   // Offline payment handles (Zelle / Cash App)
   getOfflineHandles:    ()     => req('/api/admin/payment-settings/offline-handles'),
   updateOfflineHandles: (body) => req('/api/admin/payment-settings/offline-handles', { method: 'PATCH', body: JSON.stringify(body) }),
