@@ -27,6 +27,18 @@
 .inv-stock.low { color: var(--color-warning); }
 .inv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
 
+.inv-linked-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.76rem; color: var(--color-primary);
+  background: var(--color-primary-dim); border-radius: 4px;
+  padding: 0.18rem 0.5rem;
+}
+.inv-soldout-pill {
+  background: rgba(239,68,68,0.15); color: #f87171;
+  border-radius: 3px; padding: 0.1rem 0.35rem; font-size: 0.68rem; font-weight: 600;
+  margin-left: 0.25rem;
+}
+
 @media (max-width: 600px) {
   .inv-form-grid { grid-template-columns: 1fr; }
   .inv-tabs { flex-wrap: wrap; }

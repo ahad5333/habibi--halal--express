@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Pencil, Trash2, X, Check, RefreshCw, AlertTriangle, History } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, X, Check, RefreshCw, AlertTriangle, History, Link } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Inventory.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
-const BLANK = { name: '', category: 'General', current_stock: '', unit: 'unit', low_stock_threshold: '10', cost_per_unit: '', supplier: '', notes: '' };
+const BLANK = { name: '', category: 'General', current_stock: '', unit: 'unit', low_stock_threshold: '10', cost_per_unit: '', supplier: '', notes: '', menu_item_id: '' };
 
 const CATEGORIES = ['General', 'Meat', 'Produce', 'Dairy', 'Bread', 'Spices', 'Beverages', 'Packaging', 'Cleaning'];
 
 export default function Inventory() {
   const [items, setItems]         = useState([]);
+  const [menus, setMenus]         = useState([]);
   const [log, setLog]             = useState([]);
   const [loading, setLoading]     = useState(true);
   const [tab, setTab]             = useState('items'); // 'items' | 'log'
@@ -26,9 +27,14 @@ export default function Inventory() {
     setLoading(true);
     setLoadErr('');
     try {
-      const [inv, lg] = await Promise.all([adminAPI.getInventory(), adminAPI.getRestockLog()]);
+      const [inv, lg, menuList] = await Promise.all([
+        adminAPI.getInventory(),
+        adminAPI.getRestockLog(),
+        adminAPI.menus(),
+      ]);
       setItems(inv);
       setLog(lg);
+      setMenus(Array.isArray(menuList) ? menuList : []);
     } catch (e) {
       setLoadErr(e.message || 'Failed to load inventory.');
     }
@@ -37,13 +43,28 @@ export default function Inventory() {
   useEffect(() => { load(); }, []);
 
   const openAdd  = () => { setForm(BLANK); setModal('add'); };
-  const openEdit = (i) => { setForm({ ...i, current_stock: String(i.current_stock), low_stock_threshold: String(i.low_stock_threshold), cost_per_unit: String(i.cost_per_unit || '') }); setModal(i); };
+  const openEdit = (i) => {
+    setForm({
+      ...i,
+      current_stock: String(i.current_stock),
+      low_stock_threshold: String(i.low_stock_threshold),
+      cost_per_unit: String(i.cost_per_unit || ''),
+      menu_item_id: i.menu_item_id ? String(i.menu_item_id) : '',
+    });
+    setModal(i);
+  };
 
   const save = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, current_stock: parseFloat(form.current_stock)||0, low_stock_threshold: parseFloat(form.low_stock_threshold)||10, cost_per_unit: parseFloat(form.cost_per_unit)||0 };
+      const payload = {
+        ...form,
+        current_stock: parseFloat(form.current_stock) || 0,
+        low_stock_threshold: parseFloat(form.low_stock_threshold) || 10,
+        cost_per_unit: parseFloat(form.cost_per_unit) || 0,
+        menu_item_id: form.menu_item_id ? parseInt(form.menu_item_id) : null,
+      };
       if (modal === 'add') await adminAPI.createInventoryItem(payload);
       else await adminAPI.updateInventoryItem(modal.id, payload);
       setModal(null);
@@ -71,6 +92,7 @@ export default function Inventory() {
 
   const cats = ['all', ...new Set(items.map(i => i.category))];
   const lowStock = items.filter(i => parseFloat(i.current_stock) <= parseFloat(i.low_stock_threshold));
+  const outOfStock = items.filter(i => parseFloat(i.current_stock) <= 0 && i.menu_item_id);
   const displayed = filterCat === 'all' ? items : items.filter(i => i.category === filterCat);
 
   return (
@@ -78,7 +100,7 @@ export default function Inventory() {
       <div className="page-hdr">
         <div>
           <h1 className="page-title">Inventory</h1>
-          <p className="page-sub">{items.length} items · {lowStock.length} low stock</p>
+          <p className="page-sub">{items.length} items · {lowStock.length} low stock{outOfStock.length > 0 ? ` · ${outOfStock.length} auto sold-out` : ''}</p>
         </div>
         <div style={{display:'flex',gap:'0.5rem'}}>
           <button className="btn btn-secondary" onClick={load}><RefreshCw size={14}/></button>
@@ -91,6 +113,14 @@ export default function Inventory() {
           <AlertTriangle size={16} />
           <span>{loadErr}</span>
           <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={load}>Retry</button>
+        </div>
+      )}
+
+      {/* Out of stock auto-sync notice */}
+      {outOfStock.length > 0 && (
+        <div className="inv-alert" style={{background:'rgba(239,68,68,0.1)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}}>
+          <AlertTriangle size={16} />
+          <span><strong>{outOfStock.length}</strong> linked menu item{outOfStock.length!==1?'s':''} auto-marked <strong>Sold Out</strong> (stock = 0): {outOfStock.map(i => i.menu_item_name || i.name).join(', ')}</span>
         </div>
       )}
 
@@ -127,11 +157,12 @@ export default function Inventory() {
             <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr><th>Item</th><th>Category</th><th>Stock</th><th>Threshold</th><th>Unit Cost</th><th>Supplier</th><th>Actions</th></tr>
+                  <tr><th>Item</th><th>Category</th><th>Stock</th><th>Threshold</th><th>Unit Cost</th><th>Linked Menu Item</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                   {displayed.map(i => {
                     const isLow = parseFloat(i.current_stock) <= parseFloat(i.low_stock_threshold);
+                    const isOut = parseFloat(i.current_stock) <= 0 && i.menu_item_id;
                     return (
                       <tr key={i.id}>
                         <td style={{fontWeight:600}}>{i.name}</td>
@@ -144,7 +175,17 @@ export default function Inventory() {
                         </td>
                         <td className="text-muted">{i.low_stock_threshold} {i.unit}</td>
                         <td className="text-muted">{i.cost_per_unit > 0 ? `$${parseFloat(i.cost_per_unit).toFixed(2)}` : '—'}</td>
-                        <td className="text-muted">{i.supplier || '—'}</td>
+                        <td>
+                          {i.menu_item_name ? (
+                            <span className="inv-linked-badge" title="Auto sold-out when stock hits 0">
+                              <Link size={11} />
+                              {i.menu_item_name}
+                              {isOut && <span className="inv-soldout-pill">Sold Out</span>}
+                            </span>
+                          ) : (
+                            <span className="text-muted" style={{fontSize:'0.75rem'}}>—</span>
+                          )}
+                        </td>
                         <td>
                           <div style={{display:'flex',gap:'0.4rem'}}>
                             <button className="btn btn-secondary btn-sm" onClick={() => setRestock(i)} title="Restock"><RefreshCw size={12}/></button>
@@ -225,6 +266,15 @@ export default function Inventory() {
                 </div>
               </div>
               <div className="field">
+                <label>Linked Menu Item <span className="text-muted" style={{fontSize:'0.72rem',fontWeight:400}}>— auto marks Sold Out when stock hits 0</span></label>
+                <select className="input select" value={form.menu_item_id} onChange={e => setForm({...form, menu_item_id: e.target.value})}>
+                  <option value="">— None (no auto-sync) —</option>
+                  {menus.map(m => (
+                    <option key={m.id} value={m.id}>{m.name || m.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
                 <label>Supplier</label>
                 <input className="input" value={form.supplier} onChange={e => setForm({...form,supplier:e.target.value})} placeholder="Supplier name" />
               </div>
@@ -253,6 +303,12 @@ export default function Inventory() {
             </div>
             <div className="modal-body">
               <p className="text-muted" style={{marginBottom:'0.75rem'}}>Current: <strong>{restock.current_stock} {restock.unit}</strong></p>
+              {restock.menu_item_id && (
+                <p className="text-muted" style={{marginBottom:'0.75rem',fontSize:'0.8rem'}}>
+                  <Link size={11} style={{verticalAlign:'middle',marginRight:4}}/>
+                  Linked to <strong>{restock.menu_item_name || 'menu item'}</strong> — will auto-mark <strong>Available</strong> after restocking.
+                </p>
+              )}
               <div className="field">
                 <label>Quantity to Add *</label>
                 <input className="input" type="number" min="0.01" step="0.1" value={restockQty} onChange={e => setRestockQty(e.target.value)} placeholder="e.g. 50" />
