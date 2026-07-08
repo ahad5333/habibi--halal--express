@@ -77,38 +77,43 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
     const dobValue = dob && /^\d{4}-\d{2}-\d{2}$/.test(dob) ? dob : null;
     const phoneValue = phone ? String(phone).trim().slice(0, 20) : null;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://habibihe.com';
 
-    const result = await pool.query(
-      `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified)
-       VALUES($1,$2,$3,$4,$5,TRUE)
-       RETURNING id, name, email, role`,
-      [name, email, hashedPassword, phoneValue, dobValue]
-    );
-
-    const user = result.rows[0];
-
-    const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: false, jti: crypto.randomUUID() },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-    setAuthCookie(res, token, 24 * 60 * 60 * 1000);
-
-    // Send welcome email for email signups, welcome SMS for phone signups
     if (!isPhoneSignup) {
-      emailService.sendEmailVerification(email, name, `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu`).catch(err => {
-        console.error('Failed to send welcome email:', err.message);
-      });
-    } else {
-      sendSMS(phoneValue, `Welcome to Habibi Halal Express, ${name}! Your account has been created. Start ordering at habibihe.com`).catch(err => {
-        console.error('Failed to send signup SMS:', err.message);
-      });
-    }
+      // Email signup — create unverified account, send verification link
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
-    res.status(201).json({
-      token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    });
+      await pool.query(
+        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, verification_token, verification_token_expires)
+         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7)`,
+        [name, email, hashedPassword, phoneValue, dobValue, verificationToken, verificationExpires]
+      );
+
+      const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+      emailService.sendEmailVerification(email, name, verifyUrl).catch(err => {
+        console.error('Failed to send verification email:', err.message);
+      });
+
+      return res.status(201).json({ requiresVerification: true });
+    } else {
+      // Phone signup — create account, send 6-digit OTP via Twilio
+      const otp = String(crypto.randomInt(100000, 1000000));
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+      const otpHash = await bcrypt.hash(otp, 10);
+
+      await pool.query(
+        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, sms_code_hash, sms_code_expires, sms_code_attempts)
+         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7,0)`,
+        [name, email, hashedPassword, phoneValue, dobValue, otpHash, otpExpires]
+      );
+
+      sendSMS(phoneValue, `Your Habibi verification code is: ${otp}. It expires in 10 minutes. Do not share it.`).catch(err => {
+        console.error('Failed to send signup OTP SMS:', err.message);
+      });
+
+      return res.status(201).json({ requiresPhoneVerification: true, phone: phoneValue });
+    }
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -398,10 +403,28 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required." });
 
-    const result = await pool.query("SELECT id, is_partner FROM users WHERE email = $1", [email]);
-    // Always return success to prevent email enumeration
-    if (result.rows.length === 0) {
-      return res.json({ message: "If that email exists, a reset link has been sent." });
+    const result = await pool.query("SELECT id, name, email_verified, is_partner FROM users WHERE email = $1", [email]);
+    // Always return the same vague message to prevent email enumeration
+    const VAGUE = { message: "If that email exists, a reset link has been sent." };
+    if (result.rows.length === 0) return res.json(VAGUE);
+
+    const user = result.rows[0];
+    const frontendUrl = process.env.FRONTEND_URL || 'https://habibihe.com';
+
+    // If account was never verified, resend the verification link instead of a reset link.
+    // The user cannot have "forgotten" a password they never set up on a verified account.
+    if (!user.email_verified) {
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await pool.query(
+        'UPDATE users SET verification_token=$1, verification_token_expires=$2 WHERE id=$3',
+        [verificationToken, verificationExpires, user.id]
+      );
+      const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+      emailService.sendEmailVerification(email, user.name, verifyUrl).catch(err => {
+        console.error('Failed to resend verification email:', err.message);
+      });
+      return res.json(VAGUE);
     }
 
     const token = crypto.randomBytes(32).toString("hex");
@@ -412,9 +435,8 @@ const forgotPassword = async (req, res) => {
       [token, expires, email]
     );
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-    const user = result.rows[0];
     if (user.is_partner) {
       emailService.sendPartnerPasswordReset(email, resetUrl).catch(err => {
         console.error('Failed to send partner password reset email:', err.message);
@@ -428,7 +450,7 @@ const forgotPassword = async (req, res) => {
     if (process.env.NODE_ENV?.toLowerCase() !== 'production') {
       console.log('[DEV] Password reset URL:', resetUrl);
     }
-    res.json({ message: "If that email exists, a reset link has been sent." });
+    res.json(VAGUE);
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -569,6 +591,58 @@ const verifySmsRecoveryCode = async (req, res) => {
   }
 };
 
+/* ── Phone signup OTP verification ──────────────────────────────── */
+const verifyPhoneOtp = async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.status(400).json({ message: 'Phone and code are required.' });
+    if (!/^\d{6}$/.test(String(code))) return res.status(400).json({ message: 'Code must be 6 digits.' });
+
+    const cleaned = phone.replace(/\D/g, '');
+    const result = await pool.query(
+      `SELECT id, name, email, role, is_partner, sms_code_hash, sms_code_expires, sms_code_attempts
+       FROM users WHERE (phone_number=$1 OR phone_number=$2) AND email_verified=FALSE`,
+      [cleaned, `+1${cleaned.slice(-10)}`]
+    );
+
+    if (!result.rows.length) return res.status(400).json({ message: 'Invalid phone number or code.' });
+    const user = result.rows[0];
+
+    if (!user.sms_code_hash || !user.sms_code_expires) {
+      return res.status(400).json({ message: 'No code found. Please sign up again.' });
+    }
+    if (new Date(user.sms_code_expires) < new Date()) {
+      return res.status(400).json({ message: 'Code has expired. Please sign up again.' });
+    }
+    if ((user.sms_code_attempts || 0) >= 5) {
+      return res.status(429).json({ message: 'Too many attempts. Please sign up again.' });
+    }
+
+    const valid = await bcrypt.compare(String(code), user.sms_code_hash);
+    if (!valid) {
+      await pool.query('UPDATE users SET sms_code_attempts=sms_code_attempts+1 WHERE id=$1', [user.id]);
+      return res.status(400).json({ message: 'Incorrect code. Please try again.' });
+    }
+
+    await pool.query(
+      'UPDATE users SET email_verified=TRUE, sms_code_hash=NULL, sms_code_expires=NULL, sms_code_attempts=0 WHERE id=$1',
+      [user.id]
+    );
+
+    sendSMS(phone.trim(), `Welcome to Habibi Halal Express, ${user.name}! Your account is now active. Start ordering at habibihe.com`).catch(() => {});
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    setAuthCookie(res, token, 24 * 60 * 60 * 1000);
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 /* ── /api/auth/me ────────────────────────────────────────────────── */
 const getMe = async (req, res) => {
   try {
@@ -587,18 +661,19 @@ const getMe = async (req, res) => {
 };
 
 /* ── Social login (Google / Apple via Firebase) ─────────────────────── */
-let _firebaseAdmin = null;
+let _firebaseAuth = null;
 async function getFirebaseAdmin() {
-  if (_firebaseAdmin) return _firebaseAdmin;
+  if (_firebaseAuth) return _firebaseAuth;
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!raw) return null;
   try {
-    const admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
+    const { initializeApp, getApps, cert } = require('firebase-admin/app');
+    const { getAuth } = require('firebase-admin/auth');
+    if (!getApps().length) {
+      initializeApp({ credential: cert(JSON.parse(raw)) });
     }
-    _firebaseAdmin = admin;
-    return admin;
+    _firebaseAuth = { auth: () => getAuth() };
+    return _firebaseAuth;
   } catch (err) {
     console.error('[Firebase Admin] init failed:', err.message);
     return null;
@@ -717,6 +792,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  verifyPhoneOtp,
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,

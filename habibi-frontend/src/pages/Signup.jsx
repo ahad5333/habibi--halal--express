@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-do
 import { useAuth } from '../context/AuthContext';
 import { Mail, Phone, Lock, Eye, EyeOff, Check } from 'lucide-react';
 import LegalModal from '../components/LegalModal';
+import { authAPI } from '../services/api';
 import './Signup.css';
 
 const Signup = () => {
@@ -21,6 +22,12 @@ const Signup = () => {
   const [showPass, setShowPass]             = useState(false);
   const [showConfirm, setShowConfirm]       = useState(false);
   const [signupMethod, setSignupMethod]     = useState('phone'); // 'email' | 'phone'
+
+  // Phone OTP verification state
+  const [phoneOtpPending, setPhoneOtpPending] = useState(null); // { phone, name }
+  const [otp, setOtp]                         = useState('');
+  const [otpLoading, setOtpLoading]           = useState(false);
+  const [otpError, setOtpError]               = useState('');
 
   const [firstName, setFirstName]           = useState('');
   const [lastName, setLastName]             = useState('');
@@ -92,10 +99,14 @@ const Signup = () => {
         }
       );
 
-      if (result?.requiresVerification || !result?.user) {
+      if (result?.requiresVerification) {
         setVerifyEmail(submittedEmail);
         resetForm();
         setVerificationSent(true);
+      } else if (result?.requiresPhoneVerification) {
+        const name = `${firstName} ${lastName}`.trim();
+        setPhoneOtpPending({ phone: result.phone || phone.trim(), name });
+        resetForm();
       } else {
         // Show confirmation screen immediately, then redirect after 3s
         const name = `${firstName} ${lastName}`.trim();
@@ -110,6 +121,72 @@ const Signup = () => {
       setLoading(false);
     }
   };
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(otp)) { setOtpError('Enter the 6-digit code from your SMS.'); return; }
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const data = await authAPI.verifyPhoneOtp(phoneOtpPending.phone, otp);
+      if (data.user) localStorage.setItem('habibi_user', JSON.stringify({ id: data.user.id, name: data.user.name }));
+      setPhoneOtpPending(null);
+      setOtp('');
+      setAccountCreated({ name: phoneOtpPending.name, identifier: phoneOtpPending.phone, method: 'phone' });
+      setTimeout(() => navigate(redirectTo !== '/' ? redirectTo : '/'), 3500);
+    } catch (err) {
+      setOtpError(err.message || 'Incorrect code. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  if (phoneOtpPending) {
+    return (
+      <div className="signup-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 440, width: '100%', padding: '2.5rem', background: '#141414', border: '1px solid rgba(249,115,22,0.35)', borderRadius: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📱</div>
+          <h2 style={{ color: '#F97316', fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Verify Your Number</h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)', marginBottom: '0.4rem', fontSize: '0.92rem' }}>
+            We sent a 6-digit code to
+          </p>
+          <p style={{ color: '#fff', fontWeight: 700, marginBottom: '1.5rem' }}>{phoneOtpPending.phone}</p>
+          <form onSubmit={handleOtpSubmit}>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              style={{
+                width: '100%', textAlign: 'center', letterSpacing: '0.4em',
+                fontSize: '1.8rem', fontWeight: 700, padding: '0.75rem',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 10, color: '#fff', outline: 'none', marginBottom: '1rem',
+                boxSizing: 'border-box',
+              }}
+              autoFocus
+            />
+            {otpError && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{otpError}</p>}
+            <button
+              type="submit"
+              disabled={otpLoading || otp.length < 6}
+              style={{ width: '100%', background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '0.85rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', opacity: otpLoading || otp.length < 6 ? 0.6 : 1 }}
+            >
+              {otpLoading ? 'Verifying…' : 'Confirm Code'}
+            </button>
+          </form>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', marginTop: '1.25rem' }}>
+            Didn't get it? Check the number above is correct or{' '}
+            <button onClick={() => setPhoneOtpPending(null)} style={{ background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontSize: '0.78rem', textDecoration: 'underline' }}>
+              go back
+            </button>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (accountCreated) {
     return (

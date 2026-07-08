@@ -80,6 +80,10 @@ export const authAPI = {
 
   /** GET /api/auth/verify-email?token=xxx */
   verifyEmail: (token) => request(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
+
+  /** POST /api/auth/verify-phone-otp — confirm phone signup OTP */
+  verifyPhoneOtp: (phone, code) =>
+    request('/api/auth/verify-phone-otp', { method: 'POST', body: JSON.stringify({ phone, code }) }),
 };
 
 // ─── Menu ────────────────────────────────────────────────────────────────────

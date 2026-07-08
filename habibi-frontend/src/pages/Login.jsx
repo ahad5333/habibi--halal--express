@@ -49,7 +49,9 @@ const Login = () => {
       let firebaseUser;
       if (provider === 'Google') {
         const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        const gProvider = new GoogleAuthProvider();
+        gProvider.setCustomParameters({ prompt: 'select_account' });
+        const result = await signInWithPopup(auth, gProvider);
         firebaseUser = result.user;
       } else {
         const { OAuthProvider, signInWithPopup } = await import('firebase/auth');

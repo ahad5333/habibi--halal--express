@@ -37,6 +37,7 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  verifyPhoneOtp,
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
@@ -93,6 +94,9 @@ router.post("/reset-password",
 );
 
 router.get("/verify-email", verifyEmail);
+
+// Phone signup OTP verification
+router.post("/verify-phone-otp", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits.'), handleValidation, verifyPhoneOtp);
 
 // SMS 5-digit recovery code
 router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);

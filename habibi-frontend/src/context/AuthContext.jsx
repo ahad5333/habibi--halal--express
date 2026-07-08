@@ -62,6 +62,16 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try { await authAPI.logout(); } catch (_) { /* server unreachable — proceed with local cleanup */ }
+    // Sign out of Firebase so the cached Google token doesn't silently re-authenticate
+    // the next person who clicks "Continue with Google" on a shared device.
+    try {
+      const { isFirebaseConfigured, getFirebaseAuth } = await import('../utils/firebase');
+      if (isFirebaseConfigured()) {
+        const { signOut } = await import('firebase/auth');
+        const auth = await getFirebaseAuth();
+        await signOut(auth);
+      }
+    } catch (_) { /* non-critical — Habibi session is already cleared */ }
     localStorage.removeItem('habibi_user');
     localStorage.removeItem('last_order_number');
     setUser(null);

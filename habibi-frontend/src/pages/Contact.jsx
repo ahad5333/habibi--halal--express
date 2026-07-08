@@ -244,6 +244,12 @@ const Contact = () => {
                 </a>
               </div>
               <div className="ct-info-card">
+                <p className="ct-info-badge">TOLL-FREE PHONE</p>
+                <a href="tel:+18888875571" className="ct-info-link">
+                  <Phone size={13} /> (888) 887-5571
+                </a>
+              </div>
+              <div className="ct-info-card">
                 <p className="ct-info-badge">CUSTOMER SERVICE</p>
                 <a href="mailto:habibi@habibihe.com" className="ct-info-link">
                   <Mail size={13} /> habibi@habibihe.com
