@@ -199,13 +199,16 @@ const loginUser = async (req, res) => {
         process.env.SENDGRID_API_KEY ||
         (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
+      // ADMIN_MFA_EMAIL env var lets us redirect OTP to a real inbox temporarily
+      // (useful when admin@habibihe.com has no mailbox yet)
+      const otpRecipient = process.env.ADMIN_MFA_EMAIL || user.email;
       if (smtpConfigured) {
-        sendAdminOTP(user.email, otp).catch(err => console.error('Admin OTP email failed:', err.message));
+        sendAdminOTP(otpRecipient, otp).catch(err => console.error('Admin OTP email failed:', err.message));
       } else {
-        // Fallback: log OTP to server console until email is configured
         console.warn(`[ADMIN MFA] Email not configured. OTP for ${user.email}: ${otp} (expires in 10 min)`);
       }
-      return res.json({ mfa_required: true, email: user.email });
+      // email = DB email used by verify step; sent_to = where the code actually went
+      return res.json({ mfa_required: true, email: user.email, sent_to: otpRecipient });
     }
 
     const token = jwt.sign(
@@ -679,6 +682,34 @@ const socialAuth = async (req, res) => {
   }
 };
 
+const changeAdminPassword = async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) {
+    return res.status(400).json({ message: 'Both current and new password are required.' });
+  }
+  if (new_password.length < 8) {
+    return res.status(400).json({ message: 'New password must be at least 8 characters.' });
+  }
+  try {
+    const userRes = await pool.query('SELECT id, password_hash FROM users WHERE id = $1', [req.user.id]);
+    const user = userRes.rows[0];
+    if (!user) return res.status(404).json({ message: 'Account not found.' });
+
+    const match = await bcrypt.compare(current_password, user.password_hash);
+    if (!match) return res.status(400).json({ message: 'Current password is incorrect.' });
+
+    if (current_password === new_password) {
+      return res.status(400).json({ message: 'New password must differ from the current one.' });
+    }
+
+    const hashed = await bcrypt.hash(new_password, 12);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashed, user.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -690,4 +721,5 @@ module.exports = {
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
   socialAuth,
+  changeAdminPassword,
 };

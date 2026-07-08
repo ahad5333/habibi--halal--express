@@ -11,6 +11,7 @@ export function AdminAuthProvider({ children }) {
 
   const [admin, setAdmin]         = useState(cached?.role === 'admin' ? cached : null);
   const [mfaEmail, setMfaEmail]   = useState(null);
+  const [mfaSentTo, setMfaSentTo] = useState(null);
   // If we have a cached user, don't block the UI — validate silently in background
   const [loading, setLoading]     = useState(!cached || cached?.role !== 'admin');
 
@@ -44,6 +45,7 @@ export function AdminAuthProvider({ children }) {
     const data = await authAPI.login(email, password);
     if (data.mfa_required) {
       setMfaEmail(data.email);
+      setMfaSentTo(data.sent_to || data.email);
       return data;
     }
     if (data.user?.role !== 'admin') throw new Error('Access denied — admin accounts only.');
@@ -60,6 +62,7 @@ export function AdminAuthProvider({ children }) {
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
     setMfaEmail(null);
+    setMfaSentTo(null);
     return data;
   };
 
@@ -72,7 +75,7 @@ export function AdminAuthProvider({ children }) {
   };
 
   return (
-    <Ctx.Provider value={{ admin, loading, login, verifyMfa, logout, isAdmin: !!admin, mfaRequired: !!mfaEmail }}>
+    <Ctx.Provider value={{ admin, loading, login, verifyMfa, logout, isAdmin: !!admin, mfaRequired: !!mfaEmail, mfaSentTo }}>
       {children}
     </Ctx.Provider>
   );

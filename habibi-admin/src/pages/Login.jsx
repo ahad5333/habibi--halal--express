@@ -6,7 +6,7 @@ import './Login.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Login() {
-  const { login, verifyMfa, mfaRequired } = useAdminAuth();
+  const { login, verifyMfa, mfaRequired, mfaSentTo } = useAdminAuth();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp]           = useState('');
@@ -56,7 +56,9 @@ export default function Login() {
 
         <div className="login-card">
           <h1 className="login-title">Two-Factor Verification</h1>
-          <p className="login-sub">A 6-digit code was sent to your email. Enter it below.</p>
+          <p className="login-sub">
+            A 6-digit code was sent to <strong>{mfaSentTo || 'your email'}</strong>. Enter it below.
+          </p>
 
           {error && <div className="login-error">⚠ {error}</div>}
 

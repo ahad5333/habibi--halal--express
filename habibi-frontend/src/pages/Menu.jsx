@@ -37,6 +37,26 @@ const CATEGORY_IMAGES = {
 };
 
 /* Map a raw DB category string to a banner image */
+function MenuSkeleton() {
+  return (
+    <div className="menu-skeleton-wrap">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="menu-item-row menu-skel-row">
+          <div className="menu-item-row-content">
+            <div className="menu-skel-bar menu-skel-name" />
+            <div className="menu-skel-bar menu-skel-desc" />
+            <div className="menu-skel-bar menu-skel-desc" style={{width:'55%'}} />
+            <div className="menu-skel-bar menu-skel-price" />
+          </div>
+          <div className="menu-item-row-right">
+            <div className="menu-item-row-img-wrap menu-skel-img" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const getCategoryBanner = dbCat => {
   const c = (dbCat || '').toLowerCase();
   if (c.includes('breakfast'))           return CATEGORY_IMAGES.breakfast;
@@ -1059,10 +1079,7 @@ const Menu = () => {
 
         {/* ── Items ─────────────────────────────────────── */}
         {loading ? (
-          <div className="menu-loading">
-            <div className="menu-spinner" />
-            <p>Loading menu...</p>
-          </div>
+          <MenuSkeleton />
         ) : activeCategory === 'all' && !search ? (
           categoryGroups.length === 0 ? (
             <div className="menu-empty">

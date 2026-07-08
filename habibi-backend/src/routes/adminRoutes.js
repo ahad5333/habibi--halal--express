@@ -34,6 +34,7 @@ const {
   getLoyaltyConfig,
   updateLoyaltyConfig,
 } = require("../controllers/adminController");
+const { changeAdminPassword } = require('../controllers/authController');
 const { getRevenueAnalytics, getCustomerGrowth } = require("../controllers/analyticsController");
 const { syncCatalogToPartners, updatePartnerAvailability } = require("../controllers/catalogController");
 const { getPartnerApplications, updateApplicationStatus } = require("../controllers/partnerController");
@@ -354,6 +355,14 @@ router.put("/loyalty/config",            updateLoyaltyConfig);
 const { getBusinessHours, saveBusinessHours } = require('../controllers/businessHoursController');
 router.get('/business-hours', getBusinessHours);
 router.put('/business-hours', saveBusinessHours);
+
+// Change admin password
+router.post('/change-password',
+  body('current_password').notEmpty().withMessage('Current password is required.'),
+  body('new_password').isLength({ min: 8 }).withMessage('New password must be at least 8 characters.'),
+  handleValidation,
+  changeAdminPassword
+);
 
 // ── Authorize.net merchant accounts ──────────────────────────────────────
 const {

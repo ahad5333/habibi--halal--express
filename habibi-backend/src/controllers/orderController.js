@@ -133,6 +133,7 @@ const createGuestOrder = async (req, res) => {
       table_id,
       table_number: table_number_raw,
       loyalty_points_redeemed: loyalty_points_raw,
+      utm_source, utm_medium, utm_campaign, utm_content,
     } = req.body;
 
     // Generate order number server-side — never trust client-supplied values
@@ -393,6 +394,14 @@ const createGuestOrder = async (req, res) => {
       throw txErr;
     } finally {
       client.release();
+    }
+
+    // Store UTM attribution if present (columns added by migrate-utm.js)
+    if (utm_source || utm_medium || utm_campaign || utm_content) {
+      pool.query(
+        `UPDATE guest_orders SET utm_source=$1, utm_medium=$2, utm_campaign=$3, utm_content=$4 WHERE id=$5`,
+        [utm_source||null, utm_medium||null, utm_campaign||null, utm_content||null, db_id]
+      ).catch(err => console.warn('[UTM] Store skipped (run migrate-utm.js):', err.message));
     }
 
     // Auto-dispatch: skip for scheduled orders — the cron job handles those

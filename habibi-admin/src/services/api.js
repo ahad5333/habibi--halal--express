@@ -87,6 +87,8 @@ export const adminAPI = {
   updateModifier:  (id, body)   => req(`/api/admin/modifiers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteModifier:  (id, type)   => req(`/api/admin/modifiers/${id}?type=${type}`, { method: 'DELETE' }),
 
+  changePassword: (current_password, new_password) => req('/api/admin/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
+
   customers:   (search = '', page = 1, limit = 50) => req(`/api/admin/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
   customer:    (id) => req(`/api/admin/customers/${id}`),
   integrationStatus: () => req('/api/admin/integration-status'),

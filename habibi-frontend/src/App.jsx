@@ -51,6 +51,7 @@ const CustomOrder         = lazy(() => import('./pages/CustomOrder'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
+import { captureUtm } from './utils/utm';
 
 const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen'];
 
@@ -74,11 +75,12 @@ function Layout() {
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname);
 
   useEffect(() => {
-    // Initialize analytics on boot
+    // Initialize analytics on boot and capture UTM params if present
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
     const pixelId = import.meta.env.VITE_FB_PIXEL_ID;
     initGA(gaId);
     initPixel(pixelId);
+    captureUtm();
   }, []);
 
   useEffect(() => {

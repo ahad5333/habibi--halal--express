@@ -1085,6 +1085,39 @@
   font-size: 0.88rem;
 }
 
+/* ── Skeleton ── */
+@keyframes menu-skel-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.menu-skel-row {
+  pointer-events: none;
+  cursor: default;
+}
+.menu-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1rem 0;
+}
+.menu-skel-bar {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 800px 100%;
+  animation: menu-skel-shimmer 1.4s infinite linear;
+}
+.menu-skel-name  { height: 16px; width: 60%; margin-bottom: 0.5rem; }
+.menu-skel-desc  { height: 12px; width: 80%; margin-bottom: 0.35rem; }
+.menu-skel-price { height: 14px; width: 25%; margin-top: 0.5rem; }
+.menu-skel-img {
+  width: 108px;
+  height: 108px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 800px 100%;
+  animation: menu-skel-shimmer 1.4s infinite linear;
+}
+
 .menu-spinner {
   width: 38px;
   height: 38px;

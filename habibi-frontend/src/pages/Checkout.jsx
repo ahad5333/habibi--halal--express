@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
+import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
 import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
@@ -359,6 +360,7 @@ const Checkout = () => {
         selectedAddons:  i.selectedAddons  || {},
       };
     }),
+    ...(getStoredUtm() || {}),
   });
 
   const finishOrder = async (orderNumber) => {

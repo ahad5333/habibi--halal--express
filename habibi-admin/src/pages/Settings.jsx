@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Save, CreditCard, ToggleLeft, ToggleRight, Lock, Eye, EyeOff } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Settings.css';
 
@@ -91,6 +91,12 @@ export default function Settings() {
   const [pmLoading, setPmLoading]       = useState(true);
   const [pmToggling, setPmToggling]     = useState(null);
 
+  const [pwForm, setPwForm]   = useState({ current: '', newPw: '', confirm: '' });
+  const [pwShow, setPwShow]   = useState({ current: false, newPw: false, confirm: false });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError]   = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+
   useEffect(() => {
     adminAPI.tiers()
       .then(d => setTiers(Array.isArray(d) ? d : []))
@@ -117,6 +123,23 @@ export default function Settings() {
     finally { setSaving(null); }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwError(''); setPwSuccess('');
+    if (pwForm.newPw !== pwForm.confirm) { setPwError('New passwords do not match.'); return; }
+    setPwLoading(true);
+    try {
+      await adminAPI.changePassword(pwForm.current, pwForm.newPw);
+      setPwSuccess('Password updated successfully.');
+      setPwForm({ current: '', newPw: '', confirm: '' });
+      setTimeout(() => setPwSuccess(''), 4000);
+    } catch (err) {
+      setPwError(err.message || 'Failed to update password.');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   const togglePayMethod = async (method) => {
     setPmToggling(method.id);
     const next = !method.is_active;
@@ -138,6 +161,55 @@ export default function Settings() {
           <p className="page-sub">System configuration and delivery tiers</p>
         </div>
       </div>
+
+      {/* Security — Change Password */}
+      <section className="settings-section">
+        <div className="settings-section-hdr">
+          <p className="settings-section-title">Security</p>
+          <p className="settings-section-sub">Change your admin account password.</p>
+        </div>
+        <div className="card" style={{padding:'1.25rem'}}>
+          <form onSubmit={handleChangePassword} style={{display:'flex',flexDirection:'column',gap:'0.875rem',maxWidth:360}}>
+            {pwError   && <div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#f87171'}}>⚠ {pwError}</div>}
+            {pwSuccess && <div style={{background:'rgba(34,197,94,0.12)',border:'1px solid rgba(34,197,94,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#4ade80'}}>✓ {pwSuccess}</div>}
+
+            {[
+              { key: 'current', label: 'Current Password',     complete: 'current-password' },
+              { key: 'newPw',   label: 'New Password',         complete: 'new-password' },
+              { key: 'confirm', label: 'Confirm New Password', complete: 'new-password' },
+            ].map(({ key, label, complete }) => (
+              <div className="field" key={key}>
+                <label style={{fontSize:'0.78rem'}}>{label}</label>
+                <div style={{position:'relative'}}>
+                  <input
+                    type={pwShow[key] ? 'text' : 'password'}
+                    className="input"
+                    value={pwForm[key]}
+                    onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))}
+                    required
+                    minLength={key !== 'current' ? 8 : undefined}
+                    autoComplete={complete}
+                    style={{paddingRight:'2.4rem'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPwShow(p => ({ ...p, [key]: !p[key] }))}
+                    style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#888',cursor:'pointer',lineHeight:1,padding:0}}
+                  >
+                    {pwShow[key] ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button type="submit" className="btn btn-primary btn-sm" disabled={pwLoading} style={{alignSelf:'flex-start',gap:6}}>
+              {pwLoading
+                ? <span className="spinner" style={{width:12,height:12}} />
+                : <><Lock size={13} /> Update Password</>}
+            </button>
+          </form>
+        </div>
+      </section>
 
       {/* Delivery Tiers */}
       <section className="settings-section">

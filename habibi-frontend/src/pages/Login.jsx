@@ -206,6 +206,7 @@ const Login = () => {
                   type="password"
                   className="form-input"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -268,6 +269,7 @@ const Login = () => {
                   type="password"
                   className="form-input"
                   placeholder="Min. 8 characters"
+                  autoComplete="new-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
