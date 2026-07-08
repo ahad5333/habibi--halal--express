@@ -180,6 +180,15 @@ const loginUser = async (req, res) => {
       [user.id]
     );
 
+    // Block login for unverified email accounts.
+    // Phone accounts (email ends in @habibi.internal) use SMS OTP verification instead.
+    if (!user.email_verified && !user.email.endsWith('@habibi.internal')) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+        requiresVerification: true,
+      });
+    }
+
     // Admin MFA — always enforced regardless of SMTP config.
     // If email is not configured the OTP is also printed to server stdout
     // so admins can retrieve it from `pm2 logs` until SendGrid is live.

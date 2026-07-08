@@ -109,7 +109,11 @@ const Login = () => {
       }
       navigate(redirectTo);
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      if (err.requiresVerification) {
+        setError('Your email is not verified yet. Check your inbox for the verification link, or sign up again to get a new one.');
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }

@@ -27,6 +27,7 @@ async function request(path, options = {}) {
   if (!res.ok) {
     const err = new Error(data.message || data.error || `Request failed: ${res.status}`);
     err.status = res.status;
+    if (data.requiresVerification) err.requiresVerification = true;
     throw err;
   }
 
