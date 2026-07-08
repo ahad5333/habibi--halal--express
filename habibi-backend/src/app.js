@@ -359,5 +359,22 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
+// ── Stale unverified account cleanup ─────────────────────────────────────────
+// Runs nightly at 4 AM. Deletes accounts that were never verified after 7 days.
+// These are either fake emails or users who never completed signup — safe to remove.
+cron.schedule('0 4 * * *', async () => {
+  try {
+    const { rowCount } = await pool.query(`
+      DELETE FROM users
+      WHERE email_verified = FALSE
+        AND created_at < NOW() - INTERVAL '7 days'
+        AND provider IS NULL
+    `);
+    if (rowCount > 0) console.log(`[Cron] Purged ${rowCount} stale unverified account(s)`);
+  } catch (err) {
+    console.error('[Cron] Unverified account cleanup error:', err.message);
+  }
+});
+
 module.exports = app;
 
