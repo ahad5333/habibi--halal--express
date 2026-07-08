@@ -56,6 +56,9 @@ const {
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,
+  driverLogin,
+  driverSetPin,
+  driverSendSetupSms,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
@@ -141,5 +144,10 @@ router.get('/scheduled', async (req, res) => {
     res.status(500).json({ message: process.env.NODE_ENV === 'production' ? 'Internal server error.' : err.message });
   }
 });
+
+// ── Driver PIN auth — public (no token needed) ─────────────────────
+router.post('/driver/login',         driverLogin);
+router.post('/driver/set-pin',       driverOrAdmin, driverSetPin);
+router.post('/driver/send-setup-sms', protect,      driverSendSetupSms);
 
 module.exports = router;

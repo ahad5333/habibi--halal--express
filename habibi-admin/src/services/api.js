@@ -222,6 +222,9 @@ export const adminAPI = {
   getCashReport:    (date) => req(`/api/dispatch/cash-report${date ? `?date=${date}` : ''}`),
   recordCashHandin: (body) => req('/api/dispatch/cash-handins', { method: 'POST', body: JSON.stringify(body) }),
 
+  // Driver PIN setup
+  sendDriverSetupSms: (driver_id) => req('/api/dispatch/driver/send-setup-sms', { method: 'POST', body: JSON.stringify({ driver_id }) }),
+
   // Offline payment handles (Zelle / Cash App)
   getOfflineHandles:    ()     => req('/api/admin/payment-settings/offline-handles'),
   updateOfflineHandles: (body) => req('/api/admin/payment-settings/offline-handles', { method: 'PATCH', body: JSON.stringify(body) }),

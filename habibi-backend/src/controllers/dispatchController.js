@@ -729,6 +729,96 @@ const codDeliveryFailed = async (req, res) => {
   }
 };
 
+/* ── Driver PIN authentication ──────────────────────────────────── */
+const bcrypt = require('bcrypt');
+
+const driverLogin = async (req, res) => {
+  try {
+    const { phone, pin } = req.body;
+    if (!phone || !pin) return res.status(400).json({ message: 'Phone and PIN are required.' });
+    if (!/^\d{4}$/.test(String(pin))) return res.status(400).json({ message: 'PIN must be exactly 4 digits.' });
+
+    const cleaned = String(phone).replace(/\D/g, '');
+    const result = await pool.query(
+      `SELECT id, name, phone, is_active, driver_pin_hash, driver_pin_attempts, driver_pin_lockout_until
+       FROM staff_members WHERE (phone=$1 OR phone=$2) AND role='delivery' AND is_active=TRUE`,
+      [cleaned, `+1${cleaned.slice(-10)}`]
+    );
+
+    if (!result.rows.length) {
+      return res.status(401).json({ message: 'No active driver account found for this number.' });
+    }
+    const driver = result.rows[0];
+
+    if (!driver.driver_pin_hash) {
+      return res.status(403).json({ message: 'PIN not set up yet. Ask your admin to send you a setup link.', needsSetup: true });
+    }
+
+    if (driver.driver_pin_lockout_until && new Date(driver.driver_pin_lockout_until) > new Date()) {
+      const mins = Math.ceil((new Date(driver.driver_pin_lockout_until) - Date.now()) / 60000);
+      return res.status(429).json({ message: `Too many attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.` });
+    }
+
+    const valid = await bcrypt.compare(String(pin), driver.driver_pin_hash);
+    if (!valid) {
+      const attempts = (driver.driver_pin_attempts || 0) + 1;
+      const lockout  = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+      await pool.query(
+        'UPDATE staff_members SET driver_pin_attempts=$1, driver_pin_lockout_until=$2 WHERE id=$3',
+        [attempts, lockout, driver.id]
+      );
+      const remaining = Math.max(0, 5 - attempts);
+      return res.status(401).json({ message: `Incorrect PIN.${remaining > 0 ? ` ${remaining} attempt${remaining === 1 ? '' : 's'} left.` : ' Account locked for 15 minutes.'}` });
+    }
+
+    await pool.query('UPDATE staff_members SET driver_pin_attempts=0, driver_pin_lockout_until=NULL WHERE id=$1', [driver.id]);
+    const token = driverToken(driver.id);
+    res.json({ driver_id: driver.id, token, name: driver.name });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const driverSetPin = async (req, res) => {
+  try {
+    const { driver_id, pin, confirm_pin } = req.body;
+    if (!driver_id || !pin) return res.status(400).json({ message: 'Driver ID and PIN are required.' });
+    if (!/^\d{4}$/.test(String(pin))) return res.status(400).json({ message: 'PIN must be exactly 4 digits.' });
+    if (pin !== confirm_pin) return res.status(400).json({ message: 'PINs do not match.' });
+
+    const hash = await bcrypt.hash(String(pin), 10);
+    const result = await pool.query(
+      'UPDATE staff_members SET driver_pin_hash=$1, driver_pin_attempts=0, driver_pin_lockout_until=NULL WHERE id=$2 AND role=\'delivery\' AND is_active=TRUE RETURNING id, name',
+      [hash, driver_id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Driver not found.' });
+    res.json({ ok: true, name: result.rows[0].name });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+const driverSendSetupSms = async (req, res) => {
+  try {
+    const { driver_id } = req.body;
+    const result = await pool.query(
+      'SELECT id, name, phone FROM staff_members WHERE id=$1 AND role=\'delivery\' AND is_active=TRUE',
+      [driver_id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Driver not found.' });
+    const driver = result.rows[0];
+    if (!driver.phone) return res.status(400).json({ message: 'Driver has no phone number on file.' });
+
+    const token = driverToken(driver.id);
+    const base  = process.env.FRONTEND_URL || 'https://habibihe.com';
+    const url   = `${base}/driver/set-pin?id=${driver.id}&token=${token}`;
+    await sendSMS(driver.phone, `Hi ${driver.name}! Set up your Habibi driver PIN to log in anytime: ${url}`);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getAssignments,
   assignDriver,
@@ -748,4 +838,7 @@ module.exports = {
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,
+  driverLogin,
+  driverSetPin,
+  driverSendSetupSms,
 };

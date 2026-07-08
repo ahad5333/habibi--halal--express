@@ -33,6 +33,8 @@ const PartnerLogin     = lazy(() => import('./pages/PartnerLogin'));
 const PartnerPortal    = lazy(() => import('./pages/PartnerPortal'));
 const VerifyEmail      = lazy(() => import('./pages/VerifyEmail'));
 const DriverView       = lazy(() => import('./pages/DriverView'));
+const DriverLogin      = lazy(() => import('./pages/DriverLogin'));
+const DriverSetPin     = lazy(() => import('./pages/DriverSetPin'));
 const DineIn           = lazy(() => import('./pages/DineIn'));
 const KitchenDisplay   = lazy(() => import('./pages/KitchenDisplay'));
 const Catering         = lazy(() => import('./pages/Catering'));
@@ -53,7 +55,7 @@ const NotFound            = lazy(() => import('./pages/NotFound'));
 import { initGA, initPixel, trackPageView } from './utils/analytics';
 import { captureUtm } from './utils/utm';
 
-const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen'];
+const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin'];
 
 // Routes that must never appear in search results
 const NOINDEX_PATHS = new Set([
@@ -204,7 +206,9 @@ function App() {
       <ScrollToTop />
       <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0a0a' }} />}>
         <Routes>
-          <Route path="/driver"  element={<DriverView />} />
+          <Route path="/driver"          element={<DriverView />} />
+          <Route path="/driver/login"    element={<DriverLogin />} />
+          <Route path="/driver/set-pin"  element={<DriverSetPin />} />
           <Route path="/kitchen" element={<InternalGuard><KitchenDisplay /></InternalGuard>} />
           <Route path="*" element={<Layout />} />
         </Routes>

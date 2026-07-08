@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Pencil, Trash2, X, Check, Clock } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
@@ -136,7 +136,21 @@ export default function Staff() {
                         </td>
                         <td className="text-muted" style={{fontSize:'0.78rem',maxWidth:160}}>{s.notes || '—'}</td>
                         <td>
-                          <div style={{display:'flex',gap:'0.4rem'}}>
+                          <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
+                            {s.role === 'delivery' && s.phone && (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                title="Send driver PIN setup link via SMS"
+                                onClick={async () => {
+                                  try {
+                                    await adminAPI.sendDriverSetupSms(s.id);
+                                    alert(`Setup SMS sent to ${s.name}`);
+                                  } catch (e) { alert(e.message); }
+                                }}
+                              >
+                                <Smartphone size={12} /> PIN Setup
+                              </button>
+                            )}
                             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(s)} title="Edit"><Pencil size={13} /></button>
                             <button className="btn btn-danger btn-sm btn-icon" onClick={() => setDelete(s)} title="Remove"><Trash2 size={13} /></button>
                           </div>
