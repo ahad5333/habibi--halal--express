@@ -633,17 +633,30 @@ const getDriverCashSummary = async (req, res) => {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   try {
     const result = await pool.query(
-      `SELECT da.id, da.order_number, da.cash_collected_at, go.total AS order_total
+      `SELECT
+         COUNT(*) FILTER (WHERE da.status = 'delivered')                                       AS deliveries_count,
+         COALESCE(SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'), 0)                AS total_tips,
+         COALESCE(SUM(go.total)
+           FILTER (WHERE da.status = 'delivered'
+                     AND go.payment_method = 'cod'
+                     AND da.cash_collected_at IS NOT NULL), 0)                                  AS total_cod,
+         COUNT(*) FILTER (WHERE da.status = 'delivered'
+                            AND go.payment_method = 'cod'
+                            AND da.cash_collected_at IS NOT NULL)                               AS cod_orders_count
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
        WHERE da.driver_id = $1
-         AND go.payment_method = 'cod'
-         AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $2
-         AND da.cash_collected_at IS NOT NULL`,
+         AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $2`,
       [driver_id, today]
     );
-    const total = result.rows.reduce((s, r) => s + parseFloat(r.order_total || 0), 0);
-    res.json({ orders: result.rows, total_collected: total, date: today });
+    const row = result.rows[0] || {};
+    res.json({
+      date:             today,
+      deliveries_count: parseInt(row.deliveries_count || 0),
+      total_tips:       parseFloat(row.total_tips || 0),
+      total_cod:        parseFloat(row.total_cod || 0),
+      cod_orders_count: parseInt(row.cod_orders_count || 0),
+    });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

@@ -432,23 +432,72 @@ export default function DriverView() {
   }
 
   if (!assignment) {
+    const hasEarnings = cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0);
     return (
-      <div className="dv-shell dv-center">
-        <Package size={40}/>
-        <p>No active assignment</p>
-        <p className="dv-muted">Waiting for dispatch to assign you an order…</p>
-        <p className="dv-live-waiting">
-          <span className="dv-live-dot"/> Live — you'll be notified automatically
-        </p>
-        {/* On-duty toggle even when no assignment */}
-        <button
-          className={`dv-btn dv-duty-btn ${onDuty ? 'dv-duty-on' : 'dv-duty-off'}`}
-          onClick={toggleDuty}
-          disabled={dutyLoading}
-          style={{ marginTop: '1.5rem' }}
-        >
-          <Power size={16}/> {onDuty ? 'On Duty — tap to go off duty' : 'Go On Duty'}
-        </button>
+      <div className="dv-shell dv-idle">
+        {/* Header */}
+        <div className="dv-header">
+          <div className="dv-brand"><Navigation size={20}/><span>Driver Dashboard</span></div>
+          <button
+            className={`dv-badge ${onDuty ? 'dv-badge-success' : 'dv-badge-muted'} dv-duty-mini`}
+            onClick={toggleDuty}
+            disabled={dutyLoading}
+          >
+            <Power size={11}/> {onDuty ? 'On Duty' : 'Off Duty'}
+          </button>
+        </div>
+
+        <div className="dv-content">
+          {/* Duty toggle card */}
+          <div className="dv-card dv-duty-card">
+            <button
+              className={`dv-btn dv-duty-btn ${onDuty ? 'dv-duty-on' : 'dv-duty-off'}`}
+              onClick={toggleDuty}
+              disabled={dutyLoading}
+            >
+              <Power size={18}/> {onDuty ? 'On Duty — tap to go off duty' : 'Go On Duty'}
+            </button>
+            {onDuty && (
+              <p className="dv-live-waiting" style={{ marginTop: '0.75rem' }}>
+                <span className="dv-live-dot"/> Waiting for orders — you'll be notified
+              </p>
+            )}
+          </div>
+
+          {/* Today's Earnings card */}
+          <div className="dv-card dv-earnings-card">
+            <p className="dv-card-title" style={{ marginBottom: '1rem' }}>Today's Earnings</p>
+            <div className="dv-earnings-grid">
+              <div className="dv-earnings-item">
+                <span className="dv-earnings-icon">📦</span>
+                <span className="dv-earnings-val">{hasEarnings ? cashSummary.deliveries_count : '0'}</span>
+                <span className="dv-earnings-label">Deliveries</span>
+              </div>
+              <div className="dv-earnings-item">
+                <span className="dv-earnings-icon">💵</span>
+                <span className="dv-earnings-val dv-earnings-green">
+                  ${hasEarnings ? cashSummary.total_tips.toFixed(2) : '0.00'}
+                </span>
+                <span className="dv-earnings-label">Tips Earned</span>
+              </div>
+              <div className="dv-earnings-item">
+                <span className="dv-earnings-icon">💰</span>
+                <span className="dv-earnings-val dv-earnings-gold">
+                  ${hasEarnings ? cashSummary.total_cod.toFixed(2) : '0.00'}
+                </span>
+                <span className="dv-earnings-label">Cash to Hand In</span>
+              </div>
+            </div>
+            {hasEarnings && cashSummary.total_cod > 0 && (
+              <p className="dv-earnings-note">
+                Hand in ${cashSummary.total_cod.toFixed(2)} cash to manager at end of shift
+              </p>
+            )}
+            {!hasEarnings && (
+              <p className="dv-earnings-empty">No deliveries completed yet today</p>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -516,13 +565,17 @@ export default function DriverView() {
 
       <div className="dv-content">
 
-        {/* ── Today's cash summary ── */}
-        {cashSummary && cashSummary.total_collected > 0 && (
+        {/* ── Today's earnings strip ── */}
+        {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0) && (
           <div className="dv-cash-summary-bar">
-            <DollarSign size={16}/>
-            <span>Today's cash: <strong>${parseFloat(cashSummary.total_collected).toFixed(2)}</strong></span>
-            <span className="dv-cash-summary-orders">({cashSummary.orders.length} order{cashSummary.orders.length !== 1 ? 's' : ''})</span>
-            <span className="dv-cash-summary-note">Hand in to manager at end of shift</span>
+            <DollarSign size={15}/>
+            <span>Today: <strong>{cashSummary.deliveries_count} drop{cashSummary.deliveries_count !== 1 ? 's' : ''}</strong></span>
+            {cashSummary.total_tips > 0 && (
+              <span className="dv-tip-pill">+${cashSummary.total_tips.toFixed(2)} tips</span>
+            )}
+            {cashSummary.total_cod > 0 && (
+              <span className="dv-cash-summary-orders">· ${cashSummary.total_cod.toFixed(2)} COD to hand in</span>
+            )}
           </div>
         )}
 
