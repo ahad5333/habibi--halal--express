@@ -23,14 +23,17 @@ function getAdmin() {
   if (!saJson) return null;
 
   try {
-    const admin = require('firebase-admin');
-    if (!admin.apps.length) {
+    // firebase-admin v14+ uses modular imports
+    const { initializeApp, getApps, cert } = require('firebase-admin/app');
+    const { getMessaging } = require('firebase-admin/messaging');
+
+    if (!getApps().length) {
       const serviceAccount = typeof saJson === 'string' && saJson.trim().startsWith('/')
-        ? require(saJson)           // file path
-        : JSON.parse(saJson);       // inline JSON string
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+        ? require(saJson)
+        : JSON.parse(saJson);
+      initializeApp({ credential: cert(serviceAccount) });
     }
-    _admin = admin;
+    _admin = { messaging: () => getMessaging() };
     return _admin;
   } catch (err) {
     console.error('[Push] Firebase Admin init error:', err.message);

@@ -1,14 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || '';
 
 export default function DriverLogin() {
   const navigate = useNavigate();
-  const [phone, setPhone]     = useState('');
-  const [pin, setPin]         = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [phone, setPhone]         = useState('');
+  const [pin, setPin]             = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [installPrompt, setInstall] = useState(null);
+  const promptRef = useRef(null);
+
+  // PWA: swap to driver-specific manifest and capture install prompt
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]');
+    const orig = link?.href;
+    if (link) link.href = '/driver-manifest.json';
+
+    const handler = (e) => {
+      e.preventDefault();
+      promptRef.current = e;
+      setInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Already installed in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstall(false);
+    }
+
+    return () => {
+      if (link && orig) link.href = orig;
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!promptRef.current) return;
+    promptRef.current.prompt();
+    const { outcome } = await promptRef.current.userChoice;
+    if (outcome === 'accepted') setInstall(false);
+  };
 
   const handleKey = (digit) => {
     if (pin.length < 4) setPin(p => p + digit);
@@ -66,6 +99,14 @@ export default function DriverLogin() {
         </div>
         <p style={s.title}>Driver Login</p>
         <p style={s.sub}>Habibi Halal Express · Delivery App</p>
+
+        {installPrompt && (
+          <div style={{ background: 'rgba(229,182,78,0.1)', border: '1px solid rgba(229,182,78,0.3)', borderRadius: 10, padding: '0.6rem 0.9rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.1rem' }}>📱</span>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', flex: 1 }}>Install Driver App on your home screen</span>
+            <button onClick={handleInstall} style={{ background: '#E5B64E', color: '#0a0a0a', border: 'none', borderRadius: 6, padding: '0.3rem 0.65rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>Install</button>
+          </div>
+        )}
 
         {error && <div style={s.error}>{error}</div>}
 

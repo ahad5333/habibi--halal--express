@@ -1,0 +1,27 @@
+{
+  "name": "Habibi Driver",
+  "short_name": "Driver",
+  "description": "Habibi Halal Express delivery driver app",
+  "start_url": "/driver/login",
+  "scope": "/driver",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#E5B64E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en-US"
+}

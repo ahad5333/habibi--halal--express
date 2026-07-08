@@ -6,6 +6,7 @@ const pool      = require('../config/db');
 const { getDistance } = require('../utils/googleMaps');
 const { getFeeForDistance } = require('../utils/deliveryFee');
 const { sendSMS } = require('../services/smsService');
+const { sendPushNotification } = require('../services/fcmService');
 
 // Generate HMAC token for a driver — used in SMS links and X-Driver-Token header
 function driverToken(driver_id) {
@@ -237,18 +238,36 @@ const broadcastOrderToDrivers = async (req, res) => {
     let itemCount = 0;
     try { itemCount = (typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []).length; } catch (_) {}
 
+    const deliveryAddr = [order.delivery_address, order.delivery_city].filter(Boolean).join(', ');
+    const payload = {
+      order_number: order.order_number,
+      customer_name: order.customer_name,
+      delivery_address: deliveryAddr,
+      total: parseFloat(order.total || 0),
+      item_count: itemCount,
+      broadcast_at: new Date().toISOString(),
+    };
+
     const io = req.app.get('io');
     if (io) {
-      io.to('drivers_online').emit('new_order_broadcast', {
-        order_number: order.order_number,
-        customer_name: order.customer_name,
-        delivery_address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', '),
-        total: parseFloat(order.total || 0),
-        item_count: itemCount,
-        broadcast_at: new Date().toISOString(),
-      });
+      io.to('drivers_online').emit('new_order_broadcast', payload);
     }
-    res.json({ ok: true, broadcast_to: 'drivers_online' });
+
+    // Also send Firebase push to drivers who have the app closed/backgrounded
+    const tokenRes = await pool.query(
+      `SELECT driver_fcm_token FROM staff_members
+       WHERE role='delivery' AND is_active=TRUE AND driver_fcm_token IS NOT NULL`
+    );
+    for (const { driver_fcm_token } of tokenRes.rows) {
+      sendPushNotification(
+        driver_fcm_token,
+        '🔔 New Delivery Order',
+        `#${order.order_number} — ${deliveryAddr || 'Tap to view'}`,
+        { url: '/driver', type: 'new_order', tag: 'new-order' }
+      ).catch(() => {});
+    }
+
+    res.json({ ok: true, broadcast_to: 'drivers_online', push_sent: tokenRes.rowCount });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -819,6 +838,33 @@ const driverSendSetupSms = async (req, res) => {
   }
 };
 
+// ── Driver: save FCM push token for background notifications ────────
+const saveDriverFcmToken = async (req, res) => {
+  const { driver_id, fcm_token } = req.body;
+  if (!driver_id || !fcm_token) return res.status(400).json({ message: 'driver_id and fcm_token required' });
+
+  // Verify HMAC token matches this driver
+  const provided = req.headers['x-driver-token'] || '';
+  const expected = driverToken(driver_id);
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected))) {
+      return res.status(403).json({ message: 'Invalid driver token' });
+    }
+  } catch (_) {
+    return res.status(403).json({ message: 'Invalid driver token' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE staff_members SET driver_fcm_token=$1 WHERE id=$2`,
+      [fcm_token, driver_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
   getAssignments,
   assignDriver,
@@ -841,4 +887,5 @@ module.exports = {
   driverLogin,
   driverSetPin,
   driverSendSetupSms,
+  saveDriverFcmToken,
 };

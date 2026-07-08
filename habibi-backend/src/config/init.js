@@ -975,8 +975,12 @@ const createTables = async () => {
     await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_status_check`);
     await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','delivered','cancelled'))`);
 
-    // ── staff_members: on-duty toggle for delivery drivers ─────────
-    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS is_on_duty BOOLEAN DEFAULT FALSE`);
+    // ── staff_members: on-duty toggle + driver PIN + FCM push token ──
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS is_on_duty          BOOLEAN      DEFAULT FALSE`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_hash     VARCHAR(100)`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_attempts INTEGER      DEFAULT 0`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_lockout_until TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_fcm_token    TEXT`);
 
     // ── Seed default data (only if tables are empty) ──────────────
     await seedDefaults();

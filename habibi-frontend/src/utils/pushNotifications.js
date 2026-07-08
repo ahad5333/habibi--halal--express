@@ -48,9 +48,13 @@ export const requestPushPermission = async () => {
       : initializeApp(FIREBASE_CONFIG);
 
     const messaging = getMessaging(app);
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    // Inject Firebase config into the SW so it can handle background pushes
+    const target = swReg.installing || swReg.waiting || swReg.active;
+    if (target) target.postMessage({ type: 'FIREBASE_CONFIG', config: FIREBASE_CONFIG });
     const fcmToken  = await getToken(messaging, {
       vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js'),
+      serviceWorkerRegistration: swReg,
     });
 
     if (!fcmToken) return { ok: false, reason: 'no_token' };
@@ -68,6 +72,40 @@ export const requestPushPermission = async () => {
   } catch (err) {
     console.error('[Push] FCM error:', err.message);
     return { ok: false, reason: 'error', message: err.message };
+  }
+};
+
+// Driver-specific: request permission, get FCM token, register with driver endpoint
+// driverId + hmacToken come from the URL params after PIN login.
+export const registerDriverPush = async (driverId, hmacToken) => {
+  if (!('Notification' in window) || !isFirebaseConfigured()) return { ok: false };
+  let permission = Notification.permission;
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== 'granted') return { ok: false, reason: 'denied' };
+
+  try {
+    const { initializeApp, getApps } = await import('firebase/app');
+    const { getMessaging, getToken } = await import('firebase/messaging');
+    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+    const messaging = getMessaging(app);
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const target = swReg.installing || swReg.waiting || swReg.active;
+    if (target) target.postMessage({ type: 'FIREBASE_CONFIG', config: FIREBASE_CONFIG });
+    const fcmToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!fcmToken) return { ok: false, reason: 'no_token' };
+
+    await fetch(`${import.meta.env.VITE_API_URL || ''}/api/dispatch/driver/fcm-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Driver-Token': hmacToken },
+      body: JSON.stringify({ driver_id: driverId, fcm_token: fcmToken }),
+    }).catch(() => {});
+
+    return { ok: true, token: fcmToken };
+  } catch (err) {
+    console.error('[Push] Driver FCM error:', err.message);
+    return { ok: false, reason: 'error' };
   }
 };
 

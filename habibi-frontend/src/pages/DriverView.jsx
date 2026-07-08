@@ -90,6 +90,26 @@ export default function DriverView() {
   const countdownRef   = useRef(null);
   const wakeLockRef    = useRef(null);
 
+  // ── PWA: swap to driver manifest ─────────────────────────────────
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]');
+    const orig = link?.href;
+    if (link) link.href = '/driver-manifest.json';
+    return () => { if (link && orig) link.href = orig; };
+  }, []);
+
+  // ── Push notifications: register FCM token ────────────────────────
+  useEffect(() => {
+    if (!driverId || !token) return;
+    const t = setTimeout(async () => {
+      try {
+        const { registerDriverPush, isFirebaseConfigured } = await import('../utils/pushNotifications.js');
+        if (isFirebaseConfigured()) await registerDriverPush(driverId, token);
+      } catch (_) {}
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [driverId, token]);
+
   // ── Screen Wake Lock — keep phone screen on ───────────────────────
   useEffect(() => {
     if ('wakeLock' in navigator) {
@@ -140,6 +160,17 @@ export default function DriverView() {
       setClaimCountdown(30);
       setClaimResult(null);
       playBell();
+      // Show system notification so driver is alerted even if phone screen is dim
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification('🔔 New Delivery Order', {
+            body: `#${data.order_number} — ${data.delivery_address || ''}`,
+            icon: '/favicon.png',
+            tag:  'new-order',
+            requireInteraction: true,
+          });
+        } catch (_) {}
+      }
     });
 
     return () => socket.disconnect();

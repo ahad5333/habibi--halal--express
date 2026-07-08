@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Truck, User, MapPin, Clock, CheckCircle, XCircle,
   RefreshCw, Navigation, ExternalLink, Phone, AlertCircle,
-  Package, ChevronDown, Bell
+  Package, ChevronDown, Bell, Map,
 } from 'lucide-react';
 import io from 'socket.io-client';
 import { adminAPI } from '../services/api';
@@ -301,6 +301,102 @@ function FeeCalculator() {
   );
 }
 
+// ── Live Driver Map (Leaflet via CDN) ──────────────────────────────
+function DriverMapPanel({ assignments }) {
+  const mapDivRef     = useRef(null);
+  const leafletMapRef = useRef(null);
+  const markersRef    = useRef({});
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (window.L) { initMap(); return; }
+
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+
+    const js = document.createElement('script');
+    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.onload = initMap;
+    document.head.appendChild(js);
+
+    return () => {
+      if (leafletMapRef.current) { leafletMapRef.current.remove(); leafletMapRef.current = null; }
+    };
+  }, []);
+
+  function initMap() {
+    if (!mapDivRef.current || leafletMapRef.current) return;
+    const L = window.L;
+    leafletMapRef.current = L.map(mapDivRef.current).setView([40.8448, -73.8648], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(leafletMapRef.current);
+    setReady(true);
+  }
+
+  // Update markers whenever assignments change
+  useEffect(() => {
+    const L = window.L;
+    const map = leafletMapRef.current;
+    if (!L || !map || !ready) return;
+
+    const active = assignments.filter(a =>
+      ['assigned', 'en_route'].includes(a.status) && a.current_lat && a.current_lng
+    );
+
+    // Remove stale markers
+    Object.keys(markersRef.current).forEach(id => {
+      if (!active.find(a => String(a.id) === id)) {
+        markersRef.current[id].remove();
+        delete markersRef.current[id];
+      }
+    });
+
+    // Add / move markers
+    active.forEach(a => {
+      const lat  = parseFloat(a.current_lat);
+      const lng  = parseFloat(a.current_lng);
+      const name = a.driver_name || a.driver_full_name || 'Driver';
+      const popup = `<strong>${name}</strong><br/>${a.delivery_address || '—'}<br/><small>${a.order_number || ''}</small>`;
+
+      if (markersRef.current[a.id]) {
+        markersRef.current[a.id].setLatLng([lat, lng]).setPopupContent(popup);
+      } else {
+        const icon = L.divIcon({
+          html: `<div style="background:#E5B64E;color:#0a0a0a;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.4)">🛵 ${name}</div>`,
+          className: '',
+          iconAnchor: [0, 12],
+        });
+        markersRef.current[a.id] = L.marker([lat, lng], { icon })
+          .bindPopup(popup)
+          .addTo(map);
+      }
+    });
+  }, [assignments, ready]);
+
+  const withGPS   = assignments.filter(a => ['assigned','en_route'].includes(a.status) && a.current_lat);
+  const noGPS     = assignments.filter(a => ['assigned','en_route'].includes(a.status) && !a.current_lat);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+        <span className="dd-badge dd-badge-success">🟢 {withGPS.length} on map</span>
+        {noGPS.length > 0 && <span className="dd-badge dd-badge-warn">⚠ {noGPS.length} no GPS yet</span>}
+      </div>
+      <div ref={mapDivRef} style={{ height: 460, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }} />
+      {noGPS.length > 0 && (
+        <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
+          <strong>Waiting for GPS:</strong>{' '}
+          {noGPS.map(a => a.driver_name || a.driver_full_name || `#${a.id}`).join(', ')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ───────────────────────────────────────────────────────
 export default function DeliveryDispatch() {
   const [tab, setTab]             = useState('inhouse');
@@ -469,6 +565,12 @@ export default function DeliveryDispatch() {
           <Clock size={14}/> Scheduled
           {scheduled.length > 0 && <span className="dd-tab-badge">{scheduled.length}</span>}
         </button>
+        <button className={`dd-tab ${tab==='map'?'active':''}`} onClick={() => setTab('map')}>
+          <Map size={14}/> Live Map
+          {activeAssign.filter(a => a.current_lat).length > 0 && (
+            <span className="dd-tab-badge">{activeAssign.filter(a => a.current_lat).length}</span>
+          )}
+        </button>
       </div>
 
       {loadErr && <div className="dd-err" style={{margin:'0.75rem 1rem'}}>⚠ {loadErr} — <button className="dd-link" onClick={load}>Retry</button></div>}
@@ -539,6 +641,10 @@ export default function DeliveryDispatch() {
                 </div>
               )}
             </>
+          )}
+
+          {tab === 'map' && (
+            <DriverMapPanel assignments={assignments} />
           )}
 
           {tab === 'doordash' && (

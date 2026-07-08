@@ -59,6 +59,7 @@ const {
   driverLogin,
   driverSetPin,
   driverSendSetupSms,
+  saveDriverFcmToken,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
@@ -149,5 +150,7 @@ router.get('/scheduled', async (req, res) => {
 router.post('/driver/login',         driverLogin);
 router.post('/driver/set-pin',       driverOrAdmin, driverSetPin);
 router.post('/driver/send-setup-sms', protect,      driverSendSetupSms);
+// FCM push token — auth via X-Driver-Token (validated inside handler)
+router.post('/driver/fcm-token',     saveDriverFcmToken);
 
 module.exports = router;
