@@ -877,6 +877,37 @@ export default function DriverView() {
             </div>
           )}
 
+          {/* Items */}
+          {Array.isArray(assignment.items) && assignment.items.length > 0 && (
+            <div className="dv-items-section">
+              <div className="dv-items-header">
+                <Package size={13}/>
+                <span>What's in the bag ({assignment.items.length} item{assignment.items.length !== 1 ? 's' : ''})</span>
+              </div>
+              <ul className="dv-items-list">
+                {assignment.items.map((item, i) => (
+                  <li key={i} className="dv-item-row">
+                    <span className="dv-item-qty">{item.quantity || 1}×</span>
+                    <span className="dv-item-name">{item.name || item.item_name || 'Item'}</span>
+                    {item.customizations && item.customizations.length > 0 && (
+                      <span className="dv-item-mods">
+                        {item.customizations.map(c => c.choice || c.name || c).join(', ')}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Special instructions */}
+          {assignment.special_instructions && (
+            <div className="dv-special-note">
+              <span className="dv-special-icon">📝</span>
+              <span>{assignment.special_instructions}</span>
+            </div>
+          )}
+
           {/* Time */}
           {assignment.assigned_at && (
             <div className="dv-order-meta">

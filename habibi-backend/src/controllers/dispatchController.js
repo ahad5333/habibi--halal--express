@@ -135,7 +135,8 @@ const getDriverAssignment = async (req, res) => {
   const { driver_id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT da.*, go.payment_method, go.total AS order_total
+      `SELECT da.*, go.payment_method, go.total AS order_total,
+              go.items, go.special_instructions
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
        WHERE da.driver_id=$1 AND da.status IN ('assigned','en_route')
@@ -143,7 +144,11 @@ const getDriverAssignment = async (req, res) => {
        LIMIT 1`,
       [driver_id]
     );
-    res.json(result.rows[0] || null);
+    const row = result.rows[0] || null;
+    if (row) {
+      try { row.items = typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || []); } catch (_) { row.items = []; }
+    }
+    res.json(row);
   } catch (err) {
     res.status(500).json(safeError(err));
   }

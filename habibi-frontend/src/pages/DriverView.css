@@ -700,6 +700,65 @@
   color: #555;
 }
 
+/* items section */
+.dv-items-section {
+  border-top: 1px solid #242424;
+  padding: 0.85rem 1.1rem 0.6rem;
+}
+.dv-items-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a0a0a0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+}
+.dv-items-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.dv-item-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.dv-item-qty {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #00c853;
+  min-width: 22px;
+  flex-shrink: 0;
+}
+.dv-item-name {
+  color: #fff;
+  font-weight: 500;
+  flex: 1;
+}
+.dv-item-mods {
+  font-size: 0.72rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* special instructions */
+.dv-special-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-top: 1px solid #242424;
+  font-size: 0.82rem;
+  color: #f5a623;
+  line-height: 1.4;
+}
+.dv-special-icon { flex-shrink: 0; font-size: 0.9rem; }
+
 /* ─── Action buttons ─────────────────────────────────────────────────── */
 .dv-action-btn {
   display: flex;
