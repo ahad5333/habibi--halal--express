@@ -1392,6 +1392,43 @@ export default function DriverView() {
           </div>
 
         </div>
+
+        {/* Full broadcast modal for idle drivers */}
+        {broadcastOrder && (
+          <div className="dv-broadcast-overlay">
+            <div className="dv-broadcast-modal">
+              <div className="dv-broadcast-pulse-ring"/>
+              <div className="dv-broadcast-bell"><Bell size={28}/></div>
+              <h3 className="dv-broadcast-title">New Order!</h3>
+              <div className="dv-broadcast-info">
+                <p className="dv-broadcast-ordernum">#{broadcastOrder.order_number}</p>
+                <p className="dv-broadcast-name">{broadcastOrder.customer_name}</p>
+                {broadcastOrder.delivery_address && (
+                  <p className="dv-broadcast-addr"><MapPin size={12}/> {broadcastOrder.delivery_address}</p>
+                )}
+                <p className="dv-broadcast-total">${parseFloat(broadcastOrder.total || 0).toFixed(2)}</p>
+                {parseFloat(broadcastOrder.tip || 0) > 0 && (
+                  <p className="dv-broadcast-tip">💵 Tip: ${parseFloat(broadcastOrder.tip).toFixed(2)}</p>
+                )}
+              </div>
+              <CountdownRing seconds={claimCountdown} total={30}/>
+              {claimResult === 'lost' ? (
+                <div className="dv-broadcast-result">
+                  <p className="dv-broadcast-lost">Order taken by another driver</p>
+                  <button className="dv-btn" onClick={dismissBroadcast}>Close</button>
+                </div>
+              ) : (
+                <div className="dv-btn-row">
+                  <button className="dv-btn dv-btn-claim" onClick={claimBroadcastOrder} disabled={claimLoading}>
+                    {claimLoading ? 'Claiming…' : <><CheckCircle size={16}/> Accept</>}
+                  </button>
+                  <button className="dv-btn dv-btn-skip" onClick={dismissBroadcast}>Skip</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {installBanner}
       </div>
     );
@@ -1449,39 +1486,6 @@ export default function DriverView() {
             </div>
           </div>
           <button className="dv-queued-close" onClick={() => setQueuedOrder(null)}><X size={14}/></button>
-        </div>
-      )}
-
-      {/* Full broadcast modal — only when NOT on active delivery (handled above) */}
-      {false && broadcastOrder && (
-        <div className="dv-broadcast-overlay">
-          <div className="dv-broadcast-modal">
-            <div className="dv-broadcast-pulse-ring"/>
-            <div className="dv-broadcast-bell"><Bell size={28}/></div>
-            <h3 className="dv-broadcast-title">New Order!</h3>
-            <div className="dv-broadcast-info">
-              <p className="dv-broadcast-ordernum">#{broadcastOrder.order_number}</p>
-              <p className="dv-broadcast-name">{broadcastOrder.customer_name}</p>
-              {broadcastOrder.delivery_address && (
-                <p className="dv-broadcast-addr"><MapPin size={12}/> {broadcastOrder.delivery_address}</p>
-              )}
-              <p className="dv-broadcast-total">${parseFloat(broadcastOrder.total || 0).toFixed(2)}</p>
-            </div>
-            <CountdownRing seconds={claimCountdown} total={30}/>
-            {claimResult === 'lost' ? (
-              <div className="dv-broadcast-result">
-                <p className="dv-broadcast-lost">Order taken by another driver</p>
-                <button className="dv-btn" onClick={dismissBroadcast}>Close</button>
-              </div>
-            ) : (
-              <div className="dv-btn-row">
-                <button className="dv-btn dv-btn-claim" onClick={claimBroadcastOrder} disabled={claimLoading}>
-                  {claimLoading ? 'Claiming…' : <><CheckCircle size={16}/> Accept</>}
-                </button>
-                <button className="dv-btn dv-btn-skip" onClick={dismissBroadcast}>Skip</button>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

@@ -233,7 +233,7 @@ const broadcastOrderToDrivers = async (req, res) => {
   const { order_number } = req.params;
   try {
     const orderRes = await pool.query(
-      `SELECT order_number, customer_name, delivery_address, delivery_city, total, items
+      `SELECT order_number, customer_name, delivery_address, delivery_city, total, tip, items
          FROM guest_orders WHERE order_number=$1`,
       [order_number]
     );
@@ -249,6 +249,7 @@ const broadcastOrderToDrivers = async (req, res) => {
       customer_name: order.customer_name,
       delivery_address: deliveryAddr,
       total: parseFloat(order.total || 0),
+      tip: parseFloat(order.tip || 0),
       item_count: itemCount,
       broadcast_at: new Date().toISOString(),
     };

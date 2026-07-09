@@ -1407,6 +1407,7 @@
 .dv-broadcast-name { font-size: 0.9rem; color: #fff; font-weight: 600; }
 .dv-broadcast-addr { font-size: 0.78rem; color: #a0a0a0; display: flex; align-items: center; gap: 0.25rem; justify-content: center; }
 .dv-broadcast-total { font-size: 1.2rem; font-weight: 800; color: #f5a623; }
+.dv-broadcast-tip   { font-size: 0.88rem; font-weight: 700; color: #00e676; }
 .dv-broadcast-result { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; width: 100%; }
 .dv-broadcast-lost { font-size: 0.85rem; color: #ff6b6b; }
 
