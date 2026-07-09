@@ -1765,3 +1765,269 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.85); }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   Mobile-first: base styles target phones (360–479px).
+   Media queries layer in wider layouts progressively.
+═══════════════════════════════════════════════════════════ */
+
+/* ── Very small phones (< 360px) ─────────────────────────── */
+@media (max-width: 359px) {
+  .dv-header { padding: 0.7rem 1rem; }
+  .dv-brand  { font-size: 0.9rem; }
+
+  .dv-idle-hero  { min-height: 270px; }
+  .dv-hero-inner { padding: 1rem 1rem 0.75rem; }
+  .dv-badge-img  { width: 72px; height: 72px; }
+  .dv-hero-title { font-size: 1.1rem; }
+  .dv-hero-sub   { font-size: 0.76rem; max-width: 100%; }
+
+  .dv-greeting-strip { padding: 0.25rem 0.75rem; gap: 0.5rem; }
+  .dv-greeting-text  { font-size: 0.76rem; }
+
+  /* 4-col achievements → 2-col on very small screens */
+  .dv-achievements-row { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+  .dv-ach-icon         { font-size: 1.2rem; }
+
+  /* 4-col quick actions → 2-col on very small screens */
+  .dv-quick-grid { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+  .dv-quick-icon { font-size: 1.2rem; }
+
+  /* Earnings: 3-col → stack as 2+1 */
+  .dv-earnings-grid { grid-template-columns: repeat(2, 1fr); }
+  .dv-earnings-item:last-child { grid-column: 1 / -1; }
+
+  /* Stepper: tighter on tiny screens */
+  .dv-stepper   { padding: 0.65rem 0.75rem; }
+  .dv-step      { min-width: 44px; }
+  .dv-step-dot  { width: 26px; height: 26px; font-size: 0.75rem; }
+  .dv-step-label { font-size: 0.55rem; }
+
+  /* Content */
+  .dv-content { padding: 0.75rem; gap: 0.75rem; }
+
+  /* Buttons */
+  .dv-btn-row { flex-direction: column; }
+
+  /* Motivational banner */
+  .dv-motive-banner { height: 100px; }
+  .dv-motive-quote  { font-size: 0.76rem; }
+
+  /* Rank card */
+  .dv-rank-crown { font-size: 1.4rem; }
+  .dv-rank-title { font-size: 0.9rem; }
+
+  /* Tips */
+  .dv-tip-item { font-size: 0.74rem; }
+
+  /* Broadcast modal */
+  .dv-broadcast-overlay { padding: 1rem; }
+  .dv-broadcast-modal   { padding: 1.5rem 1rem 1rem; border-radius: 16px; }
+  .dv-broadcast-title   { font-size: 1.1rem; }
+
+  /* Chat */
+  .dv-chat-messages { max-height: 40vh; }
+}
+
+/* ── Large phones (≥ 480px) ──────────────────────────────── */
+@media (min-width: 480px) {
+  .dv-header { padding: 0.9rem 1.5rem; }
+
+  .dv-hero-inner { padding: 1.75rem 1.5rem 1.25rem; }
+  .dv-badge-img  { width: 100px; height: 100px; }
+  .dv-hero-title { font-size: 1.5rem; }
+  .dv-hero-sub   { font-size: 0.88rem; max-width: 300px; }
+
+  .dv-content { padding: 1.25rem; gap: 1.1rem; max-width: 480px; }
+
+  .dv-motive-banner { height: 130px; }
+
+  /* Room to show quick-action labels fully */
+  .dv-quick-btn { font-size: 0.65rem; }
+}
+
+/* ── Small tablets / landscape phones (≥ 640px) ──────────── */
+@media (min-width: 640px) {
+  .dv-header { padding: 1rem 2rem; }
+  .dv-brand  { font-size: 1.05rem; }
+  .dv-brand-logo { width: 32px; height: 32px; }
+
+  .dv-idle-hero  { min-height: 380px; }
+  .dv-hero-inner { padding: 2rem 2rem 1.5rem; }
+  .dv-badge-img  { width: 110px; height: 110px; }
+  .dv-hero-title { font-size: 1.6rem; }
+  .dv-hero-sub   { font-size: 0.9rem; max-width: 320px; }
+  .dv-hero-scene { max-width: 360px; }
+
+  .dv-content { max-width: 600px; padding: 1.25rem 1.5rem; gap: 1.1rem; }
+
+  /* Stepper */
+  .dv-stepper    { padding: 1rem 1.75rem; }
+  .dv-step       { min-width: 64px; }
+  .dv-step-dot   { width: 36px; height: 36px; font-size: 1rem; }
+  .dv-step-label { font-size: 0.65rem; }
+
+  /* Cards */
+  .dv-card { padding: 1.5rem; }
+
+  /* Grids — already 4-col, give them more gap */
+  .dv-achievements-row { gap: 0.6rem; }
+  .dv-quick-grid       { gap: 0.6rem; }
+  .dv-achievement-badge { padding: 0.75rem 0.35rem; }
+  .dv-ach-icon          { font-size: 1.55rem; }
+  .dv-quick-icon        { font-size: 1.55rem; }
+  .dv-quick-btn         { padding: 0.85rem 0.35rem; font-size: 0.65rem; }
+
+  /* Earnings */
+  .dv-earnings-val { font-size: 1.3rem; }
+
+  /* Motivational + rank */
+  .dv-motive-banner { height: 150px; }
+  .dv-motive-quote  { font-size: 0.9rem; }
+  .dv-rank-card     { min-height: 110px; }
+
+  /* Broadcast modal */
+  .dv-broadcast-modal { max-width: 440px; padding: 2.25rem 1.75rem 1.75rem; }
+  .dv-broadcast-title { font-size: 1.4rem; }
+
+  /* Chat panel stays bottom-sheet style */
+  .dv-chat-messages { max-height: 45vh; }
+}
+
+/* ── Tablets (≥ 768px) ───────────────────────────────────── */
+@media (min-width: 768px) {
+  .dv-idle-hero  { min-height: 440px; }
+  .dv-hero-inner { padding: 2.5rem 2.5rem 2rem; }
+  .dv-badge-img  { width: 120px; height: 120px; }
+  .dv-hero-title { font-size: 1.75rem; }
+  .dv-hero-sub   { font-size: 0.95rem; max-width: 360px; }
+  .dv-hero-scene { max-width: 420px; }
+
+  .dv-live-radar { width: 48px; height: 48px; }
+
+  .dv-content { max-width: 680px; padding: 1.5rem 2rem; gap: 1.25rem; }
+
+  /* Stepper */
+  .dv-stepper    { padding: 1rem 2rem; }
+  .dv-step       { min-width: 72px; }
+  .dv-step-label { font-size: 0.68rem; }
+
+  /* Duty button */
+  .dv-duty-mega { font-size: 1.1rem; padding: 1.25rem 1.75rem; }
+
+  /* Achievements + Quick actions: more comfortable */
+  .dv-achievements-row { gap: 0.75rem; }
+  .dv-quick-grid       { gap: 0.75rem; }
+  .dv-ach-icon         { font-size: 1.7rem; }
+  .dv-quick-icon       { font-size: 1.7rem; }
+  .dv-ach-label        { font-size: 0.62rem; }
+  .dv-quick-btn        { font-size: 0.68rem; }
+
+  /* Earnings grid */
+  .dv-earnings-icon { font-size: 1.6rem; }
+  .dv-earnings-val  { font-size: 1.4rem; }
+
+  /* Motivational banner */
+  .dv-motive-banner { height: 170px; }
+  .dv-motive-quote  { font-size: 0.95rem; }
+
+  /* Rank */
+  .dv-rank-card  { min-height: 120px; }
+  .dv-rank-crown { font-size: 2rem; }
+  .dv-rank-title { font-size: 1.1rem; }
+
+  /* Broadcast modal */
+  .dv-broadcast-overlay { padding: 2rem; }
+  .dv-broadcast-modal   { max-width: 480px; }
+  .dv-countdown-ring    { width: 90px; height: 90px; }
+
+  /* Chat: centered bottom sheet */
+  .dv-chat-overlay { justify-content: center; align-items: flex-end; }
+  .dv-chat-panel   { max-width: 560px; border-radius: 20px 20px 0 0; }
+}
+
+/* ── Desktop (≥ 1024px) ──────────────────────────────────── */
+@media (min-width: 1024px) {
+  .dv-header {
+    padding: 1rem 3rem;
+    max-width: 100%;
+  }
+
+  .dv-idle-hero  { min-height: 520px; }
+  .dv-hero-inner { padding: 3rem 3rem 2.5rem; }
+  .dv-badge-img  { width: 130px; height: 130px; }
+  .dv-hero-title { font-size: 2rem; letter-spacing: -0.03em; }
+  .dv-hero-sub   { font-size: 1rem; max-width: 420px; }
+  .dv-hero-scene { max-width: 480px; }
+
+  .dv-scooter { font-size: 2.5rem; }
+
+  .dv-content {
+    max-width: 780px;
+    padding: 1.75rem 2.5rem;
+    gap: 1.4rem;
+  }
+
+  /* Stepper */
+  .dv-stepper    { padding: 1.1rem 2.5rem; }
+  .dv-step-dot   { width: 40px; height: 40px; font-size: 1.1rem; }
+  .dv-step-label { font-size: 0.7rem; }
+
+  /* Cards */
+  .dv-card { padding: 1.75rem; border-radius: 18px; }
+
+  /* Earnings grid: more breathing room */
+  .dv-earnings-grid { gap: 0.85rem; }
+  .dv-earnings-item { padding: 1.2rem 0.75rem; }
+  .dv-earnings-val  { font-size: 1.5rem; }
+  .dv-earnings-icon { font-size: 1.8rem; }
+
+  /* Achievements + Quick actions */
+  .dv-achievements-row { gap: 0.875rem; }
+  .dv-quick-grid       { gap: 0.875rem; }
+  .dv-ach-icon         { font-size: 1.85rem; }
+  .dv-quick-icon       { font-size: 1.85rem; }
+  .dv-achievement-badge { padding: 0.875rem 0.5rem; border-radius: 12px; }
+  .dv-quick-btn         { padding: 1rem 0.5rem; border-radius: 12px; font-size: 0.7rem; }
+
+  /* Motivational + rank */
+  .dv-motive-banner { height: 190px; border-radius: 18px; }
+  .dv-motive-quote  { font-size: 1rem; }
+  .dv-rank-card     { min-height: 130px; border-radius: 18px; }
+
+  /* Buttons */
+  .dv-btn { font-size: 0.95rem; padding: 0.875rem 1.5rem; border-radius: 12px; }
+  .dv-duty-mega { font-size: 1.15rem; padding: 1.35rem 2rem; border-radius: 18px; }
+
+  /* Broadcast modal: larger, centered properly */
+  .dv-broadcast-modal { max-width: 520px; padding: 2.5rem 2rem 2rem; border-radius: 26px; }
+  .dv-broadcast-title { font-size: 1.5rem; }
+  .dv-countdown-ring  { width: 96px; height: 96px; }
+  .dv-ring-label      { font-size: 1.5rem; }
+
+  /* Chat panel: floating dialog on desktop */
+  .dv-chat-overlay { align-items: center; }
+  .dv-chat-panel {
+    max-width: 560px;
+    border-radius: 20px;
+    max-height: 70vh;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top: none;
+  }
+  .dv-chat-messages { max-height: 45vh; }
+}
+
+/* ── Large desktop (≥ 1280px) ────────────────────────────── */
+@media (min-width: 1280px) {
+  .dv-content { max-width: 860px; }
+
+  .dv-idle-hero  { min-height: 580px; }
+  .dv-hero-title { font-size: 2.2rem; }
+  .dv-hero-sub   { font-size: 1.05rem; max-width: 480px; }
+
+  .dv-motive-banner { height: 210px; }
+  .dv-rank-card     { min-height: 140px; }
+
+  .dv-broadcast-modal { max-width: 560px; }
+}
