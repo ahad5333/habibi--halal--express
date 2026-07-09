@@ -1839,13 +1839,31 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
 
+/* Mobile phones — fix header crowding + empty space (< 640px) */
+@media (max-width: 640px) {
+  /* Header: logo shrinks, title hidden, buttons smaller — fits 1 line */
+  .dv-logo-sm   { width: 38px; height: 38px; border-radius: 8px; }
+  .dv-hdr       { padding: 0.6rem 0.85rem; gap: 0.35rem; }
+  .dv-hdr-left  { gap: 0.4rem; }
+  .dv-hdr-title { display: none; }
+  .dv-hdr-right { gap: 0.35rem; }
+  .dv-icon-btn  { width: 30px; height: 30px; }
+  .dv-icon-btn svg { width: 15px; height: 15px; }
+  .dv-duty-pill { padding: 0.28rem 0.6rem; font-size: 0.72rem; gap: 0.3rem; }
+  .dv-status-dot { width: 6px; height: 6px; }
+
+  /* Hero: grows to fill empty space instead of fixed 240px */
+  .dv-hero      { flex: 1; height: auto; min-height: 200px; max-height: 360px; }
+
+  /* Body: stop flexing — just wrap its own content */
+  .dv-body      { flex: none; padding: 0.85rem; gap: 0.7rem; }
+}
+
 /* Extra-small phones (< 380px) */
 @media (max-width: 380px) {
-  .dv-logo-sm      { width: 44px; height: 44px; }
-  .dv-hdr          { padding: 0.5rem 0.75rem; }
-  .dv-hdr-title    { font-size: 0.82rem; }
-  .dv-duty-pill    { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
-  .dv-hero         { height: 180px; }
+  .dv-logo-sm      { width: 34px; height: 34px; }
+  .dv-duty-pill    { font-size: 0.68rem; padding: 0.25rem 0.5rem; }
+  .dv-hero         { min-height: 170px; max-height: 300px; }
   .dv-hero-h1      { font-size: 1.2rem; }
   .dv-hero-sub     { font-size: 0.8rem; }
   .dv-stat-num     { font-size: 1.2rem; }
@@ -1855,7 +1873,7 @@
   .dv-quick        { padding: 0.65rem 0.3rem; font-size: 0.62rem; }
   .dv-quick svg    { width: 17px; height: 17px; }
   .dv-steps        { padding: 0.5rem 0.6rem; }
-  .dv-body         { padding: 0.75rem; gap: 0.6rem; }
+  .dv-body         { padding: 0.6rem; gap: 0.55rem; }
   .dv-btn          { font-size: 0.82rem; padding: 0.65rem 0.85rem; }
   .dv-action-btn   { padding: 0.875rem; font-size: 0.9rem; }
   .dv-broadcast-modal { padding: 1.25rem 1rem; }
