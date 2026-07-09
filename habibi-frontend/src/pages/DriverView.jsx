@@ -129,9 +129,18 @@ function SuccessStars() {
 }
 
 export default function DriverView() {
-  const [params] = useSearchParams();
-  const driverId = params.get('id');
-  const token    = params.get('token');
+  // Authentication state — populated from session or after PIN login
+  const [authenticated, setAuthenticated]   = useState(false);
+  const [driverId, setDriverId]             = useState('');
+  const [token, setToken]                   = useState('');
+  const [driverName, setDriverName]         = useState('');
+  const [driverPhone, setDriverPhone]       = useState('');
+
+  // Login gate state
+  const [loginPhone, setLoginPhone]         = useState('');
+  const [loginPin, setLoginPin]             = useState('');
+  const [loginLoading, setLoginLoading]     = useState(false);
+  const [loginError, setLoginError]         = useState('');
 
   const apiFetch = useCallback(makeApiFetch(driverId, token), [driverId, token]);
 
@@ -207,6 +216,64 @@ export default function DriverView() {
   // Keep refs in sync
   useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
   useEffect(() => { deliverySuccessRef.current = showDeliverySuccess; }, [showDeliverySuccess]);
+
+  // Restore session from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('habibi_driver_session');
+      if (saved) {
+        const { driver_id, token: t, name, phone } = JSON.parse(saved);
+        if (driver_id && t) {
+          setDriverId(String(driver_id));
+          setToken(t);
+          setDriverName(name || '');
+          setDriverPhone(phone || '');
+          setAuthenticated(true);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  const handleLogin = async () => {
+    setLoginError('');
+    if (!loginPhone.trim()) { setLoginError('Enter your phone number.'); return; }
+    if (!loginPin.trim())   { setLoginError('Enter your PIN.'); return; }
+    setLoginLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/dispatch/driver/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: loginPhone.trim(), pin: loginPin.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setLoginError(data.message || 'Login failed.'); setLoginLoading(false); return; }
+      const session = { driver_id: String(data.driver_id), token: data.token, name: data.name, phone: loginPhone.trim() };
+      sessionStorage.setItem('habibi_driver_session', JSON.stringify(session));
+      setDriverId(String(data.driver_id));
+      setToken(data.token);
+      setDriverName(data.name);
+      setDriverPhone(loginPhone.trim());
+      setAuthenticated(true);
+    } catch (_) { setLoginError('Connection error. Please try again.'); }
+    setLoginLoading(false);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('habibi_driver_session');
+    socketRef.current?.disconnect();
+    setAuthenticated(false);
+    setDriverId('');
+    setToken('');
+    setDriverName('');
+    setDriverPhone('');
+    setAssignment(null);
+    setOnDuty(false);
+    setOnBreak(false);
+    setShowPinChange(false);
+    setPinError('');
+    setPinSuccess(false);
+    setPinForm({ current: '', newPin: '', confirm: '' });
+  };
 
   useEffect(() => {
     // Swap PWA manifest
@@ -700,11 +767,13 @@ export default function DriverView() {
     if (newPin !== confirm) { setPinError('New PINs do not match.'); return; }
     setPinLoading(true);
     try {
-      // Verify current PIN first
-      await apiFetch('/api/dispatch/driver/login', {
+      // Verify current PIN via phone + pin
+      const verifyRes = await fetch(`${API_BASE}/api/dispatch/driver/login`, {
         method: 'POST',
-        body: JSON.stringify({ driver_id: driverId, pin: current }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: driverPhone, pin: current }),
       });
+      if (!verifyRes.ok) throw new Error('Current PIN is incorrect.');
       // Set new PIN
       await apiFetch('/api/dispatch/driver/set-pin', {
         method: 'POST',
@@ -1007,6 +1076,9 @@ export default function DriverView() {
               <button className="dv-pin-submit" onClick={submitPinChange} disabled={pinLoading}>
                 {pinLoading ? 'Saving…' : 'Change PIN'}
               </button>
+              <button className="dv-pin-signout" onClick={handleLogout}>
+                Sign Out
+              </button>
             </div>
           )}
         </div>
@@ -1092,6 +1164,54 @@ export default function DriverView() {
       </div>
     </div>
   );
+
+  // ── Login gate ────────────────────────────────────────────────────
+  if (!authenticated) {
+    return (
+      <div className="dv-shell dv-login-shell">
+        <div className="dv-login-card">
+          <img src="/images/logos/logo.png" className="dv-login-logo" alt="Habibi Halal Express"
+            onError={e => e.target.style.display='none'}/>
+          <h1 className="dv-login-title">Driver Login</h1>
+          <p className="dv-login-sub">Enter your phone number and PIN</p>
+
+          <label className="dv-pin-label">Phone Number</label>
+          <input
+            className="dv-login-input"
+            type="tel"
+            inputMode="tel"
+            placeholder="(718) 555-0123"
+            value={loginPhone}
+            onChange={e => setLoginPhone(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoFocus
+          />
+
+          <label className="dv-pin-label" style={{ marginTop: '0.75rem' }}>4-Digit PIN</label>
+          <input
+            className="dv-pin-input"
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            placeholder="••••"
+            value={loginPin}
+            onChange={e => setLoginPin(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+          />
+
+          {loginError && <p className="dv-login-error">{loginError}</p>}
+
+          <button
+            className="dv-login-btn"
+            onClick={handleLogin}
+            disabled={loginLoading}
+          >
+            {loginLoading ? 'Signing in…' : 'Sign In →'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Guard screens ──────────────────────────────────────────────────
   if (!driverId) {
@@ -1251,7 +1371,7 @@ export default function DriverView() {
             ) : (
               <div className="dv-offline-icon">🛵</div>
             )}
-            <h1 className="dv-hero-h1">{greeting} 👋</h1>
+            <h1 className="dv-hero-h1">{greeting}{driverName ? `, ${driverName.split(' ')[0]}` : ''} 👋</h1>
             <p className="dv-hero-sub">
               {onBreak
                 ? 'New orders paused — tap Resume when ready'
