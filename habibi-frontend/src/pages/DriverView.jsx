@@ -179,16 +179,24 @@ export default function DriverView() {
   const [perfLoading, setPerfLoading]   = useState(false);
   const [queuedOrder, setQueuedOrder]   = useState(null);
 
-  const photoInputRef  = useRef(null);
-  const watchRef       = useRef(null);
-  const intervalRef    = useRef(null);
-  const socketRef      = useRef(null);
-  const countdownRef   = useRef(null);
-  const wakeLockRef    = useRef(null);
-  const onBreakRef     = useRef(false);
+  const [showCancelAlert, setShowCancelAlert]       = useState(false);
+  const [cancelledOrder, setCancelledOrder]         = useState(null);
+  const [showDeliverySuccess, setShowDeliverySuccess] = useState(false);
+  const [lastDeliveredOrder, setLastDeliveredOrder] = useState(null);
 
-  // Keep ref in sync so socket handler always sees current break state
+  const photoInputRef        = useRef(null);
+  const watchRef             = useRef(null);
+  const intervalRef          = useRef(null);
+  const socketRef            = useRef(null);
+  const countdownRef         = useRef(null);
+  const wakeLockRef          = useRef(null);
+  const onBreakRef           = useRef(false);
+  const prevAssignmentRef    = useRef(null);
+  const deliverySuccessRef   = useRef(false);
+
+  // Keep refs in sync
   useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
+  useEffect(() => { deliverySuccessRef.current = showDeliverySuccess; }, [showDeliverySuccess]);
 
   useEffect(() => {
     // Swap PWA manifest
@@ -243,10 +251,33 @@ export default function DriverView() {
 
   const loadAssignment = useCallback(async () => {
     if (!driverId) return;
+    // Don't overwrite the success screen while it's showing
+    if (deliverySuccessRef.current) return;
     try {
       const data = await apiFetch(`/api/dispatch/driver/${driverId}`);
+      const prev = prevAssignmentRef.current;
+      // Detect external cancellation: had an active assignment, now it's cancelled
+      if (prev && ['assigned','picked_up','en_route'].includes(prev.status) && data.status === 'cancelled') {
+        setCancelledOrder(prev);
+        setShowCancelAlert(true);
+      }
+      prevAssignmentRef.current = data;
       setAssignment(data);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      // 404 = no active assignment (normal after delivery completes)
+      if (e.message.includes('404') || e.message.toLowerCase().includes('no active')) {
+        const prev = prevAssignmentRef.current;
+        // If assignment vanished while it was active without us marking it delivered → cancelled by dispatch
+        if (prev && ['assigned','picked_up','en_route'].includes(prev.status)) {
+          setCancelledOrder(prev);
+          setShowCancelAlert(true);
+        }
+        prevAssignmentRef.current = null;
+        setAssignment(null);
+      } else {
+        setError(e.message);
+      }
+    }
     setLoading(false);
   }, [driverId, apiFetch]);
 
@@ -531,9 +562,12 @@ export default function DriverView() {
         body: JSON.stringify({ status: 'delivered' }),
       });
       stopTracking();
-      setAssignment(prev => ({ ...prev, status: 'delivered' }));
       setDeliveryPhase(null);
       loadCashSummary();
+      setLastDeliveredOrder({ ...assignment });
+      prevAssignmentRef.current = null;
+      deliverySuccessRef.current = true;
+      setShowDeliverySuccess(true);
     } catch (e) { setError(e.message); }
   };
 
@@ -546,9 +580,12 @@ export default function DriverView() {
       });
       stopTracking();
       setCashCollected(data.amount_collected);
-      setAssignment(prev => ({ ...prev, status: 'delivered' }));
       setDeliveryPhase(null);
       loadCashSummary();
+      setLastDeliveredOrder({ ...assignment, _codCollected: data.amount_collected });
+      prevAssignmentRef.current = null;
+      deliverySuccessRef.current = true;
+      setShowDeliverySuccess(true);
     } catch (e) {
       if (e.message.includes('already recorded') || e.message === '409') {
         stopTracking();
@@ -591,8 +628,11 @@ export default function DriverView() {
         body: JSON.stringify({ status: 'delivered', note: 'Left at door' }),
       });
       stopTracking();
-      setAssignment(prev => ({ ...prev, status: 'delivered' }));
       setDeliveryPhase(null);
+      setLastDeliveredOrder({ ...assignment, _leftAtDoor: true });
+      prevAssignmentRef.current = null;
+      deliverySuccessRef.current = true;
+      setShowDeliverySuccess(true);
     } catch (e) { setProofError(e.message); }
     setSubmitting(false);
   };
@@ -858,6 +898,65 @@ export default function DriverView() {
     </div>
   );
 
+  // ── Delivery success screen ───────────────────────────────────────
+  if (showDeliverySuccess && lastDeliveredOrder) {
+    const successTip = parseFloat(lastDeliveredOrder.tip_amount || 0);
+    const successCod = lastDeliveredOrder._codCollected
+      ? parseFloat(lastDeliveredOrder._codCollected)
+      : null;
+    return (
+      <div className="dv-shell dv-success-shell">
+        <SuccessStars/>
+        <div className="dv-success-content">
+          <div className="dv-success-check">✅</div>
+          <h2 className="dv-success-title">Delivered!</h2>
+          <p className="dv-success-order">#{lastDeliveredOrder.order_number}</p>
+          {lastDeliveredOrder._leftAtDoor && (
+            <p className="dv-success-note">📸 Left at door — photo saved</p>
+          )}
+          {successTip > 0 && (
+            <p className="dv-success-tip">💵 +${successTip.toFixed(2)} tip 🎉</p>
+          )}
+          {successCod && (
+            <p className="dv-success-cod">💰 ${successCod.toFixed(2)} cash collected</p>
+          )}
+          <button
+            className="dv-success-next"
+            onClick={() => {
+              setShowDeliverySuccess(false);
+              deliverySuccessRef.current = false;
+              setAssignment(null);
+              setCashCollected(null);
+              loadCashSummary();
+            }}
+          >
+            Next Delivery →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Order cancellation alert modal ────────────────────────────────
+  const cancelAlertModal = showCancelAlert && (
+    <div className="dv-cancel-overlay">
+      <div className="dv-cancel-modal">
+        <div className="dv-cancel-icon">🚫</div>
+        <h3 className="dv-cancel-title">Order Cancelled</h3>
+        <p className="dv-cancel-body">
+          Order <strong>#{cancelledOrder?.order_number}</strong> was cancelled by dispatch.
+        </p>
+        <p className="dv-cancel-sub">Return to restaurant if needed.</p>
+        <button
+          className="dv-cancel-ok"
+          onClick={() => { setShowCancelAlert(false); setCancelledOrder(null); }}
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+
   // ── Guard screens ──────────────────────────────────────────────────
   if (!driverId) {
     return (
@@ -959,6 +1058,7 @@ export default function DriverView() {
         {historyDrawer}
         {earningsDrawer}
         {perfDrawer}
+        {cancelAlertModal}
 
         {/* Header */}
         <header className="dv-hdr">
@@ -1140,6 +1240,7 @@ export default function DriverView() {
       {shiftSummaryModal}
       {earningsDrawer}
       {perfDrawer}
+      {cancelAlertModal}
 
       {/* Compact "Next Up?" snack when a broadcast comes while already delivering */}
       {broadcastOrder && (

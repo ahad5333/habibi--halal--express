@@ -2217,3 +2217,137 @@
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
 }
+
+/* ─── Delivery Success Screen ────────────────────────────────────────── */
+.dv-success-shell {
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  background: #0f0f0f;
+  position: relative;
+  overflow: hidden;
+}
+.dv-success-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2rem 1.5rem;
+  z-index: 1;
+  position: relative;
+  text-align: center;
+}
+.dv-success-check {
+  font-size: 4rem;
+  line-height: 1;
+  animation: dvCheckPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes dvCheckPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.dv-success-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #00c853;
+  margin: 0;
+  animation: dvFadeUp 0.4s 0.2s ease both;
+}
+.dv-success-order {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  animation: dvFadeUp 0.4s 0.3s ease both;
+}
+.dv-success-note {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0;
+  animation: dvFadeUp 0.4s 0.35s ease both;
+}
+.dv-success-tip {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #00c853;
+  margin: 0.25rem 0 0;
+  animation: dvFadeUp 0.4s 0.4s ease both;
+}
+.dv-success-cod {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f5a623;
+  margin: 0;
+  animation: dvFadeUp 0.4s 0.45s ease both;
+}
+.dv-success-next {
+  margin-top: 1.5rem;
+  background: #00c853;
+  color: #000;
+  border: none;
+  border-radius: 14px;
+  padding: 0.9rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  animation: dvFadeUp 0.4s 0.55s ease both;
+  transition: transform 0.15s;
+}
+.dv-success-next:active { transform: scale(0.97); }
+@keyframes dvFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Order Cancellation Alert Modal ────────────────────────────────── */
+.dv-cancel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.dv-cancel-modal {
+  background: #1a1a1a;
+  border: 1px solid #3a1a1a;
+  border-radius: 20px;
+  padding: 2rem 1.5rem 1.5rem;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  animation: dvModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes dvModalPop {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.dv-cancel-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.dv-cancel-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ff5252;
+  margin: 0 0 0.5rem;
+}
+.dv-cancel-body {
+  font-size: 0.95rem;
+  color: #ccc;
+  margin: 0 0 0.25rem;
+}
+.dv-cancel-sub {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 0 1.25rem;
+}
+.dv-cancel-ok {
+  background: #ff5252;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
