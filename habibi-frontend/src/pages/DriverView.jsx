@@ -80,6 +80,22 @@ function CountdownRing({ seconds, total = 30 }) {
   );
 }
 
+// Live break duration counter
+function BreakTimer({ start }) {
+  const [elapsed, setElapsed] = React.useState(0);
+  React.useEffect(() => {
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [start]);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  return (
+    <span className="dv-break-timer">
+      {String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
+    </span>
+  );
+}
+
 // Floating confetti stars for success screen
 function SuccessStars() {
   return (
@@ -131,12 +147,19 @@ export default function DriverView() {
   const [chatUnread, setChatUnread]   = useState(0);
   const chatEndRef = useRef(null);
 
+  const [onBreak, setOnBreak]         = useState(false);
+  const [breakStart, setBreakStart]   = useState(null);
+
   const photoInputRef  = useRef(null);
   const watchRef       = useRef(null);
   const intervalRef    = useRef(null);
   const socketRef      = useRef(null);
   const countdownRef   = useRef(null);
   const wakeLockRef    = useRef(null);
+  const onBreakRef     = useRef(false);
+
+  // Keep ref in sync so socket handler always sees current break state
+  useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
 
   useEffect(() => {
     // Swap PWA manifest
@@ -230,6 +253,7 @@ export default function DriverView() {
     socket.on('assignment_created',       () => loadAssignment());
     socket.on('assignment_status_update', () => loadAssignment());
     socket.on('new_order_broadcast', (data) => {
+      if (onBreakRef.current) return;
       setBroadcastOrder(data);
       setClaimCountdown(30);
       setClaimResult(null);
@@ -373,8 +397,20 @@ export default function DriverView() {
       });
       setOnDuty(false);
       setShiftStartTime(null);
+      setOnBreak(false);
+      setBreakStart(null);
     } catch (e) { setError(e.message); }
     setDutyLoading(false);
+  };
+
+  const toggleBreak = () => {
+    if (!onBreak) {
+      setOnBreak(true);
+      setBreakStart(new Date());
+    } else {
+      setOnBreak(false);
+      setBreakStart(null);
+    }
   };
 
   const markPickedUp = async () => {
@@ -671,22 +707,26 @@ export default function DriverView() {
               {chatUnread > 0 && <span className="dv-badge-dot">{chatUnread}</span>}
             </button>
             <button
-              className={`dv-duty-pill ${onDuty ? 'dv-duty-pill-on' : ''}`}
+              className={`dv-duty-pill ${onBreak ? 'dv-duty-pill-break' : onDuty ? 'dv-duty-pill-on' : ''}`}
               onClick={toggleDuty}
               disabled={dutyLoading}
             >
-              <span className={`dv-status-dot ${onDuty ? 'dv-status-dot-on' : ''}`}/>
-              {onDuty ? 'Online' : 'Offline'}
+              <span className={`dv-status-dot ${onBreak ? 'dv-status-dot-break' : onDuty ? 'dv-status-dot-on' : ''}`}/>
+              {onBreak ? 'On Break' : onDuty ? 'Online' : 'Offline'}
             </button>
           </div>
         </header>
 
         {/* Hero */}
-        <div className={`dv-hero ${onDuty ? 'dv-hero-on' : ''}`}>
+        <div className={`dv-hero ${onDuty && !onBreak ? 'dv-hero-on' : ''}`}>
           <div className="dv-hero-img"/>
           <div className="dv-hero-overlay"/>
           <div className="dv-hero-content">
-            {onDuty ? (
+            {onBreak ? (
+              <div className="dv-break-anim">
+                <span className="dv-break-icon">⏸</span>
+              </div>
+            ) : onDuty ? (
               <div className="dv-online-anim">
                 <div className="dv-ring dv-ring-1"/>
                 <div className="dv-ring dv-ring-2"/>
@@ -698,7 +738,11 @@ export default function DriverView() {
             )}
             <h1 className="dv-hero-h1">{greeting} 👋</h1>
             <p className="dv-hero-sub">
-              {onDuty ? `Online since ${shiftTime} · Waiting for orders…` : 'Tap below to go online and receive orders'}
+              {onBreak
+                ? 'New orders paused — tap Resume when ready'
+                : onDuty
+                ? `Online since ${shiftTime} · Waiting for orders…`
+                : 'Tap below to go online and receive orders'}
             </p>
           </div>
         </div>
@@ -715,6 +759,25 @@ export default function DriverView() {
             <Power size={20}/>
             <span>{dutyLoading ? 'Updating…' : onDuty ? 'Online · Tap to Go Offline' : 'Go Online'}</span>
           </button>
+
+          {/* Break button — only when online */}
+          {onDuty && (
+            <button
+              className={`dv-break-btn ${onBreak ? 'dv-break-btn-resume' : ''}`}
+              onClick={toggleBreak}
+            >
+              {onBreak ? (
+                <>
+                  ▶ Resume Deliveries
+                  {breakStart && (
+                    <BreakTimer start={breakStart}/>
+                  )}
+                </>
+              ) : (
+                <>⏸ Take a Break</>
+              )}
+            </button>
+          )}
 
           {/* Stats row */}
           <div className="dv-stats">

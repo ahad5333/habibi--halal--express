@@ -316,6 +316,69 @@
 .dv-duty-btn-on:hover { background: #2a1010; }
 .dv-duty-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* ─── Break mode ─────────────────────────────────────────────────────── */
+.dv-duty-pill-break {
+  border-color: #f5a623 !important;
+  color: #f5a623 !important;
+}
+.dv-status-dot-break {
+  background: #f5a623 !important;
+  animation: dv-pulse-dot 1s infinite !important;
+}
+
+/* break icon in hero */
+.dv-break-anim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dv-break-icon {
+  font-size: 2.5rem;
+  animation: dv-break-pulse 2s ease-in-out infinite;
+}
+@keyframes dv-break-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.9); }
+}
+
+/* break button */
+.dv-break-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #a0a0a0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: -0.01em;
+}
+.dv-break-btn:hover { background: #1a1a1a; color: #fff; border-color: #444; }
+.dv-break-btn-resume {
+  background: rgba(245,166,35,0.08);
+  border-color: rgba(245,166,35,0.4);
+  color: #f5a623;
+}
+.dv-break-btn-resume:hover { background: rgba(245,166,35,0.14); color: #f5a623; }
+
+/* live break timer inside the resume button */
+.dv-break-timer {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f5a623;
+  background: rgba(245,166,35,0.12);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.25rem;
+}
+
 /* ─── Stats ──────────────────────────────────────────────────────────── */
 .dv-stats {
   display: flex;
