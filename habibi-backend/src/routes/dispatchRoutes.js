@@ -57,6 +57,7 @@ const {
   recordCashHandin,
   getDriverCashSummary,
   getDriverHistory,
+  getDriverStats,
   driverLogin,
   driverSetPin,
   driverSendSetupSms,
@@ -142,6 +143,7 @@ router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.si
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 router.get   ('/drivers/:driver_id/history',       driverOrAdmin,              getDriverHistory);
+router.get   ('/drivers/:driver_id/stats',         driverOrAdmin,              getDriverStats);
 
 // ── Driver ↔ Dispatch chat ─────────────────────────────────────────
 router.get  ('/driver/:driver_id/chat',       driverOrAdmin,        getDriverChat);

@@ -1,12 +1,31 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
   Navigation, MapPin, CheckCircle, AlertCircle, Clock, User,
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
-  Zap, Star, History,
+  Zap, Star, History, TrendingUp, BarChart2, Award,
 } from 'lucide-react';
+
+// ── Navigation helpers ────────────────────────────────────────────────
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const h = Math.sin(dLat/2)**2 +
+    Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function bearingDeg(a, b) {
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(b.lat * Math.PI / 180);
+  const x = Math.cos(a.lat * Math.PI / 180) * Math.sin(b.lat * Math.PI / 180)
+           - Math.sin(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+const NAV_COMPASS = ['N','NE','E','SE','S','SW','W','NW'];
+const NAV_ARROWS  = ['↑','↗','→','↘','↓','↙','←','↖'];
 import './DriverView.css';
 import DriverMap from '../components/DriverMap';
 
@@ -154,6 +173,12 @@ export default function DriverView() {
   const [historyList, setHistoryList]   = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const [showEarnings, setShowEarnings] = useState(false);
+  const [showPerf, setShowPerf]         = useState(false);
+  const [perfData, setPerfData]         = useState(null);
+  const [perfLoading, setPerfLoading]   = useState(false);
+  const [queuedOrder, setQueuedOrder]   = useState(null);
+
   const photoInputRef  = useRef(null);
   const watchRef       = useRef(null);
   const intervalRef    = useRef(null);
@@ -246,6 +271,38 @@ export default function DriverView() {
     } catch (_) {}
     setHistoryLoading(false);
   }, [driverId, apiFetch]);
+
+  const loadPerf = useCallback(async () => {
+    if (!driverId) return;
+    setPerfLoading(true);
+    try {
+      const data = await apiFetch(`/api/dispatch/drivers/${driverId}/stats`);
+      setPerfData(data);
+    } catch (_) {}
+    setPerfLoading(false);
+  }, [driverId, apiFetch]);
+
+  // Clear queuedOrder badge once the assignment transitions to that order
+  useEffect(() => {
+    if (assignment && queuedOrder && assignment.order_number === queuedOrder.order_number) {
+      setQueuedOrder(null);
+    }
+  }, [assignment?.order_number]); // eslint-disable-line
+
+  // Compute nav bearing + distance from driver to destination
+  const navData = useMemo(() => {
+    if (!lastPos || !destCoords) return null;
+    const distKm = haversineKm(lastPos, destCoords);
+    const bearing = bearingDeg(lastPos, destCoords);
+    const idx = Math.round(bearing / 45) % 8;
+    const etaMins = Math.max(1, Math.round(distKm / 0.5)); // ~30 km/h
+    return {
+      dist: distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`,
+      compass: NAV_COMPASS[idx],
+      arrow: NAV_ARROWS[idx],
+      etaMins,
+    };
+  }, [lastPos?.lat, lastPos?.lng, destCoords?.lat, destCoords?.lng]); // eslint-disable-line
 
   useEffect(() => {
     if (!assignment?.delivery_address) { setDestCoords(null); return; }
@@ -362,9 +419,15 @@ export default function DriverView() {
       if (data.claimed) {
         setClaimResult('won');
         clearInterval(countdownRef.current);
-        setBroadcastOrder(null);
-        await loadAssignment();
-        if (!tracking) startTracking();
+        if (assignment) {
+          // Already on a delivery — queue the next one, don't navigate away
+          setQueuedOrder({ ...broadcastOrder });
+          setBroadcastOrder(null);
+        } else {
+          setBroadcastOrder(null);
+          await loadAssignment();
+          if (!tracking) startTracking();
+        }
       } else {
         setClaimResult('lost');
       }
@@ -661,6 +724,140 @@ export default function DriverView() {
     </div>
   );
 
+  // ── Earnings drawer ──────────────────────────────────────────────
+  const shiftHours = shiftStartTime
+    ? Math.max(0.1, (Date.now() - new Date(shiftStartTime)) / 3_600_000)
+    : null;
+  const earningsDrawer = showEarnings && (
+    <div className="dv-history-overlay" onClick={() => setShowEarnings(false)}>
+      <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
+        <div className="dv-history-hdr">
+          <span className="dv-history-title">💵 Shift Earnings</span>
+          <button className="dv-chat-close" onClick={() => setShowEarnings(false)}><X size={18}/></button>
+        </div>
+        <div className="dv-history-body">
+          {cashSummary ? (
+            <>
+              <div className="dv-earn-grid">
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">{cashSummary.deliveries_count}</span>
+                  <span className="dv-earn-cell-lbl">Deliveries</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num dv-clr-green">${cashSummary.total_tips.toFixed(2)}</span>
+                  <span className="dv-earn-cell-lbl">Tips Earned</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num dv-clr-gold">${cashSummary.total_cod.toFixed(2)}</span>
+                  <span className="dv-earn-cell-lbl">COD Cash</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">
+                    {cashSummary.deliveries_count > 0
+                      ? `$${(cashSummary.total_tips / cashSummary.deliveries_count).toFixed(2)}`
+                      : '—'}
+                  </span>
+                  <span className="dv-earn-cell-lbl">Avg Tip</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">
+                    {cashSummary.deliveries_count > 0
+                      ? cashSummary.deliveries_count - cashSummary.cod_orders_count
+                      : '—'}
+                  </span>
+                  <span className="dv-earn-cell-lbl">Card Orders</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">
+                    {shiftHours
+                      ? `$${(cashSummary.total_tips / shiftHours).toFixed(2)}/hr`
+                      : '—'}
+                  </span>
+                  <span className="dv-earn-cell-lbl">Tip Rate</span>
+                </div>
+              </div>
+              {shiftHours && (
+                <div className="dv-earn-shift-bar">
+                  <Clock size={13}/>&nbsp;Shift: {Math.floor(shiftHours)}h {Math.round((shiftHours % 1) * 60)}m
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="dv-history-empty">No earnings data yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Performance dashboard drawer ──────────────────────────────────
+  const perfDrawer = showPerf && (
+    <div className="dv-history-overlay" onClick={() => setShowPerf(false)}>
+      <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
+        <div className="dv-history-hdr">
+          <span className="dv-history-title">⭐ My Performance</span>
+          <button className="dv-chat-close" onClick={() => setShowPerf(false)}><X size={18}/></button>
+        </div>
+        <div className="dv-history-body">
+          {perfLoading ? (
+            <p className="dv-history-empty">Loading…</p>
+          ) : perfData ? (
+            <>
+              {perfData.streak > 0 && (
+                <div className="dv-perf-streak">
+                  <Award size={20}/>
+                  <span>{perfData.streak}-Day Streak 🔥</span>
+                </div>
+              )}
+              <p className="dv-perf-period">Last 7 Days</p>
+              <div className="dv-earn-grid">
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">{perfData.week.deliveries}</span>
+                  <span className="dv-earn-cell-lbl">Deliveries</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className={`dv-earn-cell-num ${perfData.week.acceptance_rate >= 80 ? 'dv-clr-green' : 'dv-clr-warn'}`}>
+                    {perfData.week.acceptance_rate}%
+                  </span>
+                  <span className="dv-earn-cell-lbl">Acceptance</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num dv-clr-green">${perfData.week.tips.toFixed(2)}</span>
+                  <span className="dv-earn-cell-lbl">Tips</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">
+                    {perfData.week.avg_mins ? `${perfData.week.avg_mins} min` : '—'}
+                  </span>
+                  <span className="dv-earn-cell-lbl">Avg Time</span>
+                </div>
+              </div>
+              <p className="dv-perf-period" style={{ marginTop: '1rem' }}>Last 30 Days</p>
+              <div className="dv-earn-grid">
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">{perfData.month.deliveries}</span>
+                  <span className="dv-earn-cell-lbl">Deliveries</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num dv-clr-green">${perfData.month.tips.toFixed(2)}</span>
+                  <span className="dv-earn-cell-lbl">Total Tips</span>
+                </div>
+                <div className="dv-earn-cell">
+                  <span className="dv-earn-cell-num">
+                    {perfData.month.avg_mins ? `${perfData.month.avg_mins} min` : '—'}
+                  </span>
+                  <span className="dv-earn-cell-lbl">Avg Time</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="dv-history-empty">No performance data yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Guard screens ──────────────────────────────────────────────────
   if (!driverId) {
     return (
@@ -760,6 +957,8 @@ export default function DriverView() {
         {chatOverlay}
         {shiftSummaryModal}
         {historyDrawer}
+        {earningsDrawer}
+        {perfDrawer}
 
         {/* Header */}
         <header className="dv-hdr">
@@ -768,6 +967,9 @@ export default function DriverView() {
             <span className="dv-hdr-title">Habibi Driver</span>
           </div>
           <div className="dv-hdr-right">
+            <button className="dv-icon-btn" onClick={() => { loadPerf(); setShowPerf(true); }} title="My performance">
+              <BarChart2 size={18}/>
+            </button>
             <button className="dv-icon-btn" onClick={() => { loadHistory(); setShowHistory(true); }} title="Delivery history">
               <History size={18}/>
               {cashSummary && cashSummary.deliveries_count > 0 && (
@@ -851,8 +1053,8 @@ export default function DriverView() {
             </button>
           )}
 
-          {/* Stats row */}
-          <div className="dv-stats">
+          {/* Stats row — tap to open earnings breakdown */}
+          <div className="dv-stats dv-stats-tap" onClick={() => setShowEarnings(true)} role="button" title="View earnings breakdown">
             <div className="dv-stat">
               <span className="dv-stat-num">{deliveries}</span>
               <span className="dv-stat-lbl">📦 Deliveries</span>
@@ -867,6 +1069,7 @@ export default function DriverView() {
               <span className="dv-stat-num dv-clr-gold">${hasEarnings ? cashSummary.total_cod.toFixed(2) : '0.00'}</span>
               <span className="dv-stat-lbl">💰 Cash</span>
             </div>
+            <TrendingUp size={14} className="dv-stats-expand-icon"/>
           </div>
 
           {/* Goal */}
@@ -935,9 +1138,45 @@ export default function DriverView() {
     <div className="dv-shell">
       {chatOverlay}
       {shiftSummaryModal}
+      {earningsDrawer}
+      {perfDrawer}
 
-      {/* Broadcast modal */}
+      {/* Compact "Next Up?" snack when a broadcast comes while already delivering */}
       {broadcastOrder && (
+        <div className="dv-queue-snack">
+          <div className="dv-queue-snack-info">
+            <Bell size={14}/>
+            <span>Next order: <strong>#{broadcastOrder.order_number}</strong></span>
+            {broadcastOrder.delivery_address && (
+              <span className="dv-queue-snack-addr"> · {broadcastOrder.delivery_address.split(',')[0]}</span>
+            )}
+            <span className="dv-queue-snack-cd">{claimCountdown}s</span>
+          </div>
+          <div className="dv-queue-snack-btns">
+            <button className="dv-queue-snack-accept" onClick={claimBroadcastOrder} disabled={claimLoading}>
+              {claimLoading ? '…' : 'Queue ✓'}
+            </button>
+            <button className="dv-queue-snack-skip" onClick={dismissBroadcast}>Skip</button>
+          </div>
+        </div>
+      )}
+
+      {/* Queued next order confirmation card */}
+      {queuedOrder && (
+        <div className="dv-queued-card">
+          <div className="dv-queued-left">
+            <span className="dv-queued-icon">📋</span>
+            <div>
+              <p className="dv-queued-label">Queued Next</p>
+              <p className="dv-queued-num">#{queuedOrder.order_number}</p>
+            </div>
+          </div>
+          <button className="dv-queued-close" onClick={() => setQueuedOrder(null)}><X size={14}/></button>
+        </div>
+      )}
+
+      {/* Full broadcast modal — only when NOT on active delivery (handled above) */}
+      {false && broadcastOrder && (
         <div className="dv-broadcast-overlay">
           <div className="dv-broadcast-modal">
             <div className="dv-broadcast-pulse-ring"/>
@@ -1012,6 +1251,18 @@ export default function DriverView() {
               </React.Fragment>
             );
           })}
+        </div>
+      )}
+
+      {/* In-app navigation bar */}
+      {navData && assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
+        <div className="dv-nav-bar">
+          <span className="dv-nav-arrow">{navData.arrow}</span>
+          <div className="dv-nav-info">
+            <span className="dv-nav-heading">Head {navData.compass}</span>
+            <span className="dv-nav-sub">{navData.dist} · ~{navData.etaMins} min</span>
+          </div>
+          <span className="dv-nav-live">● GPS</span>
         </div>
       )}
 

@@ -1988,3 +1988,232 @@
   color: #888;
   text-align: center;
 }
+
+/* ─── Feature 4: Earnings Drawer ────────────────────────────────────── */
+.dv-stats-tap {
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.dv-stats-tap:hover, .dv-stats-tap:active {
+  background: #252525;
+}
+.dv-stats-expand-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #555;
+}
+
+.dv-earn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.dv-earn-cell {
+  background: #242424;
+  border-radius: 10px;
+  padding: 0.65rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+.dv-earn-cell-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.dv-earn-cell-lbl {
+  font-size: 0.67rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dv-earn-shift-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #888;
+  justify-content: center;
+  padding: 0.5rem 0;
+  border-top: 1px solid #2a2a2a;
+}
+
+/* ─── Feature 5: Performance Drawer ─────────────────────────────────── */
+.dv-perf-streak {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f5a623;
+}
+.dv-perf-period {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #555;
+  margin-bottom: 0.4rem;
+}
+.dv-clr-warn { color: #f5a623; }
+
+/* ─── Feature 6: Multi-stop Queue Snack + Queued Card ───────────────── */
+.dv-queue-snack {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: #1a1a1a;
+  border-bottom: 2px solid #00c853;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  animation: dvSlideDown 0.25s ease;
+}
+@keyframes dvSlideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+.dv-queue-snack-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: #ccc;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.dv-queue-snack-addr {
+  color: #777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dv-queue-snack-cd {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #f5a623;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dv-queue-snack-btns {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.dv-queue-snack-accept {
+  background: #00c853;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dv-queue-snack-skip {
+  background: #2a2a2a;
+  color: #888;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.dv-queued-card {
+  margin: 0.5rem 1rem 0;
+  background: rgba(0,200,83,0.08);
+  border: 1px solid rgba(0,200,83,0.3);
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dv-queued-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dv-queued-icon { font-size: 1.1rem; }
+.dv-queued-label {
+  font-size: 0.68rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.dv-queued-num {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #00c853;
+  margin: 0;
+}
+.dv-queued-close {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+}
+
+/* ─── Feature 7: In-app Navigation Bar ──────────────────────────────── */
+.dv-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #111;
+  border-bottom: 1px solid #222;
+  padding: 0.55rem 1rem;
+}
+.dv-nav-arrow {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #00c853;
+  flex-shrink: 0;
+}
+.dv-nav-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+}
+.dv-nav-heading {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+.dv-nav-sub {
+  font-size: 0.75rem;
+  color: #888;
+}
+.dv-nav-live {
+  font-size: 0.7rem;
+  color: #00c853;
+  font-weight: 600;
+  flex-shrink: 0;
+  animation: dvGpsPulse 1.8s infinite;
+}
+@keyframes dvGpsPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

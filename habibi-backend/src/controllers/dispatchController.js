@@ -973,6 +973,87 @@ const markChatRead = async (req, res) => {
   } catch (err) { res.status(500).json(safeError(err)); }
 };
 
+// ── Driver: own stats (7-day + 30-day + streak) ─────────────────────
+const getDriverStats = async (req, res) => {
+  const { driver_id } = req.params;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  try {
+    const [week, month, streakRes] = await Promise.all([
+      pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE da.status = 'delivered')                             AS deliveries,
+          COUNT(*) FILTER (WHERE da.status IN ('delivered','cancelled'))               AS total_dispatched,
+          COALESCE(SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'), 0)      AS total_tips,
+          ROUND(EXTRACT(EPOCH FROM
+            AVG(da.delivered_at - COALESCE(da.accepted_at, da.assigned_at))
+          ) / 60)                                                                      AS avg_mins
+        FROM delivery_assignments da
+        WHERE da.driver_id = $1
+          AND da.assigned_at >= NOW() - INTERVAL '7 days'`,
+        [driver_id]),
+      pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE da.status = 'delivered')                             AS deliveries,
+          COALESCE(SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'), 0)      AS total_tips,
+          ROUND(EXTRACT(EPOCH FROM
+            AVG(da.delivered_at - COALESCE(da.accepted_at, da.assigned_at))
+          ) / 60)                                                                      AS avg_mins
+        FROM delivery_assignments da
+        WHERE da.driver_id = $1
+          AND da.assigned_at >= NOW() - INTERVAL '30 days'`,
+        [driver_id]),
+      pool.query(`
+        SELECT DATE(da.assigned_at AT TIME ZONE 'America/New_York') AS day
+        FROM delivery_assignments da
+        WHERE da.driver_id = $1
+          AND da.status = 'delivered'
+          AND da.assigned_at >= NOW() - INTERVAL '60 days'
+        GROUP BY day
+        ORDER BY day DESC`,
+        [driver_id]),
+    ]);
+
+    // Count consecutive days ending today
+    let streak = 0;
+    const days = streakRes.rows.map(r => {
+      const d = new Date(r.day);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+    });
+    let checkDay = today;
+    for (const day of days) {
+      if (day === checkDay) {
+        streak++;
+        const d = new Date(checkDay + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() - 1);
+        checkDay = d.toISOString().slice(0, 10);
+      } else break;
+    }
+
+    const w = week.rows[0] || {};
+    const m = month.rows[0] || {};
+    const acceptRate = parseInt(w.total_dispatched || 0) > 0
+      ? Math.round(100 * parseInt(w.deliveries || 0) / parseInt(w.total_dispatched))
+      : 100;
+
+    res.json({
+      week: {
+        deliveries:      parseInt(w.deliveries || 0),
+        tips:            parseFloat(w.total_tips || 0),
+        avg_mins:        parseFloat(w.avg_mins || 0) || null,
+        acceptance_rate: acceptRate,
+      },
+      month: {
+        deliveries: parseInt(m.deliveries || 0),
+        tips:       parseFloat(m.total_tips || 0),
+        avg_mins:   parseFloat(m.avg_mins || 0) || null,
+      },
+      streak,
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Admin: per-driver performance stats ─────────────────────────────
 const getDriverPerformance = async (req, res) => {
   // Optional ?days=7|30|90|all (default 30)
@@ -1068,6 +1149,7 @@ module.exports = {
   recordCashHandin,
   getDriverCashSummary,
   getDriverHistory,
+  getDriverStats,
   driverLogin,
   driverSetPin,
   driverSendSetupSms,
