@@ -89,7 +89,9 @@
   width: 72px;
   height: 72px;
   object-fit: contain;
-  border-radius: 10px;
+  border-radius: 0;
+  background: transparent;
+  mix-blend-mode: screen;
 }
 .dv-hdr-title {
   font-size: 1rem;
@@ -1842,7 +1844,7 @@
 /* Mobile phones — fix header crowding + empty space (< 640px) */
 @media (max-width: 640px) {
   /* Header: keep logo + title, shrink icon buttons + pill to fit one line */
-  .dv-logo-sm      { width: 58px; height: 58px; border-radius: 8px; }
+  .dv-logo-sm      { width: 58px; height: 58px; border-radius: 0; }
   .dv-hdr          { padding: 0.55rem 0.85rem; }
   .dv-hdr-left     { gap: 0.5rem; }
   .dv-hdr-title    { font-size: 0.88rem; white-space: nowrap; }
@@ -1861,7 +1863,7 @@
 
 /* Extra-small phones (< 380px) */
 @media (max-width: 380px) {
-  .dv-logo-sm      { width: 34px; height: 34px; }
+  .dv-logo-sm      { width: 34px; height: 34px; border-radius: 0; }
   .dv-duty-pill    { font-size: 0.68rem; padding: 0.25rem 0.5rem; }
   .dv-hero         { min-height: 170px; max-height: 300px; }
   .dv-hero-h1      { font-size: 1.2rem; }
