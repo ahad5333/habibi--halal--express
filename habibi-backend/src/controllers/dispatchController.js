@@ -667,6 +667,40 @@ const getDriverCashSummary = async (req, res) => {
   }
 };
 
+// ── Driver: today's delivery history ────────────────────────────────
+const getDriverHistory = async (req, res) => {
+  const { driver_id } = req.params;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  try {
+    const result = await pool.query(
+      `SELECT da.id, da.order_number, da.tip_amount, da.delivery_address,
+              da.customer_name, da.assigned_at, da.delivered_at,
+              go.total AS order_total, go.payment_method
+         FROM delivery_assignments da
+         LEFT JOIN guest_orders go ON go.order_number = da.order_number
+        WHERE da.driver_id = $1
+          AND da.status = 'delivered'
+          AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $2
+        ORDER BY da.delivered_at DESC
+        LIMIT 50`,
+      [driver_id, today]
+    );
+    res.json(result.rows.map(r => ({
+      id:             r.id,
+      order_number:   r.order_number,
+      tip_amount:     parseFloat(r.tip_amount || 0),
+      delivery_address: r.delivery_address,
+      customer_name:  r.customer_name,
+      order_total:    parseFloat(r.order_total || 0),
+      payment_method: r.payment_method,
+      delivered_at:   r.delivered_at,
+      assigned_at:    r.assigned_at,
+    })));
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Driver: confirm cash collected for COD order ────────────────────
 const collectCash = async (req, res) => {
   const { id } = req.params;
@@ -1033,6 +1067,7 @@ module.exports = {
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,
+  getDriverHistory,
   driverLogin,
   driverSetPin,
   driverSendSetupSms,

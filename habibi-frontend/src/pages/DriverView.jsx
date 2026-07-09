@@ -5,7 +5,7 @@ import {
   Navigation, MapPin, CheckCircle, AlertCircle, Clock, User,
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
-  Zap, Star,
+  Zap, Star, History,
 } from 'lucide-react';
 import './DriverView.css';
 import DriverMap from '../components/DriverMap';
@@ -150,6 +150,10 @@ export default function DriverView() {
   const [onBreak, setOnBreak]         = useState(false);
   const [breakStart, setBreakStart]   = useState(null);
 
+  const [showHistory, setShowHistory]   = useState(false);
+  const [historyList, setHistoryList]   = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   const photoInputRef  = useRef(null);
   const watchRef       = useRef(null);
   const intervalRef    = useRef(null);
@@ -232,6 +236,16 @@ export default function DriverView() {
   }, [driverId, apiFetch]);
 
   useEffect(() => { loadCashSummary(); }, [loadCashSummary]);
+
+  const loadHistory = useCallback(async () => {
+    if (!driverId) return;
+    setHistoryLoading(true);
+    try {
+      const data = await apiFetch(`/api/dispatch/drivers/${driverId}/history`);
+      setHistoryList(Array.isArray(data) ? data : []);
+    } catch (_) {}
+    setHistoryLoading(false);
+  }, [driverId, apiFetch]);
 
   useEffect(() => {
     if (!assignment?.delivery_address) { setDestCoords(null); return; }
@@ -596,6 +610,57 @@ export default function DriverView() {
     </div>
   );
 
+  // ── History drawer ────────────────────────────────────────────────
+  const historyDrawer = showHistory && (
+    <div className="dv-history-overlay" onClick={() => setShowHistory(false)}>
+      <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
+        <div className="dv-history-hdr">
+          <span className="dv-history-title">Today's Deliveries</span>
+          <button className="dv-chat-close" onClick={() => setShowHistory(false)}><X size={18}/></button>
+        </div>
+        <div className="dv-history-body">
+          {historyLoading ? (
+            <p className="dv-history-empty">Loading…</p>
+          ) : historyList.length === 0 ? (
+            <p className="dv-history-empty">No completed deliveries yet today.</p>
+          ) : (
+            historyList.map((h, i) => {
+              const time = h.delivered_at
+                ? new Date(h.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '—';
+              const isCodH = h.payment_method === 'cod';
+              return (
+                <div key={h.id} className="dv-history-card">
+                  <div className="dv-history-card-top">
+                    <span className="dv-history-num">#{h.order_number}</span>
+                    <span className="dv-history-time">{time}</span>
+                  </div>
+                  <p className="dv-history-addr">{h.delivery_address || h.customer_name || '—'}</p>
+                  <div className="dv-history-card-bot">
+                    {h.tip_amount > 0 && (
+                      <span className="dv-history-tip">+${h.tip_amount.toFixed(2)} tip</span>
+                    )}
+                    {isCodH && h.order_total > 0 && (
+                      <span className="dv-history-cod">💰 ${h.order_total.toFixed(2)} COD</span>
+                    )}
+                    {h.tip_amount === 0 && !isCodH && (
+                      <span className="dv-history-no-tip">No tip</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        {!historyLoading && historyList.length > 0 && (
+          <div className="dv-history-footer">
+            <span>{historyList.length} deliveries · Tips: ${historyList.reduce((s, h) => s + h.tip_amount, 0).toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // ── Guard screens ──────────────────────────────────────────────────
   if (!driverId) {
     return (
@@ -694,6 +759,7 @@ export default function DriverView() {
       <div className="dv-shell">
         {chatOverlay}
         {shiftSummaryModal}
+        {historyDrawer}
 
         {/* Header */}
         <header className="dv-hdr">
@@ -702,6 +768,12 @@ export default function DriverView() {
             <span className="dv-hdr-title">Habibi Driver</span>
           </div>
           <div className="dv-hdr-right">
+            <button className="dv-icon-btn" onClick={() => { loadHistory(); setShowHistory(true); }} title="Delivery history">
+              <History size={18}/>
+              {cashSummary && cashSummary.deliveries_count > 0 && (
+                <span className="dv-badge-dot">{cashSummary.deliveries_count}</span>
+              )}
+            </button>
             <button className="dv-icon-btn" onClick={openChat} title="Chat dispatch">
               <MessageSquare size={18}/>
               {chatUnread > 0 && <span className="dv-badge-dot">{chatUnread}</span>}

@@ -56,6 +56,7 @@ const {
   getCashReport,
   recordCashHandin,
   getDriverCashSummary,
+  getDriverHistory,
   driverLogin,
   driverSetPin,
   driverSendSetupSms,
@@ -140,6 +141,7 @@ router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              c
 router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.single('photo'), uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
+router.get   ('/drivers/:driver_id/history',       driverOrAdmin,              getDriverHistory);
 
 // ── Driver ↔ Dispatch chat ─────────────────────────────────────────
 router.get  ('/driver/:driver_id/chat',       driverOrAdmin,        getDriverChat);
