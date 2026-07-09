@@ -981,10 +981,10 @@ export default function DriverView() {
           )}
 
           {/* Special instructions */}
-          {assignment.special_instructions && (
+          {assignment.delivery_instructions && (
             <div className="dv-special-note">
               <span className="dv-special-icon">📝</span>
-              <span>{assignment.special_instructions}</span>
+              <span>{assignment.delivery_instructions}</span>
             </div>
           )}
 

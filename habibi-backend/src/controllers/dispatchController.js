@@ -136,7 +136,7 @@ const getDriverAssignment = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT da.*, go.payment_method, go.total AS order_total,
-              go.items, go.special_instructions
+              go.items, go.delivery_instructions
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
        WHERE da.driver_id=$1 AND da.status IN ('assigned','en_route')
