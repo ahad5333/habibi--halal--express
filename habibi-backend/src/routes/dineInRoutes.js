@@ -13,12 +13,18 @@ pool.query(`
 `).catch(() => {});
 
 // Kitchen tablets authenticate with X-Kitchen-Token header.
-// If KITCHEN_TOKEN env var is not set, the check is skipped (backwards-compatible).
+// If KITCHEN_TOKEN env var is set, that header value is checked.
+// If KITCHEN_TOKEN is not set: dev allows all through; production falls back to admin JWT.
 function kitchenAuth(req, res, next) {
   const token = process.env.KITCHEN_TOKEN;
-  if (!token) return next();
-  if (req.headers['x-kitchen-token'] === token) return next();
-  return res.status(401).json({ message: 'Kitchen token required' });
+  if (token) {
+    if (req.headers['x-kitchen-token'] === token) return next();
+    return res.status(401).json({ message: 'Kitchen token required' });
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return protect(req, res, () => admin(req, res, next));
+  }
+  next();
 }
 
 // â”€â”€ Public: get table info by slug (QR scan landing page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
