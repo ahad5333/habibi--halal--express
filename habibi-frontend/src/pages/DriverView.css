@@ -1841,16 +1841,16 @@
 
 /* Mobile phones — fix header crowding + empty space (< 640px) */
 @media (max-width: 640px) {
-  /* Header: logo shrinks, title hidden, buttons smaller — fits 1 line */
-  .dv-logo-sm   { width: 38px; height: 38px; border-radius: 8px; }
-  .dv-hdr       { padding: 0.6rem 0.85rem; gap: 0.35rem; }
-  .dv-hdr-left  { gap: 0.4rem; }
-  .dv-hdr-title { display: none; }
-  .dv-hdr-right { gap: 0.35rem; }
-  .dv-icon-btn  { width: 30px; height: 30px; }
-  .dv-icon-btn svg { width: 15px; height: 15px; }
-  .dv-duty-pill { padding: 0.28rem 0.6rem; font-size: 0.72rem; gap: 0.3rem; }
-  .dv-status-dot { width: 6px; height: 6px; }
+  /* Header: keep logo + title, shrink icon buttons + pill to fit one line */
+  .dv-logo-sm      { width: 48px; height: 48px; border-radius: 8px; }
+  .dv-hdr          { padding: 0.55rem 0.85rem; }
+  .dv-hdr-left     { gap: 0.5rem; }
+  .dv-hdr-title    { font-size: 0.88rem; white-space: nowrap; }
+  .dv-hdr-right    { gap: 0.3rem; }
+  .dv-icon-btn     { width: 28px; height: 28px; }
+  .dv-icon-btn svg { width: 14px; height: 14px; }
+  .dv-duty-pill    { padding: 0.25rem 0.55rem; font-size: 0.7rem; gap: 0.28rem; }
+  .dv-status-dot   { width: 6px; height: 6px; }
 
   /* Hero: grows to fill empty space instead of fixed 240px */
   .dv-hero      { flex: 1; height: auto; min-height: 200px; max-height: 360px; }
