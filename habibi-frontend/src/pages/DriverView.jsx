@@ -107,6 +107,8 @@ export default function DriverView() {
   const [lastPos, setLastPos]             = useState(null);
   const [onDuty, setOnDuty]               = useState(false);
   const [dutyLoading, setDutyLoading]     = useState(false);
+  const [shiftStartTime, setShiftStartTime] = useState(null);
+  const [showShiftSummary, setShowShiftSummary] = useState(false);
   const [deliveryPhase, setDeliveryPhase] = useState(null);
   const [proofFile, setProofFile]         = useState(null);
   const [proofPreview, setProofPreview]   = useState(null);
@@ -335,13 +337,32 @@ export default function DriverView() {
   };
 
   const toggleDuty = async () => {
+    if (onDuty) {
+      setShowShiftSummary(true);
+      return;
+    }
     setDutyLoading(true);
     try {
       await apiFetch(`/api/dispatch/drivers/${driverId}/duty`, {
         method: 'PATCH',
-        body: JSON.stringify({ on_duty: !onDuty }),
+        body: JSON.stringify({ on_duty: true }),
       });
-      setOnDuty(v => !v);
+      setOnDuty(true);
+      setShiftStartTime(new Date());
+    } catch (e) { setError(e.message); }
+    setDutyLoading(false);
+  };
+
+  const confirmGoOffline = async () => {
+    setShowShiftSummary(false);
+    setDutyLoading(true);
+    try {
+      await apiFetch(`/api/dispatch/drivers/${driverId}/duty`, {
+        method: 'PATCH',
+        body: JSON.stringify({ on_duty: false }),
+      });
+      setOnDuty(false);
+      setShiftStartTime(null);
     } catch (e) { setError(e.message); }
     setDutyLoading(false);
   };
@@ -556,6 +577,63 @@ export default function DriverView() {
     );
   }
 
+  // ── Shift summary modal ────────────────────────────────────────────
+  const shiftMins = shiftStartTime ? Math.floor((Date.now() - shiftStartTime) / 60000) : null;
+  const shiftDuration = shiftMins === null ? null
+    : shiftMins < 60 ? `${shiftMins}m`
+    : `${Math.floor(shiftMins / 60)}h ${shiftMins % 60}m`;
+  const summaryDeliveries = cashSummary?.deliveries_count || 0;
+  const summaryTips       = parseFloat(cashSummary?.total_tips || 0);
+  const summaryCod        = parseFloat(cashSummary?.total_cod  || 0);
+
+  const shiftSummaryModal = showShiftSummary && (
+    <div className="dv-summary-overlay" onClick={() => setShowShiftSummary(false)}>
+      <div className="dv-summary-sheet" onClick={e => e.stopPropagation()}>
+        <div className="dv-summary-handle"/>
+        <h2 className="dv-summary-title">End of Shift</h2>
+        {shiftDuration && (
+          <p className="dv-summary-duration">⏱ Online for <strong>{shiftDuration}</strong></p>
+        )}
+
+        <div className="dv-summary-stats">
+          <div className="dv-summary-stat">
+            <span className="dv-summary-stat-num">{summaryDeliveries}</span>
+            <span className="dv-summary-stat-lbl">📦 Deliveries</span>
+          </div>
+          <div className="dv-summary-stat-sep"/>
+          <div className="dv-summary-stat">
+            <span className="dv-summary-stat-num dv-clr-green">${summaryTips.toFixed(2)}</span>
+            <span className="dv-summary-stat-lbl">💵 Tips Earned</span>
+          </div>
+        </div>
+
+        {summaryCod > 0 && (
+          <div className="dv-summary-cod-alert">
+            <span className="dv-summary-cod-icon">💰</span>
+            <div>
+              <p className="dv-summary-cod-label">Cash to Hand In</p>
+              <p className="dv-summary-cod-amount">${summaryCod.toFixed(2)}</p>
+              <p className="dv-summary-cod-note">Return this cash to the manager before leaving</p>
+            </div>
+          </div>
+        )}
+
+        {summaryDeliveries === 0 && (
+          <p className="dv-summary-empty">No deliveries this session — see you next time! 👋</p>
+        )}
+
+        <div className="dv-summary-actions">
+          <button className="dv-summary-btn-offline" onClick={confirmGoOffline} disabled={dutyLoading}>
+            {dutyLoading ? 'Going offline…' : 'Go Offline'}
+          </button>
+          <button className="dv-summary-btn-stay" onClick={() => setShowShiftSummary(false)}>
+            Stay Online
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Idle screen ───────────────────────────────────────────────────
   if (!assignment) {
     const hasEarnings = cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0);
@@ -568,6 +646,7 @@ export default function DriverView() {
     return (
       <div className="dv-shell">
         {chatOverlay}
+        {shiftSummaryModal}
 
         {/* Header */}
         <header className="dv-hdr">
@@ -698,6 +777,7 @@ export default function DriverView() {
   return (
     <div className="dv-shell">
       {chatOverlay}
+      {shiftSummaryModal}
 
       {/* Broadcast modal */}
       {broadcastOrder && (
