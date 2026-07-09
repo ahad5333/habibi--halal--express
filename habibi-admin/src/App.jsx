@@ -56,6 +56,7 @@ const GlobalAddons     = lazy(() => import('./pages/GlobalAddons'));
 const ArticlesAdmin    = lazy(() => import('./pages/ArticlesAdmin'));
 const CashLog          = lazy(() => import('./pages/CashLog'));
 const BusinessHours    = lazy(() => import('./pages/BusinessHours'));
+const Drivers          = lazy(() => import('./pages/Drivers'));
 
 import './App.css';
 
@@ -99,6 +100,7 @@ function AdminLayout() {
             <Route path="/global-addons"  element={<GlobalAddons />} />
             <Route path="/articles"       element={<ArticlesAdmin />} />
             <Route path="/business-hours" element={<BusinessHours />} />
+            <Route path="/drivers"        element={<Drivers />} />
             <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>

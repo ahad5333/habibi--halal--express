@@ -26,6 +26,7 @@ const NAV = [
   { to: '/locations',  icon: <MapPin size={17} />,          label: 'Locations' },
   { to: '/zones',      icon: <Truck size={17} />,           label: 'Delivery Zones' },
   { to: '/dispatch',   icon: <Navigation size={17} />,      label: 'Dispatch',        badge: 'live' },
+  { to: '/drivers',    icon: <Truck size={17} />,           label: 'Drivers' },
   { to: '/cash-log',   icon: <DollarSign size={17} />,     label: 'Cash Log' },
   { to: '/coupons',    icon: <Tag size={17} />,             label: 'Coupons' },
   { to: '/analytics',  icon: <BarChart2 size={17} />,       label: 'Analytics' },

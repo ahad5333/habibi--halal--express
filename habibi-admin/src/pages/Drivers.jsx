@@ -1,0 +1,337 @@
+import React, { useState, useEffect } from 'react';
+import { Truck, Plus, Pencil, Trash2, X, Check, KeyRound, Smartphone, Wifi, WifiOff } from 'lucide-react';
+import { adminAPI } from '../services/api';
+import './Staff.css';
+
+const BLANK = { name: '', email: '', phone: '', shift_start: '', shift_end: '', notes: '', is_active: true };
+
+export default function Drivers() {
+  const [drivers, setDrivers]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [err, setErr]             = useState('');
+  const [modal, setModal]         = useState(null);
+  const [form, setForm]           = useState(BLANK);
+  const [saving, setSaving]       = useState(false);
+  const [deleteTarget, setDelete] = useState(null);
+  const [pinTarget, setPinTarget] = useState(null);
+  const [newPin, setNewPin]       = useState('');
+  const [pinSaving, setPinSaving] = useState(false);
+  const [smsPrompt, setSmsPrompt] = useState(null); // {id, name, phone} shown after create
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const [staffList, dispatchList] = await Promise.all([
+        adminAPI.getStaff(),
+        adminAPI.getDeliveryDrivers().catch(() => []),
+      ]);
+      const dutyMap = {};
+      (dispatchList || []).forEach(d => {
+        dutyMap[d.id] = { is_on_duty: d.is_on_duty, active_assignments: parseInt(d.active_assignments) || 0 };
+      });
+      setDrivers(
+        staffList
+          .filter(s => s.role === 'delivery')
+          .map(s => ({ ...s, ...(dutyMap[s.id] || { is_on_duty: false, active_assignments: 0 }) }))
+      );
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openAdd  = () => { setForm(BLANK); setModal('add'); };
+  const openEdit = (d) => { setForm({ ...d, shift_start: d.shift_start || '', shift_end: d.shift_end || '' }); setModal(d); };
+
+  const save = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      if (modal === 'add') {
+        const created = await adminAPI.createStaff({ ...form, role: 'delivery' });
+        setModal(null);
+        load();
+        if (form.phone && created?.id) setSmsPrompt({ id: created.id, name: form.name.trim(), phone: form.phone });
+      } else {
+        await adminAPI.updateStaff(modal.id, form);
+        setModal(null);
+        load();
+      }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    try {
+      await adminAPI.deleteStaff(deleteTarget.id);
+      setDelete(null);
+      load();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const savePin = async () => {
+    if (!/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
+    setPinSaving(true);
+    try {
+      await adminAPI.resetDriverPin(pinTarget.id, newPin);
+      setPinTarget(null);
+      setNewPin('');
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setPinSaving(false);
+    }
+  };
+
+  const sendSms = async (id) => {
+    try {
+      await adminAPI.sendDriverSetupSms(id);
+      alert('Setup SMS sent!');
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const active   = drivers.filter(d => d.is_active);
+  const inactive = drivers.filter(d => !d.is_active);
+  const onDuty   = active.filter(d => d.is_on_duty).length;
+
+  return (
+    <div>
+      <div className="page-hdr">
+        <div>
+          <h1 className="page-title">Drivers</h1>
+          <p className="page-sub">{active.length} active · {onDuty} on duty</p>
+        </div>
+        <button className="btn btn-primary" onClick={openAdd}>
+          <Plus size={15} /> Add Driver
+        </button>
+      </div>
+
+      {err && <p className="text-error" style={{ marginBottom: '1rem' }}>{err}</p>}
+
+      {/* Post-create SMS prompt */}
+      {smsPrompt && (
+        <div className="card" style={{ marginBottom: '1rem', borderLeft: '3px solid var(--color-primary)' }}>
+          <p style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Driver added!</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
+            Send {smsPrompt.name} a PIN setup link via SMS to {smsPrompt.phone}?
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={async () => { await sendSms(smsPrompt.id); setSmsPrompt(null); }}
+            >
+              <Smartphone size={13} /> Send Setup SMS
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSmsPrompt(null)}>Skip</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+          <div className="spinner" />
+        </div>
+      ) : (
+        <>
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div className="staff-section-hdr">
+              <span>Active Drivers ({active.length})</span>
+            </div>
+            {active.length === 0 ? (
+              <div className="empty"><Truck size={32} /><p>No active drivers — add one above</p></div>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th><th>Phone</th><th>Status</th><th>Active Runs</th><th>Shift</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {active.map(d => (
+                      <tr key={d.id}>
+                        <td style={{ fontWeight: 600 }}>{d.name}</td>
+                        <td className="text-muted" style={{ fontSize: '0.85rem' }}>{d.phone || '—'}</td>
+                        <td>
+                          {d.is_on_duty
+                            ? <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Wifi size={11} /> On Duty</span>
+                            : <span className="badge badge-muted"   style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><WifiOff size={11} /> Off Duty</span>
+                          }
+                        </td>
+                        <td>
+                          {d.active_assignments > 0
+                            ? <span className="badge badge-warning">{d.active_assignments} active</span>
+                            : <span className="text-muted">—</span>
+                          }
+                        </td>
+                        <td className="text-muted" style={{ fontSize: '0.78rem' }}>
+                          {d.shift_start && d.shift_end ? `${d.shift_start} – ${d.shift_end}` : '—'}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => { setPinTarget(d); setNewPin(''); }}>
+                              <KeyRound size={12} /> Reset PIN
+                            </button>
+                            {d.phone && (
+                              <button className="btn btn-secondary btn-sm" onClick={() => sendSms(d.id)}>
+                                <Smartphone size={12} /> Setup SMS
+                              </button>
+                            )}
+                            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(d)} title="Edit"><Pencil size={13} /></button>
+                            <button className="btn btn-danger btn-sm btn-icon" onClick={() => setDelete(d)} title="Remove"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {inactive.length > 0 && (
+            <div className="card">
+              <div className="staff-section-hdr text-muted">Inactive Drivers ({inactive.length})</div>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead><tr><th>Name</th><th>Phone</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {inactive.map(d => (
+                      <tr key={d.id} style={{ opacity: 0.6 }}>
+                        <td>{d.name}</td>
+                        <td>{d.phone || '—'}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(d)}><Pencil size={13} /></button>
+                            <button className="btn btn-danger btn-sm btn-icon" onClick={() => setDelete(d)}><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Add / Edit Modal */}
+      {modal !== null && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">{modal === 'add' ? 'Add Driver' : 'Edit Driver'}</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="staff-form-grid">
+                <div className="field">
+                  <label>Name *</label>
+                  <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Full name" />
+                </div>
+                <div className="field">
+                  <label>Phone</label>
+                  <input className="input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 (718) 555-0000" />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input className="input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="driver@habibihe.com" />
+                </div>
+                <div className="field" />
+                <div className="field">
+                  <label>Shift Start</label>
+                  <input className="input" type="time" value={form.shift_start} onChange={e => setForm({ ...form, shift_start: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Shift End</label>
+                  <input className="input" type="time" value={form.shift_end} onChange={e => setForm({ ...form, shift_end: e.target.value })} />
+                </div>
+              </div>
+              <div className="field">
+                <label>Notes</label>
+                <textarea className="input textarea" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Vehicle, license plate, etc." />
+              </div>
+              {modal !== 'add' && (
+                <label className="staff-active-toggle">
+                  <input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
+                  <span>Active</span>
+                </label>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving || !form.name.trim()}>
+                {saving ? <div className="spinner" /> : <><Check size={14} /> {modal === 'add' ? 'Add Driver' : 'Save'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset PIN Modal */}
+      {pinTarget && (
+        <div className="modal-overlay" onClick={() => setPinTarget(null)}>
+          <div className="modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Reset PIN — {pinTarget.name}</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setPinTarget(null)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="field">
+                <label>New 4-digit PIN</label>
+                <input
+                  className="input"
+                  type="number"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="e.g. 5678"
+                  value={newPin}
+                  onChange={e => setNewPin(e.target.value.slice(0, 4))}
+                  onKeyDown={e => e.key === 'Enter' && savePin()}
+                  autoFocus
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
+                  Driver logs in at habibihe.com/driver/login
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPinTarget(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={savePin} disabled={pinSaving || newPin.length !== 4}>
+                {pinSaving ? <div className="spinner" /> : <><Check size={14} /> Set PIN</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDelete(null)}>
+          <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Remove Driver</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setDelete(null)}><X size={16} /></button>
+            </div>
+            <p style={{ marginBottom: '1.5rem' }}>Remove <strong>{deleteTarget.name}</strong>? This cannot be undone.</p>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setDelete(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={remove}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
