@@ -86,10 +86,10 @@
   gap: 0.5rem;
 }
 .dv-logo-sm {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 .dv-hdr-title {
   font-size: 1rem;
