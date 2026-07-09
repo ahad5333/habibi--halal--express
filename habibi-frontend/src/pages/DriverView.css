@@ -402,6 +402,41 @@
   margin-top: 0.1rem;
 }
 
+/* ─── COD cash tally card (idle screen) ─────────────────────────────── */
+.dv-cod-tally {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: rgba(245, 166, 35, 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+}
+.dv-cod-tally-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.dv-cod-tally-icon { font-size: 1.5rem; flex-shrink: 0; }
+.dv-cod-tally-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f5a623;
+}
+.dv-cod-tally-note {
+  font-size: 0.7rem;
+  color: #a07020;
+  margin-top: 0.1rem;
+}
+.dv-cod-tally-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f5a623;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+
 /* ─── Quick actions ──────────────────────────────────────────────────── */
 .dv-quick-row {
   display: grid;
@@ -502,9 +537,17 @@
 }
 .dv-earn-strip strong { color: #fff; }
 .dv-earn-tip {
-  margin-left: auto;
   color: #00c853;
   font-weight: 600;
+}
+.dv-earn-cod {
+  margin-left: auto;
+  color: #f5a623;
+  font-weight: 600;
+}
+.dv-earn-strip-cod {
+  background: rgba(245, 166, 35, 0.06);
+  border-color: rgba(245, 166, 35, 0.2);
 }
 
 /* ─── Order hero card ────────────────────────────────────────────────── */

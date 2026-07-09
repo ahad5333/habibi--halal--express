@@ -410,6 +410,7 @@ export default function DriverView() {
       stopTracking();
       setAssignment(prev => ({ ...prev, status: 'delivered' }));
       setDeliveryPhase(null);
+      loadCashSummary();
     } catch (e) { setError(e.message); }
   };
 
@@ -732,11 +733,22 @@ export default function DriverView() {
             <div className="dv-goal-track">
               <div className="dv-goal-fill" style={{ width: `${goalPct}%` }}/>
             </div>
-            {hasEarnings && cashSummary.total_cod > 0 && (
-              <p className="dv-goal-note">💼 Hand in ${cashSummary.total_cod.toFixed(2)} at end of shift</p>
-            )}
-            {!hasEarnings && <p className="dv-goal-empty">No deliveries yet today — let's go! 🔥</p>}
+              {!hasEarnings && <p className="dv-goal-empty">No deliveries yet today — let's go! 🔥</p>}
           </div>
+
+          {/* COD cash tally */}
+          {hasEarnings && cashSummary.total_cod > 0 && (
+            <div className="dv-cod-tally">
+              <div className="dv-cod-tally-left">
+                <span className="dv-cod-tally-icon">💰</span>
+                <div>
+                  <p className="dv-cod-tally-label">Cash in Pocket</p>
+                  <p className="dv-cod-tally-note">Hand in to manager at end of shift</p>
+                </div>
+              </div>
+              <span className="dv-cod-tally-amount">${cashSummary.total_cod.toFixed(2)}</span>
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="dv-quick-row">
@@ -861,11 +873,14 @@ export default function DriverView() {
       <div className="dv-body">
 
         {/* Earnings strip */}
-        {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0) && (
-          <div className="dv-earn-strip">
+        {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0) && (
+          <div className={`dv-earn-strip ${cashSummary.total_cod > 0 ? 'dv-earn-strip-cod' : ''}`}>
             <DollarSign size={14}/>
             <span>Today: <strong>{cashSummary.deliveries_count}</strong> drop{cashSummary.deliveries_count !== 1 ? 's' : ''}</span>
             {cashSummary.total_tips > 0 && <span className="dv-earn-tip">+${cashSummary.total_tips.toFixed(2)} tips</span>}
+            {cashSummary.total_cod > 0 && (
+              <span className="dv-earn-cod">💰 ${cashSummary.total_cod.toFixed(2)} cash</span>
+            )}
           </div>
         )}
 
