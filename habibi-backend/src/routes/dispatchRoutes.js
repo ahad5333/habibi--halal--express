@@ -106,6 +106,23 @@ function driverOrAdmin(req, res, next) {
 router.post('/calculate-fee',       calculateDeliveryFee);
 router.get ('/order/:order_number', getAssignmentForOrder);
 
+// Geocode a delivery address via Nominatim (proxy avoids frontend CSP issues)
+router.get('/geocode', async (req, res) => {
+  const { addr } = req.query;
+  if (!addr) return res.status(400).json({ message: 'addr required' });
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`,
+      { headers: { 'User-Agent': 'HabibiHalalExpress/1.0', 'Accept-Language': 'en' } }
+    );
+    const data = await r.json();
+    if (!data[0]) return res.status(404).json({ message: 'Address not found' });
+    res.json({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+  } catch (e) {
+    res.status(500).json({ message: 'Geocoding failed' });
+  }
+});
+
 // ── Driver PIN auth — no token needed ─────────────────────────────
 router.post('/driver/login',          driverLogin);
 router.post('/driver/set-pin',        driverOrAdmin, driverSetPin);

@@ -8,6 +8,7 @@ import {
   Zap, Star,
 } from 'lucide-react';
 import './DriverView.css';
+import DriverMap from '../components/DriverMap';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -118,6 +119,7 @@ export default function DriverView() {
   const [rejectReason, setRejectReason]   = useState('');
   const [cashCollected, setCashCollected] = useState(null);
   const [cashSummary, setCashSummary]     = useState(null);
+  const [destCoords, setDestCoords]       = useState(null);
   const [broadcastOrder, setBroadcastOrder] = useState(null);
   const [claimCountdown, setClaimCountdown] = useState(30);
   const [claimLoading, setClaimLoading]     = useState(false);
@@ -209,6 +211,14 @@ export default function DriverView() {
   useEffect(() => { loadCashSummary(); }, [loadCashSummary]);
 
   useEffect(() => {
+    if (!assignment?.delivery_address) { setDestCoords(null); return; }
+    const addr = [assignment.delivery_address, assignment.delivery_city].filter(Boolean).join(', ');
+    apiFetch(`/api/dispatch/geocode?addr=${encodeURIComponent(addr)}`)
+      .then(d => setDestCoords({ lat: d.lat, lng: d.lng }))
+      .catch(() => {});
+  }, [assignment?.delivery_address, assignment?.delivery_city]);
+
+  useEffect(() => {
     if (!driverId) return;
     const socket = io(API_BASE, { transports: ['websocket', 'polling'], reconnectionAttempts: 10 });
     socketRef.current = socket;
@@ -255,7 +265,7 @@ export default function DriverView() {
         method: 'PATCH',
         body: JSON.stringify({ lat, lng, driver_id: driverId }),
       });
-      setLastPos({ lat: lat.toFixed(5), lng: lng.toFixed(5), time: new Date().toLocaleTimeString() });
+      setLastPos({ lat, lng, time: new Date().toLocaleTimeString() });
     } catch (_) {}
   }, [assignment, driverId, apiFetch]);
 
@@ -871,6 +881,14 @@ export default function DriverView() {
       )}
 
       <div className="dv-body">
+
+        {/* Live map */}
+        {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
+          <DriverMap
+            driverPos={lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : null}
+            destPos={destCoords}
+          />
+        )}
 
         {/* Earnings strip */}
         {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0) && (

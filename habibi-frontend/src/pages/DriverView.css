@@ -463,6 +463,80 @@
 .dv-quick:hover { background: #242424; border-color: #333; }
 .dv-quick svg { color: #00c853; }
 
+/* ─── Embedded map ───────────────────────────────────────────────────── */
+.dv-map-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #242424;
+  flex-shrink: 0;
+}
+.dv-map-container {
+  height: 200px;
+  width: 100%;
+  background: #1a1a1a;
+}
+/* override leaflet's default white bg */
+.dv-map-container .leaflet-container {
+  background: #1a1a1a;
+}
+/* hide leaflet attribution from main view (small text bottom-left is fine) */
+.dv-map-container .leaflet-control-attribution {
+  font-size: 0.55rem;
+  background: rgba(0,0,0,0.5);
+  color: #555;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.dv-map-container .leaflet-control-attribution a { color: #555; }
+
+/* driver dot — green pulsing circle */
+.dv-map-driver-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00c853;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 3px rgba(0,200,83,0.35);
+  animation: dv-map-driver-pulse 2s ease-out infinite;
+}
+@keyframes dv-map-driver-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(0,200,83,0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(0,200,83,0.08); }
+}
+/* destination dot — red */
+.dv-map-dest-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff4444;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(255,68,68,0.5);
+}
+
+/* legend overlay */
+.dv-map-legend {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 1000;
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+.dv-map-you  { color: #00c853; }
+.dv-map-drop { color: #ff6b6b; }
+
+@media (min-width: 560px) {
+  .dv-map-container { height: 240px; }
+}
+
 /* ─── Step progress ──────────────────────────────────────────────────── */
 .dv-steps {
   display: flex;
