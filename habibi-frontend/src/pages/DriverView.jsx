@@ -5,7 +5,7 @@ import {
   Navigation, MapPin, CheckCircle, AlertCircle, Clock, User,
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
-  Zap, Star, History, TrendingUp, BarChart2, Award,
+  Zap, Star, History, TrendingUp, BarChart2, Award, Settings, Wifi, WifiOff,
 } from 'lucide-react';
 
 // ── Navigation helpers ────────────────────────────────────────────────
@@ -184,6 +184,15 @@ export default function DriverView() {
   const [showDeliverySuccess, setShowDeliverySuccess] = useState(false);
   const [lastDeliveredOrder, setLastDeliveredOrder] = useState(null);
 
+  const [socketConnected, setSocketConnected]   = useState(true);
+  const [gpsSignalLost, setGpsSignalLost]       = useState(false);
+  const [showPinChange, setShowPinChange]       = useState(false);
+  const [pinForm, setPinForm]                   = useState({ current: '', newPin: '', confirm: '' });
+  const [pinLoading, setPinLoading]             = useState(false);
+  const [pinError, setPinError]                 = useState('');
+  const [pinSuccess, setPinSuccess]             = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
   const photoInputRef        = useRef(null);
   const watchRef             = useRef(null);
   const intervalRef          = useRef(null);
@@ -193,6 +202,7 @@ export default function DriverView() {
   const onBreakRef           = useRef(false);
   const prevAssignmentRef    = useRef(null);
   const deliverySuccessRef   = useRef(false);
+  const installPromptRef     = useRef(null);
 
   // Keep refs in sync
   useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
@@ -244,6 +254,22 @@ export default function DriverView() {
       .then(data => setChatMsgs(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [driverId, apiFetch]);
+
+  // PWA install prompt
+  useEffect(() => {
+    const onPrompt = (e) => {
+      e.preventDefault();
+      installPromptRef.current = e;
+      setTimeout(() => setShowInstallBanner(true), 20000);
+    };
+    const onInstalled = () => setShowInstallBanner(false);
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
 
   useEffect(() => {
     if (chatOpen) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -349,9 +375,12 @@ export default function DriverView() {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      setSocketConnected(true);
       socket.emit('join_driver', driverId);
       socket.emit('join_drivers_online', { driver_id: driverId, hmac_token: token });
     });
+    socket.on('disconnect',    () => setSocketConnected(false));
+    socket.on('connect_error', () => setSocketConnected(false));
     socket.on('assignment_created',       () => loadAssignment());
     socket.on('assignment_status_update', () => loadAssignment());
     socket.on('new_order_broadcast', (data) => {
@@ -401,10 +430,14 @@ export default function DriverView() {
     setGpsStatus('Acquiring position…');
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        setGpsSignalLost(false);
         setGpsStatus(`GPS active · ±${Math.round(pos.coords.accuracy)}m`);
         sendGPS(pos.coords.latitude, pos.coords.longitude);
       },
-      (err) => setGpsStatus(`GPS error: ${err.message}`),
+      (err) => {
+        setGpsSignalLost(true);
+        setGpsStatus(`GPS error: ${err.message}`);
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
     intervalRef.current = setInterval(() => {
@@ -419,6 +452,7 @@ export default function DriverView() {
     if (watchRef.current != null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
     if (intervalRef.current)      { clearInterval(intervalRef.current); intervalRef.current = null; }
     setTracking(false);
+    setGpsSignalLost(false);
     setGpsStatus('Tracking stopped');
   };
 
@@ -650,6 +684,40 @@ export default function DriverView() {
   };
 
   const openChat = () => { setChatOpen(true); setChatUnread(0); };
+
+  const closePinChange = () => {
+    setShowPinChange(false);
+    setPinError('');
+    setPinSuccess(false);
+    setPinForm({ current: '', newPin: '', confirm: '' });
+  };
+
+  const submitPinChange = async () => {
+    setPinError('');
+    const { current, newPin, confirm } = pinForm;
+    if (!current || !newPin || !confirm) { setPinError('All fields are required.'); return; }
+    if (!/^\d{4}$/.test(newPin)) { setPinError('New PIN must be exactly 4 digits.'); return; }
+    if (newPin !== confirm) { setPinError('New PINs do not match.'); return; }
+    setPinLoading(true);
+    try {
+      // Verify current PIN first
+      await apiFetch('/api/dispatch/driver/login', {
+        method: 'POST',
+        body: JSON.stringify({ driver_id: driverId, pin: current }),
+      });
+      // Set new PIN
+      await apiFetch('/api/dispatch/driver/set-pin', {
+        method: 'POST',
+        body: JSON.stringify({ driver_id: driverId, pin: newPin, confirm_pin: confirm }),
+      });
+      setPinSuccess(true);
+      setPinForm({ current: '', newPin: '', confirm: '' });
+      setTimeout(() => closePinChange(), 2000);
+    } catch (e) {
+      setPinError(e.message.includes('Invalid') || e.message.includes('PIN') ? 'Current PIN is incorrect.' : e.message);
+    }
+    setPinLoading(false);
+  };
 
   const sendChat = async () => {
     const msg = chatInput.trim();
@@ -898,6 +966,74 @@ export default function DriverView() {
     </div>
   );
 
+  // ── Connectivity banner (shown when socket drops or GPS is lost) ──
+  const connBanner = (!socketConnected || (tracking && gpsSignalLost)) && (
+    <div className={`dv-conn-banner ${!socketConnected ? 'dv-conn-offline' : 'dv-conn-gps'}`}>
+      {!socketConnected
+        ? <><WifiOff size={13}/> No connection — reconnecting…</>
+        : <><Wifi size={13}/> GPS signal lost</>}
+    </div>
+  );
+
+  // ── PIN change drawer ─────────────────────────────────────────────
+  const pinChangeDrawer = showPinChange && (
+    <div className="dv-history-overlay" onClick={closePinChange}>
+      <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
+        <div className="dv-history-hdr">
+          <span className="dv-history-title">🔒 Change PIN</span>
+          <button className="dv-chat-close" onClick={closePinChange}><X size={18}/></button>
+        </div>
+        <div className="dv-history-body">
+          {pinSuccess ? (
+            <div className="dv-pin-success">✅ PIN changed successfully!</div>
+          ) : (
+            <div className="dv-pin-form">
+              <label className="dv-pin-label">Current PIN</label>
+              <input
+                className="dv-pin-input" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+                value={pinForm.current} onChange={e => setPinForm(f => ({ ...f, current: e.target.value }))}
+              />
+              <label className="dv-pin-label">New PIN (4 digits)</label>
+              <input
+                className="dv-pin-input" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+                value={pinForm.newPin} onChange={e => setPinForm(f => ({ ...f, newPin: e.target.value }))}
+              />
+              <label className="dv-pin-label">Confirm New PIN</label>
+              <input
+                className="dv-pin-input" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+                value={pinForm.confirm} onChange={e => setPinForm(f => ({ ...f, confirm: e.target.value }))}
+              />
+              {pinError && <p className="dv-pin-error">{pinError}</p>}
+              <button className="dv-pin-submit" onClick={submitPinChange} disabled={pinLoading}>
+                {pinLoading ? 'Saving…' : 'Change PIN'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── PWA install nudge banner ──────────────────────────────────────
+  const installBanner = showInstallBanner && (
+    <div className="dv-install-banner">
+      <span className="dv-install-icon">📱</span>
+      <span className="dv-install-text">Add Habibi Driver to your home screen</span>
+      <button
+        className="dv-install-btn"
+        onClick={async () => {
+          if (!installPromptRef.current) return;
+          installPromptRef.current.prompt();
+          const { outcome } = await installPromptRef.current.userChoice;
+          if (outcome === 'accepted') { setShowInstallBanner(false); installPromptRef.current = null; }
+        }}
+      >
+        Install
+      </button>
+      <button className="dv-install-dismiss" onClick={() => setShowInstallBanner(false)}><X size={14}/></button>
+    </div>
+  );
+
   // ── Delivery success screen ───────────────────────────────────────
   if (showDeliverySuccess && lastDeliveredOrder) {
     const successTip = parseFloat(lastDeliveredOrder.tip_amount || 0);
@@ -1058,7 +1194,9 @@ export default function DriverView() {
         {historyDrawer}
         {earningsDrawer}
         {perfDrawer}
+        {pinChangeDrawer}
         {cancelAlertModal}
+        {connBanner}
 
         {/* Header */}
         <header className="dv-hdr">
@@ -1067,6 +1205,9 @@ export default function DriverView() {
             <span className="dv-hdr-title">Habibi Driver</span>
           </div>
           <div className="dv-hdr-right">
+            <button className="dv-icon-btn" onClick={() => setShowPinChange(true)} title="Change PIN">
+              <Settings size={18}/>
+            </button>
             <button className="dv-icon-btn" onClick={() => { loadPerf(); setShowPerf(true); }} title="My performance">
               <BarChart2 size={18}/>
             </button>
@@ -1219,6 +1360,7 @@ export default function DriverView() {
           </div>
 
         </div>
+        {installBanner}
       </div>
     );
   }
@@ -1240,7 +1382,9 @@ export default function DriverView() {
       {shiftSummaryModal}
       {earningsDrawer}
       {perfDrawer}
+      {pinChangeDrawer}
       {cancelAlertModal}
+      {connBanner}
 
       {/* Compact "Next Up?" snack when a broadcast comes while already delivering */}
       {broadcastOrder && (

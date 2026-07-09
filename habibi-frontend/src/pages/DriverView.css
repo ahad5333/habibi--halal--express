@@ -2351,3 +2351,125 @@
   cursor: pointer;
   width: 100%;
 }
+
+/* ─── Connectivity Banner ────────────────────────────────────────────── */
+.dv-conn-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+  animation: dvSlideDown 0.2s ease;
+}
+.dv-conn-offline {
+  background: #c0392b;
+  color: #fff;
+}
+.dv-conn-gps {
+  background: #b7770d;
+  color: #fff;
+}
+
+/* ─── PIN Change Drawer ──────────────────────────────────────────────── */
+.dv-pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.dv-pin-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.25rem;
+}
+.dv-pin-input {
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.25rem;
+  letter-spacing: 0.3em;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  width: 100%;
+  outline: none;
+  -webkit-appearance: none;
+}
+.dv-pin-input:focus { border-color: #00c853; }
+.dv-pin-error {
+  font-size: 0.8rem;
+  color: #ff5252;
+  margin: 0.25rem 0 0;
+}
+.dv-pin-submit {
+  margin-top: 0.75rem;
+  background: #00c853;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  width: 100%;
+}
+.dv-pin-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.dv-pin-success {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #00c853;
+  padding: 2rem 0;
+}
+
+/* ─── PWA Install Banner ─────────────────────────────────────────────── */
+.dv-install-banner {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e1e1e;
+  border-top: 1px solid #2a2a2a;
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 50;
+}
+.dv-install-icon { font-size: 1.2rem; flex-shrink: 0; }
+.dv-install-text {
+  font-size: 0.82rem;
+  color: #ccc;
+  flex: 1;
+  min-width: 0;
+}
+.dv-install-btn {
+  background: #00c853;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dv-install-dismiss {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
