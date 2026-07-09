@@ -941,6 +941,18 @@ export default function DriverView() {
             </div>
           </div>
 
+          {/* Call restaurant */}
+          <a href="tel:7184000443" className="dv-restaurant-call">
+            <div className="dv-restaurant-call-left">
+              <div className="dv-restaurant-call-icon"><Phone size={15}/></div>
+              <div>
+                <span className="dv-restaurant-call-label">Call Restaurant</span>
+                <span className="dv-restaurant-call-num">(718) 400-0443</span>
+              </div>
+            </div>
+            <span className="dv-restaurant-call-hint">Issue with order?</span>
+          </a>
+
           {/* Customer */}
           {assignment.customer_name && (
             <div className="dv-cust-row">
