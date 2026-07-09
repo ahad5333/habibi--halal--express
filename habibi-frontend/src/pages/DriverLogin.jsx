@@ -62,7 +62,13 @@ export default function DriverLogin() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed.');
-      navigate(`/driver?id=${data.driver_id}&token=${data.token}`);
+      localStorage.setItem('habibi_driver_session', JSON.stringify({
+        driver_id: String(data.driver_id),
+        token: data.token,
+        name: data.name || '',
+        phone: phone.trim(),
+      }));
+      navigate('/driver');
     } catch (err) {
       setError(err.message);
       setPin('');

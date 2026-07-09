@@ -128,19 +128,24 @@ function SuccessStars() {
   );
 }
 
-export default function DriverView() {
-  // Authentication state — populated from session or after PIN login
-  const [authenticated, setAuthenticated]   = useState(false);
-  const [driverId, setDriverId]             = useState('');
-  const [token, setToken]                   = useState('');
-  const [driverName, setDriverName]         = useState('');
-  const [driverPhone, setDriverPhone]       = useState('');
+function readSession() {
+  try {
+    const saved = localStorage.getItem('habibi_driver_session');
+    if (saved) {
+      const s = JSON.parse(saved);
+      if (s.driver_id && s.token) return s;
+    }
+  } catch (_) {}
+  return null;
+}
 
-  // Login gate state
-  const [loginPhone, setLoginPhone]         = useState('');
-  const [loginPin, setLoginPin]             = useState('');
-  const [loginLoading, setLoginLoading]     = useState(false);
-  const [loginError, setLoginError]         = useState('');
+export default function DriverView() {
+  // Read session synchronously so the first render already knows auth state
+  const [authenticated, setAuthenticated]   = useState(() => !!readSession());
+  const [driverId, setDriverId]             = useState(() => readSession()?.driver_id || '');
+  const [token, setToken]                   = useState(() => readSession()?.token || '');
+  const [driverName, setDriverName]         = useState(() => readSession()?.name || '');
+  const [driverPhone, setDriverPhone]       = useState(() => readSession()?.phone || '');
 
   const apiFetch = useCallback(makeApiFetch(driverId, token), [driverId, token]);
 
@@ -217,62 +222,11 @@ export default function DriverView() {
   useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
   useEffect(() => { deliverySuccessRef.current = showDeliverySuccess; }, [showDeliverySuccess]);
 
-  // Restore session from sessionStorage on mount
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem('habibi_driver_session');
-      if (saved) {
-        const { driver_id, token: t, name, phone } = JSON.parse(saved);
-        if (driver_id && t) {
-          setDriverId(String(driver_id));
-          setToken(t);
-          setDriverName(name || '');
-          setDriverPhone(phone || '');
-          setAuthenticated(true);
-        }
-      }
-    } catch (_) {}
-  }, []);
-
-  const handleLogin = async () => {
-    setLoginError('');
-    if (!loginPhone.trim()) { setLoginError('Enter your phone number.'); return; }
-    if (!loginPin.trim())   { setLoginError('Enter your PIN.'); return; }
-    setLoginLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/dispatch/driver/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: loginPhone.trim(), pin: loginPin.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setLoginError(data.message || 'Login failed.'); setLoginLoading(false); return; }
-      const session = { driver_id: String(data.driver_id), token: data.token, name: data.name, phone: loginPhone.trim() };
-      sessionStorage.setItem('habibi_driver_session', JSON.stringify(session));
-      setDriverId(String(data.driver_id));
-      setToken(data.token);
-      setDriverName(data.name);
-      setDriverPhone(loginPhone.trim());
-      setAuthenticated(true);
-    } catch (_) { setLoginError('Connection error. Please try again.'); }
-    setLoginLoading(false);
-  };
-
+  // Restore session from localStorage on mount (persists across PWA restarts)
   const handleLogout = () => {
-    sessionStorage.removeItem('habibi_driver_session');
+    localStorage.removeItem('habibi_driver_session');
     socketRef.current?.disconnect();
-    setAuthenticated(false);
-    setDriverId('');
-    setToken('');
-    setDriverName('');
-    setDriverPhone('');
-    setAssignment(null);
-    setOnDuty(false);
-    setOnBreak(false);
-    setShowPinChange(false);
-    setPinError('');
-    setPinSuccess(false);
-    setPinForm({ current: '', newPin: '', confirm: '' });
+    window.location.replace('/driver/login');
   };
 
   useEffect(() => {
@@ -1165,52 +1119,10 @@ export default function DriverView() {
     </div>
   );
 
-  // ── Login gate ────────────────────────────────────────────────────
+  // ── Login gate — redirect to dedicated login page ─────────────────
   if (!authenticated) {
-    return (
-      <div className="dv-shell dv-login-shell">
-        <div className="dv-login-card">
-          <img src="/images/logos/logo.png" className="dv-login-logo" alt="Habibi Halal Express"
-            onError={e => e.target.style.display='none'}/>
-          <h1 className="dv-login-title">Driver Login</h1>
-          <p className="dv-login-sub">Enter your phone number and PIN</p>
-
-          <label className="dv-pin-label">Phone Number</label>
-          <input
-            className="dv-login-input"
-            type="tel"
-            inputMode="tel"
-            placeholder="(718) 555-0123"
-            value={loginPhone}
-            onChange={e => setLoginPhone(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            autoFocus
-          />
-
-          <label className="dv-pin-label" style={{ marginTop: '0.75rem' }}>4-Digit PIN</label>
-          <input
-            className="dv-pin-input"
-            type="password"
-            inputMode="numeric"
-            maxLength={4}
-            placeholder="••••"
-            value={loginPin}
-            onChange={e => setLoginPin(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-          />
-
-          {loginError && <p className="dv-login-error">{loginError}</p>}
-
-          <button
-            className="dv-login-btn"
-            onClick={handleLogin}
-            disabled={loginLoading}
-          >
-            {loginLoading ? 'Signing in…' : 'Sign In →'}
-          </button>
-        </div>
-      </div>
-    );
+    window.location.replace('/driver/login');
+    return null;
   }
 
   // ── Guard screens ──────────────────────────────────────────────────

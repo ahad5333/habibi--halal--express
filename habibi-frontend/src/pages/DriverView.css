@@ -2489,9 +2489,9 @@
   gap: 0.5rem;
 }
 .dv-login-logo {
-  width: 80px;
-  height: auto;
-  margin: 0 auto 0.5rem;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto .5rem;
   display: block;
 }
 .dv-login-title {

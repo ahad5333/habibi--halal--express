@@ -60,6 +60,7 @@ const {
   getDriverStats,
   driverLogin,
   driverSetPin,
+  adminResetDriverPin,
   driverSendSetupSms,
   saveDriverFcmToken,
   getDriverChat,
@@ -128,7 +129,8 @@ router.get('/geocode', async (req, res) => {
 // ── Driver PIN auth — no token needed ─────────────────────────────
 router.post('/driver/login',          driverLogin);
 router.post('/driver/set-pin',        driverOrAdmin, driverSetPin);
-router.post('/driver/send-setup-sms', protect, admin, driverSendSetupSms);
+router.patch('/drivers/:id/reset-pin',  protect, admin, adminResetDriverPin);
+router.post('/driver/send-setup-sms',  protect, admin, driverSendSetupSms);
 router.post('/driver/fcm-token',      saveDriverFcmToken);
 
 // ── Driver-facing routes (HMAC or JWT) ────────────────────────────

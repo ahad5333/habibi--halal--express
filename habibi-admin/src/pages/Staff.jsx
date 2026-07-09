@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
@@ -21,7 +21,10 @@ export default function Staff() {
   const [modal, setModal]         = useState(null); // null | 'add' | {id,...}
   const [form, setForm]           = useState(BLANK);
   const [saving, setSaving]       = useState(false);
-  const [deleteTarget, setDelete] = useState(null);
+  const [deleteTarget, setDelete]   = useState(null);
+  const [pinTarget, setPinTarget]   = useState(null); // driver to reset PIN for
+  const [newPin, setNewPin]         = useState('');
+  const [pinSaving, setPinSaving]   = useState(false);
 
   const load = async () => {
     try {
@@ -65,6 +68,21 @@ export default function Staff() {
       load();
     } catch (e) {
       alert(e.message);
+    }
+  };
+
+  const savePin = async () => {
+    if (!/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
+    setPinSaving(true);
+    try {
+      await adminAPI.resetDriverPin(pinTarget.id, newPin);
+      setPinTarget(null);
+      setNewPin('');
+      alert(`PIN updated for ${pinTarget.name}`);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setPinSaving(false);
     }
   };
 
@@ -137,19 +155,30 @@ export default function Staff() {
                         <td className="text-muted" style={{fontSize:'0.78rem',maxWidth:160}}>{s.notes || '—'}</td>
                         <td>
                           <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
-                            {s.role === 'delivery' && s.phone && (
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                title="Send driver PIN setup link via SMS"
-                                onClick={async () => {
-                                  try {
-                                    await adminAPI.sendDriverSetupSms(s.id);
-                                    alert(`Setup SMS sent to ${s.name}`);
-                                  } catch (e) { alert(e.message); }
-                                }}
-                              >
-                                <Smartphone size={12} /> PIN Setup
-                              </button>
+                            {s.role === 'delivery' && (
+                              <>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  title="Reset driver PIN directly"
+                                  onClick={() => { setPinTarget(s); setNewPin(''); }}
+                                >
+                                  <KeyRound size={12} /> Reset PIN
+                                </button>
+                                {s.phone && (
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    title="Send driver PIN setup link via SMS"
+                                    onClick={async () => {
+                                      try {
+                                        await adminAPI.sendDriverSetupSms(s.id);
+                                        alert(`Setup SMS sent to ${s.name}`);
+                                      } catch (e) { alert(e.message); }
+                                    }}
+                                  >
+                                    <Smartphone size={12} /> PIN SMS
+                                  </button>
+                                )}
+                              </>
                             )}
                             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(s)} title="Edit"><Pencil size={13} /></button>
                             <button className="btn btn-danger btn-sm btn-icon" onClick={() => setDelete(s)} title="Remove"><Trash2 size={13} /></button>
@@ -244,6 +273,43 @@ export default function Staff() {
               <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={save} disabled={saving || !form.name.trim()}>
                 {saving ? <div className="spinner" /> : <><Check size={14}/> {modal === 'add' ? 'Add' : 'Save'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset PIN Modal */}
+      {pinTarget && (
+        <div className="modal-overlay" onClick={() => setPinTarget(null)}>
+          <div className="modal" style={{maxWidth:380}} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Reset PIN — {pinTarget.name}</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setPinTarget(null)}><X size={16}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="field">
+                <label>New 4-digit PIN</label>
+                <input
+                  className="input"
+                  type="number"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="e.g. 5678"
+                  value={newPin}
+                  onChange={e => setNewPin(e.target.value.slice(0,4))}
+                  onKeyDown={e => e.key === 'Enter' && savePin()}
+                  autoFocus
+                />
+                <p style={{fontSize:'0.75rem',color:'var(--muted)',marginTop:'0.4rem'}}>
+                  Driver will use this PIN to log in at habibihe.com/driver/login
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPinTarget(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={savePin} disabled={pinSaving || newPin.length !== 4}>
+                {pinSaving ? <div className="spinner"/> : <><Check size={14}/> Set PIN</>}
               </button>
             </div>
           </div>

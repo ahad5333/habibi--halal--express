@@ -869,6 +869,25 @@ const driverSetPin = async (req, res) => {
   }
 };
 
+const adminResetDriverPin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pin } = req.body;
+    if (!pin) return res.status(400).json({ message: 'PIN is required.' });
+    if (!/^\d{4}$/.test(String(pin))) return res.status(400).json({ message: 'PIN must be exactly 4 digits.' });
+    const hash = await bcrypt.hash(String(pin), 10);
+    const result = await pool.query(
+      `UPDATE staff_members SET driver_pin_hash=$1, driver_pin_attempts=0, driver_pin_lockout_until=NULL
+       WHERE id=$2 AND role='delivery' RETURNING id, name`,
+      [hash, id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Driver not found.' });
+    res.json({ ok: true, name: result.rows[0].name });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 const driverSendSetupSms = async (req, res) => {
   try {
     const { driver_id } = req.body;
@@ -1152,6 +1171,7 @@ module.exports = {
   getDriverStats,
   driverLogin,
   driverSetPin,
+  adminResetDriverPin,
   driverSendSetupSms,
   saveDriverFcmToken,
   getDriverChat,

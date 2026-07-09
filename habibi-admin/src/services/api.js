@@ -224,6 +224,7 @@ export const adminAPI = {
 
   // Driver PIN setup
   sendDriverSetupSms: (driver_id) => req('/api/dispatch/driver/send-setup-sms', { method: 'POST', body: JSON.stringify({ driver_id }) }),
+  resetDriverPin:     (id, pin)   => req(`/api/dispatch/drivers/${id}/reset-pin`, { method: 'PATCH', body: JSON.stringify({ pin }) }),
 
   // Driver ↔ Dispatch chat
   getChatThreads:    ()                => req('/api/dispatch/chat/threads'),
