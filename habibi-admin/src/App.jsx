@@ -54,9 +54,17 @@ const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
 const GlobalAddons     = lazy(() => import('./pages/GlobalAddons'));
 const ArticlesAdmin    = lazy(() => import('./pages/ArticlesAdmin'));
-const CashLog          = lazy(() => import('./pages/CashLog'));
-const BusinessHours    = lazy(() => import('./pages/BusinessHours'));
-const Drivers          = lazy(() => import('./pages/Drivers'));
+const CashLog              = lazy(() => import('./pages/CashLog'));
+const BusinessHours        = lazy(() => import('./pages/BusinessHours'));
+const Drivers              = lazy(() => import('./pages/Drivers'));
+const MarketplaceOrders    = lazy(() => import('./pages/MarketplaceOrders'));
+const Partners             = lazy(() => import('./pages/Partners'));
+const PartnerOrders        = lazy(() => import('./pages/PartnerOrders'));
+const BusinessMenuAdmin    = lazy(() => import('./pages/BusinessMenuAdmin'));
+const RoadieDeliveries     = lazy(() => import('./pages/RoadieDeliveries'));
+const Integrations         = lazy(() => import('./pages/Integrations'));
+const PlatformCredentials  = lazy(() => import('./pages/PlatformCredentials'));
+const UrgentRequests       = lazy(() => import('./pages/UrgentRequests'));
 
 import './App.css';
 
@@ -99,9 +107,17 @@ function AdminLayout() {
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
             <Route path="/global-addons"  element={<GlobalAddons />} />
             <Route path="/articles"       element={<ArticlesAdmin />} />
-            <Route path="/business-hours" element={<BusinessHours />} />
-            <Route path="/drivers"        element={<Drivers />} />
-            <Route path="*"             element={<Navigate to="/" replace />} />
+            <Route path="/business-hours"       element={<BusinessHours />} />
+            <Route path="/drivers"              element={<Drivers />} />
+            <Route path="/marketplace-orders"   element={<MarketplaceOrders />} />
+            <Route path="/partners"             element={<Partners />} />
+            <Route path="/partner-orders"       element={<PartnerOrders />} />
+            <Route path="/wholesale-catalog"    element={<BusinessMenuAdmin />} />
+            <Route path="/roadie"               element={<RoadieDeliveries />} />
+            <Route path="/integrations"         element={<Integrations />} />
+            <Route path="/platform-credentials" element={<PlatformCredentials />} />
+            <Route path="/urgent"               element={<UrgentRequests />} />
+            <Route path="*"                     element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
         </div>
