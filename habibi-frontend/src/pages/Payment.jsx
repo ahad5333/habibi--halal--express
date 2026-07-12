@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Search, Lock, CheckCircle, DollarSign, Receipt, Zap, Trash2, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ordersAPI, paymentsAPI, userAPI, savedPaymentsAPI } from '../services/api';
+import { ordersAPI, userAPI, savedPaymentsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import StripeCardForm from '../components/StripeCardForm';
+import AuthNetForm from '../components/AuthNetForm';
+import '../components/AuthNetForm.css';
 import './Payment.css';
 
 const PAYMENT_REASONS = [
@@ -94,9 +95,11 @@ const Payment = () => {
   const [payNote, setPayNote]       = useState('');
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError]     = useState('');
-  const [txRef, setTxRef]           = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [intentReady, setIntentReady]   = useState(false);
+  const [txRef, setTxRef]               = useState('');
+  const [authNetConfig, setAuthNetConfig] = useState(null);
+  const [intentReady, setIntentReady]     = useState(false);
+
+  const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
   const handleOrderLookup = async (e) => {
     e.preventDefault();
@@ -134,9 +137,10 @@ const Payment = () => {
     setPayError('');
     setPayLoading(true);
     try {
-      const ref = foundOrder?.ref || `QPAY-${Date.now()}`;
-      const res = await paymentsAPI.createIntent(amtNum, ref, ['card']);
-      setClientSecret(res.clientSecret || '');
+      const res = await fetch(`${BASE}/api/payments/authnet/config`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Payment setup failed.');
+      setAuthNetConfig(data);
       setIntentReady(true);
     } catch (err) {
       setPayError(err.message || 'Failed to initiate payment. Please try again.');
@@ -145,12 +149,10 @@ const Payment = () => {
     }
   };
 
-  const handleStripeSuccess = (paymentIntent) => {
-    setTxRef(paymentIntent?.id || `TX-${Date.now().toString().slice(-8)}`);
+  const handleAuthNetSuccess = (transactionId) => {
+    setTxRef(transactionId || `TX-${Date.now().toString().slice(-8)}`);
     setStep(3);
   };
-
-  const handleStripeError = (msg) => setPayError(msg || 'Payment failed.');
 
   return (
     <div className="payment-page">
@@ -386,7 +388,7 @@ const Payment = () => {
                   <div className="pay-card-icon"><CreditCard size={22} /></div>
                   <div>
                     <h3 className="pay-card-title">Payment Details</h3>
-                    <p className="pay-card-desc">All transactions are secured and encrypted by Stripe.</p>
+                    <p className="pay-card-desc">All transactions are secured and encrypted.</p>
                   </div>
                 </div>
 
@@ -451,16 +453,13 @@ const Payment = () => {
                       Paying <strong style={{color:'var(--color-primary)'}}>${parseFloat(amount).toFixed(2)}</strong>
                       {payReason ? ` for ${payReason}` : ''}
                     </p>
-                    <StripeCardForm
-                      clientSecret={clientSecret}
-                      onSuccess={handleStripeSuccess}
-                      onError={handleStripeError}
-                      disabled={false}
+                    <AuthNetForm
+                      config={authNetConfig}
+                      amount={parseFloat(amount)}
+                      orderNumber={foundOrder?.ref || `QPAY-${Date.now()}`}
+                      onSuccess={handleAuthNetSuccess}
+                      onError={(msg) => setPayError(msg || 'Payment failed.')}
                     />
-                    <div className="pay-secure-note" style={{marginTop:'0.75rem'}}>
-                      <Lock size={12} />
-                      <span>Secured by Stripe — card details never touch our servers.</span>
-                    </div>
                     <button type="button" className="btn btn-outline" style={{marginTop:'0.75rem',width:'100%'}} onClick={() => setIntentReady(false)}>
                       ← Change amount
                     </button>
@@ -522,7 +521,7 @@ const Payment = () => {
               </div>
               <p className="pay-success-email">A receipt has been emailed to the address on file.</p>
               <div className="pay-success-btns">
-                <button className="btn btn-outline" onClick={() => { setStep(2); setOrderRef(''); setFoundOrder(null); setAmount(''); setPayReason(''); setPayNote(''); setIntentReady(false); setClientSecret(''); }}>
+                <button className="btn btn-outline" onClick={() => { setStep(2); setOrderRef(''); setFoundOrder(null); setAmount(''); setPayReason(''); setPayNote(''); setIntentReady(false); setAuthNetConfig(null); }}>
                   Make Another Payment
                 </button>
                 <a href="/" className="btn btn-primary">Back to Home</a>
