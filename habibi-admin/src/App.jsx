@@ -65,6 +65,9 @@ const RoadieDeliveries     = lazy(() => import('./pages/RoadieDeliveries'));
 const Integrations         = lazy(() => import('./pages/Integrations'));
 const PlatformCredentials  = lazy(() => import('./pages/PlatformCredentials'));
 const UrgentRequests       = lazy(() => import('./pages/UrgentRequests'));
+const Referrals            = lazy(() => import('./pages/Referrals'));
+const GroupOrders          = lazy(() => import('./pages/GroupOrders'));
+const SavedCustoms         = lazy(() => import('./pages/SavedCustoms'));
 
 import './App.css';
 
@@ -117,6 +120,9 @@ function AdminLayout() {
             <Route path="/integrations"         element={<Integrations />} />
             <Route path="/platform-credentials" element={<PlatformCredentials />} />
             <Route path="/urgent"               element={<UrgentRequests />} />
+            <Route path="/referrals"            element={<Referrals />} />
+            <Route path="/group-orders"         element={<GroupOrders />} />
+            <Route path="/saved-customs"        element={<SavedCustoms />} />
             <Route path="*"                     element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>

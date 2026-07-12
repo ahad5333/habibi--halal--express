@@ -364,6 +364,68 @@ router.post('/change-password',
   changeAdminPassword
 );
 
+// ── Referral Program — admin read-only ───────────────────────────────────
+router.get('/referrals', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT r.id, r.referral_code, r.status, r.points_awarded, r.created_at, r.completed_at,
+             r.referee_email,
+             u1.name  AS referrer_name,  u1.email AS referrer_email,
+             u2.name  AS referee_name
+        FROM referrals r
+        LEFT JOIN users u1 ON u1.id = r.referrer_id
+        LEFT JOIN users u2 ON u2.id = r.referee_user_id
+       ORDER BY r.created_at DESC
+       LIMIT 500
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
+// ── Group Orders — admin read-only ────────────────────────────────────────
+router.get('/group-orders', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT gs.session_id, gs.join_code, gs.host_name, gs.status, gs.expires_at, gs.created_at,
+             u.email AS host_email,
+             COUNT(DISTINCT gp.participant_id) AS participant_count,
+             COUNT(goi.id)                     AS item_count,
+             COALESCE(SUM(goi.price * goi.qty), 0) AS total_value
+        FROM group_order_sessions gs
+        LEFT JOIN users u   ON u.id = gs.host_user_id
+        LEFT JOIN group_order_participants gp ON gp.session_id = gs.session_id
+        LEFT JOIN group_order_items goi        ON goi.session_id = gs.session_id
+       GROUP BY gs.session_id, gs.join_code, gs.host_name, gs.status, gs.expires_at, gs.created_at, u.email
+       ORDER BY gs.created_at DESC
+       LIMIT 500
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
+// ── Saved Custom Orders — admin read-only ────────────────────────────────
+router.get('/saved-customs', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT sc.id, sc.name, sc.config, sc.created_at,
+             u.id    AS user_id,
+             u.name  AS user_name,
+             u.email AS user_email
+        FROM saved_custom_orders sc
+        JOIN users u ON u.id = sc.user_id
+       ORDER BY sc.created_at DESC
+       LIMIT 1000
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
 // ── Authorize.net merchant accounts ──────────────────────────────────────
 const {
   listAccounts,

@@ -267,6 +267,15 @@ export const adminAPI = {
   // Business Hours
   getBusinessHours:  (locationId) => req(`/api/admin/business-hours?location_id=${locationId}`),
   saveBusinessHours: (body)        => req('/api/admin/business-hours', { method: 'PUT', body: JSON.stringify(body) }),
+
+  // Referral Program
+  getReferrals:  () => req('/api/admin/referrals'),
+
+  // Group Orders
+  getGroupOrders: () => req('/api/admin/group-orders'),
+
+  // Saved Custom Orders
+  getSavedCustoms: () => req('/api/admin/saved-customs'),
 };
 
 export const chatAPI = {
