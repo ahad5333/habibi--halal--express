@@ -68,9 +68,11 @@ const CENTER_ITEM = {
   path: '/order',
   panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fca5a5 100%)', emoji: '🛵', caption: 'Super Express Delivery\nFriendly Online Tracking' },
   sub: [
-    { label: 'Halal Food Delivery', path: '/order?type=delivery' },
-    { label: 'Pickup Order', path: '/order?type=pickup' },
-    { label: 'Catering & Events', path: '/catering' },
+    { label: 'Halal Food Delivery',    path: '/order?type=delivery' },
+    { label: 'Pickup Order',           path: '/order?type=pickup' },
+    { label: '👥 Group Order',         path: '/group-order', highlight: true },
+    { label: '🎁 Special Offers',      path: '/offers',      highlight: true },
+    { label: 'Catering & Events',      path: '/catering' },
     { label: 'Delivery Coverage Area', path: '/delivery-coverage' },
   ],
 };

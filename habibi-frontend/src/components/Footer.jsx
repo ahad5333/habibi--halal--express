@@ -99,6 +99,8 @@ const Footer = () => {
             <h4>Discover</h4>
             <Link to="/menu">Our Menu</Link>
             <Link to="/locations">Locations</Link>
+            <Link to="/offers">Special Offers</Link>
+            <Link to="/group-order">Group Order</Link>
             <Link to="/delivery-coverage">Delivery Coverage</Link>
             <Link to="/checkout">Order Online</Link>
             <Link to="/wholesale">Wholesale</Link>

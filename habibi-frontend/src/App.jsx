@@ -50,6 +50,7 @@ const Unsubscribe         = lazy(() => import('./pages/Unsubscribe'));
 const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
 const GroupOrder          = lazy(() => import('./pages/GroupOrder'));
 const CustomOrder         = lazy(() => import('./pages/CustomOrder'));
+const Offers              = lazy(() => import('./pages/Offers'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -164,6 +165,8 @@ function Layout() {
           <Route path="/group-order"              element={<GroupOrder />} />
           <Route path="/group-order/:sessionId"   element={<GroupOrder />} />
           <Route path="/customize"                element={<CustomOrder />} />
+          <Route path="/offers"                   element={<Offers />} />
+          <Route path="/deals"                    element={<Offers />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
