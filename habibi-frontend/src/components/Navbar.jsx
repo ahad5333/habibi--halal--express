@@ -45,8 +45,11 @@ const LEFT_ITEMS = [
     path: '/articles',
     panel: { bg: 'linear-gradient(160deg,#1a0a00 0%,#2d1500 100%)', emoji: '✍️', caption: 'Stories from Our Kitchen' },
     sub: [
-      { label: 'Introducing Habibi Tacos', path: '/articles/habibi-tacos' },
-      { label: 'Videos & Reels', path: '/videos' },
+      { label: 'Kitchen Behind the Scenes', path: '/videos' },
+      { label: 'Customer Stories',          path: '/videos' },
+      { label: 'Our Journey',               path: '/videos' },
+      { label: 'Introducing Habibi Tacos',  path: '/articles/habibi-tacos' },
+      { label: 'Videos & Reels',            path: '/videos' },
     ],
   },
   {
