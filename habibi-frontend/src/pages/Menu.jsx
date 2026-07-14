@@ -632,7 +632,7 @@ const Menu = () => {
         <div className="menu-header-overlay" />
         <div className="menu-header-content">
           <h1 className="menu-header-title">Menu</h1>
-          <p className="menu-header-sub">Every dish crafted with tradition, precision &amp; passion</p>
+          <p className="menu-header-sub">Every dish tells a story — written in spice, sealed with tradition, served with soul.</p>
         </div>
       </div>
 
