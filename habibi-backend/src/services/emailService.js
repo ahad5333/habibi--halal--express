@@ -191,7 +191,7 @@ const sendNewsletter = async (subscribers, subject, body, template = {}) => {
   // Build the newsletter body once — only the per-subscriber unsubscribe URL differs
   const content = buildNewsletterHTML(body, template);
 
-  if (!transporter) {
+  if (!transporter && !sendgridKey) {
     const first = subscribers[0];
     const sampleEmail = typeof first === 'string' ? first : first.email;
     const sampleToken = typeof first === 'string' ? null : first.unsubscribeToken;
@@ -207,9 +207,13 @@ const sendNewsletter = async (subscribers, subject, body, template = {}) => {
     const email = typeof sub === 'string' ? sub : sub.email;
     const token = typeof sub === 'string' ? null : sub.unsubscribeToken;
     const unsubscribeUrl = token ? `${frontendUrl}/unsubscribe?token=${token}` : null;
+    const html = renderBody('base-light', { content, title: subject, unsubscribeUrl, year: new Date().getFullYear() });
     try {
-      const html = renderBody('base-light', { content, title: subject, unsubscribeUrl, year: new Date().getFullYear() });
-      await transporter.sendMail({ from: emailFrom, to: email, subject, html });
+      if (sendgridKey && !transporter) {
+        await sendViaSendGridAPI(email, subject, html);
+      } else {
+        await transporter.sendMail({ from: emailFrom, to: email, subject, html });
+      }
       successCount++;
     } catch (err) {
       console.error(`[Email Service] Failed to send newsletter to ${email}: ${err.message}`);
