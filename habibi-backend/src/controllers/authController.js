@@ -70,7 +70,18 @@ const registerUser = async (req, res) => {
       }
       const existingUser = await pool.query('SELECT id FROM users WHERE email=$1', [email]);
       if (existingUser.rows.length > 0) {
-        return res.status(400).json({ message: 'User already exists' });
+        return res.status(400).json({ message: 'An account with this email already exists.' });
+      }
+      // Also check phone not already used by another account
+      if (phone && String(phone).trim()) {
+        const cleanedPhone = String(phone).trim().replace(/\D/g, '');
+        const phoneExists = await pool.query(
+          'SELECT id FROM users WHERE phone_number=$1 OR phone_number=$2',
+          [String(phone).trim(), cleanedPhone]
+        );
+        if (phoneExists.rows.length > 0) {
+          return res.status(400).json({ message: 'An account with this phone number is already registered.' });
+        }
       }
     }
 

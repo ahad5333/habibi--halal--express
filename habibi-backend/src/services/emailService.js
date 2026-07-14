@@ -1,3 +1,4 @@
+const https    = require('https');
 const nodemailer = require('nodemailer');
 const { renderBody, renderEmail } = require('./templateRenderer');
 
@@ -9,21 +10,49 @@ const smtpPass   = process.env.SMTP_PASS;
 const emailFrom  = process.env.EMAIL_FROM || 'noreply@habibihalal.com';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-let transporter;
-
-if (sendgridKey) {
-  transporter = nodemailer.createTransport({
-    host: 'smtp.sendgrid.net', port: 587,
-    auth: { user: 'apikey', pass: sendgridKey },
+// SendGrid HTTP API — avoids SMTP port blocks on VPS hosts
+const sendViaSendGridAPI = (to, subject, html) => new Promise((resolve, reject) => {
+  const body = JSON.stringify({
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: emailFrom, name: 'Habibi Halal Express' },
+    subject,
+    content: [{ type: 'text/html', value: html }],
   });
-  console.log('[Email Service] Configured via SendGrid SMTP.');
-} else if (smtpHost && smtpUser && smtpPass) {
+  const req = https.request({
+    hostname: 'api.sendgrid.com',
+    path: '/v3/mail/send',
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${sendgridKey}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+    },
+  }, res => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        resolve({ statusCode: res.statusCode });
+      } else {
+        reject(new Error(`SendGrid API ${res.statusCode}: ${data}`));
+      }
+    });
+  });
+  req.on('error', reject);
+  req.write(body);
+  req.end();
+});
+
+let transporter;
+if (smtpHost && smtpUser && smtpPass) {
   transporter = nodemailer.createTransport({
     host: smtpHost, port: parseInt(smtpPort),
     secure: parseInt(smtpPort) === 465,
     auth: { user: smtpUser, pass: smtpPass },
   });
   console.log(`[Email Service] Configured via custom SMTP (${smtpHost}).`);
+} else if (sendgridKey) {
+  console.log('[Email Service] Configured via SendGrid HTTP API.');
 } else {
   console.log('[Email Service] Running in SIMULATION mode. Emails will log to console.');
 }
@@ -73,6 +102,16 @@ const logSimulatedEmail = (to, subject, html) => {
 };
 
 const sendMailHelper = async (to, subject, html) => {
+  if (sendgridKey && !transporter) {
+    try {
+      await sendViaSendGridAPI(to, subject, html);
+      console.log(`[Email Service] Sent to ${to} via SendGrid API.`);
+      return { success: true };
+    } catch (err) {
+      console.error(`[Email Service] FAILED to send to ${to}: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  }
   if (!transporter) {
     logSimulatedEmail(to, subject, html);
     return { success: true, simulated: true };

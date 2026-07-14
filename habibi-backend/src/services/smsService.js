@@ -16,7 +16,17 @@ if (accountSid && authToken) {
   client = twilio(accountSid, authToken);
 }
 
+const toE164 = (phone) => {
+  if (!phone) return phone;
+  if (phone.startsWith('+')) return phone;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return `+${digits}`;
+};
+
 const sendSMS = async (to, body) => {
+  to = toE164(to);
   console.log(`[Habibi SMS Gateway] Attempting transmission to ${to}...`);
   
   if (!client) {
