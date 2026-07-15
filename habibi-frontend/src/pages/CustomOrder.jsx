@@ -381,8 +381,11 @@ const PRESETS = [
 /* ================================================================
    MAIN COMPONENT
    ================================================================ */
+const BAGEL_TYPES = ['Plain', 'Sesame', 'Raisin', 'Whole Wheat'];
+
 const INIT = {
   base: null,
+  bagelType: 'Plain',
   cheese:    { type: 'none', qty: 'regular' },
   vegetables: {},   // { [id]: { qty } }
   proteins:   {},   // { [id]: { qty } }
@@ -513,7 +516,7 @@ export default function CustomOrder() {
 
   /* State updaters */
   const setBase = base => {
-    setCfg(p => ({ ...p, base }));
+    setCfg(p => ({ ...p, base, bagelType: 'Plain' }));
     setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
   };
 
@@ -643,6 +646,7 @@ export default function CustomOrder() {
   /* Build cart item note */
   const buildNote = () => {
     const parts = [];
+    if (cfg.base?.id === '39e') parts.push(`Bagel: ${cfg.bagelType}`);
     if (cfg.cheese.type !== 'none') {
       const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
       parts.push(`${c?.label} (${cfg.cheese.qty})`);
@@ -720,7 +724,7 @@ export default function CustomOrder() {
 
     addItem({
       id:            `custom-${cfg.base.id}-${Date.now()}`,
-      name:          `Custom ${cfg.base.label}`,
+      name:          cfg.base.id === '39e' ? `Custom ${cfg.bagelType} Bagel` : `Custom ${cfg.base.label}`,
       price:         total,
       baseItemPrice: Math.max(0, total - addonsTotal),
       note:          buildNote(),
@@ -995,7 +999,25 @@ export default function CustomOrder() {
             {cfg.base && (
               <div className="co-base-preview">
                 <div className="co-base-preview-img" style={{ backgroundImage: `url(${cfg.base.img})` }} />
-                <span className="co-base-preview-label">{cfg.base.label}</span>
+                <span className="co-base-preview-label">
+                  {cfg.base.id === '39e' ? `${cfg.bagelType} Bagel` : cfg.base.label}
+                </span>
+              </div>
+            )}
+            {cfg.base?.id === '39e' && (
+              <div className="co-bagel-types">
+                <span className="co-bagel-types-label">Bagel Style</span>
+                <div className="co-bagel-pills">
+                  {BAGEL_TYPES.map(t => (
+                    <button
+                      key={t}
+                      className={`co-bagel-pill${cfg.bagelType === t ? ' active' : ''}`}
+                      onClick={() => setCfg(p => ({ ...p, bagelType: t }))}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <div className="co-base-grid">

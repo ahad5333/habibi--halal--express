@@ -980,6 +980,43 @@
   color: #F97316;
 }
 
+/* Bagel sub-type selector */
+.co-bagel-types {
+  margin-bottom: 0.75rem;
+}
+.co-bagel-types-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 0.4rem;
+}
+.co-bagel-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.co-bagel-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.co-bagel-pill:hover { border-color: rgba(249,115,22,0.5); color: #F97316; }
+.co-bagel-pill.active {
+  background: rgba(249,115,22,0.12);
+  border-color: #F97316;
+  color: #F97316;
+  font-weight: 700;
+}
+
 .co-base-card {
   position: relative;
   background: rgba(255,255,255,0.04);
