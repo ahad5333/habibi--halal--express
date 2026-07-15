@@ -84,7 +84,10 @@ export default function PrivacyPolicy() {
       />
 
       <div className="legal-hero">
-        <img src="/images/titles/privacy-title.jpg" alt="Privacy Policy — Habibi Halal Express" className="legal-hero-img" />
+        <picture>
+          <source srcSet="/images/titles/privacy-title.webp" type="image/webp" />
+          <img src="/images/titles/privacy-title.jpg" alt="Privacy Policy — Habibi Halal Express" className="legal-hero-img" />
+        </picture>
       </div>
       <div className="legal-hero-sub">
         <p className="legal-subtitle">We respect your privacy and are committed to protecting the information entrusted to us through our websites, apps, loyalty programs, and all related services.</p>

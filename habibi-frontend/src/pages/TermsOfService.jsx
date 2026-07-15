@@ -130,7 +130,10 @@ export default function TermsOfService() {
       />
 
       <div className="legal-hero">
-        <img src="/images/titles/terms-title.jpg" alt="Terms of Service — Habibi Halal Express" className="legal-hero-img" />
+        <picture>
+          <source srcSet="/images/titles/terms-title.webp" type="image/webp" />
+          <img src="/images/titles/terms-title.jpg" alt="Terms of Service — Habibi Halal Express" className="legal-hero-img" />
+        </picture>
       </div>
       <div className="legal-hero-sub">
         <p className="legal-subtitle">These Terms govern your access to and use of our websites, mobile apps, ordering platform, delivery, payments, loyalty programs, and all related services.</p>

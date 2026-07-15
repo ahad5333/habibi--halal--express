@@ -1,7 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Save, CreditCard, ToggleLeft, ToggleRight, Lock, Eye, EyeOff } from 'lucide-react';
+import { Save, CreditCard, ToggleLeft, ToggleRight, Lock, Eye, EyeOff, Building2 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Settings.css';
+
+const SITE_FIELDS = [
+  { key: 'phone_main',       label: 'Main Phone',          placeholder: '(718) 400-0443', type: 'tel' },
+  { key: 'phone_tollfree',   label: 'Toll-Free Phone',     placeholder: '(888) 887-5571', type: 'tel' },
+  { key: 'phone_fax',        label: 'Fax',                 placeholder: '(718) 400-0442', type: 'tel' },
+  { key: 'email_contact',    label: 'Contact Email',       placeholder: 'admin@habibihe.com', type: 'email' },
+  { key: 'email_orders',     label: 'Orders Email',        placeholder: 'orders@habibihe.com', type: 'email' },
+  { key: 'address_street',   label: 'Street Address',      placeholder: '2974 Jerome Ave', type: 'text' },
+  { key: 'address_city',     label: 'City',                placeholder: 'Bronx', type: 'text' },
+  { key: 'address_state',    label: 'State',               placeholder: 'NY', type: 'text' },
+  { key: 'address_zip',      label: 'ZIP Code',            placeholder: '10468', type: 'text' },
+  { key: 'social_instagram', label: 'Instagram URL',       placeholder: 'https://instagram.com/habibihalal', type: 'url' },
+  { key: 'social_facebook',  label: 'Facebook URL',        placeholder: 'https://facebook.com/habibihalal', type: 'url' },
+  { key: 'social_twitter',   label: 'X (Twitter) URL',    placeholder: 'https://twitter.com/habibihalal', type: 'url' },
+  { key: 'social_tiktok',    label: 'TikTok URL',          placeholder: 'https://tiktok.com/@habibihalal', type: 'url' },
+];
+
+function BusinessInfoSection() {
+  const [form, setForm]       = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
+  const [error, setError]     = useState('');
+
+  useEffect(() => {
+    adminAPI.getSiteSettings()
+      .then(d => setForm(d || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError(''); setSaving(true);
+    try {
+      const updated = await adminAPI.updateSiteSettings(form);
+      setForm(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err.message || 'Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-hdr">
+        <p className="settings-section-title">Business Information</p>
+        <p className="settings-section-sub">Phone numbers, address, email, and social links shown on the website — update here to reflect site-wide instantly.</p>
+      </div>
+      <div className="card" style={{padding:'1.25rem'}}>
+        {loading ? (
+          <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
+        ) : (
+          <form onSubmit={handleSave}>
+            {error && (
+              <div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#f87171',marginBottom:'1rem'}}>
+                ⚠ {error}
+              </div>
+            )}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'0.875rem'}}>
+              {SITE_FIELDS.map(({ key, label, placeholder, type }) => (
+                <div className="field" key={key}>
+                  <label style={{fontSize:'0.78rem'}}>{label}</label>
+                  <input
+                    type={type}
+                    className="input"
+                    value={form[key] || ''}
+                    placeholder={placeholder}
+                    onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:'1.25rem'}}>
+              <button type="submit" className={`btn ${saved ? 'btn-secondary' : 'btn-primary'} btn-sm`} disabled={saving} style={{gap:6}}>
+                {saving
+                  ? <span className="spinner" style={{width:12,height:12}} />
+                  : saved
+                    ? '✓ Saved'
+                    : <><Save size={13} /> Save Business Info</>}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
 
 function IntegrationsSection() {
   const [integrations, setIntegrations] = useState([]);
@@ -161,6 +252,9 @@ export default function Settings() {
           <p className="page-sub">System configuration and delivery tiers</p>
         </div>
       </div>
+
+      {/* Business Information */}
+      <BusinessInfoSection />
 
       {/* Security — Change Password */}
       <section className="settings-section">

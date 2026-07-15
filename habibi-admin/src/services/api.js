@@ -114,6 +114,9 @@ export const adminAPI = {
   paymentSettings:       () => req('/api/admin/payment-settings'),
   updatePaymentSetting:  (id, is_active) => req(`/api/admin/payment-settings/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
 
+  getSiteSettings:    () => req('/api/settings/site'),
+  updateSiteSettings: (body) => req('/api/settings/site', { method: 'PATCH', body: JSON.stringify(body) }),
+
   payments:    () => req('/api/admin/payments'),
   refundOrder: (orderNumber) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST' }),
 

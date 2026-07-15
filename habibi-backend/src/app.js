@@ -136,7 +136,9 @@ const favoritesRoutes   = require("./routes/favoritesRoutes");
 const savedCustomRoutes = require("./routes/savedCustomRoutes");
 const groupOrderRoutes  = require("./routes/groupOrderRoutes");
 const referralRoutes   = require("./routes/referralRoutes");
-const { getPaymentSettings, getCheckoutSettings } = require("./controllers/settingsController");
+const { getPaymentSettings, getCheckoutSettings, getSiteSettings, updateSiteSettings } = require("./controllers/settingsController");
+const _protect = require("./middleware/authMiddleware");
+const _admin   = require("./middleware/adminMiddleware");
 
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
   console.error('[FATAL] CORS_ORIGINS must be set in production. Refusing to start with wildcard origins.');
@@ -209,6 +211,8 @@ app.use("/api/referrals",   referralRoutes);
 app.use("/api/articles",   articleRoutes);
 app.get("/api/settings/payments", getPaymentSettings);
 app.get("/api/settings/checkout", getCheckoutSettings);
+app.get("/api/settings/site", getSiteSettings);
+app.patch("/api/settings/site", _protect, _admin, updateSiteSettings);
 const { getPublicBusinessHours } = require('./controllers/businessHoursController');
 app.get('/api/business-hours', getPublicBusinessHours);
 app.use("/", seoRoutes);

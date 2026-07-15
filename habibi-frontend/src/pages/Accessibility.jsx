@@ -12,7 +12,10 @@ const Accessibility = () => (
 
     {/* Hero */}
     <div className="legal-hero">
-      <img src="/images/titles/accessibility-title.jpg" alt="Accessibility Statement — Habibi Halal Express" className="legal-hero-img" />
+      <picture>
+        <source srcSet="/images/titles/accessibility-title.webp" type="image/webp" />
+        <img src="/images/titles/accessibility-title.jpg" alt="Accessibility Statement — Habibi Halal Express" className="legal-hero-img" />
+      </picture>
     </div>
     <div className="legal-hero-sub">
       <p className="legal-subtitle">We are committed to making our website and app accessible to everyone, including people with disabilities.</p>

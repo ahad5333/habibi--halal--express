@@ -361,6 +361,13 @@ export const groupOrderAPI = {
     request(`/api/group-orders/${sessionId}`, { method: 'DELETE' }),
 };
 
+export const settingsAPI = {
+  getSite: () =>
+    fetch(`${BASE_URL}/api/settings/site`)
+      .then(r => r.ok ? r.json() : {})
+      .catch(() => ({})),
+};
+
 export const partnersAPI = {
   /**
    * POST /api/partners/apply

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import SEO from '../components/SEO';
 import './Careers.css';
 
@@ -52,6 +53,7 @@ const EMPTY_FORM = {
 };
 
 const Careers = () => {
+  const location = useLocation();
   const [vacancies, setVacancies] = useState([]);
   const [vacanciesLoading, setVacanciesLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,6 +62,15 @@ const Careers = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null); // { success, message }
   const openRolesRef = useRef(null);
+
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [location.hash]);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/careers/vacancies`)
@@ -139,7 +150,7 @@ const Careers = () => {
           <div className="dept-grid">
             <div className="dept-row row-two">
               {departments.slice(0, 2).map(dept => (
-                <div key={dept.id} className="dept-card dept-card-large">
+                <div key={dept.id} id={dept.id} className="dept-card dept-card-large">
                   <img src={dept.img} alt={dept.title} className="dept-img" />
                   <div className="dept-overlay">
                     <span className="dept-label">{dept.label}</span>
@@ -151,7 +162,7 @@ const Careers = () => {
             </div>
             <div className="dept-row row-three">
               {departments.slice(2).map(dept => (
-                <div key={dept.id} className="dept-card dept-card-small">
+                <div key={dept.id} id={dept.id} className="dept-card dept-card-small">
                   <img src={dept.img} alt={dept.title} className="dept-img" />
                   <div className="dept-overlay">
                     <span className="dept-label">{dept.label}</span>
@@ -195,6 +206,8 @@ const Careers = () => {
 
           <div className="hiring-image-col">
             <div className="hiring-image">
+              <img src="/images/staff/hiring.jpg" alt="We Are Hiring" className="hiring-img" />
+              <div className="hiring-img-overlay" />
               <div className="positions-badge">
                 <span className="positions-num text-primary">{vacanciesLoading ? '—' : `${vacancies.length}+`}</span>
                 <span className="text-xs text-muted uppercase tracking-wider">Active Positions</span>

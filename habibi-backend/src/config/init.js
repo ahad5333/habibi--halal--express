@@ -960,6 +960,30 @@ const createTables = async () => {
       ALTER TABLE menus ADD COLUMN IF NOT EXISTS exclude_global_addons BOOLEAN DEFAULT FALSE;
     `);
 
+    // ── Site Settings (admin-editable business info) ──────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        id                INTEGER PRIMARY KEY DEFAULT 1,
+        phone_main        VARCHAR(50)  DEFAULT '(718) 400-0443',
+        phone_tollfree    VARCHAR(50)  DEFAULT '(888) 887-5571',
+        phone_fax         VARCHAR(50)  DEFAULT '(718) 400-0442',
+        email_contact     VARCHAR(100) DEFAULT 'admin@habibihe.com',
+        email_orders      VARCHAR(100) DEFAULT 'orders@habibihe.com',
+        address_street    VARCHAR(255) DEFAULT '2974 Jerome Ave',
+        address_city      VARCHAR(100) DEFAULT 'Bronx',
+        address_state     VARCHAR(50)  DEFAULT 'NY',
+        address_zip       VARCHAR(20)  DEFAULT '10468',
+        social_instagram  VARCHAR(255) DEFAULT '',
+        social_facebook   VARCHAR(255) DEFAULT '',
+        social_twitter    VARCHAR(255) DEFAULT '',
+        social_tiktok     VARCHAR(255) DEFAULT '',
+        updated_at        TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+    `);
+
     await client.query("COMMIT");
     console.log("✅ All tables created/verified");
 

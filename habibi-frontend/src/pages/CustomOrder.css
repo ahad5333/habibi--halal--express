@@ -352,6 +352,12 @@
   animation: ing-pop 0.3s cubic-bezier(.34,1.4,.64,1) both;
 }
 
+.co-canvas-drizzle {
+  position: absolute;
+  pointer-events: none;
+  animation: ing-pop 0.35s cubic-bezier(.34,1.4,.64,1) both;
+}
+
 .co-canvas-sauce-emoji {
   width: 44px;
   height: 44px;

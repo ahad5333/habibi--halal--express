@@ -121,6 +121,40 @@ const getOfflineHandles = async (req, res) => {
   }
 };
 
+const SITE_FIELDS = [
+  'phone_main','phone_tollfree','phone_fax',
+  'email_contact','email_orders',
+  'address_street','address_city','address_state','address_zip',
+  'social_instagram','social_facebook','social_twitter','social_tiktok',
+];
+
+const getSiteSettings = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM site_settings WHERE id=1');
+    res.json(result.rows[0] || {});
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+const updateSiteSettings = async (req, res) => {
+  const allowed = SITE_FIELDS.filter(f => req.body[f] !== undefined);
+  if (!allowed.length) return res.status(400).json({ message: 'No valid fields provided.' });
+
+  const sets = allowed.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const vals = allowed.map(f => req.body[f]);
+
+  try {
+    const result = await pool.query(
+      `UPDATE site_settings SET ${sets}, updated_at = NOW() WHERE id = 1 RETURNING *`,
+      vals
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 module.exports = {
   getPaymentSettings,
   getAdminPaymentSettings,
@@ -129,4 +163,6 @@ module.exports = {
   getOfflineHandles,
   getCheckoutSettings,
   getIntegrationStatus,
+  getSiteSettings,
+  updateSiteSettings,
 };

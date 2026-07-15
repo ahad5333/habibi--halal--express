@@ -207,11 +207,27 @@
 .hiring-image {
   height: 450px;
   border-radius: 12px;
-  background-image: url('/images/staff/hiring.jpg');
-  background-size: cover;
-  background-position: center;
   position: relative;
+  overflow: hidden;
   border: 1px solid var(--color-border);
+  background: #1a1a2e;
+}
+
+.hiring-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  mix-blend-mode: luminosity;
+  opacity: 0.85;
+}
+
+.hiring-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(10,10,30,0.55) 0%, rgba(10,10,30,0.2) 100%);
+  pointer-events: none;
 }
 
 .positions-badge {

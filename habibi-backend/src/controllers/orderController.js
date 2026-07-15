@@ -134,6 +134,7 @@ const createGuestOrder = async (req, res) => {
       table_number: table_number_raw,
       loyalty_points_redeemed: loyalty_points_raw,
       utm_source, utm_medium, utm_campaign, utm_content,
+      is_gift, gift_recipient_name, gift_recipient_phone, gift_message,
     } = req.body;
 
     // Generate order number server-side — never trust client-supplied values
@@ -347,8 +348,9 @@ const createGuestOrder = async (req, res) => {
          delivery_method, delivery_address, delivery_city, delivery_zip,
          delivery_state, delivery_instructions, payment_method,
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
-         coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending')
+         coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
+         is_gift, gift_recipient_name, gift_recipient_phone, gift_message)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28)
        RETURNING id`,
       [
         order_number,
@@ -375,6 +377,10 @@ const createGuestOrder = async (req, res) => {
         table_number,
         loyalty_points_redeemed,
         resolved_user_id,
+        is_gift === true || is_gift === 'true' ? true : false,
+        gift_recipient_name  || null,
+        gift_recipient_phone || null,
+        gift_message         || null,
       ]
     );
 

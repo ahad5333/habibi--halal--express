@@ -22,29 +22,19 @@ const SERVICE_TYPES = [
   { value: 'on-site',   label: 'On-Site Setup', icon: <UtensilsCrossed size={18}/>, desc: 'Full setup at your location' },
 ];
 
-const PRICE_PER_HEAD = (n) => {
-  if (n >= 100) return 12;
-  if (n >= 51)  return 14;
-  if (n >= 31)  return 16;
-  return 18;
-};
-
-const estimateTotal = (guests) => Math.max(200, guests * PRICE_PER_HEAD(guests));
-
-const formatCurrency = (n) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
-
 const STEPS = ['Event Details', 'Your Details', 'Confirmation'];
 
 const initialForm = {
-  event_type:   '',
-  event_date:   '',
-  event_time:   '',
-  guest_count:  20,
-  service_type: 'delivery',
-  name:         '',
-  email:        '',
-  phone:        '',
-  notes:        '',
+  event_type:       '',
+  event_date:       '',
+  event_time:       '',
+  guest_count:      20,
+  service_type:     'delivery',
+  name:             '',
+  email:            '',
+  phone:            '',
+  meal_description: '',
+  notes:            '',
 };
 
 export default function Catering() {
@@ -56,23 +46,24 @@ export default function Catering() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const estimated = estimateTotal(parseInt(form.guest_count) || 20);
-
   const canNext0 = form.event_type && form.event_date && form.guest_count >= 10;
   const canNext1 = form.name.trim() && form.email.trim().includes('@');
 
   const handleSubmit = async () => {
     setSub(true); setError('');
     try {
+      const mealNote = form.meal_description.trim()
+        ? `Meal Description: ${form.meal_description.trim()}\n\n${form.notes.trim()}`
+        : form.notes.trim();
       const payload = {
-        name:         form.name.trim(),
+        full_name:    form.name.trim(),
         email:        form.email.trim(),
         phone:        form.phone.trim(),
         event_type:   form.event_type,
         event_date:   `${form.event_date}T${form.event_time || '12:00'}:00`,
         guest_count:  parseInt(form.guest_count),
         service_type: form.service_type,
-        notes:        form.notes.trim(),
+        notes:        mealNote,
       };
       const res = await fetch(`${API_BASE}/api/reservations/public`, {
         method: 'POST',
@@ -127,19 +118,6 @@ export default function Catering() {
         </div>
       </div>
 
-      {/* Pricing bar */}
-      <div className="cat-pricing-bar">
-        <div className="cat-pricing-inner">
-          <div className="cat-price-tier"><span className="cat-tier-guests">20–30 guests</span><span className="cat-tier-price">$18/person</span></div>
-          <div className="cat-price-divider" />
-          <div className="cat-price-tier"><span className="cat-tier-guests">31–50 guests</span><span className="cat-tier-price">$16/person</span></div>
-          <div className="cat-price-divider" />
-          <div className="cat-price-tier"><span className="cat-tier-guests">51–100 guests</span><span className="cat-tier-price">$14/person</span></div>
-          <div className="cat-price-divider" />
-          <div className="cat-price-tier"><span className="cat-tier-guests">100+ guests</span><span className="cat-tier-price">$12/person</span></div>
-        </div>
-      </div>
-
       {/* Form container */}
       <div className="cat-form-wrap">
 
@@ -158,13 +136,11 @@ export default function Catering() {
           ))}
         </div>
 
-        {/* Live estimate pill */}
+        {/* Guest count pill */}
         {step < 2 && (
           <div className="cat-estimate-pill">
             <Users size={14} />
             <span>{form.guest_count} guests</span>
-            <span className="cat-est-sep">·</span>
-            <span className="cat-est-price">Est. {formatCurrency(estimated)}+</span>
           </div>
         )}
 
@@ -267,11 +243,21 @@ export default function Catering() {
               <input type="email" className="cat-input" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
             </div>
             <div className="cat-field">
-              <label className="cat-label">Special Requirements / Notes</label>
+              <label className="cat-label">Describe the Meal for Each Guest</label>
               <textarea
                 className="cat-input cat-textarea"
-                placeholder="Dietary restrictions, venue address, specific menu requests, setup instructions..."
+                placeholder="e.g. Grilled chicken platter with rice and salad for each guest, vegetarian option for 5 guests, no nuts..."
                 rows={4}
+                value={form.meal_description}
+                onChange={e => set('meal_description', e.target.value)}
+              />
+            </div>
+            <div className="cat-field">
+              <label className="cat-label">Additional Notes <span style={{fontWeight:400,color:'rgba(255,255,255,0.4)',fontSize:'0.78rem'}}>(optional)</span></label>
+              <textarea
+                className="cat-input cat-textarea"
+                placeholder="Dietary restrictions, venue address, setup instructions..."
+                rows={3}
                 value={form.notes}
                 onChange={e => set('notes', e.target.value)}
               />
@@ -293,13 +279,10 @@ export default function Catering() {
               <div className="cat-review-row"><span>Name</span><strong>{form.name}</strong></div>
               <div className="cat-review-row"><span>Email</span><strong>{form.email}</strong></div>
               {form.phone && <div className="cat-review-row"><span>Phone</span><strong>{form.phone}</strong></div>}
-              {form.notes && <div className="cat-review-row"><span>Notes</span><strong>{form.notes}</strong></div>}
+              {form.meal_description && <div className="cat-review-row" style={{gridColumn:'1/-1'}}><span>Meal Description</span><strong>{form.meal_description}</strong></div>}
+              {form.notes && <div className="cat-review-row" style={{gridColumn:'1/-1'}}><span>Additional Notes</span><strong>{form.notes}</strong></div>}
             </div>
-            <div className="cat-estimate-block">
-              <p className="cat-est-label">Starting Estimate</p>
-              <p className="cat-est-total">{formatCurrency(estimated)}</p>
-              <p className="cat-est-note">Final price confirmed after admin review. No payment required now.</p>
-            </div>
+            <p className="cat-est-note" style={{textAlign:'center',marginTop:'1.25rem'}}>Our team will review your request and send a custom quote within 12–24 hours. No payment required now.</p>
             {error && <div className="cat-error">⚠ {error}</div>}
           </div>
         )}

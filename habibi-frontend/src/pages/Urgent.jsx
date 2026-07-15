@@ -136,11 +136,10 @@ const Urgent = () => {
             Get <span className="text-primary">Immediate</span> Help
           </h1>
           <p className="urg-hero-sub">
-            Our emergency concierge team monitors this line 24/7. Average response time under 10 minutes.
+            Our emergency concierge team monitors this line 24/7. Submit your report and we'll be right with you.
           </p>
           <div className="urg-hero-pills">
             <span className="urg-pill"><Clock size={12} /> 24 / 7 Monitoring</span>
-            <span className="urg-pill"><CheckCircle size={12} /> Response &lt; 10 min</span>
           </div>
         </div>
       </section>
@@ -163,9 +162,6 @@ const Urgent = () => {
                   <span className="urg-type-icon" style={{ color: t.color }}>{t.icon}</span>
                   <div className="urg-type-info">
                     <span className="urg-type-label">{t.label}</span>
-                    <span className="urg-type-sla" style={{ color: t.color }}>
-                      <Clock size={10} /> Response: {t.sla}
-                    </span>
                   </div>
                   {t.critical && <span className="urg-critical-dot" />}
                 </button>
@@ -198,7 +194,7 @@ const Urgent = () => {
               <div className="urg-success">
                 <div className="urg-success-icon"><CheckCircle size={44} /></div>
                 <h3>Alert Dispatched</h3>
-                <p>Our team has been notified. A manager will contact you at <strong>{phone}</strong> within {type.sla}.</p>
+                <p>Our team has been notified. A manager will contact you at <strong>{phone}</strong> as soon as possible.</p>
                 <p className="urg-success-ref">Reference: URG-{Date.now().toString().slice(-6)}</p>
                 <button className="btn btn-outline" onClick={() => { setSuccess(false); resetForm(); }}>
                   Submit Another
@@ -216,9 +212,6 @@ const Urgent = () => {
                     <h3 className="urg-form-title">{type.title}</h3>
                     <p className="urg-form-desc">{type.desc}</p>
                   </div>
-                  <span className="urg-sla-tag" style={{ color: type.color, borderColor: type.color + '44', background: type.color + '15' }}>
-                    <Clock size={10} /> {type.sla}
-                  </span>
                 </div>
 
                 {error && <div className="urg-error">⚠ {error}</div>}
@@ -259,9 +252,6 @@ const Urgent = () => {
                   >
                     {loading ? 'Sending Alert...' : `Send Urgent Alert: ${type.label}`}
                   </button>
-                  <p className="urg-submit-note">
-                    <Clock size={11} /> Our team will contact you at the number provided within {type.sla}.
-                  </p>
                 </div>
 
               </form>

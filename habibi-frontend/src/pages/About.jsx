@@ -104,7 +104,7 @@ const COLLAGE = [
 
 const STATS = [
   { num: '2002', label: 'Est.' },
-  { num: '5', label: 'Locations' },
+  { num: 'NYC', label: 'Based & Delivered' },
   { num: '10K+', label: 'Happy Customers' },
   { num: '365', label: 'Days a Year' },
 ];

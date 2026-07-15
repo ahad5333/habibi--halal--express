@@ -1717,3 +1717,106 @@
 @media (max-width: 380px) {
   .upsell-track { grid-auto-columns: calc((100% - 0.5rem) / 1.8); }
 }
+
+/* ── Gift Order ── */
+.gift-order-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(229,182,78,0.06);
+  border: 1px solid rgba(229,182,78,0.22);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  user-select: none;
+}
+.gift-order-toggle:hover {
+  background: rgba(229,182,78,0.1);
+  border-color: rgba(229,182,78,0.4);
+}
+.gift-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.gift-toggle-icon { font-size: 1.4rem; }
+.gift-toggle-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f0ede8;
+  margin: 0;
+}
+.gift-toggle-sub {
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0.1rem 0 0;
+}
+
+/* Toggle switch */
+.gift-toggle-switch {
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  position: relative;
+  transition: background 0.25s, border-color 0.25s;
+}
+.gift-toggle-switch.on {
+  background: #E5B64E;
+  border-color: #E5B64E;
+}
+.gift-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.25s;
+}
+.gift-toggle-switch.on .gift-toggle-knob {
+  transform: translateX(18px);
+}
+
+/* Gift detail panel */
+.gift-order-section {
+  background: rgba(229,182,78,0.04);
+  border: 1px solid rgba(229,182,78,0.18);
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.1rem;
+}
+.gift-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #E5B64E;
+  margin-bottom: 1rem;
+}
+.gift-message-input {
+  resize: vertical;
+  min-height: 72px;
+}
+.gift-char-count {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.3);
+  text-align: right;
+  margin: 0.25rem 0 0;
+}
+.form-label-optional {
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.72rem;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 0.25rem;
+}

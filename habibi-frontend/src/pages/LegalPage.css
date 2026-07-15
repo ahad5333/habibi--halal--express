@@ -1,64 +1,48 @@
 /* ── Shared Legal Page Styles (Health & Safety, Privacy Policy, Terms) ── */
 
-/* Image-based hero — used when a chalk title image is provided */
+/* Image-based hero */
 .legal-hero {
   position: relative;
   width: 100%;
-  height: clamp(220px, 40vw, 480px);
-  overflow: hidden;
   background: #0d0d0d;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  padding: 0 1rem 0;
 }
 
-@media (min-width: 901px) {
-  .legal-hero {
-    height: 75vh;
-    padding: 1.5rem 0;
-  }
-  .legal-hero-img {
-    width: 72%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 12px;
-  }
+.legal-hero picture {
+  display: block;
+  width: 100%;
+  max-width: 860px;
 }
 
 .legal-hero-img {
-  width: 73%;
-  height: 96%;
+  width: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
-  object-position: center center;
-}
-
-@media (max-width: 768px) {
-  .legal-hero {
-    height: clamp(180px, 50vw, 360px);
-  }
-}
-
-@media (max-width: 480px) {
-  .legal-hero {
-    height: clamp(160px, 55vw, 300px);
-  }
+  /* Shift image up to crop the dark empty space at the top */
+  margin-top: -8%;
 }
 
 @media (max-width: 640px) {
   .legal-hero {
-    padding: 0rem 1rem 2.5rem;
+    padding: 0;
+  }
+  .legal-hero-img {
+    margin-top: 0;
   }
 }
 
-/* Gradient fade at the bottom so the hero bleeds into the dark body */
+/* Soft fade at bottom of hero image into page background */
 .legal-hero::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 30%;
+  height: 20%;
   background: linear-gradient(to bottom, transparent, #0d0d0d);
   pointer-events: none;
 }
@@ -83,10 +67,11 @@
 .legal-eyebrow { display: none; }
 .legal-title { display: none; }
 
-/* ── Text-only hero fallback (Privacy Policy — no dedicated image) ── */
+/* ── Text-only hero (all policy pages) ── */
 .legal-hero--text {
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1209 100%);
-  padding: 5rem 1rem 3.5rem;
+  height: auto;
+  background: #0d0d0d;
+  padding: 6rem 1rem 4rem;
   text-align: center;
 }
 .legal-hero--text::after { display: none; }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
@@ -68,6 +68,10 @@ const Checkout = () => {
   const [editingItem,  setEditingItem]          = useState(null); // { item, itemKey } for re-edit modal
   const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
+  const [isGift, setIsGift]                     = useState(false);
+  const [giftRecipientName, setGiftRecipientName] = useState('');
+  const [giftRecipientPhone, setGiftRecipientPhone] = useState('');
+  const [giftMessage, setGiftMessage]           = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
   const [deliveryDuration, setDeliveryDuration] = useState('');
   const [addressValidated, setAddressValidated] = useState(false);
@@ -94,6 +98,7 @@ const Checkout = () => {
   const { isLoggedIn, user } = useAuth();
   const { isDineIn, table: dineInTable } = useDineIn();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const TAX_RATE         = 0.08875;
   const SERVICE_FEE_RATE = 0.04273;
@@ -112,6 +117,11 @@ const Checkout = () => {
       .then(s => setStoreOpen(s.open !== false))
       .catch(() => {}); // fail open — don't block checkout on a network error
   }, []);
+
+  // Auto-enable gift mode when navigating from the Gift Order nav link
+  useEffect(() => {
+    if (searchParams.get('gift') === 'true') setIsGift(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pre-fill contact details + loyalty points for logged-in users
   useEffect(() => {
@@ -339,6 +349,10 @@ const Checkout = () => {
     total:        parseFloat(total.toFixed(2)),
     coupon_code:  couponApplied ? couponCode : null,
     loyalty_points_redeemed: useRewards ? redeemablePts : 0,
+    is_gift:             isGift,
+    gift_recipient_name: isGift ? giftRecipientName : null,
+    gift_recipient_phone: isGift ? giftRecipientPhone : null,
+    gift_message:        isGift ? giftMessage : null,
     expected_time: timing === 'asap'
       ? 'ASAP'
       : `${scheduleDate === 'today' ? 'Today' : 'Tomorrow'} at ${scheduleTime}`,
@@ -602,7 +616,7 @@ const Checkout = () => {
                     const itemKey = item.cartKey ?? item.id;
                     return (
                       <React.Fragment key={itemKey}>
-                        <div className={`cart-item${pendingRemove === itemKey ? ' cart-item--removing' : ''}`}>
+                        <div className="cart-item">
                           {item.bowlLayers?.length ? (
                             <div className="cart-item-bowl-preview">
                               {item.bowlLayers.map((src, li) => (
@@ -907,6 +921,64 @@ const Checkout = () => {
                           <input type="text" className="form-input" placeholder="Gate code, floor, etc." value={driverNote} onChange={e => setDriverNote(e.target.value)} />
                         </div>
                       </div>
+
+                      {/* Gift Order toggle */}
+                      <div className="gift-order-toggle mb-4" onClick={() => setIsGift(g => !g)}>
+                        <div className="gift-toggle-left">
+                          <span className="gift-toggle-icon">🎀</span>
+                          <div>
+                            <p className="gift-toggle-title">This is a Gift Order</p>
+                            <p className="gift-toggle-sub">Send this order as a gift to someone else</p>
+                          </div>
+                        </div>
+                        <div className={`gift-toggle-switch ${isGift ? 'on' : ''}`}>
+                          <div className="gift-toggle-knob" />
+                        </div>
+                      </div>
+
+                      {isGift && (
+                        <div className="gift-order-section mb-6">
+                          <div className="gift-section-header">
+                            <span>🎁</span>
+                            <span>Gift Recipient Details</span>
+                          </div>
+                          <div className="form-row two-col mb-4">
+                            <div className="form-group">
+                              <label className="form-label">RECIPIENT NAME</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Who are you gifting this to?"
+                                value={giftRecipientName}
+                                onChange={e => setGiftRecipientName(e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">RECIPIENT PHONE</label>
+                              <input
+                                type="tel"
+                                className="form-input"
+                                placeholder="(718) 555-0100"
+                                value={giftRecipientPhone}
+                                onChange={e => setGiftRecipientPhone(e.target.value)}
+                                maxLength={15}
+                              />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <textarea
+                              className="form-input gift-message-input"
+                              placeholder="Write a personal message for the recipient…"
+                              value={giftMessage}
+                              onChange={e => setGiftMessage(e.target.value)}
+                              rows={3}
+                              maxLength={300}
+                            />
+                            <p className="gift-char-count">{giftMessage.length}/300</p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                   {deliveryMode === 'pickup' && (
@@ -961,6 +1033,64 @@ const Checkout = () => {
                           <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                         </div>
                       </div>
+
+                      {/* Gift Order toggle (pickup) */}
+                      <div className="gift-order-toggle mb-4" onClick={() => setIsGift(g => !g)}>
+                        <div className="gift-toggle-left">
+                          <span className="gift-toggle-icon">🎀</span>
+                          <div>
+                            <p className="gift-toggle-title">This is a Gift Order</p>
+                            <p className="gift-toggle-sub">Send this order as a gift to someone else</p>
+                          </div>
+                        </div>
+                        <div className={`gift-toggle-switch ${isGift ? 'on' : ''}`}>
+                          <div className="gift-toggle-knob" />
+                        </div>
+                      </div>
+
+                      {isGift && (
+                        <div className="gift-order-section mb-6">
+                          <div className="gift-section-header">
+                            <span>🎁</span>
+                            <span>Gift Recipient Details</span>
+                          </div>
+                          <div className="form-row two-col mb-4">
+                            <div className="form-group">
+                              <label className="form-label">RECIPIENT NAME</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Who are you gifting this to?"
+                                value={giftRecipientName}
+                                onChange={e => setGiftRecipientName(e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">RECIPIENT PHONE</label>
+                              <input
+                                type="tel"
+                                className="form-input"
+                                placeholder="(718) 555-0100"
+                                value={giftRecipientPhone}
+                                onChange={e => setGiftRecipientPhone(e.target.value)}
+                                maxLength={15}
+                              />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <textarea
+                              className="form-input gift-message-input"
+                              placeholder="Write a personal message for the recipient…"
+                              value={giftMessage}
+                              onChange={e => setGiftMessage(e.target.value)}
+                              rows={3}
+                              maxLength={300}
+                            />
+                            <p className="gift-char-count">{giftMessage.length}/300</p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </>

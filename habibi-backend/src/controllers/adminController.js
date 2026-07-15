@@ -73,6 +73,10 @@ const getAllOrders = async (req, res) => {
         driver_instructions: o.delivery_instructions || '',
         notes: '',
         cancellation_reason: '',
+        is_gift: o.is_gift || false,
+        gift_recipient_name:  o.gift_recipient_name  || null,
+        gift_recipient_phone: o.gift_recipient_phone || null,
+        gift_message:         o.gift_message         || null,
         timeline: { received: o.placed_at, accepted: null, prepared: null, picked_up: null, delivered: null }
       };
     });

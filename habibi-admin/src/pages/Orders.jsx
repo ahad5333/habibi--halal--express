@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package, Download } from 'lucide-react';
 
 function exportOrdersCsv(orders) {
-  const header = ['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Delivery', 'Payment', 'Status', 'Date'];
+  const header = ['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Delivery', 'Payment', 'Status', 'Date', 'Gift?', 'Recipient Name', 'Recipient Phone', 'Gift Message'];
   const rows = orders.map(o => [
     o.id,
     o.user_name || '',
@@ -13,6 +13,10 @@ function exportOrdersCsv(orders) {
     o.payment_method || '',
     o.status || '',
     o.created_at ? new Date(o.created_at).toLocaleDateString() : '',
+    o.is_gift ? 'Yes' : 'No',
+    o.gift_recipient_name  || '',
+    o.gift_recipient_phone || '',
+    o.gift_message         || '',
   ]);
   const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -102,7 +106,10 @@ function OrderRow({ order, onUpdate }) {
       <tr className={`order-row ${open ? 'expanded' : ''}`} onClick={() => setOpen(!open)}>
         <td className="mono text-primary" style={{whiteSpace:'nowrap'}}>{order.id}</td>
         <td>
-          <p style={{fontWeight:500}}>{order.user_name}</p>
+          <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
+            <p style={{fontWeight:500}}>{order.user_name}</p>
+            {order.is_gift && <span style={{fontSize:'0.7rem',background:'rgba(229,182,78,0.15)',color:'#E5B64E',border:'1px solid rgba(229,182,78,0.35)',borderRadius:4,padding:'1px 5px',lineHeight:1.4,flexShrink:0}}>🎀 Gift</span>}
+          </div>
           <p className="text-muted" style={{fontSize:'0.7rem'}}>{order.user_phone}</p>
         </td>
         <td style={{maxWidth:180}}>
@@ -159,6 +166,18 @@ function OrderRow({ order, onUpdate }) {
                   {order.driver_instructions && <div><p className="text-muted">Instructions</p><p>{order.driver_instructions}</p></div>}
                 </div>
               </div>
+
+              {/* Gift order info */}
+              {order.is_gift && (
+                <div className="order-detail-section" style={{border:'1px solid rgba(229,182,78,0.3)',borderRadius:8,background:'rgba(229,182,78,0.05)',padding:'0.75rem 1rem'}}>
+                  <p className="order-detail-label" style={{color:'#E5B64E'}}>🎀 GIFT ORDER — RECIPIENT DETAILS</p>
+                  <div className="order-detail-fields">
+                    {order.gift_recipient_name  && <div><p className="text-muted">Recipient Name</p><p style={{fontWeight:600}}>{order.gift_recipient_name}</p></div>}
+                    {order.gift_recipient_phone && <div><p className="text-muted">Recipient Phone</p><a href={`tel:${order.gift_recipient_phone}`} className="text-primary">{order.gift_recipient_phone}</a></div>}
+                    {order.gift_message         && <div style={{gridColumn:'1/-1'}}><p className="text-muted">Gift Message</p><p style={{fontStyle:'italic',color:'rgba(255,255,255,0.75)'}}>{order.gift_message}</p></div>}
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               {nexts.length > 0 && (

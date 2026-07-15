@@ -73,8 +73,9 @@ const CENTER_ITEM = {
   sub: [
     { label: 'Halal Food Delivery',    path: '/order?type=delivery' },
     { label: 'Pickup Order',           path: '/order?type=pickup' },
-    { label: '👥 Group Order',         path: '/group-order', highlight: true },
-    { label: '🎁 Special Offers',      path: '/offers',      highlight: true },
+    { label: '👥 Group Order',         path: '/group-order',      highlight: true },
+    { label: '🎁 Special Offers',      path: '/offers',           highlight: true },
+    { label: '🎀 Gift Order',          path: '/checkout?gift=true', highlight: true },
     { label: 'Catering & Events',      path: '/catering' },
     { label: 'Delivery Coverage Area', path: '/delivery-coverage' },
   ],
@@ -112,6 +113,7 @@ const RIGHT_ITEMS = [
     path: '/contact',
     panel: { bg: 'linear-gradient(160deg,#eff6ff 0%,#bfdbfe 100%)', emoji: '📬', caption: 'We Love Hearing from You' },
     sub: [
+      { label: '📬 Get in Touch', path: '/contact', highlight: true },
       { label: '🚨 Urgent Order Help', path: '/urgent', highlight: true },
       { label: 'Send a Suggestion', path: '/contact?type=suggestion' },
       { label: 'Leave a Comment', path: '/contact?type=comment' },
@@ -278,11 +280,21 @@ const Navbar = () => {
             />
           </Link>
 
-          <img
-            src="/images/logos/halal-cert-round.jpg"
-            alt="Halal Certified"
-            className="navbar-halal-badge"
-          />
+          {/* Center: Halal badge + Order Now badge */}
+          <div className="navbar-center-badges">
+            <img
+              src="/images/logos/halal-certified-premium.webp"
+              alt="Halal Certified"
+              className="navbar-halal-badge"
+            />
+            <Link to="/order" className="navbar-order-badge" title="Order Now">
+              <img
+                src="/images/logos/order-now-badge.webp"
+                alt="Order Now"
+                className="navbar-order-badge-img"
+              />
+            </Link>
+          </div>
 
           <div className="navbar-top-right">
             {isLoggedIn && (
@@ -341,14 +353,13 @@ const Navbar = () => {
                 <span>{serviceLocation.title.split('&')[0].trim()}</span>
               </Link>
             )}
-            <Link to="/customize" className="navbar-customize-btn" title="Build Your Own — mix & match proteins, toppings & sauces">
+            <Link to="/customize" className="navbar-customize-btn" title="Build Your Own">
               <img src="/images/byo/customize-icon.webp" alt="Build Your Own Meal" className="navbar-customize-icon" />
               <span className="navbar-customize-label">
                 <span className="cust-lbl-spark">✦</span>
                 <span className="cust-lbl-text">Build Your Own</span>
                 <span className="cust-lbl-spark">✦</span>
               </span>
-              <span className="cust-lbl-sub">mix &amp; match</span>
             </Link>
 
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">

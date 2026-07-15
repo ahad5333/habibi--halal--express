@@ -106,11 +106,15 @@ function OrderCard({ order, onAdvance, advancing }) {
         }`}>
           {STATUS_ICON[order.status]} {STATUS_LABEL[order.status] || order.status}
         </span>
+        {order.is_gift && <span className="lv-gift-badge">🎀 Gift</span>}
         {isUrgent && <span className="lv-age-warn"><Clock size={11}/> {age}m</span>}
       </div>
 
       <div className="lv-customer">
         <p className="lv-name">{order.user_name}</p>
+        {order.is_gift && order.gift_recipient_name && (
+          <p className="lv-gift-recipient">🎁 To: {order.gift_recipient_name}{order.gift_recipient_phone ? ` · ${order.gift_recipient_phone}` : ''}</p>
+        )}
         <p className="lv-method">{order.delivery_method} · {order.payment_method}</p>
       </div>
 

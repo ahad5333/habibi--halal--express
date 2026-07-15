@@ -643,3 +643,130 @@
   .ct-type-nav { grid-template-columns: repeat(2, 1fr); }
   .ct-type-btn { font-size: 0.72rem; padding: 0.5rem 0.5rem; }
 }
+
+/* ── Company Info Panel ─────────────────────────────────────── */
+.ct-company-info {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ct-company-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ct-company-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.ct-company-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ct-company-block-full {
+  grid-column: 1 / -1;
+}
+
+.ct-company-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ct-company-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 0.2rem;
+}
+
+.ct-company-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+.ct-company-addr:hover { color: var(--color-primary); text-decoration: underline; }
+
+.ct-company-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+.ct-company-val:hover { color: var(--color-primary); }
+a.ct-company-val { color: var(--color-primary); }
+
+.ct-email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.ct-email-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+
+.ct-email-dept {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 150px;
+  flex-shrink: 0;
+}
+
+.ct-email-addr {
+  font-size: 0.82rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.ct-email-addr:hover { text-decoration: underline; }
+
+.ct-company-legal {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  padding: 0.875rem 1rem;
+  background: var(--color-bg);
+  border-left: 3px solid var(--color-border);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.ct-company-cta {
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 560px) {
+  .ct-company-grid { grid-template-columns: 1fr; }
+  .ct-company-info { padding: 1.25rem 1rem; }
+  .ct-email-dept { min-width: 120px; }
+}

@@ -5,6 +5,7 @@ import { menuAPI, favoritesAPI, reviewsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import BuildYourOwn from '../components/BuildYourOwn';
+import MenuItemModal from '../components/MenuItemModal';
 import SEO from '../components/SEO';
 import './Menu.css';
 
@@ -180,6 +181,7 @@ const Menu = () => {
   const [bowlTopping, setBowlTopping] = useState('');
   const [bowlSauce,   setBowlSauce]   = useState('');
   const [byoItem,     setByoItem]     = useState(null);
+  const [modalItemId, setModalItemId] = useState(null);
   const featCarouselRef = useRef(null);
   const [locAvailMap,  setLocAvailMap]  = useState({});
 
@@ -427,7 +429,7 @@ const Menu = () => {
 
   const handleCardClick = item => {
     if (isBYO(item)) { setByoItem(item); return; }
-    navigate(`/menu/item/${item.slug || item.id}`);
+    setModalItemId(item.id);
   };
 
   const handleAddToCart = (item, qty = 1) => {
@@ -540,7 +542,7 @@ const Menu = () => {
             )}
             <button
               className="menu-item-add-btn"
-              onClick={e => { e.stopPropagation(); navigate(`/menu/item/${item.slug || item.id}`); }}
+              onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
               aria-label={`Add ${name}`}
             >
               +
@@ -875,7 +877,7 @@ const Menu = () => {
                         <span className="mf-price">${price.toFixed(2)}</span>
                         <button
                           className="mf-cart-btn"
-                          onClick={e => { e.stopPropagation(); navigate(`/menu/item/${item.slug || item.id}`); }}
+                          onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
                           aria-label={`Add ${name}`}
                         >
                           <ShoppingCart size={15} />
@@ -1128,6 +1130,15 @@ const Menu = () => {
 
       </div>{/* /menu-content */}
       </div>{/* /menu-layout */}
+
+      {/* ── Item modal ────────────────────────────────────── */}
+      {modalItemId && (
+        <MenuItemModal
+          itemId={modalItemId}
+          onClose={() => setModalItemId(null)}
+          onSelectItem={id => setModalItemId(id)}
+        />
+      )}
 
       {/* ── BYO modal ─────────────────────────────────────── */}
       {byoItem && (

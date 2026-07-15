@@ -83,7 +83,10 @@ const SmsTerms = () => (
     />
 
     <div className="legal-hero">
-      <img src="/images/titles/sms-terms-title.jpg" alt="SMS Terms and Conditions — Habibi Halal Express" className="legal-hero-img" />
+      <picture>
+        <source srcSet="/images/titles/sms-terms-title.webp" type="image/webp" />
+        <img src="/images/titles/sms-terms-title.jpg" alt="SMS Terms and Conditions — Habibi Halal Express" className="legal-hero-img" />
+      </picture>
     </div>
     <div className="legal-hero-sub">
       <p className="legal-subtitle">Everything you need to know about our text message program, how it works, how to opt out, and your rights.</p>

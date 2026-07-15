@@ -52,7 +52,10 @@ export default function HealthSafety() {
       />
 
       <div className="legal-hero">
-        <img src="/images/titles/our-standards-title.jpg" alt="Our Standards — Habibi Halal Express" className="legal-hero-img" />
+        <picture>
+          <source srcSet="/images/titles/our-standards-title.webp" type="image/webp" />
+          <img src="/images/titles/our-standards-title.jpg" alt="Our Standards — Habibi Halal Express" className="legal-hero-img" />
+        </picture>
       </div>
       <div className="legal-hero-sub">
         <p className="legal-subtitle">Certified Halal. NYC Health A-Rated. Transparent from farm to table.</p>

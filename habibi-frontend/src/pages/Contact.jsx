@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   MessageSquare, Star, AlertTriangle, Phone, Handshake,
-  Tv, Mail, HelpCircle, CheckCircle, MapPin, ChevronRight
+  Tv, Mail, HelpCircle, CheckCircle, MapPin, ChevronRight,
+  Building2, Printer, PhoneCall, Globe
 } from 'lucide-react';
 import { contactAPI } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 import SEO from '../components/SEO';
 import './Contact.css';
 
@@ -63,7 +65,7 @@ const FORM_TYPES = [
     label: 'Manager Call',
     icon: <Phone size={18} />,
     title: 'Request Manager Callback',
-    desc: 'Need to speak with someone directly? We\'ll call you back within 2 hours.',
+    desc: 'Need to speak with someone directly? Request a callback from our management team.',
     fields: ['name', 'phone', 'email', 'orderNum', 'bestTime', 'message'],
     placeholder: 'Please briefly describe the reason for your call request...',
     urgent: true,
@@ -127,7 +129,12 @@ const StarRating = ({ value, onChange }) => (
 );
 
 const Contact = () => {
-  const [activeType, setActiveType] = useState('suggestion');
+  const settings = useSettings();
+  const [searchParams] = useSearchParams();
+  const [activeType, setActiveType] = useState(() => {
+    const t = searchParams.get('type');
+    return FORM_TYPES.find(f => f.id === t) ? t : null;
+  });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -146,8 +153,19 @@ const Contact = () => {
   const [businessName, setBusiness]   = useState('');
   const [outlet, setOutlet]           = useState('');
 
-  const form = FORM_TYPES.find(f => f.id === activeType);
-  const has = (field) => form.fields.includes(field);
+  useEffect(() => {
+    const t = searchParams.get('type');
+    if (t && FORM_TYPES.find(f => f.id === t)) {
+      setActiveType(t);
+    } else {
+      setActiveType(null);
+    }
+    setSuccess(false);
+    resetForm();
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const form = FORM_TYPES.find(f => f.id === activeType) || null;
+  const has = (field) => form?.fields.includes(field) || false;
 
   const resetForm = () => {
     setName(''); setEmail(''); setPhone(''); setSubject('');
@@ -209,7 +227,6 @@ const Contact = () => {
           <p className="ct-hero-desc">Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.</p>
           <div className="ct-hero-pills">
             <span className="ct-pill"><Phone size={12} /> 24 / 7 Support</span>
-            <span className="ct-pill"><CheckCircle size={12} /> Response in &lt;2 Hours</span>
             <span className="ct-pill"><MapPin size={12} /> Several Locations in NYC</span>
           </div>
         </div>
@@ -245,14 +262,14 @@ const Contact = () => {
               </div>
               <div className="ct-info-card">
                 <p className="ct-info-badge">TOLL-FREE PHONE</p>
-                <a href="tel:+18888875571" className="ct-info-link">
-                  <Phone size={13} /> (888) 887-5571
+                <a href={`tel:+1${settings.phone_tollfree.replace(/\D/g,'')}`} className="ct-info-link">
+                  <Phone size={13} /> {settings.phone_tollfree}
                 </a>
               </div>
               <div className="ct-info-card">
                 <p className="ct-info-badge">CUSTOMER SERVICE</p>
-                <a href="mailto:habibi@habibihe.com" className="ct-info-link">
-                  <Mail size={13} /> habibi@habibihe.com
+                <a href={`mailto:${settings.email_contact}`} className="ct-info-link">
+                  <Mail size={13} /> {settings.email_contact}
                 </a>
               </div>
               <div className="ct-info-card">
@@ -264,7 +281,7 @@ const Contact = () => {
               <div className="ct-info-card">
                 <p className="ct-info-badge">ADDRESS</p>
                 <p className="ct-info-text" style={{ fontSize: '0.8rem', lineHeight: 1.5, color: 'inherit' }}>
-                  2974 Jerome Ave<br />Bronx, NY 10468
+                  {settings.address_street}<br />{settings.address_city}, {settings.address_state} {settings.address_zip}
                 </p>
               </div>
             </div>
@@ -272,13 +289,87 @@ const Contact = () => {
 
           {/* ── Right: form card ── */}
           <div className="ct-form-area">
-            {success ? (
+            {activeType === null ? (
+              /* ── Company Info Panel ── */
+              <div className="ct-company-info">
+                <div className="ct-company-hdr">
+                  <div className="ct-form-icon-ring"><Building2 size={20} /></div>
+                  <div>
+                    <h3 className="ct-form-title">Get in Touch</h3>
+                    <p className="ct-form-desc">Official contact information for Habibi Halal Express, Inc.</p>
+                  </div>
+                </div>
+
+                <div className="ct-company-grid">
+                  {/* Company Name & Address */}
+                  <div className="ct-company-block ct-company-block-full">
+                    <p className="ct-company-label"><Building2 size={13} /> COMPANY</p>
+                    <p className="ct-company-name">Habibi Halal Express, Inc.</p>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(`${settings.address_street} ${settings.address_city} ${settings.address_state} ${settings.address_zip}`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="ct-company-addr"
+                    >
+                      <MapPin size={13} /> {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}
+                    </a>
+                  </div>
+
+                  {/* Phone numbers */}
+                  <div className="ct-company-block">
+                    <p className="ct-company-label"><Phone size={13} /> MAIN PHONE</p>
+                    <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} className="ct-company-val">{settings.phone_main}</a>
+                  </div>
+                  <div className="ct-company-block">
+                    <p className="ct-company-label"><PhoneCall size={13} /> TOLL-FREE</p>
+                    <a href={`tel:+1${settings.phone_tollfree.replace(/\D/g,'')}`} className="ct-company-val">{settings.phone_tollfree}</a>
+                  </div>
+                  <div className="ct-company-block">
+                    <p className="ct-company-label"><Printer size={13} /> FAX</p>
+                    <p className="ct-company-val">{settings.phone_fax}</p>
+                  </div>
+                  <div className="ct-company-block">
+                    <p className="ct-company-label"><Globe size={13} /> WEBSITE</p>
+                    <a href="https://habibihe.com" className="ct-company-val">habibihe.com</a>
+                  </div>
+
+                  {/* Email addresses */}
+                  <div className="ct-company-block ct-company-block-full">
+                    <p className="ct-company-label"><Mail size={13} /> EMAIL DIRECTORY</p>
+                    <div className="ct-email-list">
+                      {[
+                        { dept: 'Customer Service',    addr: 'habibi@habibihe.com' },
+                        { dept: 'Urgent Matters',      addr: 'urgent@habibihe.com' },
+                        { dept: 'Legal & Compliance',  addr: 'admin@habibihe.com' },
+                        { dept: 'Wholesale Accounts',  addr: 'merchant@habibihe.com' },
+                        { dept: 'Media Inquiries',     addr: 'media@habibihe.com' },
+                      ].map(e => (
+                        <div key={e.addr} className="ct-email-row">
+                          <span className="ct-email-dept">{e.dept}</span>
+                          <a href={`mailto:${e.addr}`} className="ct-email-addr">{e.addr}</a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="ct-company-legal">
+                  The contact details above are the official registered particulars of Habibi Halal Express, Inc., a corporation incorporated in the State of New York. This disclosure is provided in compliance with applicable United States consumer protection and e-commerce disclosure laws.
+                </p>
+
+                <div className="ct-company-cta">
+                  <p style={{fontSize:'0.8rem',color:'var(--color-text-muted)',marginBottom:'0.75rem'}}>Need to send us a message? Choose an inquiry type on the left.</p>
+                  <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+                    <a href="/urgent" className="btn btn-danger btn-sm">🚨 Urgent Help</a>
+                    <button className="btn btn-primary btn-sm" onClick={() => handleTypeChange('suggestion')}>Send a Message</button>
+                  </div>
+                </div>
+              </div>
+            ) : success ? (
               <div className="ct-success">
                 <div className="ct-success-icon"><CheckCircle size={40} /></div>
                 <h3 className="ct-success-title">Inquiry Dispatched!</h3>
                 <p className="ct-success-sub">
-                  Our concierge team will respond within{' '}
-                  {form.urgent ? '2 hours' : '24 hours'}.
+                  Our concierge team has received your message and will get back to you soon.
                 </p>
                 <button className="btn btn-outline" onClick={() => { setSuccess(false); resetForm(); }}>
                   Send Another
