@@ -156,7 +156,7 @@ const CO_ING_DB = {
   'chicken-kabab': { src:'/images/byo/ing/chicken-kabab.webp',   z:4, pos:{ hero:[{x:30,y:44,w:30},{x:70,y:44,w:30}], standard:[{x:33,y:44,w:28},{x:67,y:44,w:28}], compact:[{x:36,y:44,w:26},{x:64,y:44,w:26}], wrap:[{x:36,y:44,w:27},{x:64,y:44,w:27}], platter:[{x:36,y:44,w:30},{x:64,y:44,w:30}], familyTray:[{x:34,y:44,w:32},{x:66,y:44,w:32}] } },
   'beef-kabab':    { src:'/images/byo/ing/beef-kabab.webp',      z:4, pos:{ hero:[{x:30,y:44,w:30},{x:70,y:44,w:30}], standard:[{x:33,y:44,w:28},{x:67,y:44,w:28}], compact:[{x:36,y:44,w:26},{x:64,y:44,w:26}], wrap:[{x:36,y:44,w:27},{x:64,y:44,w:27}], platter:[{x:36,y:44,w:30},{x:64,y:44,w:30}], familyTray:[{x:34,y:44,w:32},{x:66,y:44,w:32}] } },
   'philly-steak':  { src:'/images/byo/ing/philly-steak.webp',    z:4, pos:{ hero:[{x:50,y:44,w:62}], standard:[{x:50,y:44,w:52}], compact:[{x:50,y:44,w:48}], wrap:[{x:50,y:44,w:50}], platter:[{x:50,y:44,w:52}],     familyTray:[{x:50,y:44,w:56}] } },
-  falafel:         { src:'/images/byo/ing/falafel.webp',          z:4, pos:{ hero:[{x:27,y:44,w:20},{x:50,y:44,w:20},{x:73,y:44,w:20}], standard:[{x:30,y:44,w:22},{x:50,y:44,w:22},{x:70,y:44,w:22}], compact:[{x:33,y:44,w:20},{x:50,y:44,w:20},{x:67,y:44,w:20}], wrap:[{x:33,y:44,w:21},{x:50,y:44,w:21},{x:67,y:44,w:21}], platter:[{x:34,y:44,w:22},{x:50,y:44,w:22},{x:66,y:44,w:22}], familyTray:[{x:32,y:44,w:24},{x:50,y:44,w:24},{x:68,y:44,w:24}] } },
+  falafel:         { src:'/images/byo/ing/falafel-6.webp', srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ hero:[{x:50,y:44,w:62}], standard:[{x:50,y:44,w:54}], compact:[{x:50,y:44,w:50}], wrap:[{x:50,y:44,w:50}], platter:[{x:50,y:44,w:52}], familyTray:[{x:50,y:44,w:58}] } },
   'fish-fillet':   { src:'/images/byo/ing/fish-fillet.webp',     z:4, pos:{ hero:[{x:50,y:44,w:60}], standard:[{x:50,y:44,w:50}], compact:[{x:50,y:44,w:46}], wrap:[{x:50,y:44,w:48}], platter:[{x:50,y:44,w:50}],     familyTray:[{x:50,y:44,w:54}] } },
   shrimp:          { src:'/images/byo/ing/shrimp.webp',           z:4, pos:{ hero:[{x:27,y:44,w:17,rot:-14},{x:50,y:43,w:17},{x:73,y:44,w:17,rot:14}], standard:[{x:30,y:44,w:18,rot:-11},{x:50,y:43,w:18},{x:70,y:44,w:18,rot:11}], compact:[{x:34,y:44,w:17,rot:-10},{x:50,y:43,w:17},{x:66,y:44,w:17,rot:10}], wrap:[{x:34,y:44,w:17,rot:-12},{x:50,y:43,w:17},{x:66,y:44,w:17,rot:12}], platter:[{x:34,y:44,w:18,rot:-10},{x:50,y:43,w:18},{x:66,y:44,w:18,rot:10}], familyTray:[{x:32,y:44,w:20,rot:-12},{x:50,y:43,w:20},{x:68,y:44,w:20,rot:12}] } },
   tuna:            { src:'/images/byo/ing/tuna.webp',             z:4, pos:{ hero:[{x:50,y:44,w:58}], standard:[{x:50,y:44,w:48}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:48}],     familyTray:[{x:50,y:44,w:52}] } },
@@ -196,7 +196,12 @@ function IngCanvas({ base, cfg, onReset }) {
     if (!def || !family) return;
     const positions = def.pos[family] || def.pos.standard;
     if (!positions) return;
-    positions.forEach(pos => layers.push({ id, def, pos }));
+    let src = def.src;
+    if (def.srcByQty) {
+      const qty = cfg.proteins[id]?.qty || cfg.vegetables[id]?.qty;
+      if (qty && def.srcByQty[qty]) src = def.srcByQty[qty];
+    }
+    positions.forEach(pos => layers.push({ id, def, pos, src }));
   });
   layers.sort((a, b) => (a.def.z || 2) - (b.def.z || 2));
 
@@ -222,10 +227,10 @@ function IngCanvas({ base, cfg, onReset }) {
             />
 
             {/* Ingredient transparent images positioned on base */}
-            {layers.map(({ id, def, pos }, i) => (
+            {layers.map(({ id, def, pos, src }, i) => (
               <img
                 key={`${id}-${i}`}
-                src={def.src}
+                src={src || def.src}
                 alt=""
                 className="co-canvas-ing"
                 style={{
