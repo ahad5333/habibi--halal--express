@@ -65,7 +65,6 @@ const Checkout = () => {
   const [authNetConfig, setAuthNetConfig]   = useState(null);
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
-  const [pendingRemove, setPendingRemove]       = useState(null);
   const [editingItem,  setEditingItem]          = useState(null); // { item, itemKey } for re-edit modal
   const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
@@ -649,22 +648,14 @@ const Checkout = () => {
                               </button>
                             )}
                             <button
-                              className={`cart-delete-btn${pendingRemove === itemKey ? ' cart-delete-btn--pending' : ''}`}
-                              onClick={() => setPendingRemove(pendingRemove === itemKey ? null : itemKey)}
+                              className="cart-delete-btn"
+                              onClick={() => removeItem(itemKey)}
+                              title="Remove item"
                             >
                               <Trash2 size={14} />
                             </button>
                           </div>
                         </div>
-                        {pendingRemove === itemKey && (
-                          <div className="cart-remove-confirm">
-                            <span className="cart-remove-msg">Remove from cart?</span>
-                            <div className="cart-remove-actions">
-                              <button className="cart-remove-yes" onClick={() => { removeItem(itemKey); setPendingRemove(null); }}>Remove</button>
-                              <button className="cart-remove-no" onClick={() => setPendingRemove(null)}>Keep it</button>
-                            </div>
-                          </div>
-                        )}
                         {addons.map((addon, idx) => (
                           <div key={`${itemKey}-addon-${idx}`} className="cart-addon-row">
                             <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>

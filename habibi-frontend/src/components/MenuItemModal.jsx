@@ -89,8 +89,9 @@ export default function MenuItemModal({
   const [suggestions,    setSuggestions]    = useState([]);
   const [universalGroups, setUniversalGroups] = useState([]);
   const [universalSel,   setUniversalSel]  = useState({});
-  const [extrasLookup,   setExtrasLookup]  = useState([]); // for resolving global Make it a Meal! items
-  const [drinksLookup,   setDrinksLookup]  = useState([]); // for resolving global Add a Drink items
+  const [extrasLookup,   setExtrasLookup]  = useState([]); // Extras-category items for modal Make it a Meal! section
+  const [drinksLookup,   setDrinksLookup]  = useState([]); // Drinks-category items for modal Add a Drink section
+  const [broadLookup,    setBroadLookup]   = useState([]); // All items — broader fallback for image resolution
 
   const [choiceSel, setChoiceSel] = useState(initialChoiceSel || {});
   const [addonSel,  setAddonSel]  = useState(initialAddonSel  || {});
@@ -159,6 +160,8 @@ export default function MenuItemModal({
 
         setExtrasLookup(extras.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
         setDrinksLookup(drinks.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
+        // Broad lookup — all items — used as fallback for image resolution when Extras/Drinks lookup misses
+        setBroadLookup(available.slice(0, 400).map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
 
         // Build universal groups — skip any whose title is already covered by a DB addon group
         // (DB groups are authoritative; universal groups fill gaps only)
@@ -382,23 +385,28 @@ export default function MenuItemModal({
       const lookup = agId === 9002 ? extrasLookup : agId === 9003 ? drinksLookup : null;
       if (lookup) {
         // Fuzzy title match: exact → substring → content-keyword overlap (ignoring stop words)
-        const STOP = new Set(['add','extra','with','of','and','the','a','an','your','my','our','as','many','you','want','pieces','piece']);
+        // First tries the category-specific lookup, then falls back to all items for image resolution
+        const STOP = new Set(['add','extra','with','of','and','the','a','an','your','my','our','as','many','you','want','pieces','piece','same','plain']);
         const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
         const contentWords = s => norm(s).split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
+        const fuzzyFind = (pool, n) => {
+          const nNorm = norm(n);
+          const nContent = new Set(contentWords(n));
+          return pool.find(m => norm(m.title) === nNorm)
+            || pool.find(m => nNorm.includes(norm(m.title)) && norm(m.title).length > 3)
+            || pool.find(m => norm(m.title).includes(nNorm) && nNorm.length > 3)
+            || (() => {
+                let best = null, bestScore = 0;
+                pool.forEach(m => {
+                  const score = contentWords(m.title).filter(w => nContent.has(w)).length;
+                  if (score > bestScore) { bestScore = score; best = m; }
+                });
+                return bestScore >= 1 ? best : null;
+              })();
+        };
         const optNorm = norm(name);
-        const optContent = new Set(contentWords(name));
-        let menuItem = lookup.find(m => norm(m.title) === optNorm)
-          || lookup.find(m => optNorm.includes(norm(m.title)) && norm(m.title).length > 3)
-          || lookup.find(m => norm(m.title).includes(optNorm) && optNorm.length > 3)
-          || (() => {
-              // Score by content-word overlap; threshold = 1 meaningful shared word
-              let best = null, bestScore = 0;
-              lookup.forEach(m => {
-                const score = contentWords(m.title).filter(w => optContent.has(w)).length;
-                if (score > bestScore) { bestScore = score; best = m; }
-              });
-              return bestScore >= 1 ? best : null;
-            })();
+        // Try Extras/Drinks lookup first; broaden to all items for image if not found
+        let menuItem = fuzzyFind(lookup, name) || fuzzyFind(broadLookup, name);
 
         // Always create a separate cart item — use real menuId+img if found, synthetic fallback if not
         addonMealCost += price * q;
