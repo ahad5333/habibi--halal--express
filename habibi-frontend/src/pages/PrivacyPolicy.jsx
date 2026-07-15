@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { useSettings } from '../context/SettingsContext';
 import './LegalPage.css';
 
 const sections = [
@@ -76,6 +77,7 @@ const sections = [
 ];
 
 export default function PrivacyPolicy() {
+  const settings = useSettings();
   return (
     <>
       <SEO
@@ -127,9 +129,9 @@ export default function PrivacyPolicy() {
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E5B64E', fontWeight: 700, marginBottom: '1rem' }}>Privacy Questions</p>
             <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8 }}>
               <strong style={{ color: '#fff' }}>Habibi Halal Express, Inc.</strong><br />
-              2974 Jerome Ave, Bronx, NY 10468<br />
-              Email: <a href="mailto:admin@habibihe.com" style={{ color: '#E5B64E' }}>admin@habibihe.com</a><br />
-              Phone: <a href="tel:7184000443" style={{ color: '#E5B64E' }}>(718) 400-0443</a>
+              {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br />
+              Email: <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a><br />
+              Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>
             </p>
           </div>
 

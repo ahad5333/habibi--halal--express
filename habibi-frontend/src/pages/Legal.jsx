@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Shield, Clock, MapPin, Mail, Phone } from 'lucide-react';
 import SEO from '../components/SEO';
 import { DOC_LIST, DOCS } from '../data/legalDocs';
+import { useSettings } from '../context/SettingsContext';
 import './Legal.css';
 
 function Section({ s }) {
@@ -26,6 +27,7 @@ function Section({ s }) {
 
 export default function Legal() {
   const [params, setParams] = useSearchParams();
+  const settings = useSettings();
   const activeId = DOC_LIST.some(d => d.id === params.get('doc')) ? params.get('doc') : 'terms';
   const doc = DOCS[activeId];
 
@@ -76,12 +78,12 @@ export default function Legal() {
             <a href="mailto:habibi@habibihe.com" className="lh-footer-link">
               <Mail size={13} /> habibi@habibihe.com
             </a>
-            <a href="mailto:admin@habibihe.com" className="lh-footer-link">
-              <Mail size={13} /> admin@habibihe.com
+            <a href={`mailto:${settings.email_contact}`} className="lh-footer-link">
+              <Mail size={13} /> {settings.email_contact}
             </a>
 
-            <a href="https://maps.google.com/?q=2974+Jerome+Ave+Bronx+NY" target="_blank" rel="noreferrer" className="lh-footer-link">
-              <MapPin size={13} /> 2974 Jerome Ave, Bronx NY
+            <a href={`https://maps.google.com/?q=${encodeURIComponent(`${settings.address_street} ${settings.address_city} ${settings.address_state}`)}`} target="_blank" rel="noreferrer" className="lh-footer-link">
+              <MapPin size={13} /> {settings.address_street}, {settings.address_city} {settings.address_state}
             </a>
           </div>
         </aside>
@@ -136,14 +138,14 @@ export default function Legal() {
               <p className="lh-contact-label">Contact Information</p>
               <p className="lh-contact-body">
                 <strong>Habibi Halal Express, Inc.</strong><br />
-                2974 Jerome Ave, Bronx, NY 10468<br /><br />
+                {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br /><br />
                 Customer Service: <a href="mailto:habibi@habibihe.com">habibi@habibihe.com</a><br />
                 Urgent Matters: <a href="mailto:urgent@habibihe.com">urgent@habibihe.com</a><br />
-                Legal &amp; Compliance: <a href="mailto:admin@habibihe.com">admin@habibihe.com</a><br />
+                Legal &amp; Compliance: <a href={`mailto:${settings.email_contact}`}>{settings.email_contact}</a><br />
                 Wholesale Accounts: <a href="mailto:merchant@habibihe.com">merchant@habibihe.com</a><br />
                 Media Inquiries: <a href="mailto:media@habibihe.com">media@habibihe.com</a><br /><br />
-                Phone: <a href="tel:7184000443">(718) 400-0443</a><br />
-                Fax: (718) 400-0442
+                Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`}>{settings.phone_main}</a><br />
+                Fax: {settings.phone_fax}
               </p>
             </div>
 

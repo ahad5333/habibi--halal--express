@@ -69,7 +69,7 @@ const restaurantSchema = {
   "image": "https://habibihalalexpress.com/images/logos/logo.png",
   "@id": "https://habibihalalexpress.com",
   "url": "https://habibihalalexpress.com",
-  "telephone": "+1-718-561-0001",
+  "telephone": "+1-718-400-0443",
   "priceRange": "$$",
   "menu": "https://habibihalalexpress.com/menu",
   "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros", "Bergers"],

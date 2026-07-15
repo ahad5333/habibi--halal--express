@@ -22,7 +22,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
   const isCash = method === 'cashapp';
 
   const handle = isZelle
-    ? (info.zelle?.email || 'payments@habibihalal.com')
+    ? (info.zelle?.email || 'payments@habibihe.com')
     : isCash
       ? (info.cashapp?.cashtag || '$HabibiHalal')
       : '';

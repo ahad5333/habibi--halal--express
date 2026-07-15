@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { useSettings } from '../context/SettingsContext';
 import './LegalPage.css';
 
 const sections = [
@@ -122,6 +123,7 @@ const sections = [
 ];
 
 export default function TermsOfService() {
+  const settings = useSettings();
   return (
     <>
       <SEO
@@ -142,7 +144,7 @@ export default function TermsOfService() {
       <section className="section legal-body">
         <div className="container legal-container">
           <p className="legal-intro">
-            These Terms of Service ("Terms") govern your access to and use of the websites, mobile applications, wholesale ordering platforms, products, services, gift card programs, loyalty programs, SMS communications, and related offerings (collectively, the "Services") provided by <strong>Habibi Halal Express, Inc.</strong> By accessing or using any of our Services, you agree to be bound by these Terms. Questions may be directed to <a href="mailto:admin@habibihe.com" style={{ color: '#E5B64E' }}>admin@habibihe.com</a> or <a href="tel:7184000443" style={{ color: '#E5B64E' }}>(718) 400-0443</a>.
+            These Terms of Service ("Terms") govern your access to and use of the websites, mobile applications, wholesale ordering platforms, products, services, gift card programs, loyalty programs, SMS communications, and related offerings (collectively, the "Services") provided by <strong>Habibi Halal Express, Inc.</strong> By accessing or using any of our Services, you agree to be bound by these Terms. Questions may be directed to <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a> or <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>.
           </p>
 
           <div className="legal-sections">
@@ -168,10 +170,10 @@ export default function TermsOfService() {
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E5B64E', fontWeight: 700, marginBottom: '1rem' }}>Contact Information</p>
             <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8 }}>
               <strong style={{ color: '#fff' }}>Habibi Halal Express, Inc.</strong><br />
-              2974 Jerome Ave, Bronx, NY 10468<br />
+              {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br />
               Customer Service: <a href="mailto:habibi@habibihe.com" style={{ color: '#E5B64E' }}>habibi@habibihe.com</a><br />
-              Legal &amp; Compliance: <a href="mailto:admin@habibihe.com" style={{ color: '#E5B64E' }}>admin@habibihe.com</a><br />
-              Phone: <a href="tel:7184000443" style={{ color: '#E5B64E' }}>(718) 400-0443</a>
+              Legal &amp; Compliance: <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a><br />
+              Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>
             </p>
           </div>
 

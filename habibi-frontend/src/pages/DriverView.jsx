@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useSettings } from '../context/SettingsContext';
 import { useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
@@ -140,6 +141,7 @@ function readSession() {
 }
 
 export default function DriverView() {
+  const settings = useSettings();
   // Read session synchronously so the first render already knows auth state
   const [authenticated, setAuthenticated]   = useState(() => !!readSession());
   const [driverId, setDriverId]             = useState(() => readSession()?.driver_id || '');
@@ -1381,7 +1383,7 @@ export default function DriverView() {
               <Navigation size={22}/>
               <span>Maps</span>
             </a>
-            <a className="dv-quick" href="tel:7184000443">
+            <a className="dv-quick" href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`}>
               <Phone size={22}/>
               <span>Call Store</span>
             </a>
@@ -1627,12 +1629,12 @@ export default function DriverView() {
           </div>
 
           {/* Call restaurant */}
-          <a href="tel:7184000443" className="dv-restaurant-call">
+          <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} className="dv-restaurant-call">
             <div className="dv-restaurant-call-left">
               <div className="dv-restaurant-call-icon"><Phone size={15}/></div>
               <div>
                 <span className="dv-restaurant-call-label">Call Restaurant</span>
-                <span className="dv-restaurant-call-num">(718) 400-0443</span>
+                <span className="dv-restaurant-call-num">{settings.phone_main}</span>
               </div>
             </div>
             <span className="dv-restaurant-call-hint">Issue with order?</span>

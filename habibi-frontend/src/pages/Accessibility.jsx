@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { useSettings } from '../context/SettingsContext';
 import './LegalPage.css';
 
-const Accessibility = () => (
+const Accessibility = () => {
+  const settings = useSettings();
+  return (
   <>
     <SEO
       title="Accessibility Statement — Habibi Halal Express"
@@ -81,9 +84,9 @@ const Accessibility = () => (
             </p>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', lineHeight: 1.8 }}>
               <strong style={{ color: '#fff' }}>Habibi Halal Express, Inc.</strong><br />
-              2974 Jerome Ave, Bronx, NY 10468<br />
-              Email: <a href="mailto:admin@habibihe.com" style={{ color: '#E5B64E' }}>admin@habibihe.com</a><br />
-              Phone: <a href="tel:7184000443" style={{ color: '#E5B64E' }}>(718) 400-0443</a>
+              {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br />
+              Email: <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a><br />
+              Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>
             </p>
           </div>
         </div>
@@ -98,6 +101,7 @@ const Accessibility = () => (
       </div>
     </div>
   </>
-);
+  );
+};
 
 export default Accessibility;
