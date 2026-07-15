@@ -148,14 +148,14 @@ export default function MenuItemModal({
         // Build extras/drinks lookup tables (for resolving DB global group selections to real menu items)
         const extras = available
           .filter(m => (m.category || '').toLowerCase().includes('extra') && m.id !== itemData?.id)
-          .slice(0, 20);
+          .slice(0, 60);
         const drinks = available
           .filter(m =>
             ((m.category || '').toLowerCase().includes('drink') ||
              (m.category || '').toLowerCase().includes('beverage')) &&
             m.id !== itemData?.id
           )
-          .slice(0, 20);
+          .slice(0, 60);
 
         setExtrasLookup(extras.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
         setDrinksLookup(drinks.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
@@ -381,20 +381,23 @@ export default function MenuItemModal({
 
       const lookup = agId === 9002 ? extrasLookup : agId === 9003 ? drinksLookup : null;
       if (lookup) {
-        // Fuzzy title match: exact → substring → keyword overlap
+        // Fuzzy title match: exact → substring → content-keyword overlap (ignoring stop words)
+        const STOP = new Set(['add','extra','with','of','and','the','a','an','your','my','our','as','many','you','want','pieces','piece']);
         const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+        const contentWords = s => norm(s).split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
         const optNorm = norm(name);
+        const optContent = new Set(contentWords(name));
         let menuItem = lookup.find(m => norm(m.title) === optNorm)
           || lookup.find(m => optNorm.includes(norm(m.title)) && norm(m.title).length > 3)
           || lookup.find(m => norm(m.title).includes(optNorm) && optNorm.length > 3)
           || (() => {
-              const optWords = new Set(optNorm.split(/\s+/).filter(w => w.length > 2));
-              let best = null, bestScore = 1;
+              // Score by content-word overlap; threshold = 1 meaningful shared word
+              let best = null, bestScore = 0;
               lookup.forEach(m => {
-                const score = norm(m.title).split(/\s+/).filter(w => optWords.has(w)).length;
+                const score = contentWords(m.title).filter(w => optContent.has(w)).length;
                 if (score > bestScore) { bestScore = score; best = m; }
               });
-              return best;
+              return bestScore >= 1 ? best : null;
             })();
 
         // Always create a separate cart item — use real menuId+img if found, synthetic fallback if not
