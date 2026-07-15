@@ -617,7 +617,12 @@ const Checkout = () => {
                               ))}
                             </div>
                           ) : (
-                            <img src={item.img || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=200'} alt={item.name} className="cart-item-img" />
+                            <img
+                              src={item.img || getFoodPhoto(item.id)}
+                              alt={item.name}
+                              className="cart-item-img"
+                              onError={e => { e.target.onerror = null; e.target.src = getFoodPhoto(item.id); }}
+                            />
                           )}
                           <div className="cart-item-info">
                             <h4 className="cart-item-name">{item.name}</h4>
