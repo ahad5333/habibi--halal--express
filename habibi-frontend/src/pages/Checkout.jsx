@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock, ChevronDown } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
+import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
@@ -65,6 +66,7 @@ const Checkout = () => {
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [pendingRemove, setPendingRemove]       = useState(null);
+  const [editingItem,  setEditingItem]          = useState(null); // { item, itemKey } for re-edit modal
   const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
@@ -539,6 +541,7 @@ const Checkout = () => {
   };
 
   return (
+    <>
     <div className="checkout-page">
       <div className="container checkout-container py-12">
 
@@ -630,6 +633,16 @@ const Checkout = () => {
                               <button onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
+                            {/* Edit button — only for standard modal items (not BYO bowls, custom orders, or child items) */}
+                            {!item.bowlLayers && !item.customLayers && !item.parentCartKey && (
+                              <button
+                                className="cart-edit-btn"
+                                onClick={() => setEditingItem({ item, itemKey })}
+                                title="Edit item"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                            )}
                             <button
                               className={`cart-delete-btn${pendingRemove === itemKey ? ' cart-delete-btn--pending' : ''}`}
                               onClick={() => setPendingRemove(pendingRemove === itemKey ? null : itemKey)}
@@ -1416,6 +1429,22 @@ const Checkout = () => {
         </div>
       )}
     </div>
+
+    {/* Re-edit modal — opens when user clicks the pencil icon on a cart item */}
+    {editingItem && (
+      <MenuItemModal
+        itemId={editingItem.item.id}
+        editCartKey={editingItem.itemKey}
+        initialChoiceSel={editingItem.item.selectedChoices   || {}}
+        initialAddonSel={editingItem.item.selectedAddons     || {}}
+        initialUniversalSel={editingItem.item.selectedUniversal || {}}
+        initialNote={editingItem.item.note || ''}
+        initialQty={editingItem.item.qty   || 1}
+        onClose={() => setEditingItem(null)}
+        onSelectItem={() => setEditingItem(null)}
+      />
+    )}
+    </>
   );
 };
 

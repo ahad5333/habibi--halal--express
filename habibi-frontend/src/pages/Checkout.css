@@ -403,6 +403,24 @@
   font-weight: 600;
 }
 
+.cart-edit-btn {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 0.3rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-edit-btn:hover {
+  color: #f97316;
+  background: rgba(249,115,22,0.08);
+  border-color: rgba(249,115,22,0.25);
+}
+
 .cart-delete-btn {
   background: transparent;
   color: var(--color-text-muted);

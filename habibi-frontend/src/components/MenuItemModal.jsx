@@ -68,8 +68,19 @@ const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg
 const toWebp = url =>
   url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
-export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
-  const { addItem } = useCart();
+export default function MenuItemModal({
+  itemId,
+  onClose,
+  onSelectItem,
+  // Edit-mode props — when set, the modal pre-fills with existing selections and replaces the cart item
+  editCartKey      = null,
+  initialChoiceSel = null,
+  initialAddonSel  = null,
+  initialUniversalSel = null,
+  initialNote      = '',
+  initialQty       = 1,
+}) {
+  const { addItem, removeItem } = useCart();
   const { isLoggedIn } = useAuth();
 
   const [item,           setItem]           = useState(null);
@@ -81,10 +92,10 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const [extrasLookup,   setExtrasLookup]  = useState([]); // for resolving global Make it a Meal! items
   const [drinksLookup,   setDrinksLookup]  = useState([]); // for resolving global Add a Drink items
 
-  const [choiceSel, setChoiceSel] = useState({});
-  const [addonSel,  setAddonSel]  = useState({});
-  const [note,      setNote]      = useState('');
-  const [qty,       setQty]       = useState(1);
+  const [choiceSel, setChoiceSel] = useState(initialChoiceSel || {});
+  const [addonSel,  setAddonSel]  = useState(initialAddonSel  || {});
+  const [note,      setNote]      = useState(initialNote || '');
+  const [qty,       setQty]       = useState(initialQty  || 1);
   const [isFav,     setIsFav]     = useState(false);
   const [added,     setAdded]     = useState(false);
 
@@ -98,7 +109,13 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   useEffect(() => {
     if (!itemId) return;
     setLoading(true);
-    setChoiceSel({}); setAddonSel({}); setUniversalSel({}); setNote(''); setQty(1); setAdded(false);
+    // In edit mode pre-fill from saved state; for a fresh open reset to empty/defaults
+    setChoiceSel(initialChoiceSel || {});
+    setAddonSel(initialAddonSel   || {});
+    setUniversalSel(initialUniversalSel || {});
+    setNote(initialNote || '');
+    setQty(initialQty   || 1);
+    setAdded(false);
     setQuotaSel({}); setMoreTacosSel({}); setQuotaError('');
 
     Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId), menuAPI.getAll()])
@@ -431,6 +448,11 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
       ? `${item.id}-${JSON.stringify(choiceSel)}`
       : undefined;
 
+    // In edit mode: remove the old item (and its children) before re-adding
+    if (editCartKey) removeItem(editCartKey);
+
+    const parentKey = cartKey ?? item.id;
+
     addItem({
       id:            item.id,
       cartKey,
@@ -443,14 +465,15 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
       note:          note.trim(),
       choiceLabels,
       qty,
-      selectedChoices: choiceSel,
-      selectedAddons:  addonSel,
+      selectedChoices:  choiceSel,
+      selectedAddons:   addonSel,
+      selectedUniversal: universalSel,
     });
 
-    // Universal Make it a Meal! / Add a Drink → separate cart entries
-    mealDrinkCartItems.forEach(mi => addItem(mi));
+    // Universal Make it a Meal! / Add a Drink → separate cart entries (tagged with parentCartKey)
+    mealDrinkCartItems.forEach(mi => addItem({ ...mi, parentCartKey: parentKey }));
     // DB global group Make it a Meal!(9002) / Add a Drink(9003) → separate cart entries
-    addonMealItems.forEach(mi => addItem(mi));
+    addonMealItems.forEach(mi => addItem({ ...mi, parentCartKey: parentKey }));
 
     setAdded(true);
     setTimeout(() => { setAdded(false); onClose(); }, 1400);
@@ -887,7 +910,11 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                     onClick={handleAdd}
                     disabled={missingRequired || added}
                   >
-                    {added ? '✓ Added to Cart!' : `Add to Cart · $${total.toFixed(2)}`}
+                    {added
+                      ? (editCartKey ? '✓ Cart Updated!' : '✓ Added to Cart!')
+                      : editCartKey
+                      ? `Update Cart · $${total.toFixed(2)}`
+                      : `Add to Cart · $${total.toFixed(2)}`}
                   </button>
                 </div>
               </>

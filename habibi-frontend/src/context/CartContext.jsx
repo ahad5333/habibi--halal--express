@@ -89,7 +89,8 @@ export function CartProvider({ children }) {
   }, []);
 
   const removeItem = (key) => {
-    const updated = items.filter(i => (i.cartKey ?? i.id) !== key);
+    // Also remove any child items that were spawned from this item (e.g. Make it a Meal! extras)
+    const updated = items.filter(i => (i.cartKey ?? i.id) !== key && i.parentCartKey !== key);
     persist(updated);
   };
 
