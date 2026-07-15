@@ -78,6 +78,8 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const [suggestions,    setSuggestions]    = useState([]);
   const [universalGroups, setUniversalGroups] = useState([]);
   const [universalSel,   setUniversalSel]  = useState({});
+  const [extrasLookup,   setExtrasLookup]  = useState([]); // for resolving global Make it a Meal! items
+  const [drinksLookup,   setDrinksLookup]  = useState([]); // for resolving global Add a Drink items
 
   const [choiceSel, setChoiceSel] = useState({});
   const [addonSel,  setAddonSel]  = useState({});
@@ -126,13 +128,29 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
           .slice(0, 6);
         setSuggestions(related);
 
-        // Build universal groups (Sauces always first, then Meal, then Drink)
-        const uGroups = [UNIVERSAL_SAUCES];
-
+        // Build extras/drinks lookup tables (for resolving DB global group selections to real menu items)
         const extras = available
           .filter(m => (m.category || '').toLowerCase().includes('extra') && m.id !== itemData?.id)
-          .slice(0, 10);
-        if (extras.length > 0 && !itemCat.includes('extra')) {
+          .slice(0, 20);
+        const drinks = available
+          .filter(m =>
+            ((m.category || '').toLowerCase().includes('drink') ||
+             (m.category || '').toLowerCase().includes('beverage')) &&
+            m.id !== itemData?.id
+          )
+          .slice(0, 20);
+
+        setExtrasLookup(extras.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
+        setDrinksLookup(drinks.map(m => ({ menuId: m.id, title: m.name || m.title, price: parseFloat(m.price || 0), img: m.image || m.image_url, category: m.category })));
+
+        // Build universal groups — skip any whose title is already covered by a DB addon group
+        // (DB groups are authoritative; universal groups fill gaps only)
+        const dbAddonTitles = new Set((safeMods.addon_groups || []).map(ag => (ag.title || '').toLowerCase()));
+        const uGroups = [];
+
+        if (!dbAddonTitles.has('sauces')) uGroups.push(UNIVERSAL_SAUCES);
+
+        if (!dbAddonTitles.has('make it a meal!') && extras.length > 0 && !itemCat.includes('extra')) {
           uGroups.push({
             id: '__meal__',
             title: 'Make it a Meal!',
@@ -147,14 +165,7 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
           });
         }
 
-        const drinks = available
-          .filter(m =>
-            ((m.category || '').toLowerCase().includes('drink') ||
-             (m.category || '').toLowerCase().includes('beverage')) &&
-            m.id !== itemData?.id
-          )
-          .slice(0, 10);
-        if (drinks.length > 0 && !itemCat.includes('drink') && !itemCat.includes('beverage')) {
+        if (!dbAddonTitles.has('add a drink') && drinks.length > 0 && !itemCat.includes('drink') && !itemCat.includes('beverage')) {
           uGroups.push({
             id: '__drink__',
             title: 'Add a Drink',
@@ -237,10 +248,24 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
   const total = unitPrice * qty;
 
   /* ── Addon helpers (DB groups) ── */
-  const toggleAddon = optId => {
+  const toggleAddon = (optId, ag) => {
     setAddonSel(prev => {
-      if (prev[optId]) { const n = { ...prev }; delete n[optId]; return n; }
-      return { ...prev, [optId]: 1 };
+      const next = { ...prev };
+      if (prev[optId]) {
+        delete next[optId];
+      } else {
+        const selectedOpt = (ag?.options || []).find(o => o.id === optId);
+        if (selectedOpt?.title === 'No Sauce') {
+          // Selecting "No Sauce" clears all other options in this group
+          (ag.options || []).forEach(o => { delete next[o.id]; });
+        } else {
+          // Selecting any sauce clears "No Sauce" if it was active
+          const noSauceOpt = (ag?.options || []).find(o => o.title === 'No Sauce');
+          if (noSauceOpt && next[noSauceOpt.id]) delete next[noSauceOpt.id];
+        }
+        next[optId] = 1;
+      }
+      return next;
     });
   };
   const adjustAddonQty = (optId, delta) => {
@@ -315,22 +340,54 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
     }
 
     // Normal item — build choice labels separately from user note
+    // Filter out degenerate labels where the option title equals the item name
     const choiceLabels = (modifiers.choice_groups || [])
       .map(cg => {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
-        return opt ? `${cg.title}: ${opt.title}` : null;
+        if (!opt || opt.title === cleanName) return null;
+        return cg.title ? `${cg.title}: ${opt.title}` : opt.title;
       }).filter(Boolean);
 
-    const addonsList = Object.entries(addonSel)
-      .filter(([, q]) => q > 0)
-      .map(([optId, q]) => {
-        let name = '', price = 0;
-        (modifiers.addon_groups || []).forEach(ag => {
-          const opt = ag.options?.find(o => o.id === parseInt(optId));
-          if (opt) { name = opt.title; price = parseFloat(opt.price || 0); }
-        });
-        return { name, price, qty: q };
-      }).filter(a => a.name);
+    // Process DB addon selections — detect global Make it a Meal!(9002) / Add a Drink(9003)
+    // groups and route them to separate cart items instead of sub-addon rows
+    let addonMealCost = 0;
+    const addonMealItems = [];
+    const addonsList = [];
+
+    Object.entries(addonSel).filter(([, q]) => q > 0).forEach(([optId, q]) => {
+      let name = '', price = 0, agId = null;
+      (modifiers.addon_groups || []).forEach(ag => {
+        const opt = ag.options?.find(o => o.id === parseInt(optId));
+        if (opt) { name = opt.title; price = parseFloat(opt.price || 0); agId = ag.id; }
+      });
+      if (!name) return;
+
+      const lookup = agId === 9002 ? extrasLookup : agId === 9003 ? drinksLookup : null;
+      if (lookup) {
+        const menuItem = lookup.find(m => m.title.toLowerCase() === name.toLowerCase());
+        if (menuItem?.menuId) {
+          addonMealCost += price * q;
+          addonMealItems.push({
+            id:            menuItem.menuId,
+            name:          menuItem.title,
+            price:         parseFloat(menuItem.price || price),
+            baseItemPrice: parseFloat(menuItem.price || price),
+            addons:        [],
+            img:           menuItem.img || categoryFallback({ category: menuItem.category }),
+            tag:           menuItem.category || 'Extras',
+            note:          '',
+            choiceLabels:  [],
+            qty:           q,
+            selectedChoices: {},
+            selectedAddons:  {},
+          });
+        } else {
+          addonsList.push({ name, price, qty: q });
+        }
+      } else {
+        addonsList.push({ name, price, qty: q });
+      }
+    });
 
     // Sauce & More Meat stay as sub-row addons; Make it a Meal! / Add a Drink become separate cart items
     const sauceAndMeatAddons = [];
@@ -378,7 +435,7 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
       id:            item.id,
       cartKey,
       name:          cleanName,
-      price:         unitPrice - mealDrinkCost,
+      price:         unitPrice - mealDrinkCost - addonMealCost,
       baseItemPrice: basePrice + choiceExtra,
       addons:        [...addonsList, ...sauceAndMeatAddons],
       img:           item.image || item.image_url || categoryFallback(item),
@@ -390,8 +447,10 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
       selectedAddons:  addonSel,
     });
 
-    // Each Make it a Meal! / Add a Drink item becomes its own cart entry
+    // Universal Make it a Meal! / Add a Drink → separate cart entries
     mealDrinkCartItems.forEach(mi => addItem(mi));
+    // DB global group Make it a Meal!(9002) / Add a Drink(9003) → separate cart entries
+    addonMealItems.forEach(mi => addItem(mi));
 
     setAdded(true);
     setTimeout(() => { setAdded(false); onClose(); }, 1400);
@@ -689,7 +748,7 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
                           <div
                             key={opt.id}
                             className={`mim-addon-row${checked ? ' sel' : ''}`}
-                            onClick={() => toggleAddon(opt.id)}
+                            onClick={() => toggleAddon(opt.id, ag)}
                             role="checkbox"
                             aria-checked={checked}
                           >
