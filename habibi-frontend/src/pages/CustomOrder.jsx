@@ -994,6 +994,12 @@ export default function CustomOrder() {
           {/* 1 — BASE */}
           <Section id="base" title="Choose Your Base" icon="🍞"
             badge={badges.base} open={open.has('base')} onToggle={toggleSection}>
+            {cfg.base && (
+              <div className="co-base-preview">
+                <div className="co-base-preview-img" style={{ backgroundImage: `url(${cfg.base.img})` }} />
+                <span className="co-base-preview-label">{cfg.base.label}</span>
+              </div>
+            )}
             <div className="co-base-grid">
               {BASES.map(base => (
                 <button
@@ -1001,7 +1007,6 @@ export default function CustomOrder() {
                   className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}${isBaseExcluded(base.id) ? ' co-filtered' : ''}`}
                   onClick={() => !isBaseExcluded(base.id) && setBase(base)}
                 >
-                  <div className="co-base-img" style={{ backgroundImage: `url(${base.img})` }} />
                   <div className="co-base-info">
                     <span className="co-base-name">{base.label}</span>
                     <span className="co-base-price">${base.price.toFixed(2)}</span>
