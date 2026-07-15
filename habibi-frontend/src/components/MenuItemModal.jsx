@@ -381,26 +381,39 @@ export default function MenuItemModal({
 
       const lookup = agId === 9002 ? extrasLookup : agId === 9003 ? drinksLookup : null;
       if (lookup) {
-        const menuItem = lookup.find(m => m.title.toLowerCase() === name.toLowerCase());
-        if (menuItem?.menuId) {
-          addonMealCost += price * q;
-          addonMealItems.push({
-            id:            menuItem.menuId,
-            name:          menuItem.title,
-            price:         parseFloat(menuItem.price || price),
-            baseItemPrice: parseFloat(menuItem.price || price),
-            addons:        [],
-            img:           menuItem.img || fallbackImg(menuItem.menuId),
-            tag:           menuItem.category || 'Extras',
-            note:          '',
-            choiceLabels:  [],
-            qty:           q,
-            selectedChoices: {},
-            selectedAddons:  {},
-          });
-        } else {
-          addonsList.push({ name, price, qty: q });
-        }
+        // Fuzzy title match: exact → substring → keyword overlap
+        const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+        const optNorm = norm(name);
+        let menuItem = lookup.find(m => norm(m.title) === optNorm)
+          || lookup.find(m => optNorm.includes(norm(m.title)) && norm(m.title).length > 3)
+          || lookup.find(m => norm(m.title).includes(optNorm) && optNorm.length > 3)
+          || (() => {
+              const optWords = new Set(optNorm.split(/\s+/).filter(w => w.length > 2));
+              let best = null, bestScore = 1;
+              lookup.forEach(m => {
+                const score = norm(m.title).split(/\s+/).filter(w => optWords.has(w)).length;
+                if (score > bestScore) { bestScore = score; best = m; }
+              });
+              return best;
+            })();
+
+        // Always create a separate cart item — use real menuId+img if found, synthetic fallback if not
+        addonMealCost += price * q;
+        addonMealItems.push({
+          id:            menuItem?.menuId ?? (90000 + parseInt(optId)),
+          cartKey:       `addon-${agId}-${optId}`,
+          name:          menuItem?.title ?? name,
+          price:         parseFloat(menuItem?.price ?? price),
+          baseItemPrice: parseFloat(menuItem?.price ?? price),
+          addons:        [],
+          img:           menuItem?.img || fallbackImg(menuItem?.menuId ?? parseInt(optId)),
+          tag:           menuItem?.category || 'Extras',
+          note:          '',
+          choiceLabels:  [],
+          qty:           q,
+          selectedChoices: {},
+          selectedAddons:  {},
+        });
       } else {
         addonsList.push({ name, price, qty: q });
       }
