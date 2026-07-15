@@ -363,7 +363,7 @@ const Navbar = () => {
             </Link>
 
             <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
-              <ShoppingBag size={20} />
+              <ShoppingBag size={24} />
               {totalItems > 0 && (
                 <span className="cart-badge">{totalItems > 9 ? '9+' : totalItems}</span>
               )}
@@ -405,7 +405,7 @@ const Navbar = () => {
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
-              {mobileOpen ? <X size={22} /> : <MenuIcon size={22} />}
+              {mobileOpen ? <X size={26} /> : <MenuIcon size={26} />}
             </button>
           </div>
         </div>
