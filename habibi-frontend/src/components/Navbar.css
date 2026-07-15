@@ -335,7 +335,7 @@
 .navbar-top-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.35rem;
   justify-self: end;
   min-width: 0; /* let grid column shrink */
 }
@@ -369,8 +369,8 @@
   /* Hide text labels on mobile — keep icons only to save space */
   .navbar-customize-label { display: none; }
   .user-greeting { display: none; }
-  /* Tighten gap so icons don't overflow the right column */
-  .navbar-top-right { gap: 0.4rem; }
+  /* Enough gap to breathe but not overflow the right column */
+  .navbar-top-right { gap: 0.65rem; }
 }
 
 /* Cart / Bell */
@@ -1129,20 +1129,20 @@
   .logo-img { width: auto; max-width: 155px; }
   .navbar-top-inner { padding: 0.5rem 0.75rem; gap: 0.3rem; }
   .navbar-halal-badge { width: 44px; height: 44px; }
-  .navbar-top-right { gap: 0.35rem; }
+  .navbar-top-right { gap: 0.55rem; }
 }
 
 @media (max-width: 400px) {
   .logo-img { width: auto; max-width: 140px; }
   .navbar-top-inner { padding: 0.45rem 0.65rem; gap: 0.25rem; }
   .navbar-halal-badge { width: 40px; height: 40px; }
-  .navbar-top-right { gap: 0.3rem; }
+  .navbar-top-right { gap: 0.45rem; }
 }
 
 @media (max-width: 360px) {
   .logo-img { width: auto; max-width: 125px; }
   .navbar-top-inner { padding: 0.4rem 0.55rem; gap: 0.2rem; }
   .navbar-halal-badge { width: 36px; height: 36px; }
-  .navbar-top-right { gap: 0.25rem; }
+  .navbar-top-right { gap: 0.4rem; }
   .mobile-auth-row { padding: 1rem; gap: 0.5rem; }
 }
