@@ -423,9 +423,6 @@ export default function CustomOrder() {
   const VEG_EXCLUDED   = new Set(['chicken','lamb-gyro','mix','hotdog','bacon','hot-sausage','italian-sausage','turkey','chicken-kabab','beef-kabab','philly-steak','fish-fillet','shrimp','tuna','beef-burger','chicken-burger']);
   const DAIRY_CHEESES  = new Set(['american','cream','butter']);
   const DAIRY_SAUCES   = new Set(['blue']);
-  const GLUTEN_BASES   = new Set(['39a','39b','39c','39d','39e','39f','39g','39h']);
-
-  const isBaseExcluded    = id => dietFilters.has('glutenFree')  && GLUTEN_BASES.has(id);
   const isProteinExcluded = id => dietFilters.has('vegetarian')  && VEG_EXCLUDED.has(id);
   const isCheeseExcluded  = id => dietFilters.has('dairyFree')   && DAIRY_CHEESES.has(id);
   const isSauceExcluded   = id => dietFilters.has('dairyFree')   && DAIRY_SAUCES.has(id);
@@ -449,9 +446,6 @@ export default function CustomOrder() {
           cheese: DAIRY_CHEESES.has(p.cheese.type) ? { type: 'none', qty: 'regular' } : p.cheese,
           sauces: Object.fromEntries(Object.entries(p.sauces).filter(([id]) => !DAIRY_SAUCES.has(id))),
         }));
-      }
-      if (key === 'glutenFree') {
-        setCfg(p => GLUTEN_BASES.has(p.base?.id) ? { ...p, base: null } : p);
       }
       return next;
     });
@@ -966,7 +960,6 @@ export default function CustomOrder() {
             {[
               { key: 'vegetarian', label: 'Vegetarian',  emoji: '🥗' },
               { key: 'dairyFree',  label: 'Dairy-Free',  emoji: '🥛' },
-              { key: 'glutenFree', label: 'Gluten-Free', emoji: '🌾' },
             ].map(({ key, label, emoji }) => (
               <button
                 key={key}
@@ -1009,8 +1002,8 @@ export default function CustomOrder() {
               {BASES.map(base => (
                 <button
                   key={base.id}
-                  className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}${isBaseExcluded(base.id) ? ' co-filtered' : ''}`}
-                  onClick={() => !isBaseExcluded(base.id) && setBase(base)}
+                  className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}`}
+                  onClick={() => setBase(base)}
                 >
                   <div className="co-base-info">
                     <span className="co-base-name">{base.label}</span>
