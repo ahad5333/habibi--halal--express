@@ -59,7 +59,7 @@ const PROTEIN_OPTS = [
   { id: 'chicken-kabab',   label: 'Chicken Shish Kabab',   price: 3.00, qtyType: 'single-triple', emoji: '🍢', img: '/images/byo/ing/chicken-kabab.webp'   },
   { id: 'beef-kabab',      label: 'Beef Shish Kabab',      price: 4.00, qtyType: 'single-triple', emoji: '🍢', img: '/images/byo/ing/beef-kabab.webp'      },
   { id: 'philly-steak',    label: 'Philly Steak',          price: 6.00, qtyType: 'single-double', emoji: '🥩', img: '/images/byo/ing/philly-steak.webp'    },
-  { id: 'falafel',         label: 'Falafel',               price: 6.00, qtyType: 'low-extra',     emoji: '🧆', img: '/images/byo/ing/falafel.webp'  },
+  { id: 'falafel',         label: 'Falafel',               price: 6.00, qtyType: 'low-extra',     emoji: '🧆', img: '/images/byo/ing/falafel-6.webp', imgByQty: { low: '/images/byo/ing/falafel-3.webp', regular: '/images/byo/ing/falafel-6.webp', extra: '/images/byo/ing/falafel-9.webp', double: '/images/byo/ing/falafel-12.webp' } },
   { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: '🐟', img: '/images/byo/ing/fish-fillet.webp'     },
   { id: 'shrimp',          label: 'Shrimp',                price: 8.00, qtyType: 'low-extra',     emoji: '🍤', img: '/images/byo/ing/shrimp.webp'          },
   { id: 'tuna',            label: 'Tuna Fish',             price: 7.00, qtyType: 'low-extra',     emoji: '🐠', img: '/images/byo/ing/tuna.webp'            },
@@ -1091,7 +1091,7 @@ export default function CustomOrder() {
                       onClick={() => !isProteinExcluded(prot.id) && toggleProtein(prot.id)}
                     >
                       {prot.img
-                        ? <div className="co-prot-thumb" style={{ backgroundImage: `url(${prot.img})` }} />
+                        ? <div className="co-prot-thumb" style={{ backgroundImage: `url(${sel && prot.imgByQty ? (prot.imgByQty[sel.qty] || prot.img) : prot.img})` }} />
                         : <span className="co-opt-emoji">{prot.emoji}</span>
                       }
                       <div className="co-prot-info">
