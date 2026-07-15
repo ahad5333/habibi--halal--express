@@ -1114,10 +1114,6 @@ export default function CustomOrder() {
           {/* 5 — SAUCES */}
           <Section id="sauces" title="Sauces" icon="🫙"
             badge={badges.sauces} open={open.has('sauces')} onToggle={toggleSection}>
-            <div className="co-sauce-note">
-              <Info size={14} />
-              <span>We will do our best to follow your preference; however, some sauces may be served on the side to maintain food quality and freshness.</span>
-            </div>
             <div className="co-opt-grid co-grid-4">
               {SAUCE_OPTS.map(sauce => {
                 const sel = cfg.sauces[sauce.id];
@@ -1170,6 +1166,12 @@ export default function CustomOrder() {
                 );
               })}
             </div>
+            {Object.values(cfg.sauces).some(s => s.placement === 'on_food') && (
+              <div className="co-sauce-note">
+                <Info size={14} />
+                <span>We will do our best to follow your preference; however, some sauces may be served on the side to maintain food quality and freshness.</span>
+              </div>
+            )}
           </Section>
 
           {/* 6 — FRESH ADDITIONS ON SIDE */}
