@@ -138,8 +138,11 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
             title: 'Make it a Meal!',
             options: extras.map(m => ({
               id: `__meal_${m.id}__`,
+              menuId: m.id,
               title: m.name || m.title,
               price: parseFloat(m.price || 0),
+              img: m.image || m.image_url,
+              category: m.category,
             })),
           });
         }
@@ -157,8 +160,11 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
             title: 'Add a Drink',
             options: drinks.map(m => ({
               id: `__drk_${m.id}__`,
+              menuId: m.id,
               title: m.name || m.title,
               price: parseFloat(m.price || 0),
+              img: m.image || m.image_url,
+              category: m.category,
             })),
           });
         }
@@ -308,12 +314,12 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
       return;
     }
 
-    // Normal item
-    const choiceNote = (modifiers.choice_groups || [])
+    // Normal item — build choice labels separately from user note
+    const choiceLabels = (modifiers.choice_groups || [])
       .map(cg => {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
         return opt ? `${cg.title}: ${opt.title}` : null;
-      }).filter(Boolean).join(' | ');
+      }).filter(Boolean);
 
     const addonsList = Object.entries(addonSel)
       .filter(([, q]) => q > 0)
@@ -326,32 +332,67 @@ export default function MenuItemModal({ itemId, onClose, onSelectItem }) {
         return { name, price, qty: q };
       }).filter(a => a.name);
 
-    const universalList = Object.entries(universalSel)
-      .filter(([, q]) => q > 0)
-      .map(([optId, q]) => {
-        let name = '', price = 0;
-        universalGroups.forEach(ug => {
-          const opt = ug.options?.find(o => o.id === optId);
-          if (opt) { name = opt.title; price = parseFloat(opt.price || 0); }
-        });
-        return { name, price, qty: q };
-      }).filter(a => a.name);
+    // Sauce & More Meat stay as sub-row addons; Make it a Meal! / Add a Drink become separate cart items
+    const sauceAndMeatAddons = [];
+    const mealDrinkCartItems = [];
+    let mealDrinkCost = 0;
 
-    const allAddons = [...addonsList, ...universalList];
-    const itemNote = [choiceNote, note.trim()].filter(Boolean).join('\n');
+    Object.entries(universalSel).filter(([, q]) => q > 0).forEach(([optId, q]) => {
+      let mealOpt = null;
+      universalGroups
+        .filter(ug => ug.id === '__meal__' || ug.id === '__drink__')
+        .forEach(ug => { const f = ug.options?.find(o => o.id === optId); if (f) mealOpt = f; });
+
+      if (mealOpt) {
+        mealDrinkCost += parseFloat(mealOpt.price || 0) * q;
+        mealDrinkCartItems.push({
+          id:            mealOpt.menuId,
+          name:          mealOpt.title,
+          price:         parseFloat(mealOpt.price || 0),
+          baseItemPrice: parseFloat(mealOpt.price || 0),
+          addons:        [],
+          img:           mealOpt.img || categoryFallback({ category: mealOpt.category }),
+          tag:           mealOpt.category || 'Extras',
+          note:          '',
+          choiceLabels:  [],
+          qty:           q,
+          selectedChoices: {},
+          selectedAddons:  {},
+        });
+      } else {
+        let name = '', price = 0;
+        [UNIVERSAL_SAUCES, UNIVERSAL_MORE_MEAT].forEach(ug => {
+          const f = ug.options?.find(o => o.id === optId);
+          if (f) { name = f.title; price = parseFloat(f.price || 0); }
+        });
+        if (name) sauceAndMeatAddons.push({ name, price, qty: q });
+      }
+    });
+
+    // cartKey distinguishes same item ordered with different choices
+    const cartKey = Object.keys(choiceSel).length > 0
+      ? `${item.id}-${JSON.stringify(choiceSel)}`
+      : undefined;
+
     addItem({
       id:            item.id,
+      cartKey,
       name:          cleanName,
-      price:         unitPrice,
+      price:         unitPrice - mealDrinkCost,
       baseItemPrice: basePrice + choiceExtra,
-      addons:        allAddons,
+      addons:        [...addonsList, ...sauceAndMeatAddons],
       img:           item.image || item.image_url || categoryFallback(item),
       tag:           item.category || 'Item',
-      note:          itemNote,
+      note:          note.trim(),
+      choiceLabels,
       qty,
       selectedChoices: choiceSel,
       selectedAddons:  addonSel,
     });
+
+    // Each Make it a Meal! / Add a Drink item becomes its own cart entry
+    mealDrinkCartItems.forEach(mi => addItem(mi));
+
     setAdded(true);
     setTimeout(() => { setAdded(false); onClose(); }, 1400);
   };

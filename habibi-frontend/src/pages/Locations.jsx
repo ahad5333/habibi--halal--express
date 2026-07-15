@@ -10,11 +10,16 @@ const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday',
 
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                                    return '/images/locations/bedford-park.jpg';
-  if (t.includes('kingsbridge') || t.includes('king'))         return '/images/locations/kings-bridge.jpg';
+  if (t.includes('bedford'))                                     return '/images/locations/bedford-park.jpg';
+  if (t.includes('lehman'))                                      return '/images/locations/lehman.png';
+  if (t.includes('bronx') || t.includes('science'))             return '/images/locations/bronx-science.png';
+  if (t.includes('kingsbridge') || t.includes('king'))          return '/images/locations/kings-bridge.jpg';
   if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.jpg';
-  return '/images/locations/bedford-park.jpg';
+  return null; // no local image — will use map embed
 };
+
+/* Strip " Area" suffix that should not appear in displayed titles */
+const sanitizeTitle = (title) => (title || '').replace(/\s+area\b/gi, '').trim();
 
 const getShortTitle = (title) => {
   const t = (title || '').toLowerCase();
@@ -146,7 +151,7 @@ const FALLBACK_LOCATIONS = [
     latitude: 40.8726, longitude: -73.8901,
   },
   {
-    id: 2, title: 'Lehman College Area',
+    id: 2, title: 'Lehman College',
     brief_address: '250 Bedford Park Blvd W, Bronx, NY 10468',
     phone_number: '(718) 367-7879',
     working_days_hours: 'Mon – Sun: 7AM – 11PM',
@@ -181,12 +186,19 @@ function getDeliveryTier(miles) {
 
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
-  const mapEmbedSrc = loc.latitude && loc.longitude
-    ? `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=17&output=embed`
-    : loc.brief_address
-      ? `https://maps.google.com/maps?q=${encodeURIComponent(loc.brief_address)}&z=17&output=embed`
-      : null;
-  const fallbackImg = getLocationImage(loc.title);
+  // Priority: cPanel-uploaded image → local PNG → OpenStreetMap embed (no API key, never errors)
+  const localImg   = getLocationImage(loc.title);
+  const displayImg = loc.image || localImg;
+
+  const lat = parseFloat(loc.latitude);
+  const lng = parseFloat(loc.longitude);
+  const mapEmbedSrc = !displayImg
+    ? (loc.latitude && loc.longitude
+        ? `https://www.openstreetmap.org/export/embed.html?bbox=${(lng-0.012).toFixed(5)},${(lat-0.009).toFixed(5)},${(lng+0.012).toFixed(5)},${(lat+0.009).toFixed(5)}&layer=mapnik&marker=${lat}%2C${lng}`
+        : loc.brief_address
+          ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(loc.brief_address)}`
+          : null)
+    : null;
   const open        = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
   const hoursTable = parseHoursTable(loc.working_days_hours);
@@ -210,9 +222,16 @@ function LocationCard({ loc, userCoords, index }) {
     >
       {/* ── Photo Section ── */}
       <div className="lcn-photo-section">
-        {mapEmbedSrc ? (
+        {displayImg ? (
+          <img
+            src={displayImg}
+            alt={sanitizeTitle(loc.title)}
+            className="lcn-img"
+            onError={e => { e.target.onerror = null; e.target.src = '/images/locations/bedford-park.jpg'; }}
+          />
+        ) : mapEmbedSrc ? (
           <iframe
-            title={`Map – ${loc.title}`}
+            title={`Map – ${sanitizeTitle(loc.title)}`}
             src={mapEmbedSrc}
             className="lcn-map-iframe"
             loading="lazy"
@@ -221,10 +240,9 @@ function LocationCard({ loc, userCoords, index }) {
           />
         ) : (
           <img
-            src={fallbackImg}
-            alt={loc.title}
+            src="/images/locations/bedford-park.jpg"
+            alt={sanitizeTitle(loc.title)}
             className="lcn-img"
-            onError={e => { e.target.src = '/images/locations/bedford-park.jpg'; }}
           />
         )}
         <div className="lcn-img-gradient" />
@@ -415,7 +433,7 @@ const Locations = () => {
     "@graph": locations.map(loc => ({
       "@type": "Restaurant",
       "@id": `https://habibihalalexpress.com/locations#${getAnchorId(loc.title)}`,
-      "name": `Habibi Halal Express - ${loc.title}`,
+      "name": `Habibi Halal Express - ${sanitizeTitle(loc.title)}`,
       "image": "https://habibihalalexpress.com/images/logos/logo.png",
       "telephone": loc.phone_number || "+1-718-561-0001",
       "address": {
@@ -435,7 +453,7 @@ const Locations = () => {
     <div className="locations-page page-watermark">
       <SEO
         title="Locations | 3 Bronx Outlets & Tri-State Delivery"
-        description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Lehman College Area, and Bronx Science Area."
+        description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Lehman College, and Bronx Science."
         keywords="halal food nyc, locations habibi halal, bedford park restaurant, lehman college food, bronx halal"
         schema={locations.length > 0 ? locationsSchema : null}
       />

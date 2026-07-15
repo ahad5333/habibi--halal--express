@@ -51,6 +51,12 @@ const DeliveryCoverage    = lazy(() => import('./pages/DeliveryCoverage'));
 const GroupOrder          = lazy(() => import('./pages/GroupOrder'));
 const CustomOrder         = lazy(() => import('./pages/CustomOrder'));
 const Offers              = lazy(() => import('./pages/Offers'));
+const KitchenBehindScenes    = lazy(() => import('./pages/KitchenBehindScenes'));
+const CustomerStories        = lazy(() => import('./pages/CustomerStories'));
+const OurJourney             = lazy(() => import('./pages/OurJourney'));
+const ArticleLambKofta       = lazy(() => import('./pages/ArticleLambKofta'));
+const ArticleBuildYourOwn    = lazy(() => import('./pages/ArticleBuildYourOwn'));
+const ArticleHalalCertified  = lazy(() => import('./pages/ArticleHalalCertified'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -115,8 +121,8 @@ function Layout() {
         }>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/menu" element={<Menu />} />
-          <Route path="/menu/:id" element={<MenuItemPage />} />
+          <Route path="/menu/item/:slug" element={<MenuItemPage />} />
+          <Route path="/menu/:cat?" element={<Menu />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/order-tracking" element={<OrderTracking />} />
           <Route path="/about" element={<About />} />
@@ -135,7 +141,10 @@ function Layout() {
           <Route path="/staff" element={<Careers />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/articles" element={<Articles />} />
-          <Route path="/articles/habibi-tacos" element={<ArticleHabibiTacos />} />
+          <Route path="/articles/habibi-tacos"    element={<ArticleHabibiTacos />} />
+          <Route path="/articles/lamb-kofta-secret" element={<ArticleLambKofta />} />
+          <Route path="/articles/build-your-own"    element={<ArticleBuildYourOwn />} />
+          <Route path="/articles/halal-certified"   element={<ArticleHalalCertified />} />
           <Route path="/account" element={<Account />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -167,6 +176,9 @@ function Layout() {
           <Route path="/customize"                element={<CustomOrder />} />
           <Route path="/offers"                   element={<Offers />} />
           <Route path="/deals"                    element={<Offers />} />
+          <Route path="/kitchen-behind-the-scenes" element={<KitchenBehindScenes />} />
+          <Route path="/customer-stories"          element={<CustomerStories />} />
+          <Route path="/our-journey"               element={<OurJourney />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

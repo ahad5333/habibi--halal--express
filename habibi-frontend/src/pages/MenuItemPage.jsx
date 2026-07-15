@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, Minus, Plus, AlertCircle, ChevronRight, Star, Flame } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, AlertCircle, ChevronRight, Star, Flame, Share2, Check } from 'lucide-react';
 import { menuAPI, favoritesAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,8 @@ const fallbackImg = (id, idx = 0) =>
   `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
 
 const MenuItemPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
+  const id = slug; // slug may be a slug string or a numeric id — backend handles both
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { isLoggedIn } = useAuth();
@@ -30,6 +31,7 @@ const MenuItemPage = () => {
   const [qty,         setQty]         = useState(1);
   const [isFav,       setIsFav]       = useState(false);
   const [added,       setAdded]       = useState(false);
+  const [copied,      setCopied]      = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -111,35 +113,43 @@ const MenuItemPage = () => {
 
   /* ── add to cart ── */
   const handleAdd = () => {
-    const choiceNote = (modifiers.choice_groups || [])
+    const choiceLabels = (modifiers.choice_groups || [])
       .map(cg => {
         const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
         return opt ? `${cg.title}: ${opt.title}` : null;
       })
-      .filter(Boolean).join(' | ');
+      .filter(Boolean);
 
-    const addonNote = Object.entries(addonSel)
+    const addonsList = Object.entries(addonSel)
       .filter(([, q]) => q > 0)
       .map(([optId, q]) => {
-        let label = '';
+        let name = '', price = 0;
         (modifiers.addon_groups || []).forEach(ag => {
           const opt = ag.options?.find(o => o.id === parseInt(optId));
-          if (opt) label = q > 1 ? `${opt.title} ×${q}` : opt.title;
+          if (opt) { name = opt.title; price = parseFloat(opt.price || 0); }
         });
-        return label;
+        return { name, price, qty: q };
       })
-      .filter(Boolean).join(', ');
+      .filter(a => a.name);
 
-    const fullNote = [choiceNote, addonNote, note].filter(Boolean).join('\n');
+    const cartKey = Object.keys(choiceSel).length > 0
+      ? `${item.id}-${JSON.stringify(choiceSel)}`
+      : undefined;
 
     addItem({
-      id:    item.id,
-      name:  item.name || item.title,
-      price: unitPrice,
-      img:   item.image || item.image_url || fallbackImg(item.id),
-      tag:   item.category || 'Item',
-      note:  fullNote,
+      id:            item.id,
+      cartKey,
+      name:          item.name || item.title,
+      price:         unitPrice,
+      baseItemPrice: parseFloat(item.price || 0),
+      addons:        addonsList,
+      img:           item.image || item.image_url || fallbackImg(item.id),
+      tag:           item.category || 'Item',
+      note:          note.trim(),
+      choiceLabels,
       qty,
+      selectedChoices: choiceSel,
+      selectedAddons:  addonSel,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2200);
@@ -181,6 +191,18 @@ const MenuItemPage = () => {
     </div>
   );
 
+  const handleShare = async () => {
+    const url  = window.location.href;
+    const name = item.name || item.title || 'Menu Item';
+    if (navigator.share) {
+      try { await navigator.share({ title: `${name} — Habibi Halal Express`, url }); } catch (_) {}
+    } else {
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
   const imgSrc       = item.image || item.image_url || fallbackImg(item.id);
   const popularCombos = modifiers.popular_combos || [];
   const rating        = parseFloat(item.rating || item.avg_rating || 0);
@@ -218,6 +240,15 @@ const MenuItemPage = () => {
             <Heart size={18} fill={isFav ? 'currentColor' : 'none'} />
           </button>
         )}
+
+        <button
+          className={`mip-share-btn${copied ? ' mip-share-btn--copied' : ''}`}
+          onClick={handleShare}
+          aria-label="Share this item"
+        >
+          {copied ? <Check size={16} /> : <Share2 size={16} />}
+          <span>{copied ? 'Copied!' : 'Share'}</span>
+        </button>
 
       </div>
 
@@ -356,7 +387,7 @@ const MenuItemPage = () => {
                           </div>
                         ) : (
                           <span className="mip-addon-price">
-                            {price === 0 ? 'Free' : `+$${price.toFixed(2)}`}
+                            {price > 0 ? `+$${price.toFixed(2)}` : ''}
                           </span>
                         )}
                       </div>
@@ -396,7 +427,7 @@ const MenuItemPage = () => {
             </div>
             <div className="mip-sugg-track">
               {suggestions.map((s, idx) => (
-                <Link key={s.id} to={`/menu/${s.id}`} className="mip-sugg-card">
+                <Link key={s.id} to={`/menu/item/${s.id}`} className="mip-sugg-card">
                   <img
                     src={s.image || s.image_url || fallbackImg(s.id, idx)}
                     alt={s.name}

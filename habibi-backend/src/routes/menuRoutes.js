@@ -42,10 +42,13 @@ router.post("/", protect, admin, createMenu);
 // unless the item has exclude_global_addons = true
 router.get("/:id/modifiers", async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const param = req.params.id;
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? 'id = $1' : 'slug = $1';
+    const whereValue  = isNumeric ? parseInt(param, 10) : param;
     const { rows } = await pool.query(
-      'SELECT choices, addons, exclude_global_addons FROM menus WHERE id = $1',
-      [id]
+      `SELECT choices, addons, exclude_global_addons FROM menus WHERE ${whereClause}`,
+      [whereValue]
     );
     if (!rows.length) return res.status(404).json({ error: 'Item not found' });
 

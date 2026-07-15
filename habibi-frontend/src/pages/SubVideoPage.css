@@ -1,0 +1,603 @@
+/* ── Shared styles for KitchenBehindScenes, CustomerStories, OurJourney ── */
+
+.svp-page {
+  background: #0a0a0a;
+}
+
+/* ── Hero ── */
+.svp-hero {
+  position: relative;
+  min-height: 580px;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 3rem;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.svp-hero--kitchen {
+  background-image: url('/images/food/kitchen-hero.png');
+  background-color: #1a0a00;
+}
+.svp-hero--stories {
+  background-image: url('/images/food/stories-hero.png');
+  background-color: #0a0a1a;
+}
+.svp-hero--journey {
+  background-image: url('/images/food/journey-hero.png');
+  background-color: #0a1a0a;
+}
+
+.svp-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: none;
+}
+
+.svp-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  width: calc(100% - 6rem);
+  padding: 2.5rem 2.25rem;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  margin: 0 2rem 0 4rem;
+  box-sizing: border-box;
+}
+
+.svp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d97706;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.svp-hero-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+}
+
+.svp-accent {
+  color: #f59e0b;
+}
+
+.svp-hero-sub {
+  color: rgba(255,255,255,0.78);
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 0 1.5rem;
+}
+
+.svp-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 100px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Sections ── */
+.svp-section {
+  padding: 4rem 0;
+}
+
+.svp-section--alt {
+  background: #111;
+}
+
+.svp-section-eyebrow {
+  color: #d97706;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+}
+
+.svp-section-title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2rem;
+}
+
+/* ── CTA strip ── */
+.svp-cta-strip {
+  background: linear-gradient(135deg, #1a0a00 0%, #2d1500 100%);
+  padding: 3rem 2rem;
+  text-align: center;
+  border-top: 1px solid rgba(217,119,6,0.2);
+}
+
+.svp-cta-text {
+  color: rgba(255,255,255,0.75);
+  font-size: 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.svp-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #d97706;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.7rem 1.6rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.svp-cta-btn:hover { background: #b45309; }
+.svp-cta-btn--outline {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.8);
+}
+.svp-cta-btn--outline:hover {
+  background: rgba(255,255,255,0.07);
+}
+
+/* ── Review CTA block ── */
+.svp-review-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 3rem 0;
+}
+
+.svp-review-text h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.4rem;
+}
+
+.svp-review-text p {
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+}
+
+.svp-review-btns {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+/* ── Milestone timeline ── */
+.svp-milestones {
+  display: grid;
+  gap: 0;
+}
+
+.svp-milestone {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  align-items: start;
+}
+.svp-milestone:last-child { border-bottom: none; }
+
+.svp-milestone-year {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #d97706;
+  padding-top: 2px;
+}
+
+.svp-milestone-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.4rem;
+}
+
+.svp-milestone-desc {
+  color: rgba(255,255,255,0.65);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Body text ── */
+.svp-body-text {
+  color: rgba(255,255,255,0.65);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin: 0 0 1rem;
+}
+
+/* ── Intro block (Kitchen page) ── */
+.svp-intro-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.svp-intro-text h2 { margin-top: 0.5rem; }
+
+.svp-standards-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.svp-standards-title {
+  color: #f59e0b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+}
+
+.svp-standards-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.svp-standards-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.svp-check {
+  color: #22c55e;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── Process grid (Kitchen + Journey) ── */
+.svp-process-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.svp-process-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 1.75rem;
+  transition: border-color 0.2s;
+}
+.svp-process-card:hover {
+  border-color: rgba(217,119,6,0.35);
+}
+
+.svp-process-icon {
+  color: #d97706;
+  margin-bottom: 1rem;
+}
+
+.svp-process-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+
+.svp-process-desc {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Stats row (Customer Stories) ── */
+.svp-stats-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 2.5rem 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.svp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 1rem 3rem;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.svp-stat:last-child { border-right: none; }
+
+.svp-stat-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #f59e0b;
+  line-height: 1;
+}
+
+.svp-stat-label {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.55);
+  font-weight: 500;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Testimonials grid ── */
+.svp-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.svp-testimonial-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color 0.2s;
+}
+.svp-testimonial-card:hover {
+  border-color: rgba(217,119,6,0.3);
+}
+
+.svp-quote-icon {
+  color: #d97706;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.svp-testimonial-text {
+  color: rgba(255,255,255,0.78);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  margin: 0;
+  flex: 1;
+  font-style: italic;
+}
+
+.svp-testimonial-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.svp-testimonial-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.svp-testimonial-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.svp-testimonial-location {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+
+/* ── Origin block (Journey page) ── */
+.svp-origin-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.svp-origin-text h2 { margin-top: 0.5rem; }
+
+.svp-blockquote {
+  background: rgba(217,119,6,0.08);
+  border-left: 3px solid #d97706;
+  border-radius: 0 12px 12px 0;
+  padding: 2rem 1.75rem;
+  color: rgba(255,255,255,0.8);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.svp-blockquote cite {
+  display: block;
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 700;
+  color: #d97706;
+  letter-spacing: 0.04em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .svp-intro-block,
+  .svp-origin-block {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .svp-process-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .svp-testimonials-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .svp-hero {
+    min-height: 460px;
+    padding-bottom: 2rem;
+  }
+  .svp-hero-content {
+    margin: 0 1.25rem;
+    padding: 1.75rem 1.25rem;
+    width: calc(100% - 2.5rem);
+    max-width: 100%;
+  }
+  .svp-hero-title {
+    font-size: 1.7rem;
+  }
+  .svp-hero-sub {
+    font-size: 0.9rem;
+  }
+  .svp-section {
+    padding: 3rem 0;
+  }
+  .svp-section-title {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+  .svp-process-grid {
+    grid-template-columns: 1fr;
+  }
+  .svp-testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+  .svp-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .svp-stat {
+    padding: 1.25rem 1rem;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .svp-stat:nth-child(2n) { border-right: none; }
+  .svp-stat:nth-last-child(-n+2) { border-bottom: none; }
+  .svp-stat-number { font-size: 1.8rem; }
+  .svp-review-block {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .svp-review-btns {
+    justify-content: center;
+  }
+  .svp-milestone {
+    grid-template-columns: 55px 1fr;
+    gap: 1rem;
+  }
+  .svp-milestone-year {
+    font-size: 1.1rem;
+  }
+  .svp-blockquote {
+    font-size: 0.95rem;
+    padding: 1.5rem 1.25rem;
+  }
+  .svp-standards-box {
+    padding: 1.25rem;
+  }
+  .svp-cta-strip {
+    padding: 2.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .svp-section {
+    padding: 7rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .svp-hero {
+    min-height: 480px;
+    align-items: flex-start;
+    padding-top: 0;
+    padding-bottom: 1.5rem;
+  }
+  .svp-hero-content {
+    top: 69px;
+    margin: 0 0.75rem;
+    padding: 1.5rem 1.1rem;
+    width: calc(100% - 1.5rem);
+    border-radius: 10px;
+  }
+  .svp-hero-title {
+    font-size: 1.45rem;
+  }
+  .svp-eyebrow {
+    font-size: 0.62rem;
+  }
+  .svp-hero-tags {
+    gap: 6px;
+  }
+  .svp-tag {
+    font-size: 0.65rem;
+    padding: 3px 10px;
+  }
+  .svp-section {
+    padding: 2rem 0;
+  }
+  .svp-stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .svp-stat-number {
+    font-size: 1.5rem;
+  }
+  .svp-cta-strip {
+    padding: 2rem 1rem;
+  }
+  .svp-cta-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .svp-milestone {
+    grid-template-columns: 48px 1fr;
+  }
+  .svp-process-card {
+    padding: 1.25rem;
+  }
+  .svp-testimonial-card {
+    padding: 1.25rem;
+  }
+}

@@ -77,24 +77,26 @@ export function CartProvider({ children }) {
   const addItem = useCallback((item) => {
     trackAddToCart(item);
     setItems(prev => {
-      const existing = prev.find(i => i.id === item.id);
+      // cartKey distinguishes same item with different choices; falls back to id for simple items
+      const key = item.cartKey ?? item.id;
+      const existing = prev.find(i => (i.cartKey ?? i.id) === key);
       const updated = existing
-        ? prev.map(i => i.id === item.id ? { ...i, qty: i.qty + (item.qty || 1) } : i)
+        ? prev.map(i => (i.cartKey ?? i.id) === key ? { ...i, qty: i.qty + (item.qty || 1) } : i)
         : [...prev, { ...item, qty: item.qty || 1 }];
       localStorage.setItem('habibi_cart', JSON.stringify(updated));
       return updated;
     });
   }, []);
 
-  const removeItem = (id) => {
-    const updated = items.filter(i => i.id !== id);
+  const removeItem = (key) => {
+    const updated = items.filter(i => (i.cartKey ?? i.id) !== key);
     persist(updated);
   };
 
-  const removeAddon = useCallback((itemId, addonIdx) => {
+  const removeAddon = useCallback((key, addonIdx) => {
     setItems(prev => {
       const updated = prev.map(item => {
-        if (item.id !== itemId) return item;
+        if ((item.cartKey ?? item.id) !== key) return item;
         const addons = [...(item.addons || [])];
         const [removed] = addons.splice(addonIdx, 1);
         const reduction = removed ? (parseFloat(removed.price) || 0) * (removed.qty || 1) : 0;
@@ -105,9 +107,9 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  const updateQty = (id, qty) => {
-    if (qty < 1) { removeItem(id); return; }
-    const updated = items.map(i => i.id === id ? { ...i, qty } : i);
+  const updateQty = (key, qty) => {
+    if (qty < 1) { removeItem(key); return; }
+    const updated = items.map(i => (i.cartKey ?? i.id) === key ? { ...i, qty } : i);
     persist(updated);
   };
 

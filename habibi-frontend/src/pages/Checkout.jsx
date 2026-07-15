@@ -342,10 +342,11 @@ const Checkout = () => {
       ? 'ASAP'
       : `${scheduleDate === 'today' ? 'Today' : 'Tomorrow'} at ${scheduleTime}`,
     items: items.map(i => {
+      const choiceNote = (i.choiceLabels || []).join(' | ');
       const addonsNote = (i.addons || [])
         .map(a => `${a.name}${a.qty > 1 ? ` x${a.qty}` : ''}`)
         .join(', ');
-      const fullNote = [i.note, addonsNote].filter(Boolean).join(' | ');
+      const fullNote = [choiceNote, addonsNote, i.note].filter(Boolean).join(' | ');
       return {
         menuItemId:      i.id,
         menu_item_id:    i.id,
@@ -596,9 +597,10 @@ const Checkout = () => {
                   {items.map(item => {
                     const mainPrice = item.baseItemPrice ?? item.price;
                     const addons = item.addons || [];
+                    const itemKey = item.cartKey ?? item.id;
                     return (
-                      <React.Fragment key={item.id}>
-                        <div className={`cart-item${pendingRemove === item.id ? ' cart-item--removing' : ''}`}>
+                      <React.Fragment key={itemKey}>
+                        <div className={`cart-item${pendingRemove === itemKey ? ' cart-item--removing' : ''}`}>
                           {item.bowlLayers?.length ? (
                             <div className="cart-item-bowl-preview">
                               {item.bowlLayers.map((src, li) => (
@@ -616,34 +618,37 @@ const Checkout = () => {
                           )}
                           <div className="cart-item-info">
                             <h4 className="cart-item-name">{item.name}</h4>
-                            {item.note && <p className="cart-item-modifiers">{item.note}</p>}
+                            {item.choiceLabels?.length > 0 && (
+                              <p className="cart-item-options">{item.choiceLabels.join(' · ')}</p>
+                            )}
+                            {item.note && <p className="cart-item-modifiers">📝 {item.note}</p>}
                           </div>
                           <div className="cart-item-controls">
                             <div className="qty-control">
-                              <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
+                              <button onClick={() => updateQty(itemKey, item.qty - 1)}>−</button>
                               <span>{item.qty}</span>
-                              <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                              <button onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
                             <button
-                              className={`cart-delete-btn${pendingRemove === item.id ? ' cart-delete-btn--pending' : ''}`}
-                              onClick={() => setPendingRemove(pendingRemove === item.id ? null : item.id)}
+                              className={`cart-delete-btn${pendingRemove === itemKey ? ' cart-delete-btn--pending' : ''}`}
+                              onClick={() => setPendingRemove(pendingRemove === itemKey ? null : itemKey)}
                             >
                               <Trash2 size={14} />
                             </button>
                           </div>
                         </div>
-                        {pendingRemove === item.id && (
+                        {pendingRemove === itemKey && (
                           <div className="cart-remove-confirm">
                             <span className="cart-remove-msg">Remove from cart?</span>
                             <div className="cart-remove-actions">
-                              <button className="cart-remove-yes" onClick={() => { removeItem(item.id); setPendingRemove(null); }}>Remove</button>
+                              <button className="cart-remove-yes" onClick={() => { removeItem(itemKey); setPendingRemove(null); }}>Remove</button>
                               <button className="cart-remove-no" onClick={() => setPendingRemove(null)}>Keep it</button>
                             </div>
                           </div>
                         )}
                         {addons.map((addon, idx) => (
-                          <div key={`${item.id}-addon-${idx}`} className="cart-addon-row">
+                          <div key={`${itemKey}-addon-${idx}`} className="cart-addon-row">
                             <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>
                             <span className="cart-addon-price">
                               {parseFloat(addon.price) > 0
@@ -653,7 +658,7 @@ const Checkout = () => {
                             {parseFloat(addon.price) > 0 && (
                               <button
                                 className="cart-addon-remove"
-                                onClick={() => removeAddon(item.id, idx)}
+                                onClick={() => removeAddon(itemKey, idx)}
                                 title="Remove add-on"
                               >×</button>
                             )}

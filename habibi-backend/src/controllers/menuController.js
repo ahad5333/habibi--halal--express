@@ -12,7 +12,7 @@ const getMenus = async (req, res) => {
                COALESCE(categories, '{}'::TEXT[]) AS categories,
                is_available, choices, addons, dietary_info,
                is_spicy, is_vegetarian, is_gluten_free, is_featured,
-               quota_required
+               quota_required, slug
         FROM menus
         WHERE is_available = TRUE AND is_active = TRUE
         ORDER BY category, sort_order, id
@@ -24,7 +24,7 @@ const getMenus = async (req, res) => {
                '{}'::TEXT[] AS categories,
                is_available, choices, addons, dietary_info,
                is_spicy, is_vegetarian, is_gluten_free, is_featured,
-               NULL::INTEGER AS quota_required
+               NULL::INTEGER AS quota_required, slug
         FROM menus
         WHERE is_available = TRUE AND is_active = TRUE
         ORDER BY category, sort_order, id
@@ -38,7 +38,10 @@ const getMenus = async (req, res) => {
 
 const getMenuById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const param = req.params.id;
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? 'id = $1' : 'slug = $1';
+    const whereValue  = isNumeric ? parseInt(param, 10) : param;
     let result;
     try {
       result = await pool.query(
@@ -46,9 +49,9 @@ const getMenuById = async (req, res) => {
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
                 is_available, choices, addons, dietary_info, temperature, notes,
-                quota_required
-         FROM menus WHERE id = $1`,
-        [id]
+                quota_required, slug
+         FROM menus WHERE ${whereClause}`,
+        [whereValue]
       );
     } catch {
       result = await pool.query(
@@ -56,9 +59,9 @@ const getMenuById = async (req, res) => {
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
                 is_available, choices, addons, dietary_info, temperature, notes,
-                NULL::INTEGER AS quota_required
-         FROM menus WHERE id = $1`,
-        [id]
+                NULL::INTEGER AS quota_required, slug
+         FROM menus WHERE ${whereClause}`,
+        [whereValue]
       );
     }
     if (!result.rows[0]) return res.status(404).json({ message: "Not found" });

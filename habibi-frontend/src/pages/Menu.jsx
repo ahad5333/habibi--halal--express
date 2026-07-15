@@ -1,40 +1,41 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { menuAPI, favoritesAPI, reviewsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import BuildYourOwn from '../components/BuildYourOwn';
-import MenuItemModal from '../components/MenuItemModal';
 import SEO from '../components/SEO';
 import './Menu.css';
 
 const CATEGORIES = [
-  { label: 'All Categories',  shortLabel: 'All',      value: 'grid',      match: null,             emoji: '🍽️' },
-  { label: 'Breakfast at Your Time', shortLabel: 'Breakfast', value: 'breakfast', match: 'Breakfast', emoji: '🌅' },
-  { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗' },
-  { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙' },
-  { label: 'Bergers',         shortLabel: 'Bergers',   value: 'burgers',   match: 'Bergers',        emoji: '🍔' },
-  { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Tacos',          emoji: '🌮' },
-  { label: 'Habibi Specials', shortLabel: 'Specials',  value: 'specials',  match: 'Habibi Specials',emoji: '⭐' },
-  { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕' },
-  { label: 'Drinks',          shortLabel: 'Drinks',    value: 'drinks',    match: 'Drinks',         emoji: '🥤' },
-  { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️' },
-  { label: 'Build your Bowl', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true },
+  { label: 'All Categories',  shortLabel: 'All',      value: 'grid',      match: null,             emoji: '🍽️', tagline: '' },
+  { label: 'Breakfast',       shortLabel: 'Breakfast', subLabel: 'at your own time!', value: 'breakfast', match: 'Breakfast', emoji: '🌅', tagline: 'at your own time' },
+  { label: 'Platter',         shortLabel: 'Platter',   value: 'platter',   match: 'Platter',        emoji: '🥗', tagline: 'fresh & generous' },
+  { label: 'Sandwiches',      shortLabel: 'Sandwich',  value: 'sandwich',  match: 'Sandwich',       emoji: '🥙', tagline: 'wrapped with love' },
+  { label: 'Bergers',         shortLabel: 'Bergers',   value: 'burgers',   match: 'Bergers',        emoji: '🍔', tagline: 'stack it your way' },
+  { label: 'Tacos',           shortLabel: 'Tacos',     value: 'tacos',     match: 'Tacos',          emoji: '🌮', tagline: 'one epic taco' },
+  { label: 'Habibi Specials', shortLabel: 'Specials',  value: 'specials',  match: 'Habibi Specials',emoji: '⭐', tagline: 'signature favorites' },
+  { label: 'Extras',          shortLabel: 'Extras',    value: 'extras',    match: 'Extras',         emoji: '➕', tagline: 'complete your meal' },
+  { label: 'Drinks',          shortLabel: 'Drinks',    value: 'drinks',    match: 'Drinks',         emoji: '🥤', tagline: 'refresh & recharge' },
+  { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️', tagline: 'feed the whole family' },
+  { label: 'Build your Bowl', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true, tagline: 'your perfect bowl' },
 ];
 
 const CATEGORY_IMAGES = {
-  breakfast: '/images/menu/g10.jpg',
-  platter:   '/images/menu/G1.jpg',
-  sandwich:  '/images/menu/G3.jpg',
-  burgers:   '/images/habibi-burger.jpg',
-  tacos:     '/images/articles/habibi-taco-banner.jpg',
-  specials:  '/images/menu/G5.jpg',
-  extras:    '/images/halal-salad-v2.jpg',
-  drinks:    '/images/menu/G7.jpg',
-  family:    '/images/menu/G9.jpg',
-  byo:       '/images/byo/customize-hero.jpg',
+  breakfast: '/images/menu/breakfast-banner.jpeg',
+  platter:   '/images/menu/platter-banner.png',
+  sandwich:  '/images/menu/sandwich-banner.png',
+  burgers:   '/images/menu/burgers-banner.png',
+  tacos:     '/images/menu/tacos-banner.png',
+  specials:  '/images/menu/specials-banner.png',
+  extras:    '/images/menu/extras-banner.png',
+  drinks:    '/images/menu/drinks-banner.png',
+  family:    '/images/menu/family-banner.png',
+  byo:       '/images/menu/byo-banner.png',
 };
+
+const MENU_ICON = '/images/menu/habibi-menu-icon.jpeg';
 
 /* Map a raw DB category string to a banner image */
 function MenuSkeleton() {
@@ -152,9 +153,13 @@ const getItemTemp = (item, resolvedName) => {
 };
 
 const Menu = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { cat: catParam } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState('grid');
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const c = catParam || searchParams.get('cat');
+    return (c && c !== 'all') ? c : 'grid';
+  });
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
@@ -175,7 +180,6 @@ const Menu = () => {
   const [bowlTopping, setBowlTopping] = useState('');
   const [bowlSauce,   setBowlSauce]   = useState('');
   const [byoItem,     setByoItem]     = useState(null);
-  const [modalItemId, setModalItemId] = useState(null);
   const featCarouselRef = useRef(null);
   const [locAvailMap,  setLocAvailMap]  = useState({});
 
@@ -202,16 +206,16 @@ const Menu = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // React to ?cat= query param — set pending scroll; actual scroll fires once sections are rendered
+  // React to /menu/:cat URL param or legacy ?cat= query string
   useEffect(() => {
-    const cat = searchParams.get('cat');
+    const cat = catParam || searchParams.get('cat');
     if (!cat || cat === 'all') return;
-    if (loading) return; // re-fires when loading flips to false
+    if (loading) return;
     if (cat === 'byo') { setActiveCategory('byo'); return; }
     setActiveCategory(cat);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString(), loading]);
+  }, [catParam, searchParams.toString(), loading]);
 
   const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
 
@@ -371,55 +375,20 @@ const Menu = () => {
   };
 
   const handleCatClick = val => {
-    // BYO is a special builder — show its own inline bowl builder view
-    if (val === 'byo') {
-      setActiveCategory('byo');
-      return;
-    }
-
-    // "All Categories" (grid) → return to category overview
     if (val === 'all' || val === 'grid') {
       setActiveCategory('grid');
       setActiveSidebarCat('');
+      navigate('/menu', { replace: true });
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-
-    // All other categories: show that category's items with banner
+    // Go directly to the category — no intermediate "all" state
+    setActiveCategory(val);
     const catObj = CATEGORIES.find(c => c.value === val);
-    const sectionKey = catObj?.match;
-
-    const doScroll = () => {
-      if (!sectionKey) return;
-      const keyL = sectionKey.toLowerCase();
-      let el = sectionRefs.current[sectionKey];
-      if (!el) {
-        const entry = Object.entries(sectionRefs.current).find(([k]) =>
-          k.toLowerCase() === keyL || k.toLowerCase().includes(keyL)
-        );
-        if (entry) { el = entry[1]; setActiveSidebarCat(entry[0]); }
-      } else {
-        setActiveSidebarCat(sectionKey);
-      }
-      if (el) {
-        const navH = document.querySelector('.navbar-wrap')?.offsetHeight || 80;
-        const y = el.getBoundingClientRect().top + window.scrollY - navH - 12;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
-    };
-
-    if (activeCategory !== 'all' && activeCategory !== 'grid') {
-      setActiveCategory('all');
-      setPendingScrollCat(val);
-    } else if (activeCategory === 'grid') {
-      setActiveCategory('all');
-      setPendingScrollCat(val);
-    } else {
-      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(doScroll, 80)));
-    }
-
-    // Scroll the active tab into view — only when the track is actually
-    // horizontally scrollable (hidden on desktop, fixed grid on mobile).
+    setActiveSidebarCat(catObj?.match || '');
+    navigate(`/menu/${val}`, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll the active tab into view on mobile
     if (tabsRef.current && tabsRef.current.scrollWidth > tabsRef.current.clientWidth) {
       const activeBtn = tabsRef.current.querySelector(`[data-val="${val}"]`);
       if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
@@ -458,7 +427,7 @@ const Menu = () => {
 
   const handleCardClick = item => {
     if (isBYO(item)) { setByoItem(item); return; }
-    setModalItemId(item.id);
+    navigate(`/menu/item/${item.slug || item.id}`);
   };
 
   const handleAddToCart = (item, qty = 1) => {
@@ -571,7 +540,7 @@ const Menu = () => {
             )}
             <button
               className="menu-item-add-btn"
-              onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+              onClick={e => { e.stopPropagation(); navigate(`/menu/item/${item.slug || item.id}`); }}
               aria-label={`Add ${name}`}
             >
               +
@@ -627,14 +596,16 @@ const Menu = () => {
         schema={items.length > 0 ? menuSchema : null}
       />
 
-      {/* ── Header banner ──────────────────────────────────── */}
-      <div className="menu-header">
-        <div className="menu-header-overlay" />
-        <div className="menu-header-content">
-          <h1 className="menu-header-title">Menu</h1>
-          <p className="menu-header-sub">Every dish tells a story — written in spice, sealed with tradition, served with soul.</p>
+      {/* ── Full hero — only on main menu (All Categories) ── */}
+      {(activeCategory === 'grid' || activeCategory === 'all') && (
+        <div className="menu-header">
+          <div className="menu-header-overlay" />
+          <div className="menu-header-content">
+            <h1 className="menu-header-title">Menu</h1>
+            <p className="menu-header-sub">Every dish tells a story — written in spice, sealed with tradition, served with soul.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Restaurant info strip ──────────────────────────── */}
       <div className="menu-info-strip">
@@ -648,10 +619,6 @@ const Menu = () => {
           <span className="menu-info-dot" />
           <div className="menu-info-item">
             <span>100% Zabiha Halal</span>
-          </div>
-          <span className="menu-info-dot" />
-          <div className="menu-info-item">
-            <span>Bronx, NY</span>
           </div>
           <span className="menu-info-dot" />
           <div className="menu-info-item menu-info-open">
@@ -669,7 +636,7 @@ const Menu = () => {
             type="text"
             placeholder="Type to search items…"
             value={search}
-            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
+            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); if (e.target.value) setActiveCategory('all'); }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             className="menu-search-input"
@@ -682,24 +649,36 @@ const Menu = () => {
         {showSuggestions && search.length >= 1 && (() => {
           const q = search.toLowerCase();
           const matches = items
-            .filter(i => (i.name || i.title || '').toLowerCase().includes(q) && i.is_available !== false)
-            .slice(0, 6);
+            .filter(i => {
+              if (i.is_available === false) return false;
+              const hay = [i.name || i.title || '', i.description || '', i.category || ''].join(' ').toLowerCase();
+              return hay.includes(q);
+            })
+            .slice(0, 8);
           return matches.length > 0 ? (
             <ul className="menu-search-suggestions">
-              {matches.map(item => (
-                <li
-                  key={item.id}
-                  className="menu-search-suggestion-item"
-                  onMouseDown={() => {
-                    setSearch(item.name || item.title);
-                    setShowSuggestions(false);
-                  }}
-                >
-                  <Search size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
-                  <span>{item.name || item.title}</span>
-                  <span className="menu-suggestion-cat">{item.category}</span>
-                </li>
-              ))}
+              {matches.map(item => {
+                const name = item.name || item.title || '';
+                const idx = name.toLowerCase().indexOf(q);
+                const highlighted = idx >= 0
+                  ? <>{name.slice(0, idx)}<strong>{name.slice(idx, idx + q.length)}</strong>{name.slice(idx + q.length)}</>
+                  : name;
+                return (
+                  <li
+                    key={item.id}
+                    className="menu-search-suggestion-item"
+                    onMouseDown={() => {
+                      setSearch(name);
+                      setActiveCategory('all');
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <Search size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
+                    <span className="menu-suggestion-name">{highlighted}</span>
+                    <span className="menu-suggestion-cat">{item.category}</span>
+                  </li>
+                );
+              })}
             </ul>
           ) : null;
         })()}
@@ -755,7 +734,10 @@ const Menu = () => {
                 onClick={() => handleCatClick(cat.value)}
               >
                 <span className="menu-sidebar-emoji">{cat.emoji}</span>
-                <span className="menu-sidebar-label">{cat.label}</span>
+                <span className="menu-sidebar-label">
+                  {cat.subLabel ? cat.shortLabel : cat.label}
+                  {cat.subLabel && <span className="menu-sidebar-sublabel">{cat.subLabel}</span>}
+                </span>
               </button>
             );
           })}
@@ -763,6 +745,26 @@ const Menu = () => {
       </aside>
 
       <div className="menu-content">
+
+      {/* ── Category hero — inside content column so items align with sidebar ── */}
+      {activeCategory !== 'grid' && activeCategory !== 'all' && activeCategory !== 'byo' && (
+        <div
+          className="menu-cat-hero"
+          style={{ backgroundImage: `url(${CATEGORY_IMAGES[activeCategory] || CATEGORY_IMAGES.specials})` }}
+        >
+          <img src={MENU_ICON} alt="Habibi Menu" className="menu-cat-hero-icon" />
+          <div className="menu-cat-hero-text">
+            <h1 className="menu-cat-hero-title">{activeCatObj?.label}</h1>
+            {activeCatObj?.tagline && (
+              <div className="menu-cat-hero-divider">
+                <span className="menu-cat-hero-line" />
+                <span className="menu-cat-hero-tagline">{activeCatObj.tagline}</span>
+                <span className="menu-cat-hero-line" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Category grid — landing page when no category selected ── */}
       {activeCategory === 'grid' && !search && (
@@ -776,8 +778,9 @@ const Menu = () => {
                 className={`cat-grid-card${cat.special ? ' cat-grid-card--byo' : ''}`}
                 data-cat={cat.value}
                 onClick={() => handleCatClick(cat.value)}
+                style={CATEGORY_IMAGES[cat.value] ? { backgroundImage: `url(${CATEGORY_IMAGES[cat.value]})` } : {}}
               >
-                <span className="cat-grid-deco" aria-hidden="true">{cat.emoji}</span>
+                <div className="cat-grid-img-overlay" />
                 <div className="cat-grid-info">
                   <span className="cat-grid-emoji">{cat.emoji}</span>
                   <span className="cat-grid-name">{cat.label}</span>
@@ -872,7 +875,7 @@ const Menu = () => {
                         <span className="mf-price">${price.toFixed(2)}</span>
                         <button
                           className="mf-cart-btn"
-                          onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+                          onClick={e => { e.stopPropagation(); navigate(`/menu/item/${item.slug || item.id}`); }}
                           aria-label={`Add ${name}`}
                         >
                           <ShoppingCart size={15} />
@@ -893,25 +896,8 @@ const Menu = () => {
       {/* ── Main content ──────────────────────────────────── */}
       <div className="menu-main-wrap">
 
-        {/* Category banner — shown when a specific category is active (not burgers — uses menu-cat-banner style) */}
-        {activeCategory !== 'grid' && activeCategory !== 'all' && activeCategory !== 'byo' && activeCategory !== 'burgers' && CATEGORY_IMAGES[activeCategory] && (
-          <div className="cat-banner">
-            <img
-              src={CATEGORY_IMAGES[activeCategory]}
-              alt={activeCatObj?.label || ''}
-              className="cat-banner-img"
-              loading="lazy"
-            />
-            <div className="cat-banner-overlay" />
-            <div className="cat-banner-content">
-              <span className="cat-banner-emoji">{activeCatObj?.emoji}</span>
-              <h2 className="cat-banner-title">{activeCatObj?.label}</h2>
-            </div>
-          </div>
-        )}
-
-        {/* Bergers tab: menu-cat-banner style with overlay */}
-        {activeCategory === 'burgers' && (
+        {/* Bergers tab: menu-cat-banner style with overlay (kept for legacy grid view) */}
+        {activeCategory === 'burgers' && false && (
           <div className="menu-cat-banner" style={{ marginBottom: '1.5rem' }}>
             <img
               src={CATEGORY_IMAGES.burgers}
@@ -927,10 +913,11 @@ const Menu = () => {
           </div>
         )}
 
-        {/* Section heading — hidden on grid landing */}
+        {/* Section heading — hidden when category banner is showing OR on grid landing */}
+        {(search || activeCategory === 'all' || activeCategory === 'grid') && (
         <div className="menu-grid-header" style={activeCategory === 'grid' && !search ? { display: 'none' } : {}}>
           <h2 className="menu-grid-title">
-            {activeCatObj?.label || 'All Items'}
+            {search ? 'Search Results' : (activeCatObj?.label || 'All Items')}
           </h2>
           {search && (
             <p className="menu-search-count">
@@ -939,6 +926,7 @@ const Menu = () => {
           )}
           <span className="menu-grid-count">{filtered.length} items</span>
         </div>
+        )}
 
 
         {/* ── BYO Builder ───────────────────────────────── */}
@@ -1140,15 +1128,6 @@ const Menu = () => {
 
       </div>{/* /menu-content */}
       </div>{/* /menu-layout */}
-
-      {/* ── Item detail modal ────────────────────────────── */}
-      {modalItemId && (
-        <MenuItemModal
-          itemId={modalItemId}
-          onClose={() => setModalItemId(null)}
-          onSelectItem={(id) => setModalItemId(id)}
-        />
-      )}
 
       {/* ── BYO modal ─────────────────────────────────────── */}
       {byoItem && (

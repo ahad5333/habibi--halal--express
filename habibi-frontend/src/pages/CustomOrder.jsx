@@ -1183,7 +1183,7 @@ export default function CustomOrder() {
                     <div key={id} className="co-menu-card">
                       {item.img && <img src={item.img} alt={item.name} className="co-menu-img" />}
                       <div className="co-menu-info">
-                        <Link to={`/menu/${id}`} className="co-menu-name">{item.name}</Link>
+                        <Link to={`/menu/item/${id}`} className="co-menu-name">{item.name}</Link>
                         <span className="co-menu-price">${parseFloat(item.price).toFixed(2)}</span>
                       </div>
                       <div className="co-counter">
@@ -1212,7 +1212,7 @@ export default function CustomOrder() {
                     <div key={id} className="co-menu-card">
                       {item.img && <img src={item.img} alt={item.name} className="co-menu-img" />}
                       <div className="co-menu-info">
-                        <Link to={`/menu/${id}`} className="co-menu-name">{item.name}</Link>
+                        <Link to={`/menu/item/${id}`} className="co-menu-name">{item.name}</Link>
                         <span className="co-menu-price">${parseFloat(item.price).toFixed(2)}</span>
                       </div>
                       <div className="co-counter">

@@ -77,6 +77,13 @@
   line-height: 1.5;
 }
 
+.cart-item-options {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.70);
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
 .cart-item-modifiers {
   font-size: 0.72rem;
   color: rgba(255,255,255,0.45);

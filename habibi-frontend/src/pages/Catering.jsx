@@ -215,7 +215,7 @@ export default function Catering() {
             <div className="cat-guest-row">
               <input
                 type="range"
-                min={10} max={500} step={5}
+                min={10} max={1000} step={5}
                 value={form.guest_count}
                 onChange={e => set('guest_count', parseInt(e.target.value))}
                 className="cat-slider"
@@ -223,7 +223,7 @@ export default function Catering() {
               <input
                 type="number"
                 className="cat-input cat-guest-num"
-                min={10} max={500}
+                min={10} max={1000}
                 value={form.guest_count}
                 onChange={e => set('guest_count', Math.max(10, parseInt(e.target.value) || 10))}
               />

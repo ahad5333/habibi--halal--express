@@ -516,7 +516,7 @@ const Home = () => {
                 <p className="text-sm font-bold" style={{ color: '#F97316', letterSpacing: '2px' }}>★ CHEF'S PICK</p>
                 <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>The Mixed Platter</h3>
                 <div className="curated-actions mt-2">
-                  <Link to="/menu?cat=platter" className="btn btn-outline-light btn-sm" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
+                  <Link to="/menu/platter" className="btn btn-outline-light btn-sm" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
                   <button className="btn btn-primary btn-sm" style={{ backgroundColor: '#F97316', border: 'none' }}>$16.99</button>
                 </div>
               </div>
@@ -524,12 +524,12 @@ const Home = () => {
 
             {/* Burger */}
             <div className="curated-card small">
-              <img src="/images/habibi-burger.jpg" alt="Habibi Berger" className="curated-img" loading="lazy" />
+              <img src="/images/habibi-burger.jpg" alt="Habibi Bergers" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>Habibi Berger</h3>
-                <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$10.99</p>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>Habibi Bergers</h3>
+                <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$6.49</p>
                 <div className="curated-actions mt-2">
-                  <Link to="/menu?cat=burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
+                  <Link to="/menu/burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Order Now</Link>
                 </div>
               </div>
             </div>

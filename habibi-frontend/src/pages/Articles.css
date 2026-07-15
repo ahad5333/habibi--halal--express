@@ -4,22 +4,32 @@
 .arc-hero {
   position: relative;
   padding: 7rem 1rem 4rem;
-  background: linear-gradient(160deg, #0d0500 0%, #1a0a00 50%, #0d0500 100%);
+  background-image: url('/images/articles/articles-hero.png');
+  background-size: cover;
+  background-position: center;
+  background-color: #0d0500;
   text-align: center;
   overflow: hidden;
 }
-.arc-hero::before {
-  content: '✍️';
+.arc-hero-overlay {
+  display: block;
   position: absolute;
-  font-size: 18rem;
-  opacity: 0.03;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  user-select: none;
+  inset: 0;
+  background: none;
 }
-.arc-hero-overlay { display: none; }
-.arc-hero-content { position: relative; z-index: 1; }
+.arc-hero-content {
+  position: relative;
+  z-index: 1;
+  display: block;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 2.5rem 3rem;
+  max-width: 640px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
 
 .arc-eyebrow {
   font-size: 0.72rem;
@@ -183,8 +193,40 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .arc-hero {
+    padding: 5rem 1rem 3rem;
+  }
+  .arc-hero-content {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+    width: 100%;
+  }
   .arc-card--large { flex-direction: column; }
   .arc-card--large .arc-card-img { flex: none; aspect-ratio: 16/8; }
   .arc-card--large .arc-card-body { padding: 1.5rem; }
   .arc-card--large .arc-card-title { font-size: 1.4rem; }
+  .arc-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .arc-grid-section .section,
+  .arc-featured-section .section {
+    padding: 7rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .arc-hero {
+    padding: 4rem 0.75rem 2.5rem;
+  }
+  .arc-hero-content {
+    top: 61px;
+    padding: 1.5rem 1.1rem;
+    border-radius: 10px;
+    width: 100%;
+  }
+  .arc-hero-title { font-size: 1.6rem; }
+  .arc-hero-sub { font-size: 0.9rem; }
+  .arc-card--large .arc-card-title { font-size: 1.25rem; }
+  .arc-card-body { padding: 1.1rem; }
 }
