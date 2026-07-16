@@ -777,6 +777,7 @@
   height: 200px;
   object-fit: contain;
   flex-shrink: 0;
+  margin-top: auto;
   margin-left: 2rem;
   margin-bottom: 0.75rem;
   filter: drop-shadow(0 4px 24px rgba(0,0,0,0.7));
@@ -785,6 +786,7 @@
   position: relative;
   z-index: 2;
   flex: 1;
+  margin-top: auto;
   padding: 1.25rem 2.5rem 1rem 2rem;
   background: linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.50) 70%, transparent 100%);
   border-radius: 0;
