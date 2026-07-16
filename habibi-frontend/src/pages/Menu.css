@@ -778,9 +778,10 @@
   filter: drop-shadow(0 4px 24px rgba(0,0,0,0.7));
 }
 .menu-cat-hero-text {
+  width: fit-content;
   position: absolute;
   bottom: 0;
-  left: calc(2rem + 160px + 1rem);
+  left: calc(3rem + 160px);
   right: 0;
   z-index: 2;
   padding: 1rem 2.5rem 0.85rem 1rem;
