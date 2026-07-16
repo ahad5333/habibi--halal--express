@@ -764,24 +764,23 @@
   background-size: cover;
   background-position: center;
   background-color: #1a0a00;
-  overflow: hidden;
   border-radius: 0 0 12px 12px;
   margin-bottom: 1.5rem;
 }
 .menu-cat-hero-icon {
   position: absolute;
-  bottom: 0.75rem;
+  bottom: -1.25rem;
   left: 2rem;
   z-index: 2;
-  width: 90px;
-  height: 90px;
+  width: 160px;
+  height: 160px;
   object-fit: contain;
   filter: drop-shadow(0 4px 24px rgba(0,0,0,0.7));
 }
 .menu-cat-hero-text {
   position: absolute;
   bottom: 0;
-  left: calc(2rem + 90px + 1rem);
+  left: calc(2rem + 160px + 1rem);
   right: 0;
   z-index: 2;
   padding: 1rem 2.5rem 0.85rem 1rem;
@@ -834,14 +833,14 @@
 
 @media (max-width: 768px) {
   .menu-cat-hero { height: 320px; margin-bottom: 1rem; }
-  .menu-cat-hero-icon { width: 72px; height: 72px; left: 1rem; bottom: 0.5rem; }
-  .menu-cat-hero-text { left: calc(1rem + 72px + 0.75rem); padding: 0.85rem 1rem 0.7rem 0.75rem; }
+  .menu-cat-hero-icon { width: 120px; height: 120px; left: 1rem; bottom: -1rem; }
+  .menu-cat-hero-text { left: calc(1rem + 120px + 0.75rem); padding: 0.85rem 1rem 0.7rem 0.75rem; }
   .menu-cat-hero-title { font-size: clamp(2rem, 8vw, 3rem); }
 }
 @media (max-width: 480px) {
   .menu-cat-hero { height: 260px; margin-bottom: 0.75rem; }
-  .menu-cat-hero-icon { width: 58px; height: 58px; left: 0.75rem; bottom: 0.4rem; }
-  .menu-cat-hero-text { left: calc(0.75rem + 58px + 0.6rem); padding: 0.7rem 0.5rem 0.55rem 0.5rem; }
+  .menu-cat-hero-icon { width: 90px; height: 90px; left: 0.75rem; bottom: -0.75rem; }
+  .menu-cat-hero-text { left: calc(0.75rem + 90px + 0.6rem); padding: 0.7rem 0.5rem 0.55rem 0.5rem; }
   .menu-cat-hero-title { font-size: clamp(1.4rem, 7vw, 1.9rem); }
   .menu-cat-hero-tagline { white-space: normal; letter-spacing: 0.12em; font-size: 0.65rem; }
   .menu-cat-hero-divider { gap: 0.4rem; }
@@ -849,8 +848,8 @@
 }
 @media (max-width: 360px) {
   .menu-cat-hero { height: 220px; margin-bottom: 0.6rem; }
-  .menu-cat-hero-icon { width: 48px; height: 48px; left: 0.5rem; }
-  .menu-cat-hero-text { left: calc(0.5rem + 48px + 0.5rem); padding: 0.55rem 0.4rem 0.45rem 0.4rem; }
+  .menu-cat-hero-icon { width: 72px; height: 72px; left: 0.5rem; bottom: -0.6rem; }
+  .menu-cat-hero-text { left: calc(0.5rem + 72px + 0.5rem); padding: 0.55rem 0.4rem 0.45rem 0.4rem; }
   .menu-cat-hero-title { font-size: clamp(1.2rem, 6.5vw, 1.5rem); letter-spacing: 0.08em; }
   .menu-cat-hero-tagline { font-size: 0.58rem; letter-spacing: 0.08em; }
 }
