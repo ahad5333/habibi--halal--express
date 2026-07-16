@@ -29,7 +29,7 @@ const CATEGORY_IMAGES = {
   sandwich:  '/images/menu/sandwich-banner.png',
   burgers:   '/images/menu/burgers-banner.png',
   tacos:     '/images/menu/tacos-banner.png',
-  specials:  '/images/menu/specials-banner.png',
+  specials:  '/images/menu/specials-banner.webp',
   extras:    '/images/menu/extras-banner.png',
   drinks:    '/images/menu/drinks-banner.png',
   family:    '/images/menu/family-banner.png',
