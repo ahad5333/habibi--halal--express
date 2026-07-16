@@ -126,21 +126,49 @@
   flex-shrink: 0;
 }
 
+.halal-glow-wrap {
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: halal-outer-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes halal-outer-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 10px 4px rgba(255, 190, 0, 0.45),
+      0 0 28px 10px rgba(255, 120, 0, 0.22),
+      0 0 55px 20px rgba(229, 182, 78, 0.10);
+  }
+  50% {
+    box-shadow:
+      0 0 20px 8px rgba(255, 200, 0, 0.75),
+      0 0 50px 20px rgba(255, 130, 0, 0.40),
+      0 0 90px 36px rgba(229, 182, 78, 0.20);
+  }
+}
+
 .navbar-halal-badge {
   width: 96px;
   height: 96px;
   object-fit: contain;
   border-radius: 50%;
   mix-blend-mode: screen;
-  flex-shrink: 0;
   pointer-events: none;
-  filter: drop-shadow(0 0 8px rgba(229,182,78,0.35));
+  display: block;
   animation: halal-badge-grow 2.5s ease-in-out infinite;
 }
 
 @keyframes halal-badge-grow {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(1.12); }
+}
+
+.navbar-center-badges:hover .halal-glow-wrap {
+  animation: none;
+  box-shadow:
+    0 0 24px 10px rgba(255, 200, 0, 0.80),
+    0 0 60px 24px rgba(255, 130, 0, 0.45),
+    0 0 100px 40px rgba(229, 182, 78, 0.25);
 }
 
 .navbar-center-badges:hover .navbar-halal-badge {
