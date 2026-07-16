@@ -781,7 +781,7 @@
   width: fit-content;
   position: absolute;
   bottom: 0;
-  left: calc(3rem + 160px);
+  left: calc(0rem + 160px);
   right: 0;
   z-index: 2;
   padding: 1rem 2.5rem 0.85rem 1rem;
