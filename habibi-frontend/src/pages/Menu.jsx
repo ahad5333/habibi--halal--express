@@ -36,7 +36,7 @@ const CATEGORY_IMAGES = {
   byo:       '/images/menu/byo-banner.png',
 };
 
-const MENU_ICON = '/images/menu/habibi-menu-icon.jpeg';
+const MENU_ICON = '/images/menu/habibi-menu-icon.png';
 
 /* Map a raw DB category string to a banner image */
 function MenuSkeleton() {
