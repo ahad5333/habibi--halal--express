@@ -24,7 +24,7 @@ const CATEGORIES = [
 ];
 
 const CATEGORY_IMAGES = {
-  breakfast: '/images/menu/breakfast-banner.jpeg',
+  breakfast: '/images/menu/breakfast-banner.webp',
   platter:   '/images/menu/platter-banner.png',
   sandwich:  '/images/menu/sandwich-banner.png',
   burgers:   '/images/menu/burgers-banner.png',
