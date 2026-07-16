@@ -781,8 +781,8 @@
   width: fit-content;
   position: absolute;
   bottom: 0;
-  left: calc(0rem + 160px);
-  right: 0;
+  left: calc(2rem + 160px);
+  right: 5px;
   z-index: 2;
   padding: 1rem 2.5rem 0.85rem 1rem;
   background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 60%, transparent 100%);
