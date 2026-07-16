@@ -283,7 +283,7 @@ const Navbar = () => {
           {/* Center: Halal badge + Order Now badge */}
           <div className="navbar-center-badges">
             <img
-              src="/images/logos/halal-certified-premium.png"
+              src="/images/logos/halal-certified-navbar.png"
               alt="Halal Certified"
               className="navbar-halal-badge"
             />

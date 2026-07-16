@@ -22,7 +22,7 @@ export default function ArticleHalalCertified() {
         keywords="halal certified bronx, what is halal, halal food standards, habibi halal"
       />
 
-      <div className="article-hero" style={{ backgroundImage: "url('/images/logos/halal-certified-premium.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="article-hero" style={{ backgroundImage: "url('/images/logos/halal-certified-premium.webp')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="article-hero-overlay" />
         <div className="container article-hero-content">
           <Link to="/articles" className="article-back"><ArrowLeft size={15} /> Back to Articles</Link>

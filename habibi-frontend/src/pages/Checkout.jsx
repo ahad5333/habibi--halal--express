@@ -1464,7 +1464,7 @@ const Checkout = () => {
                   {/* ── Trust badges ── */}
                   <div className="trust-badges">
                     <div className="trust-badge">
-                      <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="trust-badge-img" />
+                      <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="trust-badge-img" />
                       <div className="trust-badge-text">
                         <span className="trust-badge-label">Halal Certified</span>
                         <span className="trust-badge-sub">1000+ endorsements</span>
@@ -1509,7 +1509,7 @@ const Checkout = () => {
             </p>
 
             <div className="halal-seal">
-              <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="halal-seal-img" />
+              <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="halal-seal-img" />
               <div>
                 <p className="halal-seal-title">HALAL CERTIFIED</p>
                 <p className="halal-seal-sub">Premium by 1000+ Halal endorsements.</p>

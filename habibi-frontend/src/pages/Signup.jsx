@@ -258,7 +258,7 @@ const Signup = () => {
           </ul>
 
           <div className="sp-halal-badge">
-            <img src="/images/logos/halal-certified-premium.png" alt="Halal Certified" className="sp-halal-img" />
+            <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="sp-halal-img" />
             <div>
               <p className="sp-halal-title">Zabiha Halal Certified</p>
               <p className="sp-halal-sub">All items verified since 2002</p>

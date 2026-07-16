@@ -40,7 +40,7 @@ export const ALL_ARTICLES = [
     category: 'Our Values',
     date: 'March 2026',
     readTime: '6 min read',
-    image: '/images/logos/halal-certified-premium.png',
+    image: '/images/logos/halal-certified-premium.webp',
     excerpt: `Halal isn't just a label at Habibi — it's a promise. We break down exactly what our certification means, how we maintain it, and why we believe it makes our food better for everyone.`,
     featured: false,
   },
