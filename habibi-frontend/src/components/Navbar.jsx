@@ -22,7 +22,7 @@ const LEFT_ITEMS = [
       { label: 'Extras',          path: '/menu/extras' },
       { label: 'Drinks',          path: '/menu/drinks' },
       { label: 'Family Tray',     path: '/menu/family' },
-      { label: 'Build Your Own! ✨', path: '/menu/byo', highlight: true },
+      { label: 'Build Your Own! ✨', path: '/menu/byo' },
     ],
   },
   {
@@ -282,12 +282,7 @@ const Navbar = () => {
 
           {/* Center: Halal badge + Order Now badge */}
           <div className="navbar-center-badges">
-            <img
-              src="/images/logos/halal-certified-navbar.png"
-              alt="Halal Certified"
-              className="navbar-halal-badge"
-            />
-            <Link to="/order" className="navbar-order-badge" title="Order Now">
+<Link to="/order" className="navbar-order-badge" title="Order Now">
               <img
                 src="/images/logos/order-now-badge.webp"
                 alt="Order Now"

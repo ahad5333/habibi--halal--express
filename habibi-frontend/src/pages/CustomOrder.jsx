@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check, Bookmark, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { menuAPI, savedCustomAPI } from '../services/api';
@@ -12,29 +12,29 @@ import './CustomOrder.css';
    ================================================================ */
 
 const BASES = [
-  { id: '39a', label: 'Hero',        price: 1.99, img: '/images/menu/39a.webp', family: 'hero'       },
-  { id: '39b', label: 'Wrap',        price: 1.99, img: '/images/menu/39b.webp', family: 'wrap',       note: 'Habibi Special Wrap' },
-  { id: '39c', label: 'Pita Bread',  price: 1.99, img: '/images/menu/39c.webp', family: 'wrap'       },
-  { id: '39d', label: 'Croissant',   price: 1.99, img: '/images/menu/39d.webp', family: 'compact'    },
-  { id: '39e', label: 'Bagel',       price: 1.99, img: '/images/menu/39e.webp', family: 'standard'   },
-  { id: '39f', label: 'Roll',        price: 1.49, img: '/images/menu/39f.webp', family: 'standard'   },
-  { id: '39g', label: 'Burger Bun',  price: 1.99, img: '/images/menu/39g.webp', family: 'standard'   },
-  { id: '39h', label: 'Hot Dog Bun', price: 0.99, img: '/images/menu/39h.webp', family: 'compact'    },
-  { id: '39i', label: 'Platter',     price: 2.99, img: '/images/menu/39i.webp', family: 'platter'    },
-  { id: '39j', label: 'Family Tray', price: 4.99, img: '/images/menu/39j.webp', family: 'familyTray' },
+  { id: '39a', label: 'Hero',        price: 1.99, img: '/images/byo/bases/39a.webp', family: 'hero' },
+  { id: '39b', label: 'Wrap',        price: 1.99, img: '/images/byo/bases/39b.webp', family: 'wrap',       note: 'Habibi Special Wrap' },
+  { id: '39c', label: 'Pita Bread',  price: 1.99, img: '/images/byo/bases/39c.webp', family: 'wrap' },
+  { id: '39d', label: 'Croissant',   price: 1.99, img: '/images/byo/bases/39d.webp', family: 'compact' },
+  { id: '39e', label: 'Bagel',       price: 1.99, img: '/images/byo/bases/39e.webp', family: 'standard' },
+  { id: '39f', label: 'Roll',        price: 1.49, img: '/images/byo/bases/39f.webp', family: 'standard' },
+  { id: '39g', label: 'Burger Bun',  price: 1.99, img: '/images/byo/bases/39g.webp', family: 'standard' },
+  { id: '39h', label: 'Hot Dog Bun', price: 0.99, img: '/images/byo/bases/39h.webp', family: 'compact' },
+  { id: '39i', label: 'Platter',     price: 2.99, img: '/images/byo/bases/39i.webp', family: 'platter',    rim: '/images/byo/bases/39i-rim.webp' },
+  { id: '39j', label: 'Family Tray', price: 4.99, img: '/images/byo/bases/39j.webp', family: 'familyTray', rim: '/images/byo/bases/39j-rim.webp' },
 ];
 
 const CHEESE_OPTS = [
-  { id: 'none',     label: 'No Cheese',      price: 0,    emoji: '⬜', default: true },
-  { id: 'american', label: 'American Cheese', price: 1.00, emoji: '🧀', img: '/images/byo/ing/american-cheese.webp' },
-  { id: 'cream',    label: 'Cream Cheese',    price: 2.00, emoji: '🧈', img: '/images/byo/ing/cream-cheese.webp'   },
-  { id: 'butter',   label: 'Butter',          price: 2.00, emoji: '🫙', img: '/images/byo/ing/butter.webp'        },
+  { id: 'none',          label: 'No Cheese',      price: 0,    emoji: '⬜', default: true },
+  { id: 'american',      label: 'American Cheese', price: 1.00, emoji: '🧀', img: '/images/byo/ing/american-cheese.webp'  },
+  { id: 'butter',        label: 'Butter',          price: 2.00, emoji: '🫙', img: '/images/byo/ing/butter2.webp'           },
+  { id: 'liquid_cheese', label: 'Cream Cheese',    price: 1.50, emoji: '🫕', img: '/images/byo/ing/liquid-cheese.webp'   },
 ];
 
 const VEG_OPTS = [
-  { id: 'onions',    label: 'Onions',        price: 0.50, emoji: '🧅', img: '/images/byo/ing/onion.webp'    },
+  { id: 'onions',    label: 'Onions',        price: 0.50, emoji: '🧅', img: '/images/byo/ing/onion2.webp'    },
   { id: 'peppers',   label: 'Green Peppers', price: 0.50, emoji: '🌿', img: '/images/byo/ing/pepper.webp'   },
-  { id: 'cucumbers', label: 'Cucumbers',     price: 0.50, emoji: '🥒', img: '/images/byo/ing/cucumber.webp' },
+  { id: 'cucumbers', label: 'Cucumbers',     price: 0.50, emoji: '🥒', img: '/images/byo/ing/cucumber2.webp' },
   { id: 'lettuce',   label: 'Lettuce',       price: 0.50, emoji: '🥬', img: '/images/byo/ing/lettuce.webp'  },
   { id: 'tomatoes',  label: 'Tomatoes',      price: 0.50, emoji: '🍅', img: '/images/byo/ing/tomato.webp'   },
   { id: 'rice',      label: 'Rice',          price: 2.00, emoji: '🍚', img: '/images/byo/ing/rice.webp' },
@@ -48,9 +48,9 @@ const VEG_OPTS = [
 const PROTEIN_OPTS = [
   { id: 'egg-fried',       label: 'Egg (Fried)',           price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-fried.webp'       },
   { id: 'egg-scrambled',   label: 'Egg (Scrambled)',        price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-scrambled.webp'   },
-  { id: 'chicken',         label: 'Chicken (Grilled)',      price: 6.00, qtyType: 'low-extra',     emoji: '🍗', img: '/images/byo/ing/chicken.webp'  },
+  { id: 'chicken',         label: 'Chicken',                price: 6.00, qtyType: 'low-extra',     emoji: '🍗', img: '/images/byo/ing/chicken2.webp'  },
   { id: 'lamb-gyro',       label: 'Lamb Gyro',             price: 6.00, qtyType: 'low-extra',     emoji: '🥩', img: '/images/byo/ing/lamb-gyro.webp'       },
-  { id: 'mix',             label: 'Mix (Chicken + Gyro)',  price: 7.00, qtyType: 'low-extra',     emoji: '🍖', img: '/images/byo/ing/mix.webp'      },
+  { id: 'mix',             label: 'Mix',                   price: 7.00, qtyType: 'low-extra',     emoji: '🍖', img: '/images/byo/ing/mix.webp'      },
   { id: 'hotdog',          label: 'Hot Dog',               price: 2.00, qtyType: 'single-double', emoji: '🌭', img: '/images/byo/ing/hotdog.webp'           },
   { id: 'bacon',           label: 'Bacon',                 price: 3.00, qtyType: 'low-extra',     emoji: '🥓', img: '/images/byo/ing/bacon.webp',    note: 'Beef bacon, halal' },
   { id: 'hot-sausage',     label: 'Hot Sausage',           price: 3.00, qtyType: 'single-double', emoji: '🌭', img: '/images/byo/ing/hot-sausage.webp'     },
@@ -60,10 +60,10 @@ const PROTEIN_OPTS = [
   { id: 'beef-kabab',      label: 'Beef Shish Kabab',      price: 4.00, qtyType: 'single-triple', emoji: '🍢', img: '/images/byo/ing/beef-kabab.webp'      },
   { id: 'philly-steak',    label: 'Philly Steak',          price: 6.00, qtyType: 'single-double', emoji: '🥩', img: '/images/byo/ing/philly-steak.webp'    },
   { id: 'falafel',         label: 'Falafel',               price: 6.00, qtyType: 'low-extra',     emoji: '🧆', img: '/images/byo/ing/falafel-6.webp', imgByQty: { low: '/images/byo/ing/falafel-3.webp', regular: '/images/byo/ing/falafel-6.webp', extra: '/images/byo/ing/falafel-9.webp', double: '/images/byo/ing/falafel-12.webp' } },
-  { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: '🐟', img: '/images/byo/ing/fish-fillet.webp'     },
+  { id: 'fish-fillet',     label: 'Fish Fillet',           price: 7.00, qtyType: 'single-double', emoji: '🐟', img: '/images/byo/ing/fish-fillet2.webp'     },
   { id: 'shrimp',          label: 'Shrimp',                price: 8.00, qtyType: 'low-extra',     emoji: '🍤', img: '/images/byo/ing/shrimp.webp'          },
   { id: 'tuna',            label: 'Tuna Fish',             price: 7.00, qtyType: 'low-extra',     emoji: '🐠', img: '/images/byo/ing/tuna.webp'            },
-  { id: 'beef-burger',     label: 'Beef Berger',           price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/beef-burger.webp'     },
+  { id: 'beef-burger',     label: 'Beef Berger',           price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/beef-burger2.webp'     },
   { id: 'chicken-burger',  label: 'Chicken Berger',        price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/chicken-burger.webp'  },
 ];
 
@@ -147,72 +147,73 @@ const QTY_OPTS = {
    ================================================================ */
 const CO_ING_DB = {
   /* ── PROTEINS  z=4 ─────────────────────────────────────────── */
-  chicken:          { zone:'protein', src:'/images/byo/ing/chicken.webp',          z:4, pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:56}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:80}], compact:[{x:50,y:44,w:82}], wrap:[{x:50,y:44,w:72}] } },
-  'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, pos:{ familyTray:[{x:50,y:43,w:46}], platter:[{x:50,y:43,w:58}], hero:[{x:50,y:43,w:76}], standard:[{x:50,y:43,w:82}], compact:[{x:50,y:43,w:84}], wrap:[{x:50,y:43,w:74}] } },
-  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:56}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:80}], compact:[{x:50,y:44,w:82}], wrap:[{x:50,y:44,w:72}] } },
-  hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, pos:{ familyTray:[{x:50,y:44,w:52}], platter:[{x:50,y:44,w:64}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:80}], compact:[{x:50,y:43,w:78}], wrap:[{x:50,y:43,w:74}] } },
-  bacon:            { zone:'protein', src:'/images/byo/ing/bacon.webp',             z:4, pos:{ familyTray:[{x:36,y:44,w:22},{x:64,y:44,w:22}], platter:[{x:35,y:44,w:28},{x:65,y:44,w:28}], hero:[{x:32,y:44,w:36},{x:68,y:44,w:36}], standard:[{x:34,y:44,w:38},{x:66,y:44,w:38}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:34,y:44,w:36},{x:66,y:44,w:36}] } },
-  'hot-sausage':    { zone:'protein', src:'/images/byo/ing/hot-sausage.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:48}], platter:[{x:50,y:44,w:58}], hero:[{x:50,y:44,w:76}], standard:[{x:50,y:44,w:80}], compact:[{x:50,y:44,w:82}], wrap:[{x:50,y:44,w:72}] } },
-  'italian-sausage':{ zone:'protein', src:'/images/byo/ing/italian-sausage.webp',  z:4, pos:{ familyTray:[{x:50,y:44,w:52}], platter:[{x:50,y:44,w:64}], hero:[{x:50,y:44,w:80}], standard:[{x:50,y:44,w:84}], compact:[{x:50,y:44,w:84}], wrap:[{x:50,y:44,w:74}] } },
-  turkey:           { zone:'protein', src:'/images/byo/ing/turkey.webp',            z:4, pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:52}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:78}], compact:[{x:50,y:44,w:80}], wrap:[{x:50,y:44,w:68}] } },
-  'chicken-kabab':  { zone:'protein', src:'/images/byo/ing/chicken-kabab.webp',    z:4, pos:{ familyTray:[{x:34,y:44,w:26},{x:66,y:44,w:26}], platter:[{x:32,y:44,w:32},{x:68,y:44,w:32}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:30,y:44,w:46},{x:70,y:44,w:46}], compact:[{x:32,y:44,w:42},{x:68,y:44,w:42}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
-  'beef-kabab':     { zone:'protein', src:'/images/byo/ing/beef-kabab.webp',       z:4, pos:{ familyTray:[{x:34,y:44,w:26},{x:66,y:44,w:26}], platter:[{x:32,y:44,w:32},{x:68,y:44,w:32}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:30,y:44,w:46},{x:70,y:44,w:46}], compact:[{x:32,y:44,w:42},{x:68,y:44,w:42}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
-  'philly-steak':   { zone:'protein', src:'/images/byo/ing/philly-steak.webp',     z:4, pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:54}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:78}], compact:[{x:50,y:44,w:80}], wrap:[{x:50,y:44,w:68}] } },
-  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:50,y:44,w:40}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:44,w:68}], standard:[{x:50,y:44,w:74}], compact:[{x:50,y:44,w:72}], wrap:[{x:50,y:44,w:64}] } },
-  'fish-fillet':    { zone:'protein', src:'/images/byo/ing/fish-fillet.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:52}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:76}], compact:[{x:50,y:44,w:78}], wrap:[{x:50,y:44,w:66}] } },
-  shrimp:           { zone:'protein', src:'/images/byo/ing/shrimp.webp',            z:4, pos:{ familyTray:[{x:34,y:43,w:24},{x:66,y:45,w:24}], platter:[{x:32,y:43,w:30},{x:68,y:45,w:30}], hero:[{x:28,y:43,w:40},{x:72,y:45,w:40}], standard:[{x:30,y:43,w:44},{x:70,y:45,w:44}], compact:[{x:32,y:43,w:40},{x:68,y:45,w:40}], wrap:[{x:30,y:43,w:38},{x:70,y:45,w:38}] } },
-  tuna:             { zone:'protein', src:'/images/byo/ing/tuna.webp',              z:4, pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:52}], hero:[{x:50,y:44,w:68}], standard:[{x:50,y:44,w:74}], compact:[{x:50,y:44,w:76}], wrap:[{x:50,y:44,w:64}] } },
-  'beef-burger':    { zone:'protein', src:'/images/byo/ing/beef-burger.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:42}], hero:[{x:50,y:44,w:56}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:44,w:70}], wrap:[{x:50,y:44,w:58}] } },
-  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:42}], hero:[{x:50,y:44,w:56}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:44,w:70}], wrap:[{x:50,y:44,w:58}] } },
-  'egg-fried':      { zone:'protein', src:'/images/byo/ing/egg-fried.webp',        z:4, pos:{ familyTray:[{x:34,y:44,w:16,rot:12},{x:66,y:44,w:16,rot:-9}], platter:[{x:32,y:44,w:20,rot:10},{x:68,y:43,w:20,rot:-8}], hero:[{x:30,y:44,w:30,rot:10},{x:70,y:43,w:29,rot:-9}], standard:[{x:31,y:44,w:34,rot:10},{x:69,y:43,w:33,rot:-8}], compact:[{x:33,y:44,w:32,rot:8},{x:67,y:44,w:31,rot:-7}], wrap:[{x:31,y:44,w:32,rot:12},{x:69,y:43,w:31,rot:-10}] } },
-  'egg-scrambled':  { zone:'protein', src:'/images/byo/ing/egg-scrambled.webp',    z:4, pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:56}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:78}], compact:[{x:50,y:44,w:78}], wrap:[{x:50,y:44,w:66}] } },
+  chicken:          { zone:'protein', src:'/images/byo/ing/chicken2.webp',          z:4, hotDogPos:[{x:50,y:70,w:34}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, hotDogPos:[{x:50,y:71,w:34}], pos:{ familyTray:[{x:50,y:43,w:44}], platter:[{x:50,y:43,w:46}], hero:[{x:50,y:43,w:76}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:66}], wrap:[{x:50,y:43,w:74}] } },
+  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:68}], wrap:[{x:50,y:43,w:74}] } },
+  bacon:            { zone:'protein', src:'/images/byo/ing/bacon.webp',             z:4, hotDogPos:[{x:42,y:70,w:28},{x:58,y:70,w:29}], pos:{ familyTray:[{x:36,y:44,w:18},{x:64,y:44,w:18}], platter:[{x:35,y:44,w:24},{x:65,y:44,w:24}], hero:[{x:32,y:44,w:36},{x:68,y:44,w:36}], standard:[{x:36,y:44,w:30},{x:64,y:44,w:30}], compact:[{x:36,y:44,w:30},{x:64,y:44,w:30}], wrap:[{x:34,y:44,w:36},{x:66,y:44,w:36}] } },
+  'hot-sausage':    { zone:'protein', src:'/images/byo/ing/hot-sausage.webp',      z:4, showAside:true, hotDogPos:[{x:50,y:70,w:49}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:46}], hero:[{x:50,y:44,w:76}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  'italian-sausage':{ zone:'protein', src:'/images/byo/ing/italian-sausage.webp',  z:4, hotDogPos:[{x:50,y:70,w:46}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:44,w:80}], standard:[{x:50,y:44,w:64}], compact:[{x:50,y:44,w:66}], wrap:[{x:50,y:44,w:74}] } },
+  turkey:           { zone:'protein', src:'/images/byo/ing/turkey.webp',            z:4, showAside:true, hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:40}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:63}], wrap:[{x:50,y:44,w:68}] } },
+  'chicken-kabab':  { zone:'protein', src:'/images/byo/ing/chicken-kabab.webp',    z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
+  'beef-kabab':     { zone:'protein', src:'/images/byo/ing/beef-kabab.webp',       z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
+  'philly-steak':   { zone:'protein', src:'/images/byo/ing/philly-steak.webp',     z:4, hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:42}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:62}], wrap:[{x:50,y:44,w:68}] } },
+  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:38}], hero:[{x:50,y:44,w:52}], standard:[{x:50,y:44,w:42}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:50}] } },
+  'fish-fillet':    { zone:'protein', src:'/images/byo/ing/fish-fillet2.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:66}] } },
+  shrimp:           { zone:'protein', src:'/images/byo/ing/shrimp.webp',            z:4, hotDogPos:[{x:42,y:69,w:41}], pos:{ familyTray:[{x:34,y:43,w:18},{x:66,y:45,w:18}], platter:[{x:32,y:43,w:24},{x:68,y:45,w:24}], hero:[{x:28,y:43,w:40},{x:72,y:45,w:40}], standard:[{x:36,y:43,w:34},{x:64,y:45,w:34}], compact:[{x:36,y:43,w:32},{x:64,y:45,w:32}], wrap:[{x:30,y:43,w:38},{x:70,y:45,w:38}] } },
+  tuna:             { zone:'protein', src:'/images/byo/ing/tuna.webp',              z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:68}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:64}] } },
+  'beef-burger':    { zone:'protein', src:'/images/byo/ing/beef-burger2.webp',      z:4, hotDogPos:[{x:50,y:62,w:24}], pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:55,y:44,w:20}], hero:[{x:50,y:44,w:28}], standard:[{x:50,y:44,w:28}], compact:[{x:50,y:44,w:28}], wrap:[{x:50,y:44,w:32}] } },
+  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:34}], hero:[{x:50,y:44,w:56}], standard:[{x:50,y:44,w:56}], compact:[{x:50,y:44,w:58}], wrap:[{x:50,y:44,w:58}] } },
+  'egg-fried':      { zone:'protein', src:'/images/byo/ing/egg-fried.webp',        z:4, pos:{ familyTray:[{x:34,y:44,w:14,rot:12},{x:66,y:44,w:14,rot:-9}], platter:[{x:32,y:44,w:18,rot:10},{x:68,y:43,w:18,rot:-8}], hero:[{x:30,y:44,w:30,rot:10},{x:70,y:43,w:29,rot:-9}], standard:[{x:36,y:44,w:28,rot:10},{x:64,y:43,w:27,rot:-8}], compact:[{x:36,y:44,w:28,rot:8},{x:64,y:44,w:27,rot:-7}], wrap:[{x:31,y:44,w:32,rot:12},{x:69,y:43,w:31,rot:-10}] } },
+  'egg-scrambled':  { zone:'protein', src:'/images/byo/ing/egg-scrambled.webp',    z:4, hotDogPos:[{x:50,y:70,w:47}], pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:64}], wrap:[{x:50,y:44,w:66}] } },
 
-  /* ── CHEESE  z=5 — renders above protein so it's visible ──────── */
-  /* American: square Kraft-style slice — smaller discrete piece, not full coverage */
-  american: { zone:'cheese', src:'/images/byo/ing/american-cheese.webp', z:5, pos:{ familyTray:[{x:50,y:47,w:40}], platter:[{x:50,y:47,w:46}], hero:[{x:50,y:47,w:54}], standard:[{x:50,y:47,w:62}], compact:[{x:50,y:47,w:66}], wrap:[{x:50,y:47,w:56}] } },
-  /* Cream: wide oval spread — covers the whole protein area */
-  cream:    { zone:'cheese', src:'/images/byo/ing/cream-cheese.webp',    z:5, pos:{ familyTray:[{x:50,y:47,w:58}], platter:[{x:50,y:47,w:64}], hero:[{x:50,y:47,w:74}], standard:[{x:50,y:47,w:80}], compact:[{x:50,y:47,w:78}], wrap:[{x:50,y:47,w:72}] } },
-  /* Butter: compact rectangular pat */
-  butter:   { zone:'cheese', src:'/images/byo/ing/butter.webp',          z:5, pos:{ familyTray:[{x:50,y:47,w:20}], platter:[{x:50,y:47,w:24}], hero:[{x:50,y:47,w:30}], standard:[{x:50,y:47,w:36}], compact:[{x:50,y:47,w:38}], wrap:[{x:50,y:47,w:32}] } },
+  /* ── CHEESE  z=3 — sits below protein (z=4) so it peeks out at the edges.
+     Sizes kept modest so cheese is a layer, not the visual hero.          ── */
+  american:      { zone:'cheese', src:'/images/byo/ing/american-cheese.webp', z:3, hotDogPos:[{x:50,y:69,w:29}], pos:{ familyTray:[{x:50,y:47,w:18}], platter:[{x:50,y:47,w:29}], hero:[{x:50,y:47,w:26}], standard:[{x:50,y:47,w:22}], compact:[{x:50,y:47,w:22}], wrap:[{x:50,y:47,w:28}] } },
+  cream:         { zone:'cheese', src:'/images/byo/ing/cream-cheese.webp',    z:3, pos:{ familyTray:[{x:50,y:47,w:20}], platter:[{x:50,y:47,w:22}], hero:[{x:50,y:47,w:34}], standard:[{x:50,y:47,w:28}], compact:[{x:50,y:47,w:30}], wrap:[{x:50,y:47,w:32}] } },
+  butter:        { zone:'cheese', src:'/images/byo/ing/butter2.webp',          z:3, pos:{ familyTray:[{x:50,y:47,w:13}], platter:[{x:50,y:47,w:14}], hero:[{x:50,y:47,w:18}], standard:[{x:50,y:47,w:16}], compact:[{x:50,y:47,w:16}], wrap:[{x:50,y:47,w:18}] } },
+  liquid_cheese: { zone:'cheese', src:'/images/byo/ing/liquid-cheese.webp',   z:3, hotDogPos:[{x:49,y:69,w:57}], pos:{ familyTray:[{x:50,y:47,w:30}], platter:[{x:50,y:47,w:32}], hero:[{x:50,y:47,w:40}], standard:[{x:50,y:47,w:36}], compact:[{x:50,y:47,w:34}], wrap:[{x:50,y:47,w:38}] } },
 
   /* ── VEGETABLES  z=2 bed / z=5 scattered ───────────────────── */
-  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, pos:{ familyTray:[{x:50,y:56,w:88}], platter:[{x:50,y:55,w:82}], hero:[{x:50,y:55,w:86}], standard:[{x:50,y:54,w:84}], compact:[{x:50,y:54,w:80}], wrap:[{x:50,y:54,w:84}] } },
-  /* Rice: 620×340px elongated pile — ~⅓ of base width in solo, zone remapping handles splits */
-  rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',     z:2, pos:{ familyTray:[{x:50,y:52,w:34}], platter:[{x:50,y:52,w:38}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:58}], compact:[{x:50,y:54,w:54}], wrap:[{x:50,y:54,w:60}] } },
-  /* Onions: ~2" slice — many scattered across base */
-  onions:   { zone:'veg', src:'/images/byo/ing/onion.webp',    z:5, pos:{
-    familyTray:[{x:16,y:43,w:10},{x:34,y:48,w:10},{x:52,y:42,w:10},{x:70,y:48,w:10},{x:86,y:43,w:10}],
-    platter:   [{x:16,y:43,w:13},{x:36,y:48,w:13},{x:56,y:42,w:12},{x:74,y:48,w:12},{x:88,y:43,w:11}],
+  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, hotDogPos:[{x:50,y:44,w:38}], pos:{ familyTray:[{x:65,y:53,w:34}], platter:[{x:75,y:53,w:35}], hero:[{x:50,y:44,w:86}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:52,w:70}], wrap:[{x:50,y:44,w:84}] } },
+  /* Rice: square yellow basmati for flat trays; platter uses same dense image, bread bases use elongated pile */
+  rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',
+    srcByFamily: { familyTray:'/images/byo/ing/rice-tray.webp', platter:'/images/byo/ing/rice-tray.webp' },
+    z:2, pos:{ familyTray:[{x:20,y:50,w:50}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
+  /* Onions: ~2" slice — fewer, centred for compact round bases */
+  onions:   { zone:'veg', src:'/images/byo/ing/onion2.webp',    z:5, hotDogPos:[{x:42,y:44,w:26},{x:61,y:45,w:18}], pos:{
+    familyTray:[{x:16,y:43,w:10},{x:34,y:48,w:10},{x:52,y:42,w:10},{x:73,y:61,w:15},{x:79,y:48,w:18}],
+    platter:   [{x:22,y:59,w:12},{x:40,y:64,w:12},{x:58,y:58,w:11},{x:76,y:64,w:11}],
     hero:      [{x:14,y:44,w:18},{x:36,y:40,w:18},{x:58,y:45,w:17},{x:78,y:41,w:17},{x:92,y:44,w:16}],
-    standard:  [{x:18,y:44,w:26},{x:46,y:40,w:24},{x:74,y:45,w:24},{x:92,y:41,w:22}],
-    compact:   [{x:20,y:44,w:28},{x:50,y:40,w:26},{x:78,y:45,w:26}],
+    standard:  [{x:33,y:44,w:18},{x:72,y:45,w:18},{x:52,y:42,w:18}],
+    compact:   [{x:33,y:44,w:20},{x:72,y:45,w:19},{x:52,y:42,w:18}],
     wrap:      [{x:16,y:44,w:20},{x:40,y:40,w:18},{x:62,y:45,w:19},{x:82,y:41,w:18}],
   } },
   /* Peppers: ~2" slice */
   peppers:  { zone:'veg', src:'/images/byo/ing/pepper.webp',   z:5, pos:{
-    familyTray:[{x:12,y:49,w:9},{x:28,y:45,w:9},{x:46,y:50,w:9},{x:64,y:45,w:9},{x:80,y:50,w:9},{x:92,y:45,w:8}],
-    platter:   [{x:13,y:49,w:11},{x:30,y:45,w:11},{x:50,y:50,w:11},{x:68,y:45,w:10},{x:84,y:50,w:10}],
+    familyTray:[{x:14,y:49,w:9},{x:30,y:45,w:9},{x:48,y:50,w:9},{x:66,y:45,w:9},{x:82,y:50,w:8}],
+    platter:   [{x:22,y:49,w:10},{x:38,y:45,w:10},{x:54,y:50,w:10},{x:70,y:45,w:9},{x:78,y:50,w:9}],
     hero:      [{x:12,y:50,w:16},{x:32,y:46,w:15},{x:54,y:51,w:15},{x:74,y:46,w:15},{x:90,y:50,w:14}],
-    standard:  [{x:16,y:50,w:22},{x:44,y:46,w:20},{x:70,y:51,w:20},{x:90,y:47,w:18}],
-    compact:   [{x:18,y:50,w:24},{x:48,y:46,w:22},{x:76,y:51,w:22}],
+    standard:  [{x:30,y:50,w:16},{x:52,y:46,w:15},{x:72,y:51,w:15}],
+    compact:   [{x:30,y:50,w:17},{x:52,y:46,w:16},{x:72,y:51,w:16}],
     wrap:      [{x:14,y:50,w:18},{x:38,y:46,w:17},{x:62,y:51,w:17},{x:82,y:47,w:16}],
   } },
-  /* Cucumbers: ~1.5" slice — 10% of tray width on familyTray, 12% on platter */
-  cucumbers: { zone:'veg', src:'/images/byo/ing/cucumber.webp', z:5, pos:{
-    familyTray:[{x:14,y:55,w:10},{x:28,y:51,w:10},{x:44,y:56,w:10},{x:60,y:51,w:9},{x:76,y:56,w:9},{x:90,y:51,w:9}],
-    platter:   [{x:14,y:55,w:12},{x:30,y:51,w:12},{x:48,y:56,w:12},{x:66,y:51,w:11},{x:82,y:56,w:11}],
+  /* Cucumbers: ~1.5" slice — fewer, tighter for compact round bases */
+  cucumbers: { zone:'veg', src:'/images/byo/ing/cucumber2.webp', z:5, pos:{
+    familyTray:[{x:16,y:55,w:10},{x:32,y:51,w:10},{x:48,y:56,w:10},{x:64,y:51,w:9},{x:80,y:56,w:9}],
+    platter:   [{x:22,y:55,w:11},{x:38,y:51,w:11},{x:54,y:56,w:11},{x:70,y:51,w:10},{x:78,y:56,w:10}],
     hero:      [{x:12,y:56,w:14},{x:30,y:52,w:14},{x:52,y:57,w:13},{x:72,y:52,w:13},{x:88,y:56,w:12}],
-    standard:  [{x:16,y:56,w:20},{x:44,y:52,w:18},{x:70,y:57,w:18},{x:90,y:53,w:16}],
-    compact:   [{x:18,y:56,w:22},{x:50,y:52,w:20},{x:78,y:57,w:20}],
+    standard:  [{x:30,y:56,w:14},{x:50,y:52,w:14},{x:70,y:57,w:13}],
+    compact:   [{x:30,y:56,w:15},{x:52,y:52,w:14},{x:72,y:57,w:14}],
     wrap:      [{x:14,y:56,w:16},{x:38,y:52,w:15},{x:62,y:57,w:15},{x:84,y:52,w:14}],
   } },
-  /* Tomatoes: ~3" slice — sized realistically per base */
-  tomatoes: { zone:'veg', src:'/images/byo/ing/tomato.webp',   z:5, pos:{
-    familyTray:[{x:24,y:41,w:18},{x:50,y:45,w:18},{x:76,y:41,w:17}],
-    platter:   [{x:22,y:41,w:22},{x:50,y:45,w:22},{x:78,y:41,w:21}],
+  /* Tomatoes: ~3" slice */
+  tomatoes: { zone:'veg', src:'/images/byo/ing/tomato.webp',   z:5, hotDogPos:[{x:56,y:56,w:18}], pos:{
+    familyTray:[{x:26,y:41,w:17},{x:50,y:45,w:17},{x:64,y:41,w:17}],
+    platter:   [{x:28,y:41,w:17},{x:50,y:45,w:18},{x:72,y:41,w:17}],
     hero:      [{x:20,y:41,w:32},{x:50,y:45,w:30},{x:80,y:41,w:30}],
-    standard:  [{x:28,y:41,w:42},{x:72,y:45,w:40}],
-    compact:   [{x:30,y:41,w:44},{x:70,y:45,w:40}],
+    standard:  [{x:60,y:52,w:32},{x:36,y:52,w:32}],
+    compact:   [{x:60,y:52,w:32},{x:36,y:52,w:30}],
     wrap:      [{x:22,y:41,w:34},{x:52,y:45,w:32},{x:80,y:41,w:30}],
   } },
 };
@@ -251,6 +252,18 @@ const SAUCE_DRIZZLE_SRC = (() => {
   return out;
 })();
 
+/* ── Sauce pool colours — used for CSS blob rendering ────── */
+const SAUCE_COLORS = {
+  white:   { pool: 'rgba(240,228,195,0.95)', hi: 'rgba(255,250,238,1.0)'  },
+  hot:     { pool: 'rgba(210,22,8,0.96)',    hi: 'rgba(255,60,25,1.0)'    },
+  ketchup: { pool: 'rgba(178,10,10,0.96)',   hi: 'rgba(230,38,22,1.0)'    },
+  mustard: { pool: 'rgba(210,155,0,0.96)',   hi: 'rgba(255,198,0,1.0)'    },
+  bbq:     { pool: 'rgba(62,18,4,0.97)',     hi: 'rgba(115,40,10,1.0)'    },
+  green:   { pool: 'rgba(10,120,10,0.96)',   hi: 'rgba(32,168,24,1.0)'    },
+  mayo:    { pool: 'rgba(232,205,75,0.96)',  hi: 'rgba(252,240,138,1.0)'  },
+  blue:    { pool: 'rgba(88,75,155,0.96)',   hi: 'rgba(138,125,198,1.0)'  },
+};
+
 /* ── Remap x AND w into a zone (used for vegetables, rice) ── */
 function remapZone(pos, zoneMin, zoneMax) {
   const zW = zoneMax - zoneMin;
@@ -266,20 +279,67 @@ function remapZoneX(pos, zoneMin, zoneMax) {
   return { ...pos, x: Math.round(newX) };
 }
 
+/* ── Per-family ingredient bounds — derived from displayed image dimensions in 4:3 canvas.
+   Square images (1:1) in a 4:3 canvas fill ~66% of canvas width centered → xMin≈20, xMax≈80.
+   Landscape images (≥4:3) fill ~92% width. Portrait images fill less.               ── */
+const FAMILY_BOUNDS = {
+  hero:       { xMin: 5,  xMax: 93, maxW: 78 }, // 1536×1024 landscape ≈ 4:3 → fills ~92%
+  wrap:       { xMin: 20, xMax: 80, maxW: 50 }, // square image, round flatbread
+  standard:   { xMin: 20, xMax: 80, maxW: 50 }, // square image, round bread fills ~66%
+  compact:    { xMin: 22, xMax: 78, maxW: 44 }, // default for compact family
+  platter:    { xMin: 12, xMax: 88, maxW: 64 }, // tray floor spans approx x:10-90%
+  familyTray: { xMin: 5,  xMax: 93, maxW: 80 }, // 1536×1024 landscape → nearly full width
+};
+/* Per-base overrides for images whose aspect ratio differs from family norm */
+const BASE_BOUNDS_OVERRIDE = {
+  '39d': { xMin: 6,  xMax: 92, maxW: 70, peekMaxW: 42, maskH: '69%' }, // croissant 1448×1086 → width-constrained, actual render height 69%
+  '39e': { xMin: 25, xMax: 75, maxW: 42, peekMaxW: 54, drizzleMaxW: 30, drizzleScaleY: '2.2', maskSize: '88% 88%' }, // bagel 1254×1254 → square, mask 88%×88%
+  '39h': { xMin: 30, xMax: 70, maxW: 24 }, // hot dog bun — narrow portrait bun, keep food tight
+};
+
+/* Clamp a position to stay within zone and respect max ingredient width */
+function clampIngPos(pos, zMin, zMax, maxW) {
+  const zW   = zMax - zMin;
+  const w    = Math.min(pos.w, maxW, Math.round(zW * 0.92));
+  const half = w / 2;
+  const x    = Math.max(zMin + half, Math.min(zMax - half, pos.x));
+  return { ...pos, x: Math.round(x), w: Math.round(w) };
+}
+
+
 /* ── Top-down food-photography canvas ─────────────────────────── */
 function IngCanvas({ base, cfg, onReset }) {
   const family = base?.family;
-  const isFlatBase = family === 'platter' || family === 'familyTray';
+  const isFlatBase  = family === 'platter' || family === 'familyTray';
+  /* Split-bun bases show both halves opened from above. Food is shifted into the bottom half
+     via splitBunYShift so it sits cleanly inside the bottom bread/bun shape, masked by the
+     base image alpha. Hero uses a larger shift because its halves are landscape rectangles
+     and the bottom-half centre is deeper in the canvas (y≈72%). Bagel uses the largest
+     shift to clear the donut hole whose centre falls at y≈72% of canvas. */
+  /* Hot dog bun gets its own layout: veg in top half, protein in bottom half — both halves visible */
+  const isHotDog    = base?.id === '39h';
+  const isSplitBun  = !isFlatBase && !isHotDog && (family === 'standard' || family === 'compact' || family === 'hero');
+  const splitBunYShift = base?.id === '39e' ? 28  // bagel: keep items in wider mid-section of bottom ring
+                       : base?.id === '39a' ? 28  // hero: landscape bottom half centre ≈ y:72%
+                       : base?.id === '39d' ? 22  // croissant: landscape, actual bun bottom at y:84.5%, keep protein clear
+                       : 26;                       // roll, burger bun
+  /* Flat bases use a larger width scale so items fill their zones (zones are narrow %-wise) */
+  const ingWidthScale = isFlatBase ? 1.60 : 1.20;
+
+  /* ── Hand-drop animation — triggered when a new ingredient is added ── */
+  const [handPos, setHandPos] = useState(null);
+  const prevIngStr = useRef('');
 
   /* ── Analyse what's on the plate ── */
   const hasProtein  = Object.keys(cfg.proteins).length > 0;
   const hasRice     = !!cfg.vegetables.rice;
+  const sideProteins = Object.keys(cfg.proteins).filter(id => CO_ING_DB[id]?.showAside);
   const hasNonRiceVeg = Object.keys(cfg.vegetables).some(k => k !== 'rice');
   const hasCheese   = cfg.cheese.type && cfg.cheese.type !== 'none';
 
   /* ── Layout mode (flat bases only) ──────────────────────────────
      triple  = rice LEFT  + protein CENTER + veg RIGHT
-     dual_rv = protein LEFT + rice RIGHT   (no veg)
+     dual_rv = rice LEFT  + protein RIGHT  (no veg)
      dual_pv = protein LEFT + veg RIGHT    (no rice)
      solo    = full canvas                                       */
   const tripleLayout = isFlatBase && hasProtein && hasRice && hasNonRiceVeg;
@@ -287,60 +347,80 @@ function IngCanvas({ base, cfg, onReset }) {
   const dualPV       = isFlatBase && hasProtein && !hasRice && hasNonRiceVeg;
   const splitLayout  = tripleLayout || dualRV || dualPV; // any split (for drizzle)
 
+  const isPlatter = family === 'platter';
+
+  /* Safe bounds for this specific base — bread area in the 4:3 canvas */
+  const bounds = BASE_BOUNDS_OVERRIDE[base?.id] || FAMILY_BOUNDS[family] || { xMin: 5, xMax: 95, maxW: 80 };
+  const bMid   = Math.round((bounds.xMin + bounds.xMax) / 2);
+  const bW     = bounds.xMax - bounds.xMin;
+
   let PROT_ZONE, VEG_ZONE, RICE_ZONE, CHEESE_ZONE;
-  if (tripleLayout) {
-    RICE_ZONE   = [4,  33];  // left third
-    PROT_ZONE   = [35, 66];  // center third
-    VEG_ZONE    = [68, 97];  // right third
-    CHEESE_ZONE = [35, 66];  // cheese sits over protein zone
-  } else if (dualRV) {
-    PROT_ZONE   = [4,  51];  // left half
-    RICE_ZONE   = [53, 97];  // right half
-    VEG_ZONE    = [4,  96];
-    CHEESE_ZONE = [4,  51];
-  } else if (dualPV) {
-    PROT_ZONE   = [4,  51];  // left half
-    VEG_ZONE    = [53, 97];  // right half
-    RICE_ZONE   = [4,  96];
-    CHEESE_ZONE = [4,  51];
+  if (isFlatBase) {
+    /* Platter / FamilyTray — existing zone logic (already works well) */
+    if (tripleLayout) {
+      if (isPlatter) {
+        RICE_ZONE=[9,37]; PROT_ZONE=[37,63]; VEG_ZONE=[63,91]; CHEESE_ZONE=[37,63];
+      } else {
+        RICE_ZONE=[3,34]; PROT_ZONE=[34,66]; VEG_ZONE=[66,97]; CHEESE_ZONE=[34,66];
+      }
+    } else if (dualRV) {
+      if (isPlatter) { RICE_ZONE=[12,50]; PROT_ZONE=[52,88]; VEG_ZONE=[12,88]; CHEESE_ZONE=[52,88]; }
+      else           { RICE_ZONE=[4,50];  PROT_ZONE=[52,97]; VEG_ZONE=[4,96];  CHEESE_ZONE=[52,97]; }
+    } else if (dualPV) {
+      if (isPlatter) { PROT_ZONE=[12,50]; VEG_ZONE=[52,88]; RICE_ZONE=[12,88]; CHEESE_ZONE=[12,50]; }
+      else           { PROT_ZONE=[4,51];  VEG_ZONE=[53,97]; RICE_ZONE=[4,96];  CHEESE_ZONE=[4,51]; }
+    } else {
+      if (isPlatter) { PROT_ZONE=[12,88]; VEG_ZONE=[12,88]; RICE_ZONE=[12,88]; CHEESE_ZONE=[12,88]; }
+      else           { PROT_ZONE=[4,96];  VEG_ZONE=[4,96];  RICE_ZONE=[4,96];  CHEESE_ZONE=[4,96]; }
+    }
   } else {
-    PROT_ZONE   = [4, 96];
-    VEG_ZONE    = [4, 96];
-    RICE_ZONE   = [4, 96];
-    CHEESE_ZONE = [4, 96];
+    /* Bread bases — all zones constrained to actual bread display area (never [4,96]) */
+    const seg = Math.round(bW / 3);
+    if (tripleLayout) {
+      /* tripleLayout is only true for isFlatBase so this branch is unreachable here — safety fallback */
+      RICE_ZONE=[bounds.xMin, bounds.xMin+seg-2]; PROT_ZONE=[bounds.xMin+seg+1, bounds.xMax-seg-1];
+      VEG_ZONE=[bounds.xMax-seg+2, bounds.xMax]; CHEESE_ZONE=PROT_ZONE;
+    } else if (dualRV) {
+      PROT_ZONE=[bounds.xMin, bMid-1]; RICE_ZONE=[bMid+1, bounds.xMax];
+      VEG_ZONE=[bounds.xMin, bounds.xMax]; CHEESE_ZONE=[bounds.xMin, bMid-1];
+    } else if (dualPV) {
+      PROT_ZONE=[bounds.xMin, bMid-1]; VEG_ZONE=[bMid+1, bounds.xMax];
+      RICE_ZONE=[bounds.xMin, bounds.xMax]; CHEESE_ZONE=[bounds.xMin, bMid-1];
+    } else {
+      PROT_ZONE=[bounds.xMin, bounds.xMax]; VEG_ZONE=[bounds.xMin, bounds.xMax];
+      RICE_ZONE=[bounds.xMin, bounds.xMax]; CHEESE_ZONE=[bounds.xMin, bounds.xMax];
+    }
   }
 
   /* ── Build ingredient layers ── */
   const layers = [];
 
-  /* Helper: push positions for one ingredient */
+  /* Helper: push positions for one ingredient — includes bounds clamping.
+     Flat bases (platter/familyTray) have narrow zones (19–29% wide) so we keep
+     natural widths (remapZoneX).  Bread bases use proportional scaling (remapZone)
+     so veg doesn't balloon to 2× in split-mode half-zones. */
   const pushItem = (id, def, rawPositions, src, zone) => {
     rawPositions.forEach(pos => {
-      const zPos = remapZone(pos, zone[0], zone[1]);
-      layers.push({ id, def, pos: zPos, src });
+      const zPos = isFlatBase
+        ? remapZoneX(pos, zone[0], zone[1])
+        : remapZone(pos, zone[0], zone[1]);
+      const cPos = clampIngPos(zPos, zone[0], zone[1], bounds.maxW);
+      layers.push({ id, def, pos: cPos, src });
     });
   };
 
-  /* Cheese — center on PROT_ZONE midpoint, keep original width (it's a layer) */
-  if (hasCheese) {
-    const def = CO_ING_DB[cfg.cheese.type];
-    if (def && family) {
-      const rawPos = def.pos[family] || def.pos.standard;
-      if (rawPos) {
-        const wScale = QTY_W_SCALE[cfg.cheese.qty] || 1;
-        const cx = Math.round((CHEESE_ZONE[0] + CHEESE_ZONE[1]) / 2);
-        rawPos.forEach(p => layers.push({
-          id: cfg.cheese.type, def, src: def.src,
-          pos: { ...p, x: cx, w: Math.round(p.w * wScale) },
-        }));
-      }
-    }
-  }
 
   /* Proteins */
   Object.entries(cfg.proteins).forEach(([id, sel]) => {
     const def = CO_ING_DB[id];
     if (!def || !family) return;
+    /* Hot dog bun: use pre-computed hotDogPos directly (final render values, no zone remapping) */
+    if (isHotDog && def.hotDogPos) {
+      let src = def.src;
+      if (def.srcByQty && sel.qty) src = def.srcByQty[sel.qty] || def.src;
+      def.hotDogPos.forEach(pos => layers.push({ id, def, src, pos }));
+      return;
+    }
     const rawPos = def.pos[family] || def.pos.standard;
     if (!rawPos) return;
     const protOpt = PROTEIN_OPTS.find(p => p.id === id);
@@ -349,39 +429,42 @@ function IngCanvas({ base, cfg, onReset }) {
     let src = def.src;
     if (def.srcByQty && sel.qty) src = def.srcByQty[sel.qty] || def.src;
 
-    /* Falafel: srcByQty image already shows the correct ball count */
     if (def.srcByQty) {
-      rawPos.forEach(pos => layers.push({ id, def, src, pos: remapZoneX(pos, PROT_ZONE[0], PROT_ZONE[1]) }));
+      rawPos.forEach(pos => {
+        const cPos = clampIngPos(remapZoneX(pos, PROT_ZONE[0], PROT_ZONE[1]), PROT_ZONE[0], PROT_ZONE[1], bounds.maxW);
+        layers.push({ id, def, src, pos: cPos });
+      });
       return;
     }
 
-    /* Eggs: integer qty → exactly that many instances spread from a single anchor */
     if (qtyType === 'eggs') {
       const count = Math.min(4, Math.max(1, parseInt(sel.qty) || 1));
-      const anchor = remapZoneX(rawPos[0] || { x:50, y:44, w:28 }, PROT_ZONE[0], PROT_ZONE[1]);
+      const anchor = clampIngPos(
+        remapZoneX(rawPos[0] || { x:50, y:44, w:28 }, PROT_ZONE[0], PROT_ZONE[1]),
+        PROT_ZONE[0], PROT_ZONE[1], bounds.maxW
+      );
       for (let i = 0; i < count; i++) {
         const spread = (i - (count - 1) / 2) * 10;
-        const nx = Math.round(Math.max(PROT_ZONE[0] + 4, Math.min(PROT_ZONE[1] - 4, anchor.x + spread)));
+        const nx = Math.round(Math.max(PROT_ZONE[0] + anchor.w / 2, Math.min(PROT_ZONE[1] - anchor.w / 2, anchor.x + spread)));
         layers.push({ id, def, src, pos: { ...anchor, x: nx } });
       }
       return;
     }
 
-    /* All other proteins: use QTY_DUP — primary + optional extra instances.
-       remapZoneX only shifts x, preserving original w so proteins stay full size. */
     const dup = QTY_DUP[sel.qty] || QTY_DUP.regular;
     rawPos.forEach(pos => {
       const scaledPos = { ...pos, w: Math.round(pos.w * dup.wScale) };
-      const zPos = remapZoneX(scaledPos, PROT_ZONE[0], PROT_ZONE[1]);
-      layers.push({ id, def, src, pos: zPos });
+      const cPos = clampIngPos(remapZoneX(scaledPos, PROT_ZONE[0], PROT_ZONE[1]), PROT_ZONE[0], PROT_ZONE[1], bounds.maxW);
+      layers.push({ id, def, src, pos: cPos });
       dup.extra.forEach(off => {
-        layers.push({ id, def, src, pos: {
-          ...zPos,
-          x:   Math.round(Math.max(PROT_ZONE[0] + 2, Math.min(PROT_ZONE[1] - 2, zPos.x + off.dx))),
-          y:   Math.round(Math.max(5, Math.min(90, zPos.y + off.dy))),
-          w:   Math.round(zPos.w * off.wF),
-          rot: (zPos.rot || 0) + off.rotAdd,
-        }});
+        const offPos = {
+          ...cPos,
+          x:   cPos.x + off.dx,
+          y:   Math.round(Math.max(5, Math.min(90, cPos.y + off.dy))),
+          w:   Math.round(cPos.w * off.wF),
+          rot: (cPos.rot || 0) + off.rotAdd,
+        };
+        layers.push({ id, def, src, pos: clampIngPos(offPos, PROT_ZONE[0], PROT_ZONE[1], bounds.maxW) });
       });
     });
   });
@@ -391,31 +474,85 @@ function IngCanvas({ base, cfg, onReset }) {
     if (id === 'rice') return;
     const def = CO_ING_DB[id];
     if (!def || !family) return;
+    /* Hot dog bun: use pre-computed hotDogPos directly (final render values, no zone remapping) */
+    if (isHotDog && def.hotDogPos) {
+      const wScale = QTY_W_SCALE[sel.qty] || 1;
+      def.hotDogPos.forEach(pos => {
+        layers.push({ id, def, src: def.src, pos: { ...pos, w: Math.round(pos.w * wScale) } });
+      });
+      return;
+    }
     const rawPos = def.pos[family] || def.pos.standard;
     if (!rawPos) return;
     const wScale = QTY_W_SCALE[sel.qty] || 1;
     pushItem(id, def, rawPos.map(p => ({ ...p, w: Math.round(p.w * wScale) })), def.src, VEG_ZONE);
   });
 
-  /* Rice — remapZoneX: shift x into correct zone, keep natural pile width */
-  if (hasRice) {
+  /* Rice — only render inside the canvas for flat bases (platter / family tray).
+     For bread bases rice is shown as a separate "on the side" badge. */
+  if (hasRice && isFlatBase) {
     const def = CO_ING_DB.rice;
     if (def && family) {
       const rawPos = def.pos[family] || def.pos.standard;
       if (rawPos) {
         const wScale = QTY_W_SCALE[cfg.vegetables.rice?.qty] || 1;
+        const riceSrc = def.srcByFamily?.[family] || def.src;
         rawPos.forEach(pos => {
           const scaledPos = { ...pos, w: Math.round(pos.w * wScale) };
-          layers.push({ id:'rice', def, src: def.src, pos: remapZoneX(scaledPos, RICE_ZONE[0], RICE_ZONE[1]) });
+          const cPos = clampIngPos(remapZoneX(scaledPos, RICE_ZONE[0], RICE_ZONE[1]), RICE_ZONE[0], RICE_ZONE[1], bounds.maxW);
+          layers.push({ id:'rice', def, src: riceSrc, pos: cPos });
         });
+      }
+    }
+  }
+
+  /* Cheese — food image at z:3, sits between veg (z:2) and protein (z:4) */
+  if (hasCheese) {
+    const def = CO_ING_DB[cfg.cheese.type];
+    if (def && family && def.zone === 'cheese') {
+      /* Hot dog bun: use pre-computed hotDogPos directly */
+      if (isHotDog && def.hotDogPos) {
+        def.hotDogPos.forEach(pos => layers.push({ id: cfg.cheese.type, def, src: def.src, pos }));
+      } else {
+        const rawPos = def.pos[family] || def.pos.standard;
+        if (rawPos) {
+          rawPos.forEach(pos => {
+            const cPos = clampIngPos(remapZoneX(pos, CHEESE_ZONE[0], CHEESE_ZONE[1]), CHEESE_ZONE[0], CHEESE_ZONE[1], bounds.maxW);
+            layers.push({ id: cfg.cheese.type, def, src: def.src, pos: cPos });
+          });
+        }
       }
     }
   }
 
   layers.sort((a, b) => (a.def.z || 2) - (b.def.z || 2));
 
+  /* ── Detect newly added ingredient → trigger hand-drop animation ── */
+  const ingStr = [
+    ...Object.keys(cfg.proteins).sort(),
+    ...Object.keys(cfg.vegetables).sort(),
+    cfg.cheese.type && cfg.cheese.type !== 'none' ? `ch:${cfg.cheese.type}` : '',
+    ...Object.keys(cfg.sauces).sort(),
+  ].filter(Boolean).join('|');
+
+  useEffect(() => {
+    const prev = prevIngStr.current;
+    const prevCount = prev ? prev.split('|').length : 0;
+    const currCount = ingStr ? ingStr.split('|').length : 0;
+    if (currCount > prevCount && layers.length > 0) {
+      const target = layers[layers.length - 1];
+      if (target) {
+        setHandPos({ x: target.pos.x, y: target.pos.y, key: Date.now() });
+        const t = setTimeout(() => setHandPos(null), 1050);
+        prevIngStr.current = ingStr;
+        return () => clearTimeout(t);
+      }
+    }
+    prevIngStr.current = ingStr;
+  }, [ingStr]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── Cheese opacity based on qty ── */
-  const CHEESE_OPACITY = { low: 0.55, regular: 0.80, extra: 1.0 };
+  const CHEESE_OPACITY = { low: 0.70, regular: 0.92, extra: 1.0 };
   const cheeseOpacity = hasCheese ? (CHEESE_OPACITY[cfg.cheese.qty] || 0.80) : 1;
 
   /* ── Sauces: split into on-food (drizzle) and on-side (bowl) ── */
@@ -424,16 +561,23 @@ function IngCanvas({ base, cfg, onReset }) {
   const onSideSauces  = Object.entries(cfg.sauces).filter(([,s]) => s.placement === 'on_side')
     .map(([id]) => SAUCE_OPTS.find(o => o.id === id)).filter(Boolean);
 
-  /* Drizzle x/w: covers the protein zone on flat bases, full width otherwise */
-  const drizzleLeft  = splitLayout ? `${PROT_ZONE[0]}%` : '8%';
-  const drizzleWidth = splitLayout ? `${PROT_ZONE[1] - PROT_ZONE[0]}%` : '84%';
+  /* Drizzle — narrowed to 70% of zone width and shifted inward so the sauce looks
+     like it's drizzled ON the food, not spanning the whole canvas */
+  const drizzleZoneW = splitLayout ? (PROT_ZONE[1] - PROT_ZONE[0]) : (bounds.xMax - bounds.xMin);
+  const drizzleZoneL = splitLayout ? PROT_ZONE[0]                  : bounds.xMin;
+  const drizzleInset  = Math.round(drizzleZoneW * 0.08);
+  const rawDrizzleW   = drizzleZoneW - drizzleInset * 2;
+  const drizzleLeft   = `${drizzleZoneL + drizzleInset + (bounds.drizzleMaxW != null ? Math.max(0, rawDrizzleW - bounds.drizzleMaxW) / 2 : 0)}%`;
+  const drizzleWidth  = `${bounds.drizzleMaxW != null ? Math.min(rawDrizzleW, bounds.drizzleMaxW) : rawDrizzleW}%`;
 
-  const isEmpty = layers.length === 0 && !hasCheese && onFoodSauces.length === 0;
+  const isEmpty = layers.length === 0 && onFoodSauces.length === 0;
 
   return (
     <>
-      <div className="co-canvas">
+      <div className={`co-canvas${handPos ? ' co-canvas--active' : ''}${isFlatBase ? ' co-canvas--flat' : ''}${base ? ' co-canvas--has-base' : ''}`} data-base={base?.id || ''}>
         <div className="co-canvas-center-glow" />
+        {/* Food shadow only for bread-based items — flat trays/platters have their own tray depth */}
+        {base && !isFlatBase && <div className={`co-canvas-food-shadow co-cfs--${family}`} />}
 
         {base && onReset && (
           <button className="co-reset-btn" onClick={onReset} title="Start over">
@@ -447,50 +591,174 @@ function IngCanvas({ base, cfg, onReset }) {
               onError={e => { e.currentTarget.style.opacity = '0.3'; }}
             />
 
-            {/* Ingredient images */}
-            {layers.map(({ id, def, pos, src }, i) => (
+            {/* Ingredient + drizzle layers — alpha-masked to base shape */}
+            <div
+              className="co-canvas-ing-wrap"
+              style={{
+                WebkitMaskImage: `url(${base.img})`,
+                maskImage: `url(${base.img})`,
+                WebkitMaskSize: isHotDog ? '66% 88%' : (bounds.maskSize || `92% ${bounds.maskH || '88%'}`),
+                maskSize: isHotDog ? '66% 88%' : (bounds.maskSize || `92% ${bounds.maskH || '88%'}`),
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+              }}
+            >
+              {/* Tray interior fill — warm silver base visible in empty zone areas */}
+              {isFlatBase && <div className="co-canvas-tray-fill" />}
+
+              {/* Zone separators removed — food items naturally define sections */}
+
+              {/* Flat base: rice rendered as a background-covered zone div so it fills edge-to-edge */}
+              {/* rice-zone-fill removed — rice ingredient image renders it directly */}
+
+              {/* Ingredients — veg excluded on split buns (rendered unmasked below for peek effect) */}
+              {layers.filter(l => !isSplitBun || l.def.zone !== 'veg').map(({ id, def, pos, src }, i) => (
+                <img
+                  key={`${id}-${i}`}
+                  src={src || def.src}
+                  alt=""
+                  className="co-canvas-ing"
+                  data-zone={def.zone}
+                  data-id={id}
+                  style={{
+                    left: `${pos.x}%`,
+                    top: isHotDog
+                      ? `${pos.y}%`
+                      : `${isSplitBun ? Math.min(pos.y + splitBunYShift, 82) : pos.y}%`,
+                    width: `${isHotDog ? pos.w : bounds.noWiden ? pos.w : def.zone === 'cheese' ? pos.w : Math.round(pos.w * ingWidthScale)}%`,
+                    zIndex: def.z || 2,
+                    opacity: def.zone === 'cheese' ? cheeseOpacity : 1,
+                    '--ing-rot':   pos.rot
+                      ? `${pos.rot}deg`
+                      : def.zone === 'protein'
+                        ? `${((i % 5) - 2) * 1.8}deg`   // ±3.6° natural tilt for proteins
+                        : def.zone === 'veg'
+                          ? `${((i % 7) - 3) * 3.5}deg` // ±10.5° scatter tilt for veg
+                          : '0deg',
+                    '--ing-z':     def.z || 2,
+                    '--ing-depth': (1 + (pos.y - 44) * 0.008).toFixed(3),
+                    '--ing-sx':    def.zone === 'veg' ? `${((i % 5) - 2) * 7}px` : '0px',
+                    '--ing-sr':    def.zone === 'veg' ? `${((i % 3) - 1) * 8}deg` : '0deg',
+                    animationDelay: `${i * 0.04}s`,
+                  }}
+                />
+              ))}
+
+              {/* Sauce drizzle — real food photo images, properly sized */}
+              {onFoodSauces.map((sauce, i) => {
+                const drizzleMap = SAUCE_DRIZZLE_SRC[sauce.id];
+                if (!drizzleMap) return null;
+                const qty = cfg.sauces[sauce.id]?.qty || 'regular';
+                const src = drizzleMap[qty] || drizzleMap.regular;
+                /* Width: ~35% for bread, 40% for flat bases, 45% for hot dog */
+                const drizzleW = isFlatBase ? 40 : isHotDog ? 45 : 35;
+                /* Position: flat bases fixed at left=20%, bread centered in zone */
+                const protCx = isFlatBase
+                  ? (PROT_ZONE[0] + PROT_ZONE[1]) / 2
+                  : (bounds.xMin + bounds.xMax) / 2;
+                const left = isFlatBase ? 20 : (protCx - drizzleW / 2).toFixed(1);
+                /* Y on protein — lower for bread bases */
+                const topY = isHotDog
+                  ? Math.min(62 + i * 6, 74)
+                  : isSplitBun
+                    ? Math.min(60 + splitBunYShift * 0.35 + i * 7, 82)
+                    : isFlatBase ? 47 + i * 10
+                    : isHotDog ? Math.min(61 + i * 10, 85)
+                    : 56 + i * 8;
+                const rot = [-5, 4, -7, 5, -3][i % 5];
+                return (
+                  <img
+                    key={`drizzle-${sauce.id}`}
+                    src={src}
+                    alt=""
+                    className="co-canvas-drizzle"
+                    style={{
+                      left:      `${left}%`,
+                      top:       `${topY}%`,
+                      width:     `${drizzleW}%`,
+                      zIndex:    10 + i,
+                      transform: `translateY(-50%) rotate(${rot}deg)`,
+                      '--drizzle-rot': `${rot}deg`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Lighting overlay — simulates directional food photography light */}
+            <div className="co-canvas-light" />
+
+            {/* top-bun overlay removed */}
+
+            {/* Peekout vegetables — unmasked, z:11 (below top-bun overlay z:13).
+                Natural Y keeps them in the gap between halves; the top-bun overlay
+                hides their upper portion while the lower portion sits on the bottom bun,
+                giving the classic "overflowing burger" assembled look. */}
+            {isSplitBun && layers.filter(l => l.def.zone === 'veg').map(({ id, def, pos, src }, i) => (
               <img
-                key={`${id}-${i}`}
+                key={`peek-${id}-${i}`}
                 src={src || def.src}
                 alt=""
-                className="co-canvas-ing"
+                className="co-canvas-ing co-canvas-ing--peek"
+                data-zone="veg"
+                data-id={id}
                 style={{
                   left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  width: `${pos.w}%`,
-                  zIndex: def.z || 2,
-                  opacity: def.zone === 'cheese' ? cheeseOpacity : 1,
-                  transform: pos.rot
-                    ? `translate(-50%,-50%) rotate(${pos.rot}deg)`
-                    : 'translate(-50%,-50%)',
-                  animationDelay: `${i * 0.03}s`,
+                  top: `calc(${pos.y - 6}% - var(--peek-top, 0%))`,
+                  width: `${Math.min(Math.round(pos.w), bounds.peekMaxW ?? (bounds.xMax - bounds.xMin))}%`,
+                  zIndex: 14,
+                  '--ing-rot': `${((i % 5) - 2) * 2.5}deg`,
+                  '--ing-z': 14,
+                  '--ing-depth': '1.0',
+                  '--ing-sx': '0px',
+                  '--ing-sr': '0deg',
+                  animationDelay: `${i * 0.04}s`,
                 }}
               />
             ))}
 
-            {/* Sauce drizzle — on-food sauces as wavy lines over the food */}
-            {onFoodSauces.map((sauce, i) => {
-              const drizzleMap = SAUCE_DRIZZLE_SRC[sauce.id];
-              if (!drizzleMap) return null;
-              const sauceQty = cfg.sauces[sauce.id]?.qty || 'regular';
-              const drizzleSrc = drizzleMap[sauceQty] || drizzleMap.regular;
+            {/* Steam wisps rising from protein(s) */}
+            {layers.filter(l => l.def.zone === 'protein').slice(0, 2).map((l, si) => (
+              <div key={`steam-${l.id}-${si}`} className="co-canvas-steam"
+                style={{ left: `${l.pos.x}%`, top: `${Math.max(6, isHotDog ? 57 : (isSplitBun ? Math.min(l.pos.y + splitBunYShift, 82) : l.pos.y) - 16)}%`, zIndex: 17 }}>
+                <span /><span /><span />
+              </div>
+            ))}
+
+            {/* Rice on the side — shown when rice is selected on a bread base */}
+            {hasRice && !isFlatBase && (
+              <div className="co-rice-aside" key="rice-aside">
+                <img src="/images/byo/ing/rice-bowl.webp" alt="Rice" className="co-rice-aside-img" />
+                <span className="co-rice-aside-label">Rice</span>
+                <em className="co-rice-aside-sub">on the side</em>
+              </div>
+            )}
+
+            {/* Side proteins (hot-sausage, turkey) — shown when selected */}
+            {sideProteins.map(id => {
+              const def = CO_ING_DB[id];
+              const label = PROTEIN_OPTIONS.find(p => p.id === id)?.label || id;
               return (
-                <img
-                  key={`drizzle-${sauce.id}`}
-                  src={drizzleSrc}
-                  alt=""
-                  className="co-canvas-drizzle"
-                  style={{
-                    left: drizzleLeft,
-                    top: `${38 + i * 7}%`,
-                    width: drizzleWidth,
-                    zIndex: 10 + i,
-                    transform: 'translateY(-50%)',
-                    opacity: 0.88,
-                  }}
-                />
+                <div className="co-rice-aside" key={`${id}-aside`}>
+                  <img src={def.src} alt={label} className="co-rice-aside-img" />
+                  <span className="co-rice-aside-label">{label}</span>
+                  <em className="co-rice-aside-sub">on the side</em>
+                </div>
               );
             })}
+
+            {/* Chef hand animation — drops in when a new ingredient is added */}
+            {handPos && (
+              <div
+                key={handPos.key}
+                className="co-canvas-hand"
+                style={{ left: `${handPos.x}%`, top: `${handPos.y}%` }}
+              >
+                🤌
+              </div>
+            )}
 
             {/* On-side sauces — bowl thumbnails in corner */}
             {onSideSauces.length > 0 && (
@@ -504,6 +772,16 @@ function IngCanvas({ base, cfg, onReset }) {
             )}
 
             {isEmpty && <p className="co-canvas-hint">Add ingredients below ↓</p>}
+
+            {/* Rim overlay — sits on top of all ingredients so food appears inside the vessel */}
+            {base?.rim && !isFlatBase && (
+              <img
+                src={base.rim}
+                alt=""
+                className="co-canvas-rim"
+                aria-hidden="true"
+              />
+            )}
           </>
         ) : (
           <div className="co-canvas-empty">
@@ -639,10 +917,12 @@ const INIT = {
 };
 
 export default function CustomOrder() {
-  const { addItem, items: cartItems, subtotal } = useCart();
+  const { addItem, removeItem, items: cartItems, subtotal } = useCart();
   const { isLoggedIn } = useAuth();
   const navigate    = useNavigate();
-  const [cfg, setCfg]         = useState(INIT);
+  const location    = useLocation();
+  const [cfg, setCfg]         = useState(() => location.state?.editCustom?.cfg || INIT);
+  const [editingCustomCartKey, setEditingCustomCartKey] = useState(() => location.state?.editCustom?.cartKey || null);
   const [open, setOpen]       = useState(new Set(['base']));
   const [extras, setExtras]   = useState([]);
   const [drinks, setDrinks]   = useState([]);
@@ -966,6 +1246,8 @@ export default function CustomOrder() {
       ...Object.keys(cfg.vegetables).map(id => CO_ING_DB[id]?.src),
     ].filter(Boolean).slice(0, 5);
 
+    if (editingCustomCartKey) removeItem(editingCustomCartKey);
+
     addItem({
       id:            `custom-${cfg.base.id}-${Date.now()}`,
       name:          cfg.base.id === '39e' ? `Custom ${cfg.bagelType} Bagel` : `Custom ${cfg.base.label}`,
@@ -974,10 +1256,12 @@ export default function CustomOrder() {
       note:          buildNote(),
       img:           cfg.base.img,
       customLayers,
+      customCfg:     cfg,
       addons,
       qty,
     });
 
+    setEditingCustomCartKey(null);
     /* Reset form so the user can immediately build another order */
     setCfg(INIT);
     setOpen(new Set(['base']));
@@ -1092,8 +1376,8 @@ export default function CustomOrder() {
               disabled={!cfg.base || added}
             >
               {added
-                ? <><Check size={16} /> Added!</>
-                : <><ShoppingBag size={16} /> {qty > 1 ? `Add ${qty} to Cart` : 'Add to Cart'}</>
+                ? <><Check size={16} /> {editingCustomCartKey ? 'Updated!' : 'Added!'}</>
+                : <><ShoppingBag size={16} /> {editingCustomCartKey ? 'Update Order' : qty > 1 ? `Add ${qty} to Cart` : 'Add to Cart'}</>
               }
             </button>
 
@@ -1534,7 +1818,7 @@ export default function CustomOrder() {
           </div>
         )}
         <button className="co-add-btn co-add-btn-mobile" onClick={handleAdd} disabled={!cfg.base || added}>
-          {added ? <><Check size={15}/> Added!</> : <><ShoppingBag size={15}/> {qty > 1 ? `Add ${qty}` : 'Add to Cart'}</>}
+          {added ? <><Check size={15}/> {editingCustomCartKey ? 'Updated!' : 'Added!'}</> : <><ShoppingBag size={15}/> {editingCustomCartKey ? 'Update Order' : qty > 1 ? `Add ${qty}` : 'Add to Cart'}</>}
         </button>
       </div>
 

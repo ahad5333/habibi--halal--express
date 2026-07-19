@@ -250,12 +250,61 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 62%, rgba(249,115,22,0.11) 0%, transparent 65%),
-    radial-gradient(circle at 50% 50%, #1c0a00 0%, #0d0d0d 55%, #080808 100%);
+    radial-gradient(ellipse 70% 55% at 50% 58%, rgba(249,115,22,0.12) 0%, transparent 68%),
+    radial-gradient(ellipse 35% 30% at 20% 80%, rgba(180,60,0,0.06) 0%, transparent 55%),
+    repeating-linear-gradient(
+      100deg,
+      transparent 0, transparent 64px,
+      rgba(255,255,255,0.014) 64px, rgba(255,255,255,0.014) 66px
+    ),
+    linear-gradient(165deg, #1e1208 0%, #100a06 45%, #080808 100%);
   border-radius: 20px;
-  border: 1px solid rgba(249,115,22,0.18);
-  box-shadow: 0 0 40px rgba(249,115,22,0.07);
+  border: 1px solid rgba(249,115,22,0.24);
+  box-shadow:
+    0 0 54px rgba(249,115,22,0.10),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 0 28px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.05);
   overflow: hidden;
+}
+
+/* Subtle floating ambient spice particles — only shown on empty canvas (no base selected) */
+.co-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(249,115,22,0.18) 1.2px, transparent 1.2px),
+    radial-gradient(circle, rgba(249,115,22,0.12) 1.8px, transparent 1.8px),
+    radial-gradient(circle, rgba(249,115,22,0.09) 1.0px, transparent 1.0px),
+    radial-gradient(circle, rgba(249,115,22,0.14) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(249,115,22,0.08) 1.2px, transparent 1.2px);
+  background-size: 130px 90px, 180px 130px, 220px 160px, 160px 110px, 240px 170px;
+  background-position: 18% 25%, 72% 62%, 44% 15%, 82% 38%, 30% 78%;
+  pointer-events: none;
+  z-index: 0;
+  animation: particles-drift 14s linear infinite;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+/* Hide particles once a base is selected — they look like contamination on the food */
+.co-canvas--has-base::before { opacity: 0; }
+
+@keyframes particles-drift {
+  0%   { background-position: 18% 25%, 72% 62%, 44% 15%, 82% 38%, 30% 78%; }
+  50%  { background-position: 22% 30%, 68% 58%, 48% 20%, 78% 42%, 34% 74%; }
+  100% { background-position: 18% 25%, 72% 62%, 44% 15%, 82% 38%, 30% 78%; }
+}
+
+/* Subtle inner vignette for cinematic depth */
+.co-canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 92% 88% at 50% 50%, transparent 55%, rgba(0,0,0,0.52) 100%);
+  pointer-events: none;
+  z-index: 16;
+  border-radius: inherit;
 }
 
 @media (max-width: 859px) {
@@ -273,18 +322,146 @@
   }
 }
 
-/* Ambient glow */
+/* Canvas glows brighter when an ingredient is being added */
+.co-canvas--active {
+  border-color: rgba(249,115,22,0.55) !important;
+  box-shadow:
+    0 0 72px rgba(249,115,22,0.22),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 0 28px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+
+/* Ambient glow — warm centre spot with slow pulse */
 .co-canvas-center-glow {
   position: absolute;
-  width: 80%;
-  height: 80%;
+  width: 75%;
+  height: 70%;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
+  animation: glow-pulse 5s ease-in-out infinite;
 }
 
-/* Base food image — top-down view, 92%×88% box centered in canvas */
+@keyframes glow-pulse {
+  0%   { opacity: 0.7; transform: translate(-50%, -50%) scale(1.00); }
+  50%  { opacity: 1.0; transform: translate(-50%, -50%) scale(1.10); }
+  100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.00); }
+}
+
+/* Soft shadow blob beneath the food — gives depth on dark background */
+.co-canvas-food-shadow {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 30%;
+  background: rgba(0,0,0,0.62);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(22px);
+}
+.co-cfs--hero       { width: 90%; height: 20%; top: 74%; }
+.co-cfs--wrap       { width: 68%; }
+.co-cfs--standard   { width: 64%; height: 22%; top: 72%; }
+.co-cfs--compact    { width: 60%; height: 20%; top: 70%; }
+.co-cfs--platter    { width: 72%; height: 28%; }
+.co-cfs--familyTray { width: 92%; height: 18%; top: 62%; }
+
+/* ── Flat base (platter / family tray) canvas overrides ─────── */
+.co-canvas--flat {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 55%, rgba(249,115,22,0.04) 0%, transparent 65%),
+    linear-gradient(165deg, #141414 0%, #0c0c0c 100%);
+}
+/* Tone down the ambient particles — tray is the hero, not the canvas BG */
+.co-canvas--flat::before {
+  opacity: 0.12;
+}
+
+/* Zone-fill for rice on flat bases — solid color base with rice image on top */
+.co-canvas-zone-fill {
+  position: absolute;
+  top: 6%;
+  height: 88%;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  animation: ing-drop 0.40s cubic-bezier(.34,1.5,.64,1) both;
+}
+
+/* Warm silver fill inside the masked ingredient wrap — shows in empty zone areas */
+.co-canvas-tray-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(200, 192, 175, 0.22) 0%,
+    rgba(215, 207, 190, 0.26) 40%,
+    rgba(200, 193, 178, 0.22) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Cheese glow — radial warm tint in the protein zone instead of a food image */
+.co-canvas-cheese-glow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+  animation: cheese-shimmer 3.5s ease-in-out infinite;
+}
+
+@keyframes cheese-shimmer {
+  0%,100% { opacity: 1.0; }
+  50%      { opacity: 0.78; }
+}
+
+/* Zone separator — thin metallic ridge, visible in empty zone areas under z:2+ ingredients */
+.co-canvas-zone-sep {
+  position: absolute;
+  top: 4%;
+  bottom: 4%;
+  width: 3px;
+  transform: translateX(-50%);
+  background: linear-gradient(to right,
+    rgba(110, 95, 65, 0.25),
+    rgba(230, 210, 155, 0.60),
+    rgba(110, 95, 65, 0.25)
+  );
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow:
+    1px 0 3px rgba(0,0,0,0.28),
+    -1px 0 3px rgba(0,0,0,0.18),
+    0 0 6px rgba(220,190,110,0.18);
+}
+
+/* Rim overlay — matches base image size/position, renders above all ingredients */
+.co-canvas-rim {
+  position: absolute;
+  width: 92%;
+  height: 88%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  z-index: 18;
+  pointer-events: none;
+  /* No drop-shadow: shadow on rim causes white halo bleed on dark canvas */
+}
+
+
+/* Base food image — 92%×88% box centred in canvas */
 .co-canvas-base {
   position: absolute;
   width: 92%;
@@ -294,20 +471,274 @@
   transform: translate(-50%, -50%);
   object-fit: contain;
   z-index: 1;
-  filter: drop-shadow(0 6px 28px rgba(0,0,0,0.9));
+  /* Tight shadow only — large blur bleeds into bread holes and paints them dark */
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.38));
 }
 
-/* Transparent ingredient images overlaid on base */
+/* Croissant: clean source image — no filter needed. */
+[data-base="39d"] .co-canvas-base,
+[data-base="39d"] .co-canvas-top-bun {
+  filter: none;
+}
+
+/* Hot dog bun — larger display to fill more of the canvas */
+[data-base="39h"] .co-canvas-base {
+  width: 115%;
+  height: 105%;
+}
+
+/* Lettuce on hero and hot dog bun — flat rectangular strip */
+[data-base="39a"] [data-id="lettuce"],
+[data-base="39h"] [data-id="lettuce"] {
+  aspect-ratio: 5 / 1;
+  object-fit: fill;
+}
+
+/* Warm ellipse behind bread bases — compensates for semi-transparent image pixels.
+   Sits at z:0, below the base image (z:1). Only for bread bases, not flat trays. */
+.co-canvas:not(.co-canvas--flat)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 90% 90% at center,
+    rgba(228, 204, 154, 0.75) 0%,
+    rgba(215, 190, 138, 0.45) 50%,
+    transparent 78%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Flat bases (platter/familyTray) — show the tray clearly so it looks real. */
+.co-canvas--flat .co-canvas-base {
+  opacity: 0.82;
+}
+
+/* Flat base: hide the tray-fill warm overlay — canvas background shows directly */
+.co-canvas--flat .co-canvas-tray-fill {
+  display: none;
+}
+
+/* Flat base ingredients — no drop-shadow (looks artificial on dark tray surface) */
+.co-canvas--flat .co-canvas-ing {
+  filter: saturate(1.18) brightness(1.05) contrast(1.04);
+}
+/* Rice on flat bases: fill the zone height so it appears as a proper food portion */
+.co-canvas--flat .co-canvas-ing[data-zone="rice"] {
+  height: 88%;
+  object-fit: cover;
+}
+.co-canvas--flat .co-canvas-ing[data-zone="protein"] {
+  filter: saturate(1.20) brightness(1.04) contrast(1.05);
+}
+.co-canvas--flat .co-canvas-ing[data-zone="veg"] {
+  filter: saturate(1.28) brightness(1.08) contrast(1.04);
+}
+/* Drizzle on flat bases — no blend mode (colored sauces would go dark with multiply on dark tray) */
+.co-canvas--flat .co-canvas-drizzle {
+  mix-blend-mode: normal;
+}
+
+/* Top-bun overlay — same size/position as base image, clipped to show only the top half.
+   No filter: drop-shadow would bleed below the clip boundary creating an ugly floating line.
+   z:13 puts it above food (z:2-5) and drizzle (z:10-12) but below steam (z:17) and rim (z:18). */
+.co-canvas-top-bun {
+  position: absolute;
+  width: 92%;
+  height: 88%;
+  left: 51%;
+  top: calc(38% - var(--peek-top, 0%));
+  transform: translateX(-50%);
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 13;
+  clip-path: inset(0 0 53% 0);
+}
+
+/* Ingredient wrapper — alpha-masked to base image shape */
+.co-canvas-ing-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Peekout veg — unmasked, above top bun overlay; --peek-top shifts them higher */
+.co-canvas-ing--peek {
+  --peek-top: 10%;
+}
+
+/* Ingredient images */
 .co-canvas-ing {
   position: absolute;
   object-fit: contain;
   pointer-events: none;
-  animation: ing-pop 0.25s cubic-bezier(.34,1.4,.64,1) both;
+  filter:
+    saturate(1.22) brightness(1.04) contrast(1.03)
+    drop-shadow(0 3px 8px  rgba(0,0,0,0.38))
+    drop-shadow(0 1px 3px  rgba(0,0,0,0.22));
+  animation: ing-drop 0.40s cubic-bezier(.34,1.5,.64,1) both;
+}
+/* Proteins: slightly stronger shadow for depth */
+.co-canvas-ing[data-zone="protein"] {
+  filter:
+    saturate(1.25) brightness(1.03) contrast(1.04)
+    drop-shadow(0 4px 10px rgba(0,0,0,0.42))
+    drop-shadow(0 2px 5px  rgba(0,0,0,0.26));
+}
+/* Veg: lighter, fresher shadow */
+.co-canvas-ing[data-zone="veg"] {
+  filter:
+    saturate(1.30) brightness(1.06) contrast(1.04)
+    drop-shadow(0 3px 8px  rgba(0,0,0,0.30))
+    drop-shadow(0 1px 3px  rgba(0,0,0,0.18));
+}
+/* Rice: soft, diffuse shadow */
+.co-canvas-ing[data-zone="rice"] {
+  filter:
+    saturate(1.15) brightness(1.04)
+    drop-shadow(0 3px 8px  rgba(0,0,0,0.28))
+    drop-shadow(0 1px 3px  rgba(0,0,0,0.18));
 }
 
-@keyframes ing-pop {
-  from { opacity: 0; scale: 0.6; }
-  to   { opacity: 1; scale: 1; }
+/* Per-zone entrance animations */
+.co-canvas-ing[data-zone="protein"] { animation-name: protein-drop; animation-duration: 0.44s; }
+.co-canvas-ing[data-zone="veg"],
+.co-canvas-ing[data-zone="rice"]    { animation-name: veg-scatter;  animation-duration: 0.38s; }
+.co-canvas-ing[data-zone="cheese"]  { animation-name: cheese-melt;  animation-duration: 0.50s; animation-timing-function: ease-out; }
+
+/* Generic fallback */
+@keyframes ing-drop {
+  0%   { transform: translate(-50%, calc(-50% - 48px)) scale(calc(var(--ing-depth,1) * 0.62)) rotate(var(--ing-rot,0deg)); opacity: 0.4; }
+  60%  { transform: translate(-50%, calc(-50% + 6px))  scale(calc(var(--ing-depth,1) * 1.07)) rotate(var(--ing-rot,0deg)); opacity: 1; }
+  100% { transform: translate(-50%, -50%)              scale(var(--ing-depth,1))               rotate(var(--ing-rot,0deg)); opacity: 1; }
+}
+
+/* Protein — heavy slam from above, thud bounce */
+@keyframes protein-drop {
+  0%   { transform: translate(-50%, calc(-50% - 72px)) scale(calc(var(--ing-depth,1) * 0.50)) rotate(calc(var(--ing-rot,0deg) - 14deg)); opacity: 0; }
+  16%  { opacity: 1; }
+  62%  { transform: translate(-50%, calc(-50% + 10px)) scale(calc(var(--ing-depth,1) * 1.10)) rotate(var(--ing-rot,0deg)); }
+  79%  { transform: translate(-50%, calc(-50% - 3px))  scale(calc(var(--ing-depth,1) * 0.97)) rotate(var(--ing-rot,0deg)); }
+  100% { transform: translate(-50%, -50%)              scale(var(--ing-depth,1))               rotate(var(--ing-rot,0deg)); }
+}
+
+/* Veg — drifts in from angle, gentle scatter */
+@keyframes veg-scatter {
+  0%   { transform: translate(calc(-50% + var(--ing-sx,0px)), calc(-50% - 44px)) scale(calc(var(--ing-depth,1) * 0.60)) rotate(calc(var(--ing-rot,0deg) + var(--ing-sr,8deg))); opacity: 0; }
+  28%  { opacity: 1; }
+  65%  { transform: translate(-50%, calc(-50% + 5px)) scale(calc(var(--ing-depth,1) * 1.06)) rotate(var(--ing-rot,0deg)); }
+  100% { transform: translate(-50%, -50%)             scale(var(--ing-depth,1))               rotate(var(--ing-rot,0deg)); }
+}
+
+/* Cheese — materialises / melts into place */
+@keyframes cheese-melt {
+  0%   { transform: translate(-50%, -50%) scale(calc(var(--ing-depth,1) * 0.75)); opacity: 0; filter: saturate(1.22) brightness(1.1) blur(8px) drop-shadow(0 6px 14px rgba(0,0,0,0.5)); }
+  55%  { transform: translate(-50%, -50%) scale(calc(var(--ing-depth,1) * 1.04)); opacity: 0.9; filter: saturate(1.22) brightness(1.05) blur(0) drop-shadow(0 6px 14px rgba(0,0,0,0.78)); }
+  100% { transform: translate(-50%, -50%) scale(var(--ing-depth,1)); opacity: 1; }
+}
+
+/* Steam wisps rising from hot proteins */
+.co-canvas-steam {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.co-canvas-steam span {
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(to top, rgba(255,255,255,0.20), transparent);
+  border-radius: 4px;
+  animation: steam-rise 2.8s ease-in-out infinite;
+}
+.co-canvas-steam span:nth-child(2) { animation-delay: 0.9s; height: 20px; }
+.co-canvas-steam span:nth-child(3) { animation-delay: 1.6s; }
+
+@keyframes steam-rise {
+  0%   { transform: translateY(0) scaleX(1);     opacity: 0; }
+  20%  { opacity: 0.40; }
+  78%  { opacity: 0.10; }
+  100% { transform: translateY(-28px) scaleX(2.4); opacity: 0; }
+}
+
+/* Lighting overlay — food-photography key light from top-left */
+.co-canvas-light {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 42% at 28% 20%, rgba(255,248,220,0.11) 0%, transparent 58%),
+    radial-gradient(ellipse 28% 22% at 76% 72%, rgba(249,115,22,0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* Chef hand — animated drop-in when ingredient is added */
+.co-canvas-hand {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: clamp(1.7rem, 5vw, 2.3rem);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 28;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  animation: hand-drop 1.05s cubic-bezier(.25,.46,.45,.94) both;
+}
+
+@keyframes hand-drop {
+  0%   { transform: translateX(-50%) translateY(-380%) rotate(-15deg); opacity: 0; }
+  16%  { opacity: 1; }
+  46%  { transform: translateX(-50%) translateY(0)     rotate(-5deg); }
+  66%  { transform: translateX(-50%) translateY(-18%)  rotate(0deg); }
+  100% { transform: translateX(-50%) translateY(-380%) rotate(10deg); opacity: 0; }
+}
+
+/* ── Rice "on the side" badge ────────────────────────────────── */
+.co-rice-aside {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 20;
+  background: rgba(18, 8, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  border-radius: 14px;
+  padding: 10px 7px 8px;
+  min-width: 62px;
+  text-align: center;
+  animation: rice-aside-in 0.45s cubic-bezier(.34,1.4,.64,1) both;
+}
+.co-rice-aside-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.55));
+}
+.co-rice-aside-label {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+.co-rice-aside-sub {
+  font-size: 0.58rem;
+  font-style: normal;
+  color: #F97316;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+@keyframes rice-aside-in {
+  0%   { opacity: 0; transform: translateY(-50%) translateX(-16px) scale(0.82); }
+  100% { opacity: 1; transform: translateY(-50%) translateX(0)     scale(1); }
 }
 
 /* ── Sauce bowl row (top-right corner) ──────────────────────── */
@@ -355,7 +786,55 @@
 .co-canvas-drizzle {
   position: absolute;
   pointer-events: none;
-  animation: ing-pop 0.35s cubic-bezier(.34,1.4,.64,1) both;
+  height: 16%;
+  object-fit: fill;
+  /* No drop-shadow — CSS filter escapes the parent mask-image clip */
+  filter: saturate(1.90) brightness(1.15) contrast(1.12);
+  animation: drizzle-drop 0.42s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes drizzle-drop {
+  0%   { opacity: 0; transform: translateY(calc(-50% - 12px)) rotate(var(--drizzle-rot, 0deg)) scaleY(0.5); }
+  50%  { opacity: 1; }
+  100% { opacity: 0.96; transform: translateY(-50%) rotate(var(--drizzle-rot, 0deg)) scaleY(1); }
+}
+
+/* Sauce splatter — irregular 12-tip star burst */
+.co-canvas-sauce-splat {
+  position: absolute;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+  clip-path: polygon(
+    50% 2%,  56% 29%, 75% 7%,  64% 36%,
+    87% 29%, 74% 44%, 99% 50%, 67% 55%,
+    86% 71%, 66% 66%, 75% 93%, 55% 69%,
+    50% 88%, 44% 73%, 27% 90%, 37% 63%,
+    7%  75%, 30% 55%, 6%  50%, 26% 44%,
+    9%  27%, 37% 37%, 29% 14%, 44% 29%
+  );
+  animation: splat-in 0.42s cubic-bezier(.34,1.7,.64,1) both;
+}
+
+@keyframes splat-in {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(var(--splat-rot,0deg)) scale(0); }
+  55%  { opacity: 1; }
+  82%  { transform: translate(-50%, -50%) rotate(var(--splat-rot,0deg)) scale(1.10); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--splat-rot,0deg)) scale(1); }
+}
+
+/* Satellite drops — tiny dots that fly off the splatter */
+.co-canvas-sauce-dot {
+  position: absolute;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+  animation: sauce-dot-in 0.32s cubic-bezier(.34,1.75,.64,1) both;
+}
+
+@keyframes sauce-dot-in {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 .co-canvas-sauce-emoji {

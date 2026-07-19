@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { menuAPI, favoritesAPI, reviewsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -81,7 +81,7 @@ const CAT_ORDER = [
 ];
 
 const BOWL_BASE_OPTIONS = [
-  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.webp',   type: 'bowl' },
+  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.jpg',   type: 'bowl' },
   { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp', type: 'bowl' },
   { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp', type: 'bowl' },
 ];
@@ -157,6 +157,7 @@ const Menu = () => {
   const { cat: catParam } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(() => {
     const c = catParam || searchParams.get('cat');
     return (c && c !== 'all') ? c : 'grid';
@@ -167,7 +168,7 @@ const Menu = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
-  const { addItem, items: cartItems, subtotal } = useCart();
+  const { addItem, removeItem, items: cartItems, subtotal } = useCart();
   const { isLoggedIn } = useAuth();
   const tabsRef    = useRef(null);
   const sectionRefs = useRef({});
@@ -180,7 +181,20 @@ const Menu = () => {
   const [bowlProtein, setBowlProtein] = useState('');
   const [bowlTopping, setBowlTopping] = useState('');
   const [bowlSauce,   setBowlSauce]   = useState('');
+  const [editingBowlCartKey, setEditingBowlCartKey] = useState(null);
   const [byoItem,     setByoItem]     = useState(null);
+
+  useEffect(() => {
+    const eb = location.state?.editBowl;
+    if (!eb?.config) return;
+    const { config, cartKey } = eb;
+    setBowlBase(config.baseId || '');
+    setBowlProtein(config.proteinId || '');
+    setBowlTopping(config.toppingId || '');
+    setBowlSauce(config.sauceId || '');
+    setEditingBowlCartKey(cartKey);
+    setTimeout(() => document.getElementById('byo-bowl-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+  }, []);
   const [modalItemId, setModalItemId] = useState(null);
   const featCarouselRef = useRef(null);
   const [locAvailMap,  setLocAvailMap]  = useState({});
@@ -461,8 +475,11 @@ const Menu = () => {
       selectedTopping?.image,
       selectedSauce?.image,
     ].filter(Boolean);
-    addItem({ ...BYO_ITEM, name, note, qty: 1, bowlLayers });
+    const bowlConfig = { baseId: bowlBase, proteinId: bowlProtein, toppingId: bowlTopping, sauceId: bowlSauce };
+    if (editingBowlCartKey) removeItem(editingBowlCartKey);
+    addItem({ ...BYO_ITEM, name, note, qty: 1, bowlLayers, bowlConfig });
     setBowlBase(''); setBowlProtein(''); setBowlTopping(''); setBowlSauce('');
+    setEditingBowlCartKey(null);
   };
 
   // ── Item row (UberEats-style horizontal) ───────────────────────
@@ -933,7 +950,7 @@ const Menu = () => {
 
         {/* ── BYO Builder ───────────────────────────────── */}
         {activeCategory === 'byo' && (
-          <div className="byo-builder-wrap">
+          <div className="byo-builder-wrap" id="byo-bowl-builder">
             <div className="bowls-container">
               <div className="bowls-content">
                 <p className="section-eyebrow text-gold">PERSONALIZED BOWLS</p>
@@ -993,7 +1010,7 @@ const Menu = () => {
                     onClick={bowlReady ? handleAddComposedBowl : undefined}
                     disabled={!bowlReady}
                   >
-                    {bowlReady ? `ADD BOWL TO CART — $${BYO_ITEM.price}` : 'SELECT OPTIONS TO BUILD'}
+                    {bowlReady ? (editingBowlCartKey ? `UPDATE BOWL — $${BYO_ITEM.price}` : `ADD BOWL TO CART — $${BYO_ITEM.price}`) : 'SELECT OPTIONS TO BUILD'}
                   </button>
                   {bowlReady && <p className="bowl-hint">Perfect! Your bowl is ready to be ordered.</p>}
                 </div>

@@ -765,7 +765,7 @@ export default function MenuItemModal({
                             <div className={`mim-radio${sel ? ' on' : ''}`} />
                             <span className="mim-opt-name">{opt.title}</span>
                             <span className="mim-opt-price">
-                              {extra > 0 ? `+$${extra.toFixed(2)}` : 'Free'}
+                              {extra > 0 ? `+$${extra.toFixed(2)}` : ''}
                             </span>
                           </div>
                         );
@@ -787,7 +787,9 @@ export default function MenuItemModal({
                       <span className="mim-badge mim-badge--opt">Optional</span>
                     </div>
                     <div className="mim-options-list">
-                      {(ag.options || []).map(opt => {
+                      {[...(ag.options || [])].sort((a, b) =>
+                        a.title === 'No Sauce' ? -1 : b.title === 'No Sauce' ? 1 : 0
+                      ).map(opt => {
                         const checked = !!addonSel[opt.id];
                         const aqty   = addonSel[opt.id] || 0;
                         const price  = parseFloat(opt.price || 0);
@@ -816,7 +818,7 @@ export default function MenuItemModal({
                                 </div>
                               ) : (
                                 <span className="mim-addon-price">
-                                  {price === 0 ? 'Free' : `+$${price.toFixed(2)}`}
+                                  {price === 0 ? '' : `+$${price.toFixed(2)}`}
                                 </span>
                               )}
                             </div>
@@ -862,7 +864,7 @@ export default function MenuItemModal({
                                 </div>
                               ) : (
                                 <span className="mim-addon-price">
-                                  {opt.price === 0 ? 'Free' : `+$${opt.price.toFixed(2)}`}
+                                  {opt.price === 0 ? '' : `+$${opt.price.toFixed(2)}`}
                                 </span>
                               )}
                             </div>

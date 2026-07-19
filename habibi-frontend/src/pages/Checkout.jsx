@@ -651,15 +651,33 @@ const Checkout = () => {
                               <button onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
-                            {/* Edit button — only for standard modal items (not BYO bowls, custom orders, or child items) */}
-                            {!item.bowlLayers && !item.customLayers && !item.parentCartKey && (
-                              <button
-                                className="cart-edit-btn"
-                                onClick={() => setEditingItem({ item, itemKey })}
-                                title="Edit item"
-                              >
-                                <Pencil size={13} />
-                              </button>
+                            {/* Edit button */}
+                            {!item.parentCartKey && (
+                              item.bowlLayers && item.bowlConfig ? (
+                                <button
+                                  className="cart-edit-btn"
+                                  onClick={() => navigate('/menu/byo', { state: { editBowl: { config: item.bowlConfig, cartKey: itemKey } } })}
+                                  title="Edit bowl"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              ) : item.customLayers && item.customCfg ? (
+                                <button
+                                  className="cart-edit-btn"
+                                  onClick={() => navigate('/customize', { state: { editCustom: { cfg: item.customCfg, cartKey: itemKey } } })}
+                                  title="Edit custom order"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              ) : !item.bowlLayers && !item.customLayers ? (
+                                <button
+                                  className="cart-edit-btn"
+                                  onClick={() => setEditingItem({ item, itemKey })}
+                                  title="Edit item"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              ) : null
                             )}
                             <button
                               className="cart-delete-btn"
