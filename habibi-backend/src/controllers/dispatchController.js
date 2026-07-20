@@ -494,10 +494,15 @@ const getAssignmentForOrder = async (req, res) => {
     );
     const row = result.rows[0];
     if (!row) { res.json(null); return; }
+    // Public, unauthenticated route (customer tracking page needs it with no login) —
+    // redact the driver's phone the same way /api/orders/track/:orderNumber does.
+    // Anyone who knows/guesses an order number could otherwise pull a driver's real
+    // number and live GPS off this endpoint with zero auth.
+    const rawPhone = row.driver_phone || '';
     res.json({
       ...row,
       driver_name:  row.driver_full_name || row.driver_name || null,
-      driver_phone: row.driver_phone || null,
+      driver_phone: rawPhone.length > 4 ? `***-***-${rawPhone.slice(-4)}` : null,
     });
   } catch (err) {
     res.status(500).json(safeError(err));
