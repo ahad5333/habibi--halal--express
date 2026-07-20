@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper } from 'lucide-react';
 import { ordersAPI } from '../services/api';
 import './OrderTracking.css';
 
@@ -13,12 +13,12 @@ const RESTAURANT_LAT = 40.8804;
 const RESTAURANT_LNG = -73.8827;
 
 const STEPS = [
-  { id: 1, key: 'pending',          label: 'Received',   icon: '📋', animClass: 'anim-received'  },
-  { id: 2, key: 'accepted',         label: 'Accepted',   icon: '✅', animClass: 'anim-accepted'  },
-  { id: 3, key: 'preparing',        label: 'Preparing',  icon: '🍳', animClass: 'anim-preparing' },
-  { id: 4, key: 'out_for_delivery', label: 'On the Way', icon: '🛵', animClass: 'anim-on-way'   },
-  { id: 5, key: 'nearby',           label: 'Nearby',     icon: '📍', animClass: 'anim-nearby'   },
-  { id: 6, key: 'delivered',        label: 'Delivered',  icon: '🎉', animClass: 'anim-delivered' },
+  { id: 1, key: 'pending',          label: 'Received',   icon: ClipboardList, animClass: 'anim-received'  },
+  { id: 2, key: 'accepted',         label: 'Accepted',   icon: CheckCircle2,  animClass: 'anim-accepted'  },
+  { id: 3, key: 'preparing',        label: 'Preparing',  icon: ChefHat,       animClass: 'anim-preparing' },
+  { id: 4, key: 'out_for_delivery', label: 'On the Way', icon: Scooter,       animClass: 'anim-on-way'   },
+  { id: 5, key: 'nearby',           label: 'Nearby',     icon: MapPin,        animClass: 'anim-nearby'   },
+  { id: 6, key: 'delivered',        label: 'Delivered',  icon: PartyPopper,   animClass: 'anim-delivered' },
 ];
 
 const STATUS_STEP = {
@@ -31,12 +31,12 @@ const STATUS_STEP = {
 };
 
 const STATUS_INFO = {
-  1: { title: 'Order Received',               sub: 'We got your order and it\'s in the queue. We\'ll confirm shortly.',                          emoji: '📋', color: '#60a5fa' },
-  2: { title: 'Order Accepted',               sub: 'The kitchen confirmed your order and is firing up the grill. Hang tight!',                  emoji: '✅', color: '#34d399' },
-  3: { title: 'Chef is Crafting Perfection',  sub: 'Your order is on the grill. Every cut meets our Habibi gold standard.',                     emoji: '👨‍🍳', color: '#E5B64E', animate: 'chef' },
-  4: { title: 'Driver is On The Way',         sub: 'Your order has been picked up and is heading to you now. Track live below.',                 emoji: '🛵', color: '#a78bfa', animate: 'drive' },
-  5: { title: 'Almost There!',                sub: 'Your driver is nearby. Please be ready to receive your order.',                              emoji: '📍', color: '#f97316', animate: 'nearby' },
-  6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite, made with Habibi love. ✨',                        emoji: '🎉', color: '#4ade80', animate: 'delivered' },
+  1: { title: 'Order Received',               sub: 'We got your order and it\'s in the queue. We\'ll confirm shortly.',                          icon: ClipboardList, color: '#60a5fa' },
+  2: { title: 'Order Accepted',               sub: 'The kitchen confirmed your order and is firing up the grill. Hang tight!',                  icon: CheckCircle2,  color: '#34d399' },
+  3: { title: 'Chef is Crafting Perfection',  sub: 'Your order is on the grill. Every cut meets our Habibi gold standard.',                     icon: ChefHat,       color: '#E5B64E', animate: 'chef' },
+  4: { title: 'Driver is On The Way',         sub: 'Your order has been picked up and is heading to you now. Track live below.',                 icon: Scooter,       color: '#a78bfa', animate: 'drive' },
+  5: { title: 'Almost There!',                sub: 'Your driver is nearby. Please be ready to receive your order.',                              icon: MapPin,        color: '#f97316', animate: 'nearby' },
+  6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite, made with Habibi love. ✨',                        icon: PartyPopper,   color: '#4ade80', animate: 'delivered' },
 };
 
 const DRIVER = { name: 'Ahmad K.', rating: 4.9, deliveries: '1.2K' };
@@ -517,11 +517,11 @@ export default function OrderTracking() {
                       className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
                     >
                       {done ? (
-                        <span className="ot-pill-step-icon ot-pil-done">{step.icon}</span>
+                        <step.icon className="ot-pill-step-icon ot-pil-done" size={18} color="#fff" strokeWidth={2.25} />
                       ) : active ? (
-                        <span className={`ot-pill-step-icon ot-pil-active ${step.animClass}`}>{step.icon}</span>
+                        <step.icon className={`ot-pill-step-icon ot-pil-active ${step.animClass}`} size={25} color="#fff" strokeWidth={2.25} />
                       ) : (
-                        <span className="ot-pill-step-icon ot-pil-pending">{step.icon}</span>
+                        <step.icon className="ot-pill-step-icon ot-pil-pending" size={23} color="#fff" strokeWidth={2.25} />
                       )}
                     </div>
                   );
@@ -548,7 +548,7 @@ export default function OrderTracking() {
                   >
                     {status.animate === 'chef' ? (
                       <div className="chef-wrap">
-                        <span className="chef-emoji">👨‍🍳</span>
+                        <status.icon className="chef-emoji" size={44} color={status.color} strokeWidth={2} />
                         <div className="smoke-wrap">
                           <span className="smoke s1" /><span className="smoke s2" /><span className="smoke s3" />
                         </div>
@@ -557,7 +557,7 @@ export default function OrderTracking() {
                         </div>
                       </div>
                     ) : (
-                      <span className="ot-status-emoji">{status.emoji}</span>
+                      <status.icon className="ot-status-emoji" size={44} color={status.color} strokeWidth={2} />
                     )}
                   </div>
                   <h2 className="ot-hero-title">{status.title}</h2>
