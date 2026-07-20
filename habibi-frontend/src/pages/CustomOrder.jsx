@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check, Bookmark, Trash2 } from 'lucide-react';
+import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check, Bookmark, Trash2, Camera } from 'lucide-react';
+import { toBlob } from 'html-to-image';
 import { useCart } from '../context/CartContext';
 import { menuAPI, savedCustomAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -354,6 +355,47 @@ function IngCanvas({ base, cfg, onReset }) {
   const [handPos, setHandPos] = useState(null);
   const prevIngStr = useRef('');
 
+  /* ── Share/screenshot ── */
+  const canvasRef = useRef(null);
+  const [capturing, setCapturing] = useState(false);
+  const handleShare = async () => {
+    if (!canvasRef.current || capturing) return;
+    setCapturing(true);
+    try {
+      const blob = await toBlob(canvasRef.current, {
+        pixelRatio: 2,
+        backgroundColor: '#141414',
+        cacheBust: true,
+        filter: node => !node.classList?.contains('co-reset-btn'),
+      });
+      if (!blob) throw new Error('capture failed');
+
+      const fileName = `habibi-${(base?.label || 'custom').toLowerCase().replace(/\s+/g, '-')}.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My Habibi Halal Express creation',
+          text: `Check out my custom ${base?.label || 'meal'} from Habibi Halal Express! 🔥`,
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') console.error('Share failed', err);
+    } finally {
+      setCapturing(false);
+    }
+  };
+
   /* ── Analyse what's on the plate ── */
   const hasProtein  = Object.keys(cfg.proteins).length > 0;
   const hasRice     = !!cfg.vegetables.rice;
@@ -611,7 +653,7 @@ function IngCanvas({ base, cfg, onReset }) {
 
   return (
     <>
-      <div className={`co-canvas${handPos ? ' co-canvas--active' : ''}${isFlatBase ? ' co-canvas--flat' : ''}${base ? ' co-canvas--has-base' : ''}`} data-base={base?.id || ''}>
+      <div ref={canvasRef} className={`co-canvas${handPos ? ' co-canvas--active' : ''}${isFlatBase ? ' co-canvas--flat' : ''}${base ? ' co-canvas--has-base' : ''}`} data-base={base?.id || ''}>
         <div className="co-canvas-center-glow" />
         {/* Food shadow only for bread-based items — flat trays/platters have their own tray depth */}
         {base && !isFlatBase && <div className={`co-canvas-food-shadow co-cfs--${family}`} />}
@@ -843,6 +885,15 @@ function IngCanvas({ base, cfg, onReset }) {
       {base && (
         <div className="co-canvas-info">
           <span className="co-canvas-base-name">{base.label}</span>
+          <button
+            type="button"
+            className="co-canvas-share-btn"
+            onClick={handleShare}
+            disabled={capturing}
+            title="Share your creation"
+          >
+            {capturing ? 'Capturing…' : <><Camera size={13} /> Share</>}
+          </button>
         </div>
       )}
     </>

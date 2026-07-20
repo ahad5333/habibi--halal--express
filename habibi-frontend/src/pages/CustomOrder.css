@@ -934,6 +934,28 @@
 .co-canvas-base-name { font-size: 0.72rem; font-weight: 800; color: #fff; line-height: 1.1; }
 .co-canvas-tag-price  { font-size: 0.6rem;  color: #F97316; font-weight: 700; }
 
+.co-canvas-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(249,115,22,0.14);
+  border: 1px solid rgba(249,115,22,0.4);
+  border-radius: 16px;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #FB923C;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.co-canvas-share-btn:hover:not(:disabled) {
+  background: rgba(249,115,22,0.24);
+  border-color: #F97316;
+}
+.co-canvas-share-btn:disabled { opacity: 0.6; cursor: default; }
+
 /* Hint text */
 .co-canvas-hint {
   position: absolute;
