@@ -914,6 +914,7 @@ function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }
             onClick={() => onChange(opt)}
           >
             {label}
+            {price != null && <span className="co-qty-pill-price">${price.toFixed(2)}</span>}
           </button>
         );
       })}
@@ -1501,6 +1502,9 @@ export default function CustomOrder() {
   };
   const activeStepId = ['base', 'proteins', 'vegetables', 'sauces'].find(id => !stepDone[id]) || 'cart';
 
+  /* Base multipliers — reused by qty-pill price labels below */
+  const mult = getBaseMultipliers(cfg.base);
+
   /* Base-contextual suggestion — only before the user has picked a protein */
   const baseSuggestion = cfg.base ? BASE_SUGGESTIONS[cfg.base.id] : null;
   const showBaseSuggestion = !!baseSuggestion && !dismissedSuggestion && !stepDone.proteins;
@@ -1898,13 +1902,13 @@ export default function CustomOrder() {
                         opts={QTY_OPTS.veg}
                         value={sel.qty}
                         onChange={qty => setVegQty(veg.id, qty)}
+                        formatPrice={qty => veg.price * (VEG_QTY_MULT[qty] || 1) * mult.veg}
                       />
                     )}
                   </div>
                 );
               })}
             </div>
-            <p className="co-qty-legend">Low · Regular · Extra · Double, price updates in running total above</p>
           </Section>
 
           {/* 4 — PROTEIN */}
@@ -1962,6 +1966,7 @@ export default function CustomOrder() {
                         opts={prot.qtyType === 'eggs' ? QTY_OPTS.eggs : QTY_OPTS[prot.qtyType]}
                         value={sel.qty}
                         onChange={qty => setProteinQty(prot.id, qty)}
+                        formatPrice={qty => calcProteinPrice(prot, qty) * (PROTEIN_BASE_TIERED.has(prot.id) ? mult.protein : 1)}
                       />
                     )}
                   </div>
@@ -2008,6 +2013,7 @@ export default function CustomOrder() {
                             opts={QTY_OPTS['sauce-food']}
                             value={sel.qty}
                             onChange={qty => setSauceQty(sauce.id, qty)}
+                            formatPrice={qty => sauce.price * (SAUCE_FOOD_MULT[qty] || 1)}
                           />
                         ) : (
                           <div className="co-counter-row">
