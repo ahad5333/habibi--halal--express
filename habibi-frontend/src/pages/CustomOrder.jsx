@@ -864,6 +864,14 @@ function IngCanvas({ base, cfg, onReset }) {
 
             {isEmpty && <p className="co-canvas-hint">Add ingredients below ↓</p>}
 
+            {/* Halal badge — reinforces trust right where the food is being built */}
+            {hasProtein && (
+              <div className="co-halal-badge">
+                <span className="co-halal-badge-dot" />
+                100% Halal
+              </div>
+            )}
+
             {/* Rim overlay — sits on top of all ingredients so food appears inside the vessel */}
             {base?.rim && !isFlatBase && (
               <img
