@@ -1147,6 +1147,47 @@
   flex-shrink: 0;
   transition: filter 0.15s;
 }
+
+/* ── Special instructions ────────────────────────────────────── */
+.co-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.6rem 0;
+}
+.co-instructions-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.co-instructions-optional {
+  font-weight: 500;
+  text-transform: none;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: normal;
+}
+.co-instructions-input {
+  width: 100%;
+  resize: none;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: #f0f0f0;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.co-instructions-input:focus { border-color: #F97316; }
+.co-instructions-input::placeholder { color: rgba(255,255,255,0.3); }
+.co-instructions-count {
+  align-self: flex-end;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.3);
+}
 .co-save-confirm { background: #F97316; color: #0a0a0a; }
 .co-save-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
 .co-save-cancel  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }

@@ -963,7 +963,10 @@ const INIT = {
   sauces:     {},   // { [id]: { on: true, placement: 'on_food', qty: 'regular', count: 1 } }
   extras:     {},   // { [id]: count }
   drinks:     {},   // { [id]: count }
+  instructions: '', // free-text special instructions
 };
+
+const INSTRUCTIONS_MAX = 200;
 
 export default function CustomOrder() {
   const { addItem, removeItem, items: cartItems, subtotal } = useCart();
@@ -1135,6 +1138,7 @@ export default function CustomOrder() {
   const setDrinkCount = (id, count) => setCfg(p => ({
     ...p, drinks: count > 0 ? { ...p.drinks, [id]: count } : (({ [id]: _, ...rest }) => rest)(p.drinks)
   }));
+  const setInstructions = text => setCfg(p => ({ ...p, instructions: text.slice(0, INSTRUCTIONS_MAX) }));
 
   /* Running total */
   const total = useMemo(() => {
@@ -1247,6 +1251,7 @@ export default function CustomOrder() {
       const item = drinks.find(x => String(x._id ?? x.id) === id);
       if (item) parts.push(`${item.name} x${cnt}`);
     });
+    if (cfg.instructions?.trim()) parts.push(`Note: ${cfg.instructions.trim()}`);
     return parts.join(' | ');
   };
 
@@ -1406,6 +1411,25 @@ export default function CustomOrder() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Special instructions */}
+            {cfg.base && (
+              <div className="co-instructions">
+                <label className="co-instructions-label" htmlFor="co-instructions-input">
+                  Special instructions <span className="co-instructions-optional">(optional)</span>
+                </label>
+                <textarea
+                  id="co-instructions-input"
+                  className="co-instructions-input"
+                  placeholder="e.g. no onions on one, extra crispy, nut allergy…"
+                  value={cfg.instructions || ''}
+                  maxLength={INSTRUCTIONS_MAX}
+                  onChange={e => setInstructions(e.target.value)}
+                  rows={2}
+                />
+                <span className="co-instructions-count">{(cfg.instructions || '').length}/{INSTRUCTIONS_MAX}</span>
               </div>
             )}
 
