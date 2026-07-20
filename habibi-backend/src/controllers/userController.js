@@ -2,6 +2,7 @@ const safeError = require('../utils/safeError');
 const pool   = require("../config/db");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { revokeToken } = require('../middleware/authMiddleware');
 
 
 // ─── GET /api/users/me ───────────────────────────────────────────────────────
@@ -71,8 +72,9 @@ const changePassword = async (req, res) => {
 
     const hashed = await bcrypt.hash(new_password, 12);
     await pool.query("UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2", [hashed, req.user.id]);
-    // Invalidate existing session so all other logged-in devices are signed out
-    res.clearCookie('token', { httpOnly: true, sameSite: 'lax', path: '/' });
+    // Revoke the current JWT and clear the session cookie
+    revokeToken(req.user.jti, req.user.exp);
+    res.clearCookie('auth_token', { httpOnly: true, sameSite: 'lax', path: '/' });
     res.json({ message: "Password updated successfully. Please log in again." });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -103,8 +105,9 @@ const deleteAccount = async (req, res) => {
         WHERE id=$1`,
       [req.user.id, crypto.randomBytes(64).toString('hex')]
     );
-    // Clear the session cookie so the client is immediately signed out
-    res.clearCookie('token', { httpOnly: true, sameSite: 'lax', path: '/' });
+    // Revoke the current JWT and clear the session cookie
+    revokeToken(req.user.jti, req.user.exp);
+    res.clearCookie('auth_token', { httpOnly: true, sameSite: 'lax', path: '/' });
     res.json({ message: "Account deleted. You have been signed out." });
   } catch (err) {
     res.status(500).json(safeError(err));

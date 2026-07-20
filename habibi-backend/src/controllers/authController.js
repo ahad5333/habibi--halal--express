@@ -60,7 +60,7 @@ const registerUser = async (req, res) => {
         [String(phone).trim(), cleaned]
       );
       if (phoneExists.rows.length > 0) {
-        return res.status(400).json({ message: 'An account with this phone number already exists.' });
+        return res.status(400).json({ message: 'An account with those details already exists.' });
       }
       email = `phone_${cleaned}@habibi.internal`;
     } else {
@@ -70,7 +70,7 @@ const registerUser = async (req, res) => {
       }
       const existingUser = await pool.query('SELECT id FROM users WHERE email=$1', [email]);
       if (existingUser.rows.length > 0) {
-        return res.status(400).json({ message: 'An account with this email already exists.' });
+        return res.status(400).json({ message: 'An account with those details already exists.' });
       }
       // Also check phone not already used by another account
       if (phone && String(phone).trim()) {
@@ -230,6 +230,11 @@ const loginUser = async (req, res) => {
       if (smtpConfigured) {
         sendAdminOTP(otpRecipient, otp).catch(err => console.error('Admin OTP email failed:', err.message));
       } else {
+        if (process.env.NODE_ENV === 'production') {
+          // Never log OTPs in production — misconfigured email is a fatal condition
+          console.error('[ADMIN MFA] FATAL: Email not configured in production. Admin login blocked until SENDGRID_API_KEY or SMTP vars are set.');
+          return res.status(503).json({ message: 'Admin login is temporarily unavailable. Contact the system administrator.' });
+        }
         console.warn(`[ADMIN MFA] Email not configured. OTP for ${user.email}: ${otp} (expires in 10 min)`);
       }
       // email = DB email used by verify step; sent_to = where the code actually went
@@ -448,11 +453,13 @@ const forgotPassword = async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expires = new Date(Date.now() + 3600000); // 1 hour
 
+    // Store the hash — raw token only ever lives in the email link, never in the DB
     await pool.query(
       "UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3",
-      [token, expires, email]
+      [tokenHash, expires, email]
     );
 
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
@@ -483,9 +490,10 @@ const resetPassword = async (req, res) => {
     if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters." });
     if (!/[0-9]/.test(password)) return res.status(400).json({ message: "Password must contain at least one number." });
 
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const result = await pool.query(
       "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()",
-      [token]
+      [tokenHash]
     );
 
     if (result.rows.length === 0) {

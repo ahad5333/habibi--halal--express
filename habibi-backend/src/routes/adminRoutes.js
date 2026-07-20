@@ -51,8 +51,17 @@ const {
   deleteModifier
 } = require("../controllers/modifierController");
 
-// Protect all admin routes with both Auth and Admin middleware
+const merchant = require("../middleware/merchantMiddleware");
+
+// All admin routes require authentication
 router.use(protect);
+
+// ── Merchant-accessible routes (admin / superadmin / merchant) ────────────
+// These must come BEFORE router.use(admin) so merchant tokens can reach them.
+router.get("/orders/merchant", merchant, getMerchantOrders);
+router.patch("/orders/:id/status", merchant, updateOrderStatus);
+
+// ── Admin-only routes (admin / superadmin only) ───────────────────────────
 router.use(admin);
 
 // Sidebar items
@@ -64,9 +73,7 @@ router.get("/analytics/revenue", getRevenueAnalytics);
 router.get("/analytics/growth", getCustomerGrowth);
 
 // Global Orders
-router.get("/orders/merchant", getMerchantOrders);
 router.get("/orders", getAllOrders);
-router.patch("/orders/:id/status", updateOrderStatus);
 router.post("/orders/:id/add-item", protect, admin, addItemToOrder);
 router.patch("/orders/:id/provider", updateOrderProvider);
 

@@ -167,16 +167,44 @@ router.get("/track/:orderNumber", async (req, res) => {
   }
 });
 
-/* ── Public: chat history for an order ── */
-router.get("/chat/:orderNumber", async (req, res) => {
+/* ── Chat history for an order (ownership-verified) ── */
+router.get("/chat/:orderNumber", optionalAuth, async (req, res) => {
   try {
+    const { orderNumber } = req.params;
+    const STAFF_ROLES = new Set(['admin', 'superadmin', 'merchant', 'driver']);
+
+    if (req.user && STAFF_ROLES.has(req.user.role)) {
+      // Staff: allow unrestricted access
+    } else {
+      // Fetch order ownership fields
+      const orderRes = await pool.query(
+        `SELECT user_id, customer_email FROM guest_orders WHERE order_number = $1`,
+        [orderNumber]
+      );
+      if (!orderRes.rows.length) return res.status(404).json({ message: 'Order not found.' });
+      const { user_id, customer_email } = orderRes.rows[0];
+
+      if (req.user) {
+        // Logged-in customer: must own the order
+        const ownsById    = user_id && user_id === req.user.id;
+        const ownsByEmail = customer_email && customer_email.toLowerCase() === req.user.email?.toLowerCase();
+        if (!ownsById && !ownsByEmail) return res.status(403).json({ message: 'Access denied.' });
+      } else {
+        // Guest: require customer_email query param to match
+        const provided = (req.query.customer_email || '').trim().toLowerCase();
+        if (!provided || !customer_email || customer_email.toLowerCase() !== provided) {
+          return res.status(401).json({ message: 'Provide your order email to view this chat.' });
+        }
+      }
+    }
+
     const result = await pool.query(
       `SELECT id, sender, text, created_at AS timestamp
        FROM chat_messages
        WHERE order_number = $1
        ORDER BY created_at ASC
        LIMIT 200`,
-      [req.params.orderNumber]
+      [orderNumber]
     );
     res.json(result.rows);
   } catch (err) {

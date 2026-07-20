@@ -1,4 +1,4 @@
-const ALLOWED_ROLES = new Set(['admin', 'superadmin', 'merchant']);
+const ALLOWED_ROLES = new Set(['admin', 'superadmin']);
 
 const adminMiddleware = (req, res, next) => {
   if (!req.user || !ALLOWED_ROLES.has(req.user.role)) {

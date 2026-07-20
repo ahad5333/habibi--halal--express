@@ -5,7 +5,7 @@ const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance } = require("../utils/googleMaps");
+const { getDistance, feeFromMiles } = require("../utils/googleMaps");
 const { getFeeForDistance } = require("../utils/deliveryFee");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
@@ -172,11 +172,15 @@ const createGuestOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
 
-    // 2. Collect item IDs for price validation — actual validation runs inside the DB
-    //    transaction below with FOR UPDATE to prevent TOCTOU race conditions.
-    const itemIds = Array.isArray(items)
-      ? items.map(i => parseInt(i.id || i.menu_id, 10)).filter(id => id > 0)
-      : [];
+    // 2. Collect item IDs for price validation — every item must carry a valid menu ID.
+    //    Reject outright if any item omits it; otherwise price validation could be bypassed.
+    for (const item of items) {
+      const menuId = parseInt(item.id || item.menu_id, 10);
+      if (!menuId || menuId <= 0) {
+        return res.status(400).json({ message: 'All items must include a valid menu ID.' });
+      }
+    }
+    const itemIds = items.map(i => parseInt(i.id || i.menu_id, 10));
 
     // 3. Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
@@ -199,8 +203,14 @@ const createGuestOrder = async (req, res) => {
           if (clientDelFee < serverDelFee - 0.10) {
             return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
           }
+        } else {
+          // Maps unavailable or address unresolvable — enforce minimum fee floor so
+          // a deliberately non-geocodable address cannot be used to submit $0 delivery fee.
+          const minFee = feeFromMiles(0) ?? 2.99;
+          if (clientDelFee < minFee - 0.10) {
+            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          }
         }
-        // If Google Maps is unavailable, fee cannot be validated — allow order through
       } catch (_) { /* non-fatal */ }
     }
 
@@ -266,7 +276,7 @@ const createGuestOrder = async (req, res) => {
       await client.query('BEGIN');
 
       // Price validation inside transaction with FOR UPDATE — prevents TOCTOU race
-      if (itemIds.length > 0) {
+      {
         const priceRows = await client.query(
           `SELECT id, price, choices, addons FROM menus WHERE id = ANY($1) AND is_available = TRUE FOR UPDATE`,
           [itemIds]
@@ -277,7 +287,6 @@ const createGuestOrder = async (req, res) => {
         let recalcSubtotal = 0;
         for (const item of items) {
           const menuId = parseInt(item.id || item.menu_id, 10);
-          if (!menuId || menuId < 0) continue;
           const row = dbMap[menuId];
           if (!row) {
             await client.query('ROLLBACK');
