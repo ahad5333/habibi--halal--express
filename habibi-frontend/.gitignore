@@ -25,3 +25,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Image-processing dev scripts (not part of the app)
+*.cjs

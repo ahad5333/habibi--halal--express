@@ -48,7 +48,7 @@ const VEG_OPTS = [
 const PROTEIN_OPTS = [
   { id: 'egg-fried',       label: 'Egg (Fried)',           price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-fried.webp'       },
   { id: 'egg-scrambled',   label: 'Egg (Scrambled)',        price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-scrambled.webp'   },
-  { id: 'chicken',         label: 'Chicken',                price: 6.00, qtyType: 'low-extra',     emoji: '🍗', img: '/images/byo/ing/chicken2.webp'  },
+  { id: 'chicken',         label: 'Chicken Broasted',       price: 6.00, qtyType: 'low-extra',     emoji: '🍗', img: '/images/byo/ing/chicken-broasted.webp'  },
   { id: 'lamb-gyro',       label: 'Lamb Gyro',             price: 6.00, qtyType: 'low-extra',     emoji: '🥩', img: '/images/byo/ing/lamb-gyro.webp'       },
   { id: 'mix',             label: 'Mix',                   price: 7.00, qtyType: 'low-extra',     emoji: '🍖', img: '/images/byo/ing/mix.webp'      },
   { id: 'hotdog',          label: 'Hot Dog',               price: 2.00, qtyType: 'single-double', emoji: '🌭', img: '/images/byo/ing/hotdog.webp'           },
@@ -147,53 +147,53 @@ const QTY_OPTS = {
    ================================================================ */
 const CO_ING_DB = {
   /* ── PROTEINS  z=4 ─────────────────────────────────────────── */
-  chicken:          { zone:'protein', src:'/images/byo/ing/chicken2.webp',          z:4, hotDogPos:[{x:50,y:70,w:34}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
-  'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, hotDogPos:[{x:50,y:71,w:34}], pos:{ familyTray:[{x:50,y:43,w:44}], platter:[{x:50,y:43,w:46}], hero:[{x:50,y:43,w:76}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:66}], wrap:[{x:50,y:43,w:74}] } },
-  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:74}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
-  hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:68}], wrap:[{x:50,y:43,w:74}] } },
-  bacon:            { zone:'protein', src:'/images/byo/ing/bacon.webp',             z:4, hotDogPos:[{x:42,y:70,w:28},{x:58,y:70,w:29}], pos:{ familyTray:[{x:36,y:44,w:18},{x:64,y:44,w:18}], platter:[{x:35,y:44,w:24},{x:65,y:44,w:24}], hero:[{x:32,y:44,w:36},{x:68,y:44,w:36}], standard:[{x:36,y:44,w:30},{x:64,y:44,w:30}], compact:[{x:36,y:44,w:30},{x:64,y:44,w:30}], wrap:[{x:34,y:44,w:36},{x:66,y:44,w:36}] } },
-  'hot-sausage':    { zone:'protein', src:'/images/byo/ing/hot-sausage.webp',      z:4, showAside:true, hotDogPos:[{x:50,y:70,w:49}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:46}], hero:[{x:50,y:44,w:76}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
-  'italian-sausage':{ zone:'protein', src:'/images/byo/ing/italian-sausage.webp',  z:4, hotDogPos:[{x:50,y:70,w:46}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:44,w:80}], standard:[{x:50,y:44,w:64}], compact:[{x:50,y:44,w:66}], wrap:[{x:50,y:44,w:74}] } },
-  turkey:           { zone:'protein', src:'/images/byo/ing/turkey.webp',            z:4, showAside:true, hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:40}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:63}], wrap:[{x:50,y:44,w:68}] } },
+  chicken:          { zone:'protein', src:'/images/byo/ing/chicken-broasted.webp',          z:4, hotDogPos:[{x:50,y:66,w:39}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:45}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, hotDogPos:[{x:31,y:50,w:56}], pos:{ familyTray:[{x:50,y:43,w:44}], platter:[{x:50,y:43,w:46}], hero:[{x:50,y:27,w:28}], standard:[{x:50,y:43,w:30}], compact:[{x:50,y:43,w:66}], wrap:[{x:50,y:43,w:74}] } },
+  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:37,w:48}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, hotDogPos:[{x:50,y:43,w:74}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:68}], wrap:[{x:50,y:43,w:74}] } },
+  bacon:            { zone:'protein', src:'/images/byo/ing/bacon.webp',             z:4, hotDogPos:[{x:42,y:70,w:28},{x:58,y:70,w:29}], pos:{ familyTray:[{x:36,y:44,w:18},{x:64,y:44,w:18}], platter:[{x:35,y:44,w:24},{x:65,y:44,w:24}], hero:[{x:32,y:40,w:29},{x:68,y:40,w:31}], standard:[{x:36,y:44,w:30},{x:64,y:44,w:30}], compact:[{x:36,y:44,w:30},{x:64,y:44,w:30}], wrap:[{x:34,y:44,w:36},{x:66,y:44,w:36}] } },
+  'hot-sausage':    { zone:'protein', src:'/images/byo/ing/hot-sausage.webp',      z:4, showAsideWhen:'hotdog', hotDogPos:[{x:50,y:70,w:49}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:46}], hero:[{x:50,y:40,w:64}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  'italian-sausage':{ zone:'protein', src:'/images/byo/ing/italian-sausage.webp',  z:4, hotDogPos:[{x:50,y:70,w:46}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:35,w:65}], standard:[{x:50,y:44,w:64}], compact:[{x:50,y:44,w:66}], wrap:[{x:50,y:44,w:74}] } },
+  turkey:           { zone:'protein', src:'/images/byo/ing/turkey.webp',            z:4, showAsideWhen:'bread', hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:40}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:63}], wrap:[{x:50,y:44,w:68}] } },
   'chicken-kabab':  { zone:'protein', src:'/images/byo/ing/chicken-kabab.webp',    z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
   'beef-kabab':     { zone:'protein', src:'/images/byo/ing/beef-kabab.webp',       z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
-  'philly-steak':   { zone:'protein', src:'/images/byo/ing/philly-steak.webp',     z:4, hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:42}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:62}], wrap:[{x:50,y:44,w:68}] } },
-  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:38}], hero:[{x:50,y:44,w:52}], standard:[{x:50,y:44,w:42}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:50}] } },
-  'fish-fillet':    { zone:'protein', src:'/images/byo/ing/fish-fillet2.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:70}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:66}] } },
-  shrimp:           { zone:'protein', src:'/images/byo/ing/shrimp.webp',            z:4, hotDogPos:[{x:42,y:69,w:41}], pos:{ familyTray:[{x:34,y:43,w:18},{x:66,y:45,w:18}], platter:[{x:32,y:43,w:24},{x:68,y:45,w:24}], hero:[{x:28,y:43,w:40},{x:72,y:45,w:40}], standard:[{x:36,y:43,w:34},{x:64,y:45,w:34}], compact:[{x:36,y:43,w:32},{x:64,y:45,w:32}], wrap:[{x:30,y:43,w:38},{x:70,y:45,w:38}] } },
-  tuna:             { zone:'protein', src:'/images/byo/ing/tuna.webp',              z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:68}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:64}] } },
-  'beef-burger':    { zone:'protein', src:'/images/byo/ing/beef-burger2.webp',      z:4, hotDogPos:[{x:50,y:62,w:24}], pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:55,y:44,w:20}], hero:[{x:50,y:44,w:28}], standard:[{x:50,y:44,w:28}], compact:[{x:50,y:44,w:28}], wrap:[{x:50,y:44,w:32}] } },
-  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:34}], hero:[{x:50,y:44,w:56}], standard:[{x:50,y:44,w:56}], compact:[{x:50,y:44,w:58}], wrap:[{x:50,y:44,w:58}] } },
-  'egg-fried':      { zone:'protein', src:'/images/byo/ing/egg-fried.webp',        z:4, pos:{ familyTray:[{x:34,y:44,w:14,rot:12},{x:66,y:44,w:14,rot:-9}], platter:[{x:32,y:44,w:18,rot:10},{x:68,y:43,w:18,rot:-8}], hero:[{x:30,y:44,w:30,rot:10},{x:70,y:43,w:29,rot:-9}], standard:[{x:36,y:44,w:28,rot:10},{x:64,y:43,w:27,rot:-8}], compact:[{x:36,y:44,w:28,rot:8},{x:64,y:44,w:27,rot:-7}], wrap:[{x:31,y:44,w:32,rot:12},{x:69,y:43,w:31,rot:-10}] } },
-  'egg-scrambled':  { zone:'protein', src:'/images/byo/ing/egg-scrambled.webp',    z:4, hotDogPos:[{x:50,y:70,w:47}], pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:72}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:64}], wrap:[{x:50,y:44,w:66}] } },
+  'philly-steak':   { zone:'protein', src:'/images/byo/ing/philly-steak.webp',     z:4, showAsideWhen:'burger', hotDogPos:[{x:50,y:70,w:60}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:42}], hero:[{x:33,y:39,w:29}], standard:[{x:50,y:44,w:60}], compact:[{x:50,y:44,w:62}], wrap:[{x:50,y:44,w:68}] } },
+  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', hotDogPos:[{x:49,y:63,w:50}], srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:38}], hero:[{x:50,y:37,w:32}], standard:[{x:50,y:44,w:42}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:50}] } },
+  'fish-fillet':    { zone:'protein', src:'/images/byo/ing/fish-fillet2.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:51}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:66}] } },
+  shrimp:           { zone:'protein', src:'/images/byo/ing/shrimp.webp',            z:4, hotDogPos:[{x:25,y:62,w:24},{x:38,y:63,w:24}], pos:{ familyTray:[{x:34,y:43,w:13},{x:66,y:45,w:13}], platter:[{x:32,y:43,w:13},{x:68,y:45,w:13}], hero:[{x:28,y:36,w:20},{x:72,y:36,w:20}], standard:[{x:36,y:43,w:17},{x:64,y:45,w:17}], compact:[{x:57,y:43,w:16},{x:44,y:42,w:18}], wrap:[{x:30,y:43,w:17},{x:70,y:45,w:17}] } },
+  tuna:             { zone:'protein', src:'/images/byo/ing/tuna.webp',              z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:51,y:34,w:39}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:64}] } },
+  'beef-burger':    { zone:'protein', src:'/images/byo/ing/beef-burger2.webp',      z:4, hotDogPos:[{x:50,y:62,w:24}], pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:55,y:44,w:20}], hero:[{x:50,y:39,w:28}], standard:[{x:50,y:44,w:28}], compact:[{x:50,y:44,w:28}], wrap:[{x:50,y:44,w:32}] } },
+  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, showAsideWhen:'burger', pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:34}], hero:[{x:50,y:41,w:35}], standard:[{x:50,y:44,w:56}], compact:[{x:50,y:44,w:58}], wrap:[{x:50,y:44,w:58}] } },
+  'egg-fried':      { zone:'protein', src:'/images/byo/ing/egg-fried.webp',        z:4, pos:{ familyTray:[{x:34,y:44,w:14,rot:12},{x:66,y:44,w:14,rot:-9}], platter:[{x:32,y:44,w:18,rot:10},{x:68,y:43,w:18,rot:-8}], hero:[{x:22,y:37,w:30,rot:10},{x:70,y:43,w:29,rot:-9}], standard:[{x:36,y:44,w:28,rot:10},{x:64,y:43,w:27,rot:-8}], compact:[{x:36,y:44,w:28,rot:8},{x:64,y:44,w:27,rot:-7}], wrap:[{x:31,y:44,w:32,rot:12},{x:69,y:43,w:31,rot:-10}] } },
+  'egg-scrambled':  { zone:'protein', src:'/images/byo/ing/egg-scrambled.webp',    z:4, hotDogPos:[{x:50,y:70,w:47}], pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:44}], hero:[{x:76,y:39,w:42}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:64}], wrap:[{x:50,y:44,w:66}] } },
 
   /* ── CHEESE  z=3 — sits below protein (z=4) so it peeks out at the edges.
      Sizes kept modest so cheese is a layer, not the visual hero.          ── */
-  american:      { zone:'cheese', src:'/images/byo/ing/american-cheese.webp', z:3, hotDogPos:[{x:50,y:69,w:29}], pos:{ familyTray:[{x:50,y:47,w:18}], platter:[{x:50,y:47,w:29}], hero:[{x:50,y:47,w:26}], standard:[{x:50,y:47,w:22}], compact:[{x:50,y:47,w:22}], wrap:[{x:50,y:47,w:28}] } },
+  american:      { zone:'cheese', src:'/images/byo/ing/american-cheese.webp', z:3, hotDogPos:[{x:50,y:66,w:22}], pos:{ familyTray:[{x:50,y:47,w:18}], platter:[{x:50,y:47,w:29}], hero:[{x:50,y:36,w:27}], standard:[{x:50,y:47,w:22}], compact:[{x:50,y:47,w:22}], wrap:[{x:50,y:47,w:28}] } },
   cream:         { zone:'cheese', src:'/images/byo/ing/cream-cheese.webp',    z:3, pos:{ familyTray:[{x:50,y:47,w:20}], platter:[{x:50,y:47,w:22}], hero:[{x:50,y:47,w:34}], standard:[{x:50,y:47,w:28}], compact:[{x:50,y:47,w:30}], wrap:[{x:50,y:47,w:32}] } },
-  butter:        { zone:'cheese', src:'/images/byo/ing/butter2.webp',          z:3, pos:{ familyTray:[{x:50,y:47,w:13}], platter:[{x:50,y:47,w:14}], hero:[{x:50,y:47,w:18}], standard:[{x:50,y:47,w:16}], compact:[{x:50,y:47,w:16}], wrap:[{x:50,y:47,w:18}] } },
-  liquid_cheese: { zone:'cheese', src:'/images/byo/ing/liquid-cheese.webp',   z:3, hotDogPos:[{x:49,y:69,w:57}], pos:{ familyTray:[{x:50,y:47,w:30}], platter:[{x:50,y:47,w:32}], hero:[{x:50,y:47,w:40}], standard:[{x:50,y:47,w:36}], compact:[{x:50,y:47,w:34}], wrap:[{x:50,y:47,w:38}] } },
+  butter:        { zone:'cheese', src:'/images/byo/ing/butter2.webp',          z:3, pos:{ familyTray:[{x:50,y:47,w:13}], platter:[{x:50,y:47,w:14}], hero:[{x:50,y:37,w:38}], standard:[{x:50,y:21,w:16}], compact:[{x:50,y:21,w:16}], wrap:[{x:50,y:47,w:18}] } },
+  liquid_cheese: { zone:'cheese', src:'/images/byo/ing/liquid-cheese.webp',   z:3, hotDogPos:[{x:49,y:69,w:57}], pos:{ familyTray:[{x:50,y:47,w:30}], platter:[{x:50,y:47,w:32}], hero:[{x:50,y:35,w:40}], standard:[{x:50,y:47,w:36}], compact:[{x:50,y:47,w:34}], wrap:[{x:50,y:47,w:38}] } },
 
   /* ── VEGETABLES  z=2 bed / z=5 scattered ───────────────────── */
-  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, hotDogPos:[{x:50,y:44,w:38}], pos:{ familyTray:[{x:65,y:53,w:34}], platter:[{x:75,y:53,w:35}], hero:[{x:50,y:44,w:86}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:52,w:70}], wrap:[{x:50,y:44,w:84}] } },
+  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, hotDogPos:[{x:50,y:50,w:71}], pos:{ familyTray:[{x:70,y:53,w:50}], platter:[{x:75,y:53,w:35}], hero:[{x:51,y:50,w:65,peekY:39}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:52,w:70}], wrap:[{x:50,y:44,w:84}] } },
   /* Rice: square yellow basmati for flat trays; platter uses same dense image, bread bases use elongated pile */
   rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',
     srcByFamily: { familyTray:'/images/byo/ing/rice-tray.webp', platter:'/images/byo/ing/rice-tray.webp' },
-    z:2, pos:{ familyTray:[{x:20,y:50,w:50}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
+    z:2, pos:{ familyTray:[{x:33,y:50,w:50}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
   /* Onions: ~2" slice — fewer, centred for compact round bases */
-  onions:   { zone:'veg', src:'/images/byo/ing/onion2.webp',    z:5, hotDogPos:[{x:42,y:44,w:26},{x:61,y:45,w:18}], pos:{
+  onions:   { zone:'veg', src:'/images/byo/ing/onion2.webp',    z:5, hotDogPos:[{x:30,y:44,w:31},{x:44,y:40,w:32}], pos:{
     familyTray:[{x:16,y:43,w:10},{x:34,y:48,w:10},{x:52,y:42,w:10},{x:73,y:61,w:15},{x:79,y:48,w:18}],
     platter:   [{x:22,y:59,w:12},{x:40,y:64,w:12},{x:58,y:58,w:11},{x:76,y:64,w:11}],
-    hero:      [{x:14,y:44,w:18},{x:36,y:40,w:18},{x:58,y:45,w:17},{x:78,y:41,w:17},{x:92,y:44,w:16}],
+    hero:      [{x:40,y:44,w:29},{x:59,y:45,w:35}],
     standard:  [{x:33,y:44,w:18},{x:72,y:45,w:18},{x:52,y:42,w:18}],
     compact:   [{x:33,y:44,w:20},{x:72,y:45,w:19},{x:52,y:42,w:18}],
-    wrap:      [{x:16,y:44,w:20},{x:40,y:40,w:18},{x:62,y:45,w:19},{x:82,y:41,w:18}],
+    wrap:      [{x:16,y:44,w:20},{x:40,y:40,w:18},{x:53,y:30,w:45},{x:82,y:41,w:18}],
   } },
   /* Peppers: ~2" slice */
-  peppers:  { zone:'veg', src:'/images/byo/ing/pepper.webp',   z:5, pos:{
+  peppers:  { zone:'veg', src:'/images/byo/ing/pepper.webp',   z:5, hotDogPos:[{x:28,y:64,w:20}], pos:{
     familyTray:[{x:14,y:49,w:9},{x:30,y:45,w:9},{x:48,y:50,w:9},{x:66,y:45,w:9},{x:82,y:50,w:8}],
     platter:   [{x:22,y:49,w:10},{x:38,y:45,w:10},{x:54,y:50,w:10},{x:70,y:45,w:9},{x:78,y:50,w:9}],
-    hero:      [{x:12,y:50,w:16},{x:32,y:46,w:15},{x:54,y:51,w:15},{x:74,y:46,w:15},{x:90,y:50,w:14}],
+    hero:      [{x:26,y:46,w:25},{x:77,y:46,w:25}],
     standard:  [{x:30,y:50,w:16},{x:52,y:46,w:15},{x:72,y:51,w:15}],
     compact:   [{x:30,y:50,w:17},{x:52,y:46,w:16},{x:72,y:51,w:16}],
     wrap:      [{x:14,y:50,w:18},{x:38,y:46,w:17},{x:62,y:51,w:17},{x:82,y:47,w:16}],
@@ -208,10 +208,10 @@ const CO_ING_DB = {
     wrap:      [{x:14,y:56,w:16},{x:38,y:52,w:15},{x:62,y:57,w:15},{x:84,y:52,w:14}],
   } },
   /* Tomatoes: ~3" slice */
-  tomatoes: { zone:'veg', src:'/images/byo/ing/tomato.webp',   z:5, hotDogPos:[{x:56,y:56,w:18}], pos:{
+  tomatoes: { zone:'veg', src:'/images/byo/ing/tomato.webp',   z:5, hotDogPos:[{x:33,y:32,w:29},{x:68,y:31,w:22}], pos:{
     familyTray:[{x:26,y:41,w:17},{x:50,y:45,w:17},{x:64,y:41,w:17}],
     platter:   [{x:28,y:41,w:17},{x:50,y:45,w:18},{x:72,y:41,w:17}],
-    hero:      [{x:20,y:41,w:32},{x:50,y:45,w:30},{x:80,y:41,w:30}],
+    hero:      [{x:53,y:52,w:29}],
     standard:  [{x:60,y:52,w:32},{x:36,y:52,w:32}],
     compact:   [{x:60,y:52,w:32},{x:36,y:52,w:30}],
     wrap:      [{x:22,y:41,w:34},{x:52,y:45,w:32},{x:80,y:41,w:30}],
@@ -238,19 +238,43 @@ const QTY_DUP = {
   ]},
 };
 
-/* ── Sauce drizzle images — 3 qty variants per sauce ─────────── */
-const SAUCE_DRIZZLE_SRC = (() => {
-  const sauces = ['white','hot','ketchup','mustard','bbq','green','mayo','blue'];
-  const out = {};
-  sauces.forEach(s => {
-    out[s] = {
-      low:     `/images/byo/ing/drizzle-${s}-low.webp`,
-      regular: `/images/byo/ing/drizzle-${s}-regular.webp`,
-      extra:   `/images/byo/ing/drizzle-${s}-extra.webp`,
-    };
-  });
-  return out;
-})();
+/* ── Realistic SVG sauce drizzle ────────────────────────────── */
+const DRIZZLE_COLORS = {
+  white:   { base: '#dfc87a', hi: '#fdfae8', shadow: '#9e8830' },
+  hot:     { base: '#c41010', hi: '#ff6644', shadow: '#7a0000' },
+  ketchup: { base: '#b80800', hi: '#ee3322', shadow: '#780000' },
+  mustard: { base: '#c89000', hi: '#ffd820', shadow: '#806000' },
+  bbq:     { base: '#5c1200', hi: '#8c3c1c', shadow: '#280400' },
+  green:   { base: '#257a1c', hi: '#4cc030', shadow: '#0e4408' },
+  mayo:    { base: '#ddd488', hi: '#ffffec', shadow: '#9e9040' },
+  blue:    { base: '#ccc4b0', hi: '#f8f4ee', shadow: '#888070' },
+};
+function DrizzleSVG({ sauceId, qty }) {
+  const c = DRIZZLE_COLORS[sauceId] || DRIZZLE_COLORS.white;
+  const sw = qty === 'low' ? 3.0 : qty === 'extra' ? 5.5 : 4.2;
+  /* Organic asymmetric paths per qty so each variant has a distinct character */
+  const path = qty === 'low'
+    ? 'M 2,11 C 20,5 38,17 55,10 C 72,4 88,15 98,10'
+    : qty === 'extra'
+    ? 'M 1,11 C 10,4 20,17 30,10 C 42,4 54,16 64,10 C 75,4 87,15 98,11'
+    : 'M 2,11 C 14,5 27,16 40,10 C 55,5 68,16 82,10 C 89,6 95,13 98,11';
+  return (
+    <svg viewBox="0 0 100 22" xmlns="http://www.w3.org/2000/svg"
+      style={{ width:'100%', height:'100%', overflow:'visible', display:'block' }}>
+      {/* Depth shadow beneath */}
+      <path d={path} fill="none" stroke={c.shadow} strokeWidth={sw + 1.8}
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.55"
+        transform="translate(0,1)" />
+      {/* Main sauce body */}
+      <path d={path} fill="none" stroke={c.base} strokeWidth={sw}
+        strokeLinecap="round" strokeLinejoin="round" />
+      {/* Specular highlight — thin bright streak along top edge */}
+      <path d={path} fill="none" stroke={c.hi} strokeWidth={sw * 0.28}
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.82"
+        transform="translate(0,-0.8)" />
+    </svg>
+  );
+}
 
 /* ── Sauce pool colours — used for CSS blob rendering ────── */
 const SAUCE_COLORS = {
@@ -283,7 +307,7 @@ function remapZoneX(pos, zoneMin, zoneMax) {
    Square images (1:1) in a 4:3 canvas fill ~66% of canvas width centered → xMin≈20, xMax≈80.
    Landscape images (≥4:3) fill ~92% width. Portrait images fill less.               ── */
 const FAMILY_BOUNDS = {
-  hero:       { xMin: 5,  xMax: 93, maxW: 78 }, // 1536×1024 landscape ≈ 4:3 → fills ~92%
+  hero:       { xMin: 5,  xMax: 93, maxW: 78, peekMaxW: 95 }, // 1536×1024 landscape ≈ 4:3 → fills ~92%
   wrap:       { xMin: 20, xMax: 80, maxW: 50 }, // square image, round flatbread
   standard:   { xMin: 20, xMax: 80, maxW: 50 }, // square image, round bread fills ~66%
   compact:    { xMin: 22, xMax: 78, maxW: 44 }, // default for compact family
@@ -333,9 +357,20 @@ function IngCanvas({ base, cfg, onReset }) {
   /* ── Analyse what's on the plate ── */
   const hasProtein  = Object.keys(cfg.proteins).length > 0;
   const hasRice     = !!cfg.vegetables.rice;
-  const sideProteins = Object.keys(cfg.proteins).filter(id => CO_ING_DB[id]?.showAside);
+  const sideProteins = Object.keys(cfg.proteins).filter(id => {
+    /* Manual placement override — user chose "On Side" */
+    if (cfg.proteins[id]?.placement === 'on_side') return true;
+    /* Auto-aside rules by base type */
+    const when = CO_ING_DB[id]?.showAsideWhen;
+    if (!when) return false;
+    if (when === 'hotdog') return isHotDog;
+    if (when === 'burger') return base?.id === '39g';
+    if (when === 'bread')  return true;
+    return false;
+  });
   const hasNonRiceVeg = Object.keys(cfg.vegetables).some(k => k !== 'rice');
   const hasCheese   = cfg.cheese.type && cfg.cheese.type !== 'none';
+  const hasSides    = (hasRice && !isFlatBase) || sideProteins.length > 0;
 
   /* ── Layout mode (flat bases only) ──────────────────────────────
      triple  = rice LEFT  + protein CENTER + veg RIGHT
@@ -414,6 +449,8 @@ function IngCanvas({ base, cfg, onReset }) {
   Object.entries(cfg.proteins).forEach(([id, sel]) => {
     const def = CO_ING_DB[id];
     if (!def || !family) return;
+    /* Skip proteins that are shown as aside badges for this base */
+    if (sideProteins.includes(id)) return;
     /* Hot dog bun: use pre-computed hotDogPos directly (final render values, no zone remapping) */
     if (isHotDog && def.hotDogPos) {
       let src = def.src;
@@ -646,33 +683,27 @@ function IngCanvas({ base, cfg, onReset }) {
                 />
               ))}
 
-              {/* Sauce drizzle — real food photo images, properly sized */}
+              {/* Sauce drizzle — SVG for realistic glossy look */}
               {onFoodSauces.map((sauce, i) => {
-                const drizzleMap = SAUCE_DRIZZLE_SRC[sauce.id];
-                if (!drizzleMap) return null;
                 const qty = cfg.sauces[sauce.id]?.qty || 'regular';
-                const src = drizzleMap[qty] || drizzleMap.regular;
-                /* Width: ~35% for bread, 40% for flat bases, 45% for hot dog */
-                const drizzleW = isFlatBase ? 40 : isHotDog ? 45 : 35;
-                /* Position: flat bases fixed at left=20%, bread centered in zone */
+                /* Width: ~35% for bread, 40% for flat bases, 53% for hot dog */
+                const drizzleW = isFlatBase ? 40 : isHotDog ? 53 : 35;
+                /* Position: flat bases fixed at left=20%, hotdog fixed at left=21.5%, bread centered in zone */
                 const protCx = isFlatBase
                   ? (PROT_ZONE[0] + PROT_ZONE[1]) / 2
                   : (bounds.xMin + bounds.xMax) / 2;
-                const left = isFlatBase ? 20 : (protCx - drizzleW / 2).toFixed(1);
+                const left = isFlatBase ? 20 : isHotDog ? 21.5 : (protCx - drizzleW / 2).toFixed(1);
                 /* Y on protein — lower for bread bases */
                 const topY = isHotDog
-                  ? Math.min(62 + i * 6, 74)
+                  ? Math.min(61 + i * 9, 85)
                   : isSplitBun
                     ? Math.min(60 + splitBunYShift * 0.35 + i * 7, 82)
                     : isFlatBase ? 47 + i * 10
-                    : isHotDog ? Math.min(61 + i * 10, 85)
                     : 56 + i * 8;
                 const rot = [-5, 4, -7, 5, -3][i % 5];
                 return (
-                  <img
+                  <div
                     key={`drizzle-${sauce.id}`}
-                    src={src}
-                    alt=""
                     className="co-canvas-drizzle"
                     style={{
                       left:      `${left}%`,
@@ -682,7 +713,9 @@ function IngCanvas({ base, cfg, onReset }) {
                       transform: `translateY(-50%) rotate(${rot}deg)`,
                       '--drizzle-rot': `${rot}deg`,
                     }}
-                  />
+                  >
+                    <DrizzleSVG sauceId={sauce.id} qty={qty} />
+                  </div>
                 );
               })}
             </div>
@@ -705,8 +738,8 @@ function IngCanvas({ base, cfg, onReset }) {
                 data-zone="veg"
                 data-id={id}
                 style={{
-                  left: `${pos.x}%`,
-                  top: `calc(${pos.y - 6}% - var(--peek-top, 0%))`,
+                  left: `${pos.peekX ?? pos.x}%`,
+                  top: `calc(${(pos.peekY ?? pos.y) - 6}% - var(--peek-top, 0%))`,
                   width: `${Math.min(Math.round(pos.w), bounds.peekMaxW ?? (bounds.xMax - bounds.xMin))}%`,
                   zIndex: 14,
                   '--ing-rot': `${((i % 5) - 2) * 2.5}deg`,
@@ -727,27 +760,43 @@ function IngCanvas({ base, cfg, onReset }) {
               </div>
             ))}
 
-            {/* Rice on the side — shown when rice is selected on a bread base */}
-            {hasRice && !isFlatBase && (
-              <div className="co-rice-aside" key="rice-aside">
-                <img src="/images/byo/ing/rice-bowl.webp" alt="Rice" className="co-rice-aside-img" />
-                <span className="co-rice-aside-label">Rice</span>
-                <em className="co-rice-aside-sub">on the side</em>
-              </div>
-            )}
-
-            {/* Side proteins (hot-sausage, turkey) — shown when selected */}
-            {sideProteins.map(id => {
-              const def = CO_ING_DB[id];
-              const label = PROTEIN_OPTIONS.find(p => p.id === id)?.label || id;
+            {/* Sides panel — vertical plate column on left edge */}
+            {(hasRice && !isFlatBase || sideProteins.length > 0) && (() => {
+              const sideCount = (hasRice && !isFlatBase ? 1 : 0) + sideProteins.length;
+              const sizeClass = sideCount >= 4 ? ' co-aside-mini' : sideCount >= 3 ? ' co-aside-compact' : '';
               return (
-                <div className="co-rice-aside" key={`${id}-aside`}>
-                  <img src={def.src} alt={label} className="co-rice-aside-img" />
-                  <span className="co-rice-aside-label">{label}</span>
-                  <em className="co-rice-aside-sub">on the side</em>
+                <div className={`co-aside-list${sizeClass}`}>
+                  <div className="co-aside-header">
+                    <span className="co-aside-header-label">SIDES</span>
+                  </div>
+                  {(() => {
+                    const plates = [
+                      ...(hasRice && !isFlatBase ? [(
+                        <div className="co-side-plate" key="rice-aside">
+                          <div className="co-side-plate-dish">
+                            <img src="/images/byo/ing/rice-bowl.webp" alt="Rice" className="co-side-plate-img" />
+                          </div>
+                          <span className="co-side-plate-label">Rice</span>
+                        </div>
+                      )] : []),
+                      ...sideProteins.map(id => {
+                        const def = CO_ING_DB[id];
+                        const label = PROTEIN_OPTS.find(p => p.id === id)?.label || id;
+                        return (
+                          <div className="co-side-plate" key={`${id}-aside`}>
+                            <div className="co-side-plate-dish">
+                              <img src={def.src} alt={label} className="co-side-plate-img" />
+                            </div>
+                            <span className="co-side-plate-label">{label}</span>
+                          </div>
+                        );
+                      }),
+                    ];
+                    return plates;
+                  })()}
                 </div>
               );
-            })}
+            })()}
 
             {/* Chef hand animation — drops in when a new ingredient is added */}
             {handPos && (
@@ -1059,11 +1108,14 @@ export default function CustomOrder() {
   const toggleProtein = id => setCfg(p => {
     const v = { ...p.proteins };
     const pr = PROTEIN_OPTS.find(x => x.id === id);
-    v[id] ? delete v[id] : (v[id] = { qty: pr?.qtyType === 'eggs' ? 1 : pr?.qtyType === 'single-double' || pr?.qtyType === 'single-triple' ? 'single' : 'regular' });
+    v[id] ? delete v[id] : (v[id] = { qty: pr?.qtyType === 'eggs' ? 1 : pr?.qtyType === 'single-double' || pr?.qtyType === 'single-triple' ? 'single' : 'regular', placement: 'on_food' });
     return { ...p, proteins: v };
   });
   const setProteinQty = (id, qty) => setCfg(p => ({
     ...p, proteins: { ...p.proteins, [id]: { ...p.proteins[id], qty } }
+  }));
+  const setProteinPlacement = (id, placement) => setCfg(p => ({
+    ...p, proteins: { ...p.proteins, [id]: { ...p.proteins[id], placement } }
   }));
 
   const toggleSauce = id => setCfg(p => {
@@ -1648,6 +1700,19 @@ export default function CustomOrder() {
                       </div>
                       {sel && <span className="co-check"><Check size={11} /></span>}
                     </button>
+                    {sel && !CO_ING_DB[prot.id]?.showAsideWhen && (
+                      <div className="co-placement-row">
+                        {['on_food', 'on_side'].map(p => (
+                          <button
+                            key={p}
+                            className={`co-placement-btn${(sel.placement || 'on_food') === p ? ' active' : ''}`}
+                            onClick={() => setProteinPlacement(prot.id, p)}
+                          >
+                            {p === 'on_food' ? 'On Food' : 'On Side'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {sel && (
                       <QtyPills
                         opts={prot.qtyType === 'eggs' ? QTY_OPTS.eggs : QTY_OPTS[prot.qtyType]}
