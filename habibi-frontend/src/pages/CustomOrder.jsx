@@ -949,6 +949,22 @@ const PRESETS = [
   },
 ];
 
+/* ── Fisher-Yates shuffle ─────────────────────────────────────── */
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function defaultQtyFor(protein) {
+  if (protein.qtyType === 'eggs') return 1;
+  if (protein.qtyType === 'single-double' || protein.qtyType === 'single-triple') return 'single';
+  return 'regular';
+}
+
 /* ================================================================
    STEP PROGRESS
    ================================================================ */
@@ -1085,6 +1101,35 @@ export default function CustomOrder() {
     setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
     setWarnProtein(false);
     setQty(1);
+  };
+
+  /* Surprise Me — random base + protein + 2 veg + sauce, respecting active diet filters */
+  const [rollAnim, setRollAnim] = useState(false);
+  const randomizeOrder = () => {
+    const base = BASES[Math.floor(Math.random() * BASES.length)];
+
+    const proteinPool = PROTEIN_OPTS.filter(p => !isProteinExcluded(p.id));
+    const protein = proteinPool[Math.floor(Math.random() * proteinPool.length)];
+
+    const vegPicks = shuffleArray(VEG_OPTS).slice(0, 2);
+
+    const saucePool = SAUCE_OPTS.filter(s => !isSauceExcluded(s.id));
+    const sauce = saucePool[Math.floor(Math.random() * saucePool.length)];
+
+    setCfg({
+      ...INIT,
+      base,
+      proteins:   protein ? { [protein.id]: { qty: defaultQtyFor(protein), placement: 'on_food' } } : {},
+      vegetables: Object.fromEntries(vegPicks.map(v => [v.id, { qty: 'regular' }])),
+      sauces:     sauce   ? { [sauce.id]: { placement: 'on_food', qty: 'regular', count: 1 } } : {},
+    });
+    setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    setWarnProtein(false);
+    setQty(1);
+    setShowBreakdown(false);
+
+    setRollAnim(true);
+    setTimeout(() => setRollAnim(false), 500);
   };
 
   const handleReset = () => {
@@ -1639,7 +1684,16 @@ export default function CustomOrder() {
 
           {/* ── Staff picks ── */}
           <div className="co-presets">
-            <p className="co-presets-label">⭐ Staff Picks, tap to pre-fill</p>
+            <div className="co-presets-header">
+              <p className="co-presets-label">⭐ Staff Picks, tap to pre-fill</p>
+              <button
+                type="button"
+                className={`co-randomize-btn${rollAnim ? ' rolling' : ''}`}
+                onClick={randomizeOrder}
+              >
+                🎲 Surprise Me
+              </button>
+            </div>
             <div className="co-presets-track">
               {PRESETS.map(preset => (
                 <button

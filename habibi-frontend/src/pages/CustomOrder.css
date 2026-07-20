@@ -1289,7 +1289,42 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.35);
+  margin: 0;
+}
+.co-presets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
   margin: 0 0 0.55rem;
+}
+.co-randomize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  background: rgba(249,115,22,0.1);
+  border: 1px solid rgba(249,115,22,0.35);
+  border-radius: 20px;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #FB923C;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.co-randomize-btn:hover {
+  background: rgba(249,115,22,0.18);
+  border-color: #F97316;
+}
+.co-randomize-btn:active { transform: scale(0.96); }
+.co-randomize-btn.rolling { animation: co-dice-roll 0.5s ease; }
+@keyframes co-dice-roll {
+  0%   { transform: rotate(0deg) scale(1); }
+  30%  { transform: rotate(-18deg) scale(1.08); }
+  60%  { transform: rotate(14deg) scale(1.08); }
+  100% { transform: rotate(0deg) scale(1); }
 }
 .co-presets-track {
   display: flex;
@@ -2126,6 +2161,7 @@
   .co-prot-card { padding: 0.6rem 0.65rem; gap: 0.45rem; }
 
   .co-presets { padding: 0.6rem 0.75rem 0.35rem; }
+  .co-presets-header { flex-wrap: wrap; gap: 0.4rem; }
   .co-preset-card { min-width: 110px; padding: 0.5rem 0.65rem; }
   .co-diet-filters { padding: 0.5rem 0.75rem; gap: 0.35rem; }
   .co-diet-chip { font-size: 0.72rem; padding: 0.3rem 0.6rem; }
