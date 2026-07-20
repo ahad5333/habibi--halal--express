@@ -1051,26 +1051,28 @@
 }
 .co-add-btn:disabled { opacity: 0.38; cursor: not-allowed; box-shadow: none; }
 
-/* ── Price breakdown ─────────────────────────────────────────── */
-.co-breakdown { display: flex; flex-direction: column; gap: 0; }
-.co-breakdown-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.35);
-  text-align: left;
-  padding: 0;
-  transition: color 0.15s;
-  letter-spacing: 0.04em;
+/* ── Price breakdown — always visible ────────────────────────── */
+.co-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 0.6rem;
 }
-.co-breakdown-toggle:hover { color: rgba(249,115,22,0.7); }
+.co-breakdown-heading {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 .co-breakdown-list {
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
   display: flex;
   flex-direction: column;
   gap: 0.22rem;
+  max-height: 220px;
+  overflow-y: auto;
   animation: co-slide-in 0.18s ease;
 }
 .co-breakdown-row {
@@ -1969,9 +1971,38 @@
   flex-direction: column;
   gap: 0.05rem;
   flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
 }
+.co-mobile-total:disabled { cursor: default; }
 .co-mobile-total span { font-size: 0.62rem; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 .co-mobile-total strong { font-size: 1.3rem; font-weight: 900; color: #F97316; line-height: 1; }
+
+/* ── Mobile breakdown drawer — slides up above the sticky footer ── */
+.co-mobile-breakdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: #141414;
+  border-top: 1px solid rgba(249,115,22,0.25);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+  padding: 0.85rem 1rem;
+  animation: co-drawer-up 0.18s ease;
+}
+@keyframes co-drawer-up {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.co-mobile-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
 
 .co-add-btn-mobile {
   flex: 1;

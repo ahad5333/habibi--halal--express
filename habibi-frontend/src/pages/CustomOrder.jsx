@@ -1081,6 +1081,7 @@ export default function CustomOrder() {
     setOpen(new Set(['base']));
     setQty(1);
     setWarnProtein(false);
+    setShowBreakdown(false);
   };
 
   /* Section toggle */
@@ -1324,6 +1325,7 @@ export default function CustomOrder() {
     setOpen(new Set(['base']));
     setWarnProtein(false);
     setQty(1);
+    setShowBreakdown(false);
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -1391,26 +1393,22 @@ export default function CustomOrder() {
               <span className="co-base-hint">Hero: cheese doubled</span>
             )}
 
-            {/* Price breakdown */}
+            {/* Price breakdown — always visible, itemised as you build */}
             {breakdown.length > 0 && (
               <div className="co-breakdown">
-                <button className="co-breakdown-toggle" onClick={() => setShowBreakdown(p => !p)}>
-                  <span>{showBreakdown ? '▲' : '▼'} breakdown</span>
-                </button>
-                {showBreakdown && (
-                  <div className="co-breakdown-list">
-                    {breakdown.map((line, i) => (
-                      <div key={i} className="co-breakdown-row">
-                        <span className="co-breakdown-label">{line.label}</span>
-                        <span className="co-breakdown-price">${line.price.toFixed(2)}</span>
-                      </div>
-                    ))}
-                    <div className="co-breakdown-total-row">
-                      <span>Total</span>
-                      <span>${total.toFixed(2)}</span>
+                <span className="co-breakdown-heading">Price breakdown</span>
+                <div className="co-breakdown-list">
+                  {breakdown.map((line, i) => (
+                    <div key={i} className="co-breakdown-row">
+                      <span className="co-breakdown-label">{line.label}</span>
+                      <span className="co-breakdown-price">${line.price.toFixed(2)}</span>
                     </div>
+                  ))}
+                  <div className="co-breakdown-total-row">
+                    <span>Total</span>
+                    <span>${total.toFixed(2)}</span>
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -1895,10 +1893,32 @@ export default function CustomOrder() {
 
       {/* ── Sticky mobile footer ── */}
       <div className="co-mobile-footer">
-        <div className="co-mobile-total">
-          <span>Total</span>
+        {showBreakdown && breakdown.length > 0 && (
+          <div className="co-mobile-breakdown">
+            <div className="co-mobile-breakdown-list">
+              {breakdown.map((line, i) => (
+                <div key={i} className="co-breakdown-row">
+                  <span className="co-breakdown-label">{line.label}</span>
+                  <span className="co-breakdown-price">${line.price.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="co-breakdown-total-row">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          className="co-mobile-total"
+          onClick={() => setShowBreakdown(p => !p)}
+          disabled={breakdown.length === 0}
+          aria-expanded={showBreakdown}
+        >
+          <span>Total {breakdown.length > 0 && (showBreakdown ? '▾' : '▴')}</span>
           <strong className={totalFlash ? 'co-price-flash' : ''}>${total.toFixed(2)}</strong>
-        </div>
+        </button>
         {cfg.base && (
           <div className="co-qty-row co-qty-row-mobile">
             <button className="co-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}><Minus size={13}/></button>
