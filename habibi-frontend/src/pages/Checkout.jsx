@@ -236,6 +236,10 @@ const Checkout = () => {
   }, [address, deliveryMode]);
 
   // Google Maps Places Autocomplete (gracefully no-ops if key not configured)
+  // Depends on isLoggedIn/isDineIn too: the address <input> this attaches to only
+  // mounts once the auth gate clears, so addressInputRef.current is null on the
+  // effect's first run for any user whose login check resolves after mount —
+  // without these deps the effect never re-runs once the input actually exists.
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
     if (!key || !addressInputRef.current || deliveryMode !== 'delivery') return;
@@ -272,7 +276,7 @@ const Checkout = () => {
       script.onload = initAC;
       document.head.appendChild(script);
     }
-  }, [deliveryMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [deliveryMode, isLoggedIn, isDineIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize real Google Maps when a valid address lat/lng is available
   useEffect(() => {
@@ -436,12 +440,15 @@ const Checkout = () => {
   };
 
   // Auto-detect location if Chrome already has permission granted (like Zepto/Blinkit)
+  // Gated on isLoggedIn/isDineIn — firing before the delivery form (and the Maps
+  // script effect above) has mounted would hit the "Maps not loaded" fallback in
+  // handleUseMyLocation even though Maps was simply never given the chance to load yet.
   useEffect(() => {
-    if (deliveryMode !== 'delivery' || address || !navigator.geolocation || !navigator.permissions) return;
+    if (!isLoggedIn || isDineIn || deliveryMode !== 'delivery' || address || !navigator.geolocation || !navigator.permissions) return;
     navigator.permissions.query({ name: 'geolocation' }).then(result => {
       if (result.state === 'granted') handleUseMyLocation();
     }).catch(() => {});
-  }, [deliveryMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [deliveryMode, isLoggedIn, isDineIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared pre-flight validation — run before any payment path fires
   const validateOrder = () => {
