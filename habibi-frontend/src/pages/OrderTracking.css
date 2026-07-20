@@ -879,6 +879,14 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+.ot-driver-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ot-driver-btn:disabled:hover {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
 
 .ot-tracking-link {
   display: inline-block;

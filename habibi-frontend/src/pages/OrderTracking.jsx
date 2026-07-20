@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User } from 'lucide-react';
 import { ordersAPI } from '../services/api';
 import './OrderTracking.css';
 
@@ -55,6 +55,10 @@ function calcBearing(lat1, lng1, lat2, lng2) {
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
+/* Inline SVG (matches lucide's "scooter" icon) — used inside raw Leaflet marker
+   HTML strings where a React/lucide component can't be rendered directly. */
+const SCOOTER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-3.5l2 11.05"/><path d="M6.95 17h5.142c.523 0 .95-.406 1.063-.916a6.5 6.5 0 0 1 5.345-5.009"/><circle cx="19.5" cy="17.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/></svg>`;
+
 /* ── Build rider marker HTML ────────────────────────────── */
 function riderMarkerHtml(bearing = 0) {
   const flip = bearing > 180 ? 'scaleX(-1)' : 'scaleX(1)';
@@ -64,7 +68,7 @@ function riderMarkerHtml(bearing = 0) {
         <div class="ot-rider-ring ot-rider-ring1"></div>
         <div class="ot-rider-ring ot-rider-ring2"></div>
         <div class="ot-rider-avatar">
-          <span class="ot-rider-scooter" style="display:inline-block;transform:${flip}">🛵</span>
+          <span class="ot-rider-scooter" style="display:inline-block;transform:${flip}">${SCOOTER_SVG}</span>
         </div>
       </div>
       <div class="ot-rider-tag">
@@ -327,7 +331,7 @@ export default function OrderTracking() {
     });
     L.marker([RESTAURANT_LAT, RESTAURANT_LNG], { icon: goldDot })
       .addTo(map)
-      .bindPopup('<strong style="font-family:sans-serif">🏪 Habibi Halal Express</strong>');
+      .bindPopup('<strong style="font-family:sans-serif">Habibi Halal Express</strong>');
 
     map.setView([RESTAURANT_LAT, RESTAURANT_LNG], 14);
     leafletRef.current = map;
@@ -347,7 +351,7 @@ export default function OrderTracking() {
         });
         L.marker([pos.lat, pos.lng], { icon: greenDot })
           .addTo(leafletRef.current)
-          .bindPopup('<strong style="font-family:sans-serif">📍 Your Location</strong>');
+          .bindPopup('<strong style="font-family:sans-serif">Your Location</strong>');
 
         leafletRef.current.fitBounds(
           [[RESTAURANT_LAT, RESTAURANT_LNG], [pos.lat, pos.lng]],
@@ -381,7 +385,7 @@ export default function OrderTracking() {
     } else {
       driverMarkerRef.current = L.marker([lat, lng], { icon: riderIcon, zIndexOffset: 1000 })
         .addTo(leafletRef.current)
-        .bindPopup('<strong style="font-family:sans-serif">🛵 Your Driver</strong>');
+        .bindPopup('<strong style="font-family:sans-serif">Your Driver</strong>');
     }
 
     // Pan map to keep driver in view
@@ -406,6 +410,8 @@ export default function OrderTracking() {
     return `${m}:${sec}`;
   };
   const isDelivered = currentStep >= 6;
+  // Redacted numbers (e.g. "***-***-1234") are shown for display only — not dialable/textable
+  const hasCallablePhone = !!driverInfo?.phone && !driverInfo.phone.includes('*');
   const status = STATUS_INFO[currentStep] || STATUS_INFO[1];
   const isDeliveryOrder = order && order.delivery_method !== 'pickup';
 
@@ -418,7 +424,8 @@ export default function OrderTracking() {
       {/* ── Driver Nearby Toast ── */}
       {nearbyToast && (
         <div className="ot-nearby-toast">
-          <span>📍 Your driver is almost there! Please be ready.</span>
+          <MapPin size={15} />
+          <span>Your driver is almost there! Please be ready.</span>
           <button className="ot-nearby-close" onClick={() => setNearbyToast(false)}>×</button>
         </div>
       )}
@@ -460,7 +467,7 @@ export default function OrderTracking() {
       {/* ── No order yet ── */}
       {!order && !notFound && !loading && (
         <div className="container ot-empty-state">
-          <span className="ot-empty-icon">🛵</span>
+          <Scooter size={48} className="ot-empty-icon" color="var(--color-primary)" />
           <h2>Track Your Order</h2>
           <p>Enter your order number above to see live status updates.</p>
           <Link to="/menu" className="btn btn-primary" style={{ marginTop: '1rem' }}>Place an Order</Link>
@@ -664,7 +671,7 @@ export default function OrderTracking() {
                       className={`map-truck ${currentStep === 5 ? 'nearby' : ''}`}
                       style={{ left: `${truckLeft}%`, transition: 'left 2s ease', position: 'absolute', zIndex: 10 }}
                     >
-                      🛵
+                      <Scooter size={18} color="#fff" strokeWidth={2.25} />
                     </div>
                   )}
 
@@ -682,9 +689,11 @@ export default function OrderTracking() {
                     /* ── Driver assigned card ── */
                     <div className="ot-driver-card">
                       <div className="ot-driver-avatar">
-                        <span className="driver-emoji">
-                          {driverInfo?.source === 'doordash' ? '🚗' : driverInfo?.source === 'roadie' ? '📦' : '🧑'}
-                        </span>
+                        {driverInfo?.source === 'doordash'
+                          ? <Car size={22} color="#E5B64E" strokeWidth={2} />
+                          : driverInfo?.source === 'roadie'
+                            ? <Package size={22} color="#E5B64E" strokeWidth={2} />
+                            : <User size={22} color="#E5B64E" strokeWidth={2} />}
                       </div>
                       <div className="ot-driver-info">
                         <span className="ot-rider-badge">YOUR RIDER</span>
@@ -706,17 +715,20 @@ export default function OrderTracking() {
                         )}
                       </div>
                       <div className="ot-driver-actions">
-                        {driverInfo?.phone
+                        {hasCallablePhone
                           ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call"><Phone size={16} /></a>
-                          : <button className="ot-driver-btn ot-driver-btn-call" disabled><Phone size={16} /></button>
+                          : <button className="ot-driver-btn ot-driver-btn-call" disabled title="Not available for this delivery method"><Phone size={16} /></button>
                         }
-                        <button className="ot-driver-btn"><MessageSquare size={16} /></button>
+                        {hasCallablePhone
+                          ? <a href={`sms:${driverInfo.phone}`} className="ot-driver-btn"><MessageSquare size={16} /></a>
+                          : <button className="ot-driver-btn" disabled title="Not available for this delivery method"><MessageSquare size={16} /></button>
+                        }
                       </div>
                     </div>
                   ) : (
                     /* ── Finding rider state (steps 1–3, no driver yet) ── */
                     <div className="ot-finding-rider">
-                      <div className="ot-finding-scooter">🛵</div>
+                      <Scooter size={28} className="ot-finding-scooter" color="var(--color-primary)" strokeWidth={2} />
                       <div className="ot-finding-text">
                         <p className="ot-finding-title">Finding your rider…</p>
                         <p className="ot-finding-sub">A driver will be assigned once your order is ready</p>
