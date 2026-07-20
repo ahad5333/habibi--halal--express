@@ -873,7 +873,7 @@ function QtyPills({ opts, value, onChange, formatLabel, formatPrice, basePrice }
 /* ── Collapsible section ─────────────────────────────────────── */
 function Section({ id, title, icon, badge, open, onToggle, children }) {
   return (
-    <div className={`co-section${open ? ' open' : ''}${badge > 0 ? ' completed' : ''}`}>
+    <div id={`co-sec-${id}`} className={`co-section${open ? ' open' : ''}${badge > 0 ? ' completed' : ''}`}>
       <button className="co-section-hdr" onClick={() => onToggle(id)}>
         <span className="co-section-left">
           <span className="co-section-icon">{icon}</span>
@@ -947,6 +947,17 @@ const PRESETS = [
       extras: {}, drinks: {},
     },
   },
+];
+
+/* ================================================================
+   STEP PROGRESS
+   ================================================================ */
+const PROGRESS_STEPS = [
+  { id: 'base',       label: 'Base',    icon: '🍞' },
+  { id: 'proteins',   label: 'Protein', icon: '🥩' },
+  { id: 'vegetables', label: 'Veggies', icon: '🥗' },
+  { id: 'sauces',     label: 'Sauces',  icon: '🫙' },
+  { id: 'cart',       label: 'Cart',    icon: '🛒' },
 ];
 
 /* ================================================================
@@ -1095,6 +1106,10 @@ export default function CustomOrder() {
   const setBase = base => {
     setCfg(p => ({ ...p, base, bagelType: 'Plain' }));
     setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    /* Auto-advance: guide the user to the next step in the flow */
+    setTimeout(() => {
+      document.getElementById('co-sec-proteins')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350);
   };
 
   const setCheeseType = type => setCfg(p => ({ ...p, cheese: { ...p.cheese, type } }));
@@ -1342,6 +1357,32 @@ export default function CustomOrder() {
     drinks:     Object.values(cfg.drinks).reduce((a, b) => a + b, 0),
   };
 
+  /* Step progress strip — completion + active step + jump-to-section */
+  const stepDone = {
+    base:       !!cfg.base,
+    proteins:   badges.proteins > 0,
+    vegetables: badges.vegetables > 0,
+    sauces:     badges.sauces > 0,
+    cart:       added,
+  };
+  const activeStepId = ['base', 'proteins', 'vegetables', 'sauces'].find(id => !stepDone[id]) || 'cart';
+
+  const jumpToStep = stepId => {
+    if (stepId === 'cart') {
+      const isDesktop = window.matchMedia('(min-width: 860px)').matches;
+      if (isDesktop) {
+        document.querySelector('.co-price-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+      return;
+    }
+    setOpen(prev => { const n = new Set(prev); n.add(stepId); return n; });
+    setTimeout(() => {
+      document.getElementById(`co-sec-${stepId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
   return (
     <div className="co-page">
       <SEO
@@ -1539,6 +1580,25 @@ export default function CustomOrder() {
 
         {/* ── Right: configuration groups ── */}
         <main className="co-groups">
+
+          {/* ── Step progress ── */}
+          <div className="co-progress-strip">
+            {PROGRESS_STEPS.map((step, i) => (
+              <React.Fragment key={step.id}>
+                {i > 0 && (
+                  <div className={`co-progress-line${stepDone[PROGRESS_STEPS[i - 1].id] ? ' filled' : ''}`} />
+                )}
+                <button
+                  type="button"
+                  className={`co-progress-node${stepDone[step.id] ? ' done' : ''}${activeStepId === step.id ? ' active' : ''}`}
+                  onClick={() => jumpToStep(step.id)}
+                >
+                  <span className="co-progress-icon">{stepDone[step.id] ? <Check size={15} /> : step.icon}</span>
+                  <span className="co-progress-label">{step.label}</span>
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
 
           {/* ── My Saved Orders (logged-in only) ── */}
           {isLoggedIn && savedOrders.length > 0 && (
