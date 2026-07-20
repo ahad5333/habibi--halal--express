@@ -1666,6 +1666,72 @@
   padding: 0.4rem 1rem 1.2rem;
   animation: co-slide-in 0.2s ease;
 }
+
+/* ── Base-contextual suggestion callout ──────────────────────── */
+.co-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(249,115,22,0.05) 100%);
+  border: 1px solid rgba(249,115,22,0.3);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.8rem;
+  animation: co-slide-in 0.2s ease;
+}
+.co-suggestion-icon { font-size: 1.1rem; flex-shrink: 0; }
+.co-suggestion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+.co-suggestion-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(251,146,60,0.8);
+}
+.co-suggestion-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f0f0f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.co-suggestion-apply {
+  background: #F97316;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.15s;
+}
+.co-suggestion-apply:hover { filter: brightness(1.1); }
+.co-suggestion-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.co-suggestion-dismiss:hover { color: rgba(255,255,255,0.7); }
+@media (max-width: 480px) {
+  .co-suggestion { flex-wrap: wrap; padding: 0.6rem 0.65rem; }
+  .co-suggestion-body { min-width: 60%; }
+  .co-suggestion-text { white-space: normal; }
+}
 @keyframes co-slide-in {
   from { opacity: 0; transform: translateY(-6px); }
 }

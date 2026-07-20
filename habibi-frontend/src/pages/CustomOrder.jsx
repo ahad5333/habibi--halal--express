@@ -1000,6 +1000,24 @@ const PRESETS = [
   },
 ];
 
+/* ================================================================
+   BASE-CONTEXTUAL SUGGESTIONS
+   Shown once a base is picked and before any protein is chosen —
+   a targeted "fill it in for me" nudge for that specific base.
+   ================================================================ */
+const BASE_SUGGESTIONS = {
+  '39a': { label: 'Chicken + Cheese + Veggies + White Sauce',       proteins: ['chicken'],               cheese: 'american',      veg: ['onions', 'lettuce', 'tomatoes'], sauces: ['white'] },
+  '39b': { label: 'Lamb Gyro + Veggies + Hot Sauce',                proteins: ['lamb-gyro'],              cheese: null,             veg: ['onions', 'tomatoes'],            sauces: ['hot'] },
+  '39c': { label: 'Falafel + Veggies + Green Sauce',                proteins: ['falafel'],                cheese: null,             veg: ['lettuce', 'cucumbers', 'tomatoes'], sauces: ['green'] },
+  '39d': { label: 'Egg & Cheese Croissant',                         proteins: ['egg-scrambled'],          cheese: 'american',      veg: [],                                 sauces: [] },
+  '39e': { label: 'Bacon, Egg & Cream Cheese Bagel',                proteins: ['bacon', 'egg-fried'],      cheese: 'liquid_cheese', veg: [],                                 sauces: [] },
+  '39f': { label: 'Chicken Shish Kabab + Veggies + White Sauce',    proteins: ['chicken-kabab'],          cheese: null,             veg: ['onions', 'peppers'],             sauces: ['white'] },
+  '39g': { label: 'Beef Berger + Cheese + Veggies + Ketchup',       proteins: ['beef-burger'],            cheese: 'american',      veg: ['lettuce', 'tomatoes', 'onions'], sauces: ['ketchup'] },
+  '39h': { label: 'Hot Dog + Onions + Mustard',                     proteins: ['hotdog'],                 cheese: null,             veg: ['onions'],                        sauces: ['mustard'] },
+  '39i': { label: 'Mix + Rice + White & Hot Sauce',                 proteins: ['mix'],                    cheese: null,             veg: ['rice', 'lettuce', 'tomatoes'],   sauces: ['white', 'hot'] },
+  '39j': { label: 'Mix + Rice + Veggies + White & Hot Sauce',       proteins: ['mix'],                    cheese: null,             veg: ['rice', 'onions', 'peppers'],     sauces: ['white', 'hot'] },
+};
+
 /* ── Fisher-Yates shuffle ─────────────────────────────────────── */
 function shuffleArray(arr) {
   const a = [...arr];
@@ -1066,6 +1084,7 @@ export default function CustomOrder() {
   const [saveName, setSaveName]           = useState('');
   const [saveStatus, setSaveStatus]       = useState('idle'); // idle | saving | saved | error
   const [totalFlash, setTotalFlash]       = useState(false);
+  const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
 
   /* Fetch extras + drinks from menu */
   useEffect(() => {
@@ -1183,6 +1202,24 @@ export default function CustomOrder() {
     setTimeout(() => setRollAnim(false), 500);
   };
 
+  /* Apply the base-contextual suggestion — fills protein/cheese/veg/sauce in one click */
+  const applyBaseSuggestion = () => {
+    const sugg = cfg.base && BASE_SUGGESTIONS[cfg.base.id];
+    if (!sugg) return;
+    setCfg(p => ({
+      ...p,
+      proteins: Object.fromEntries(sugg.proteins.map(id => {
+        const opt = PROTEIN_OPTS.find(x => x.id === id);
+        return [id, { qty: defaultQtyFor(opt), placement: 'on_food' }];
+      })),
+      cheese:     sugg.cheese ? { type: sugg.cheese, qty: 'regular' } : p.cheese,
+      vegetables: Object.fromEntries(sugg.veg.map(id => [id, { qty: 'regular' }])),
+      sauces:     Object.fromEntries(sugg.sauces.map(id => [id, { placement: 'on_food', qty: 'regular', count: 1 }])),
+    }));
+    setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    setDismissedSuggestion(true);
+  };
+
   const handleReset = () => {
     setCfg(INIT);
     setOpen(new Set(['base']));
@@ -1202,6 +1239,7 @@ export default function CustomOrder() {
   const setBase = base => {
     setCfg(p => ({ ...p, base, bagelType: 'Plain' }));
     setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
+    setDismissedSuggestion(false);
     /* Auto-advance: guide the user to the next step in the flow */
     setTimeout(() => {
       document.getElementById('co-sec-proteins')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1462,6 +1500,10 @@ export default function CustomOrder() {
     cart:       added,
   };
   const activeStepId = ['base', 'proteins', 'vegetables', 'sauces'].find(id => !stepDone[id]) || 'cart';
+
+  /* Base-contextual suggestion — only before the user has picked a protein */
+  const baseSuggestion = cfg.base ? BASE_SUGGESTIONS[cfg.base.id] : null;
+  const showBaseSuggestion = !!baseSuggestion && !dismissedSuggestion && !stepDone.proteins;
 
   const jumpToStep = stepId => {
     if (stepId === 'cart') {
@@ -1868,6 +1910,21 @@ export default function CustomOrder() {
           {/* 4 — PROTEIN */}
           <Section id="proteins" title="Protein (All Halal)" icon="🥩"
             badge={badges.proteins} open={open.has('proteins')} onToggle={toggleSection}>
+            {showBaseSuggestion && (
+              <div className="co-suggestion">
+                <span className="co-suggestion-icon">💡</span>
+                <div className="co-suggestion-body">
+                  <span className="co-suggestion-eyebrow">Try with {cfg.base.label}</span>
+                  <span className="co-suggestion-text">{baseSuggestion.label}</span>
+                </div>
+                <button type="button" className="co-suggestion-apply" onClick={applyBaseSuggestion}>
+                  Fill it in
+                </button>
+                <button type="button" className="co-suggestion-dismiss" onClick={() => setDismissedSuggestion(true)} aria-label="Dismiss suggestion">
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="co-opt-grid co-grid-2">
               {PROTEIN_OPTS.map(prot => {
                 const sel = cfg.proteins[prot.id];
