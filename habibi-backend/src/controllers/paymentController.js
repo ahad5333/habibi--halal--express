@@ -2,55 +2,10 @@ const safeError = require('../utils/safeError');
 const pool      = require("../config/db");
 const crypto    = require("crypto");
 
-// ─── Processor selection ────────��───────────────────────────────────────────
-const PROCESSOR = (process.env.PAYMENT_PROCESSOR || "stripe").toLowerCase();
-
-let stripe;
-if (PROCESSOR === "stripe" && process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("REPLACE")) {
-  stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-}
-
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
   "ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_intent_id VARCHAR(64)"
 ).catch(() => {});
-
-// ─── Create Payment Intent (Stripe) ───────────��─────────────────────────────
-const createPaymentIntent = async (req, res) => {
-  try {
-    const { amount, order_number, payment_method_types = ["card"] } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount." });
-
-    if (PROCESSOR === "stripe") {
-      if (!stripe) {
-        // Dev mode: return a mock client secret so the UI doesn't break
-        return res.json({
-          clientSecret: "pi_mock_" + Date.now() + "_secret_mock",
-          mock: true,
-        });
-      }
-
-      const intent = await stripe.paymentIntents.create({
-        amount: Math.round(parseFloat(amount) * 100), // cents
-        currency: "usd",
-        payment_method_types,
-        metadata: { order_number: order_number || "" },
-      });
-
-      return res.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id });
-    }
-
-    if (PROCESSOR === "square") {
-      // Square: frontend sends a card nonce via Square Web Payments SDK
-      // See squareController.js for full implementation — stub here
-      return res.status(501).json({ message: "Square processor: call /api/payments/square/charge instead." });
-    }
-
-    res.status(400).json({ message: "Unknown payment processor." });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-};
 
 // ─── Square charge (nonce-based, no client secret needed) ───────────────────
 const squareCharge = async (req, res) => {
@@ -84,63 +39,6 @@ const squareCharge = async (req, res) => {
   } catch (err) {
     res.status(500).json(safeError(err));
   }
-};
-
-// ─── Stripe Webhook ────────────────────���────────────────────────────────────
-const stripeWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event;
-
-  if (!secret || secret.includes("REPLACE") || secret.includes("whsec_REPLACE")) {
-    console.warn("[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured — webhook ignored.");
-    return res.status(200).json({ received: true, warning: "Webhook secret not configured." });
-  }
-  if (!stripe) {
-    return res.status(503).json({ error: "Payment processor not configured." });
-  }
-  try {
-    event = stripe.webhooks.constructEvent(req.rawBody || req.body, sig, secret);
-  } catch (err) {
-    console.error("[Stripe Webhook] Signature verification failed:", err.message);
-    return res.status(400).json({ error: "Webhook signature invalid." });
-  }
-
-  const io = req.app.get("io");
-
-  if (event.type === "payment_intent.succeeded") {
-    const intent = event.data.object;
-    const orderNumber = intent.metadata?.order_number;
-
-    if (orderNumber) {
-      await pool.query(
-        "UPDATE guest_orders SET order_status='accepted', payment_intent_id=$1, updated_at=NOW() WHERE order_number=$2",
-        [intent.id, orderNumber]
-      );
-      if (io) {
-        io.to(`order_${orderNumber}`).emit("order_status_updated", {
-          order_id: orderNumber,
-          status: "accepted",
-        });
-      }
-      console.log(`[Webhook] Payment confirmed for order ${orderNumber}`);
-    }
-  }
-
-  if (event.type === "payment_intent.payment_failed") {
-    const intent = event.data.object;
-    const orderNumber = intent.metadata?.order_number;
-    if (orderNumber) {
-      await pool.query(
-        "UPDATE guest_orders SET order_status='payment_failed', updated_at=NOW() WHERE order_number=$1",
-        [orderNumber]
-      );
-      console.log(`[Webhook] Payment failed for order ${orderNumber}`);
-    }
-  }
-
-  res.json({ received: true });
 };
 
 // ─── Square Webhook ──────────────────────────────────────────────────────────
@@ -190,22 +88,9 @@ const refundOrder = async (req, res) => {
 
     if (order.order_status === "refunded") return res.status(400).json({ message: "Order already refunded." });
 
-    let refundId = null;
-
-    if (PROCESSOR === "stripe" && stripe && order.payment_intent_id && !order.payment_intent_id.startsWith("pi_mock")) {
-      const refundAmount = amount
-        ? Math.round(parseFloat(amount) * 100)
-        : Math.round(parseFloat(order.total) * 100);
-
-      const refund = await stripe.refunds.create({
-        payment_intent: order.payment_intent_id,
-        amount: refundAmount,
-      });
-      refundId = refund.id;
-    } else {
-      // Mock refund for cash/offline/mock payments
-      refundId = "REFUND_MANUAL_" + Date.now();
-    }
+    // AuthNet refunds are handled by authNetController.refundEndpoint
+    // Cash/offline/PayPal refunds are manual
+    const refundId = "REFUND_MANUAL_" + Date.now();
 
     await pool.query(
       "UPDATE guest_orders SET order_status='refunded', updated_at=NOW() WHERE order_number=$1",
@@ -390,9 +275,7 @@ const verifyPayment = async (req, res) => {
 };
 
 module.exports = {
-  createPaymentIntent,
   squareCharge,
-  stripeWebhook,
   squareWebhook,
   refundOrder,
   getOfflinePaymentInfo,

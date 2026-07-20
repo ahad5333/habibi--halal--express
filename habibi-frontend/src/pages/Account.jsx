@@ -849,7 +849,7 @@ function PaymentTab() {
 
       <div className="acct-payment-note">
         <Shield size={14} />
-        <span>Cards are stored securely via Stripe. New cards are added at checkout.</span>
+        <span>Cards are stored securely via Authorize.net. New cards are added at checkout.</span>
       </div>
     </div>
   );
