@@ -172,15 +172,22 @@ const createGuestOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
 
-    // 2. Collect item IDs for price validation — every item must carry a valid menu ID.
-    //    Reject outright if any item omits it; otherwise price validation could be bypassed.
+    // 2. Collect item IDs for price validation — every regular menu item must carry a
+    //    valid menu ID. Custom Build-Your-Own items (id prefixed "custom-") have no
+    //    row in `menus` — their price is computed client-side from selected ingredients
+    //    and is intentionally not re-validated here, same as before this check existed.
+    //    This only closes the gap for genuine menu items missing/spoofing an ID.
+    const isCustomItem = item => typeof item.id === 'string' && item.id.startsWith('custom-');
     for (const item of items) {
+      if (isCustomItem(item)) continue;
       const menuId = parseInt(item.id || item.menu_id, 10);
       if (!menuId || menuId <= 0) {
         return res.status(400).json({ message: 'All items must include a valid menu ID.' });
       }
     }
-    const itemIds = items.map(i => parseInt(i.id || i.menu_id, 10));
+    const itemIds = items
+      .filter(i => !isCustomItem(i))
+      .map(i => parseInt(i.id || i.menu_id, 10));
 
     // 3. Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
@@ -286,6 +293,7 @@ const createGuestOrder = async (req, res) => {
 
         let recalcSubtotal = 0;
         for (const item of items) {
+          if (isCustomItem(item)) continue;
           const menuId = parseInt(item.id || item.menu_id, 10);
           const row = dbMap[menuId];
           if (!row) {
