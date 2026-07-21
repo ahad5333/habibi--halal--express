@@ -10,11 +10,11 @@ const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday',
 
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                                     return '/images/locations/bedford-park.jpg';
-  if (t.includes('lehman'))                                      return '/images/locations/lehman.png';
-  if (t.includes('bronx') || t.includes('science'))             return '/images/locations/bronx-science.png';
-  if (t.includes('kingsbridge') || t.includes('king'))          return '/images/locations/kings-bridge.jpg';
-  if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.jpg';
+  if (t.includes('bedford'))                                     return '/images/locations/bedford-park.webp';
+  if (t.includes('lehman'))                                      return '/images/locations/lehman.webp';
+  if (t.includes('bronx') || t.includes('science'))             return '/images/locations/bronx-science.webp';
+  if (t.includes('kingsbridge') || t.includes('king'))          return '/images/locations/kings-bridge.webp';
+  if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.webp';
   return null; // no local image — will use map embed
 };
 
@@ -176,12 +176,16 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
-function getDeliveryTier(miles) {
-  if (miles === undefined || miles === null) return null;
-  if (miles <= 3)   return { label: 'In-House Delivery', color: '#22c55e', icon: '🏠' };
-  if (miles <= 10)  return { label: 'Express Delivery',   color: '#3b82f6', icon: '⚡' };
-  if (miles <= 350) return { label: 'Long Distance',       color: '#f59e0b', icon: '🚀' };
-  return                   { label: 'Pickup Only',          color: '#6b7280', icon: '📦' };
+// Purely informational "how far away are you" badge — NOT a delivery
+// eligibility check. Real eligibility/fee is decided at checkout by address
+// (see Checkout.jsx → /api/dispatch/calculate-fee), which is the only
+// source of truth for whether an address can be delivered to. This never
+// returns a "pickup only"-style verdict — a bad/missing distance reading
+// should never be presented as a delivery restriction.
+function getDistanceBadge(miles) {
+  if (miles === undefined || miles === null || Number.isNaN(miles)) return null;
+  if (miles < 0.5) return { label: 'Nearby', color: '#22c55e' };
+  return { label: `${miles.toFixed(1)} mi away`, color: '#3b82f6' };
 }
 
 /* ── Location Card ─────────────────────────────────────────── */
@@ -207,8 +211,8 @@ function LocationCard({ loc, userCoords, index }) {
   const distKm    = (userCoords && loc.latitude && loc.longitude)
     ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(loc.latitude), parseFloat(loc.longitude))
     : null;
-  const distMiles = distKm !== null ? distKm * 0.621371 : null;
-  const tier      = getDeliveryTier(distMiles);
+  const distMiles = distKm !== null && !Number.isNaN(distKm) ? distKm * 0.621371 : null;
+  const distBadge = getDistanceBadge(distMiles);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`;
   const shortTitle = getShortTitle(loc.title);
@@ -227,7 +231,7 @@ function LocationCard({ loc, userCoords, index }) {
             src={displayImg}
             alt={sanitizeTitle(loc.title)}
             className="lcn-img"
-            onError={e => { e.target.onerror = null; e.target.src = '/images/locations/bedford-park.jpg'; }}
+            onError={e => { e.target.onerror = null; e.target.src = '/images/locations/bedford-park.webp'; }}
           />
         ) : mapEmbedSrc ? (
           <iframe
@@ -255,13 +259,11 @@ function LocationCard({ loc, userCoords, index }) {
           </div>
         )}
 
-        {/* Distance badge */}
-        {tier && distMiles !== null && (
-          <div className="lcn-dist-badge" style={{ borderColor: tier.color + '66', background: 'rgba(0,0,0,0.75)' }}>
-            <span style={{ color: tier.color }}>{tier.icon}</span>
-            <span style={{ color: tier.color }}>
-              {distMiles < 0.5 ? 'Nearby' : `${distMiles.toFixed(1)} mi`}
-            </span>
+        {/* Distance badge — "how far from you", not a delivery-eligibility verdict */}
+        {distBadge && (
+          <div className="lcn-dist-badge" style={{ borderColor: distBadge.color + '66', background: 'rgba(0,0,0,0.75)' }}>
+            <MapPin size={12} style={{ color: distBadge.color }} />
+            <span style={{ color: distBadge.color }}>{distBadge.label}</span>
           </div>
         )}
 
@@ -320,13 +322,11 @@ function LocationCard({ loc, userCoords, index }) {
             <div className="lcn-info-row">
               <Wifi size={14} className="lcn-info-icon" />
               <div>
-                <p className="lcn-info-label">Delivery Zone</p>
+                <p className="lcn-info-label">Delivery &amp; Pickup</p>
                 <p className="lcn-info-value">
-                  {tier && distMiles !== null
-                    ? `${tier.icon} ${tier.label}`
-                    : loc.delivery_radius_miles
-                      ? `${loc.delivery_radius_miles} mile radius`
-                      : 'Contact for details'
+                  {loc.delivery_radius_miles
+                    ? `🚚 Delivery within ${loc.delivery_radius_miles} mi · 🏪 Pickup available`
+                    : '🚚 Delivery & 🏪 Pickup available — enter your address at checkout'
                   }
                 </p>
               </div>
