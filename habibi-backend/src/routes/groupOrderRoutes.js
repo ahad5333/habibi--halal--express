@@ -24,7 +24,7 @@ async function getFullSession(sessionId) {
       [sessionId]
     ),
     pool.query(
-      'SELECT session_id, participant_id, menu_item_id, name, price, qty, note, added_at FROM group_order_items WHERE session_id = $1 ORDER BY participant_id, added_at ASC',
+      'SELECT id, session_id, participant_id, menu_item_id, name, price, qty, note, details, added_at FROM group_order_items WHERE session_id = $1 ORDER BY participant_id, added_at ASC',
       [sessionId]
     ),
   ]);
@@ -168,8 +168,8 @@ router.post('/:sessionId/items', async (req, res) => {
 
     for (const item of items.slice(0, 50)) {
       await pool.query(
-        `INSERT INTO group_order_items (session_id, participant_id, menu_item_id, name, price, qty, note)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO group_order_items (session_id, participant_id, menu_item_id, name, price, qty, note, details)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           req.params.sessionId,
           participant_id,
@@ -178,6 +178,7 @@ router.post('/:sessionId/items', async (req, res) => {
           parseFloat(item.price) || 0,
           Math.max(1, parseInt(item.qty) || 1),
           item.note ? String(item.note).slice(0, 500) : null,
+          item.details ? JSON.stringify(item.details) : null,
         ]
       );
     }

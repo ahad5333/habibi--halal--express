@@ -1172,9 +1172,13 @@ const seedDefaults = async () => {
       price          NUMERIC(10,2) NOT NULL,
       qty            INTEGER       NOT NULL DEFAULT 1,
       note           TEXT,
+      details        JSONB,
       added_at       TIMESTAMPTZ   DEFAULT NOW()
     )
   `);
+  // Carries each item's full addon/choice breakdown so checkout can rebuild the exact cart line
+  // (older rows simply have details = NULL and fall back to the flat name/price/qty/note).
+  await pool.query(`ALTER TABLE group_order_items ADD COLUMN IF NOT EXISTS details JSONB`);
 
   // Seed categories
   const catCount = await pool.query("SELECT COUNT(*) FROM categories");
