@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle } from 'lucide-react';
 import { ordersAPI } from '../services/api';
 import './OrderTracking.css';
 
@@ -127,6 +127,7 @@ export default function OrderTracking() {
   const [loading, setLoading]           = useState(false);
   const [notFound, setNotFound]         = useState(false);
   const [currentStep, setCurrentStep]   = useState(1);
+  const [orderStatus, setOrderStatus]   = useState(''); // raw status string — tracks 'cancelled' which currentStep can't represent
   const [etaSeconds, setEtaSeconds]     = useState(null);
   const [etaFromGPS, setEtaFromGPS]     = useState(null); // recalculated from live GPS
   const [runningLate, setRunningLate]   = useState(false); // ETA hit 0 and stayed there
@@ -138,6 +139,13 @@ export default function OrderTracking() {
   const [queuePosition, setQueuePosition]   = useState(null); // null = not in queue, 0 = next up, N = N orders ahead
   const [driverInfo, setDriverInfo]         = useState(null); // { name, phone, rating } from dispatch
   const [nearbyToast, setNearbyToast]       = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelEmail, setCancelEmail]       = useState('');
+  const [cancelling, setCancelling]         = useState(false);
+  const [cancelError, setCancelError]       = useState('');
+  // Server-computed (placed_at is timestamp-without-timezone — see backend
+  // cancelOrder/track comments for why the client must not do its own date math)
+  const [cancelSecondsLeft, setCancelSecondsLeft] = useState(0);
 
   const socketRef            = useRef(null);
   const timerRef             = useRef(null);
@@ -167,6 +175,8 @@ export default function OrderTracking() {
     try {
       const data = await ordersAPI.track(num.trim().toUpperCase());
       setOrder(data);
+      setOrderStatus((data.order_status || '').toLowerCase());
+      setCancelSecondsLeft(Math.max(0, Math.floor(data.cancel_seconds_left || 0)));
       const step = statusToStep(data.order_status);
       setCurrentStep(step);
       setOrderNum(data.order_number || num.trim().toUpperCase());
@@ -240,6 +250,13 @@ export default function OrderTracking() {
     return () => clearInterval(timerRef.current);
   }, [currentStep, etaSeconds !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Cancel-window countdown ───────────────────────────────
+  useEffect(() => {
+    if (orderStatus !== 'pending' || cancelSecondsLeft <= 0) return;
+    const iv = setInterval(() => setCancelSecondsLeft(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(iv);
+  }, [orderStatus, cancelSecondsLeft > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── "Running late" — ETA hit 0 and the order still isn't delivered.
   //    Grace period avoids flashing this the instant the timer naturally
   //    reaches zero as the order is genuinely about to arrive. ────────
@@ -269,6 +286,7 @@ export default function OrderTracking() {
     socket.on('connect_error', () => setLiveConnected(false));
 
     socket.on('order_status_updated', ({ status }) => {
+      setOrderStatus((status || '').toLowerCase());
       const step = statusToStep(status);
       setCurrentStep(step);
       if (step >= 4) setDriverProgress(step === 4 ? 40 : step === 5 ? 80 : 100);
@@ -427,9 +445,34 @@ export default function OrderTracking() {
   const hasCallablePhone = !!driverInfo?.phone && !driverInfo.phone.includes('*');
   const status = STATUS_INFO[currentStep] || STATUS_INFO[1];
   const isDeliveryOrder = order && order.delivery_method !== 'pickup';
+  const isCancelled = orderStatus === 'cancelled';
 
   // Fake truck position (CSS map fallback when Leaflet not loaded)
   const truckLeft = 20 + (driverProgress / 100) * 55;
+
+  // cancelSecondsLeft is server-seeded (see fetchOrder) and ticks down locally
+  const canCancel = orderStatus === 'pending' && cancelSecondsLeft > 0;
+
+  const handleCancelOrder = async () => {
+    if (!cancelEmail.trim()) { setCancelError('Enter the email used for this order.'); return; }
+    setCancelling(true);
+    setCancelError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${orderNum}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_email: cancelEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not cancel order.');
+      setOrderStatus('cancelled');
+      setShowCancelForm(false);
+    } catch (err) {
+      setCancelError(err.message || 'Could not cancel order.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="ot-page">
@@ -516,45 +559,48 @@ export default function OrderTracking() {
             </div>
           </div>
 
-          {/* ── Pill tracker (Domino's-style) ── */}
-          <div className="ot-timeline-bar">
-            <div className="container">
-              <div className="ot-pill-labels">
-                {STEPS.map(step => (
-                  <div
-                    key={step.id}
-                    className={`ot-pill-label ${currentStep > step.id ? 'lbl-done' : ''} ${currentStep === step.id ? 'lbl-active' : ''}`}
-                  >
-                    {step.label}
-                  </div>
-                ))}
-              </div>
-              <div className="ot-pill-bar">
-                {STEPS.map(step => {
-                  const done   = currentStep > step.id;
-                  const active = currentStep === step.id;
-                  return (
+          {/* ── Pill tracker (Domino's-style) — hidden once cancelled, the 6-step
+               progression no longer applies ── */}
+          {!isCancelled && (
+            <div className="ot-timeline-bar">
+              <div className="container">
+                <div className="ot-pill-labels">
+                  {STEPS.map(step => (
                     <div
                       key={step.id}
-                      className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
+                      className={`ot-pill-label ${currentStep > step.id ? 'lbl-done' : ''} ${currentStep === step.id ? 'lbl-active' : ''}`}
                     >
-                      {done ? (
-                        <step.icon className="ot-pill-step-icon ot-pil-done" size={18} color="#fff" strokeWidth={2.25} />
-                      ) : active ? (
-                        <step.icon className={`ot-pill-step-icon ot-pil-active ${step.animClass}`} size={25} color="#fff" strokeWidth={2.25} />
-                      ) : (
-                        <step.icon className="ot-pill-step-icon ot-pil-pending" size={23} color="#fff" strokeWidth={2.25} />
-                      )}
+                      {step.label}
                     </div>
-                  );
-                })}
-              </div>
-              <div className="ot-pill-status-row">
-                <span className="ot-pill-status-main">{status.title}</span>
-                <span className="ot-pill-status-sub">{status.sub}</span>
+                  ))}
+                </div>
+                <div className="ot-pill-bar">
+                  {STEPS.map(step => {
+                    const done   = currentStep > step.id;
+                    const active = currentStep === step.id;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
+                      >
+                        {done ? (
+                          <step.icon className="ot-pill-step-icon ot-pil-done" size={18} color="#fff" strokeWidth={2.25} />
+                        ) : active ? (
+                          <step.icon className={`ot-pill-step-icon ot-pil-active ${step.animClass}`} size={25} color="#fff" strokeWidth={2.25} />
+                        ) : (
+                          <step.icon className="ot-pill-step-icon ot-pil-pending" size={23} color="#fff" strokeWidth={2.25} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="ot-pill-status-row">
+                  <span className="ot-pill-status-main">{status.title}</span>
+                  <span className="ot-pill-status-sub">{status.sub}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* ── Body ── */}
           <div className="container ot-body">
@@ -562,6 +608,23 @@ export default function OrderTracking() {
 
               {/* ── Left: Status hero ── */}
               <div className="ot-left">
+                {isCancelled ? (
+                  <div className="ot-status-hero ot-cancelled-hero">
+                    <div className="ot-hero-glow" style={{ background: 'radial-gradient(circle, #f8717122 0%, transparent 70%)' }} />
+                    <div className="ot-hero-icon-ring" style={{ borderColor: '#f87171', boxShadow: '0 0 30px #f8717133' }}>
+                      <XCircle size={44} color="#f87171" strokeWidth={2} />
+                    </div>
+                    <h2 className="ot-hero-title">Order Cancelled</h2>
+                    <p className="ot-hero-sub">
+                      {order.payment_method && !['cash', 'zelle', 'cashapp'].includes((order.payment_method || '').toLowerCase())
+                        ? 'This order was cancelled. If you were charged, your refund is being processed.'
+                        : 'This order was cancelled.'}
+                    </p>
+                    <div className="ot-delivered-actions">
+                      <Link to="/menu" className="btn btn-primary">Order Again</Link>
+                    </div>
+                  </div>
+                ) : (
                 <div className={`ot-status-hero ${status.animate || ''}`}>
                   <div className="ot-hero-glow" style={{ background: `radial-gradient(circle, ${status.color}22 0%, transparent 70%)` }} />
                   <div
@@ -641,6 +704,7 @@ export default function OrderTracking() {
                     </div>
                   )}
                 </div>
+                )}
 
                 <div className="ot-location-row">
                   <MapPin size={14} className="ot-loc-icon" />
@@ -650,12 +714,50 @@ export default function OrderTracking() {
                       : `Delivering to ${[order.delivery_address, order.delivery_city].filter(Boolean).join(', ')}`}
                   </span>
                 </div>
+
+                {/* Self-service cancel — only while pending and within the grace window */}
+                {!isCancelled && orderStatus === 'pending' && (
+                  <div className="ot-cancel-widget">
+                    {!showCancelForm ? (
+                      canCancel ? (
+                        <button type="button" className="ot-cancel-trigger" onClick={() => setShowCancelForm(true)}>
+                          Need to cancel? You can for the next {fmtEta(cancelSecondsLeft)}
+                        </button>
+                      ) : (
+                        <p className="ot-cancel-expired">Cancellation window has passed — call us if you need help.</p>
+                      )
+                    ) : (
+                      <div className="ot-cancel-form">
+                        <p className="ot-cancel-form-title">Cancel this order?</p>
+                        <p className="ot-cancel-form-sub">Enter the email you used at checkout to confirm.</p>
+                        <input
+                          type="email"
+                          className="ot-cancel-email-input"
+                          placeholder="you@example.com"
+                          value={cancelEmail}
+                          onChange={e => setCancelEmail(e.target.value)}
+                          autoFocus
+                        />
+                        {cancelError && <p className="ot-cancel-error">{cancelError}</p>}
+                        <div className="ot-cancel-actions">
+                          <button type="button" className="btn btn-outline" onClick={() => { setShowCancelForm(false); setCancelError(''); }} disabled={cancelling}>
+                            Never mind
+                          </button>
+                          <button type="button" className="ot-cancel-confirm-btn" onClick={handleCancelOrder} disabled={cancelling}>
+                            {cancelling ? 'Cancelling…' : 'Yes, cancel my order'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* ── Right: Map + Driver + Receipt ── */}
               <div className="ot-right">
 
-                {/* Live Map */}
+                {/* Live Map — not relevant once cancelled */}
+                {!isCancelled && (
                 <div className="ot-map">
                   <div className="ot-map-live-badge">
                     <span className={liveConnected ? 'dot-pulse' : 'dot-static'} />
@@ -706,9 +808,10 @@ export default function OrderTracking() {
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Rider Section — always visible for delivery orders */}
-                {isDeliveryOrder && !isDelivered && (
+                {!isCancelled && isDeliveryOrder && !isDelivered && (
                   (driverInfo || currentStep >= 4) ? (
                     /* ── Driver assigned card ── */
                     <div className="ot-driver-card">

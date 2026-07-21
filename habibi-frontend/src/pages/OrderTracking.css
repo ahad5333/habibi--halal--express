@@ -634,6 +634,87 @@
   color: var(--color-text-main);
 }
 
+/* ── Self-service cancel ──────────────────────────────────────── */
+.ot-cancel-trigger {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+.ot-cancel-trigger:hover { color: #f87171; }
+
+.ot-cancel-expired {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.ot-cancel-form {
+  background: var(--color-surface);
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ot-cancel-form-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
+}
+.ot-cancel-form-sub {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.2rem;
+}
+.ot-cancel-email-input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+}
+.ot-cancel-email-input:focus {
+  outline: none;
+  border-color: #f87171;
+}
+.ot-cancel-error {
+  font-size: 0.76rem;
+  color: #f87171;
+  margin: 0;
+}
+.ot-cancel-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+.ot-cancel-actions .btn {
+  flex: 1;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+}
+.ot-cancel-confirm-btn {
+  flex: 1;
+  background: #f87171;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.ot-cancel-confirm-btn:hover { filter: brightness(1.1); }
+.ot-cancel-confirm-btn:disabled { opacity: 0.6; cursor: default; }
+
 /* ── Right column ────────────────────────────────────────────── */
 .ot-right {
   display: flex;
