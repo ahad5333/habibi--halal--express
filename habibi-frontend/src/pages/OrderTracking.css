@@ -834,6 +834,16 @@
   color: var(--color-text-main);
   border-bottom-left-radius: 4px;
 }
+/* WhatsApp-style timestamp tucked at the bottom-right of the bubble —
+   text wraps around it for short messages via float */
+.ot-chat-msg-time {
+  float: right;
+  margin: 0.2rem 0 -0.05rem 0.6rem;
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+.ot-chat-msg-me .ot-chat-msg-time { color: rgba(255,255,255,0.75); }
+.ot-chat-msg-staff .ot-chat-msg-time { color: var(--color-text-muted); }
 .ot-chat-input-row {
   display: flex;
   gap: 0.5rem;

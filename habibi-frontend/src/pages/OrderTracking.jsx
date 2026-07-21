@@ -571,7 +571,17 @@ export default function OrderTracking() {
       const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(email)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not load messages.');
-      setChatMessages(data);
+      // Merge rather than replace — a live message can arrive over the socket
+      // while this fetch is in flight; blindly overwriting would drop it.
+      setChatMessages(prev => {
+        const merged = [...data];
+        prev.forEach(p => {
+          const exists = merged.some(m => (m.id && p.id) ? m.id === p.id : (m.text === p.text && m.sender === p.sender));
+          if (!exists) merged.push(p);
+        });
+        merged.sort((a, b) => new Date(a.created_at || a.timestamp) - new Date(b.created_at || b.timestamp));
+        return merged;
+      });
       setChatEmailConfirmed(true);
       if (!isLoggedIn) localStorage.setItem(`chat_email_${orderNum}`, email);
     } catch (err) {
@@ -1094,7 +1104,12 @@ export default function OrderTracking() {
                           )}
                           {chatMessages.map((m, i) => (
                             <div key={m.id || i} className={`ot-chat-msg ${m.sender === 'admin' ? 'ot-chat-msg-staff' : 'ot-chat-msg-me'}`}>
-                              <span className="ot-chat-msg-bubble">{m.text}</span>
+                              <span className="ot-chat-msg-bubble">
+                                {m.text}
+                                <span className="ot-chat-msg-time">
+                                  {(m.created_at || m.timestamp) ? new Date(m.created_at || m.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
+                                </span>
+                              </span>
                             </div>
                           ))}
                           <div ref={chatBottomRef} />
