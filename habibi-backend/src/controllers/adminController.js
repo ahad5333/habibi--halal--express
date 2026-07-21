@@ -68,7 +68,8 @@ const getAllOrders = async (req, res) => {
         subtotal: parseFloat(o.sub_total) || 0,
         total_amount: parseFloat(o.total) || 0,
         payment_method: o.payment_method || 'Card',
-        payment_status: o.payment_method ? 'Paid' : 'Pending',
+        payment_status: (o.payment_status || 'unpaid') === 'paid' ? 'Paid'
+                       : (o.payment_status === 'refunded' ? 'Refunded' : 'Pending'),
         status: o.order_status || 'pending',
         driver_instructions: o.delivery_instructions || '',
         notes: '',

@@ -824,7 +824,7 @@ export default function DriverView() {
               const time = h.delivered_at
                 ? new Date(h.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 : '—';
-              const isCodH = h.payment_method === 'cod';
+              const isCodH = h.payment_method === 'cash';
               return (
                 <div key={h.id} className="dv-history-card">
                   <div className="dv-history-card-top">
@@ -1443,7 +1443,7 @@ export default function DriverView() {
     : null;
   const notYetAccepted = !assignment.accepted_at && assignment.status === 'assigned';
   const tip    = parseFloat(assignment.tip_amount  || 0);
-  const isCod  = assignment.payment_method === 'cod';
+  const isCod  = assignment.payment_method === 'cash';
   const codAmt = parseFloat(assignment.order_total || 0);
   const currentStepIdx = STEP_ORDER.indexOf(assignment.status);
 

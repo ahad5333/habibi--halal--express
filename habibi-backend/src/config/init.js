@@ -339,6 +339,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
     await client.query(`ALTER TABLE guest_orders ALTER COLUMN order_status SET DEFAULT 'pending'`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'unpaid'`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);
@@ -996,6 +997,20 @@ const createTables = async () => {
     await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS proof_photo_url  TEXT`);
     await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS proof_note       TEXT`);
     await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS delivery_note    TEXT`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS cash_collected_at TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS cash_collected_by VARCHAR(100)`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS driver_cash_handins (
+        id           SERIAL PRIMARY KEY,
+        driver_id    INTEGER,
+        driver_name  VARCHAR(100),
+        amount       NUMERIC(10,2) NOT NULL,
+        order_count  INTEGER DEFAULT 0,
+        confirmed_by VARCHAR(100),
+        notes        TEXT,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_status_check`);
     await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','delivered','cancelled'))`);
 

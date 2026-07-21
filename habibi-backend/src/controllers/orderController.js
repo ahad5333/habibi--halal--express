@@ -366,8 +366,8 @@ const createGuestOrder = async (req, res) => {
          delivery_state, delivery_instructions, payment_method,
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
-         is_gift, gift_recipient_name, gift_recipient_phone, gift_message)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28)
+         is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29)
        RETURNING id`,
       [
         order_number,
@@ -398,6 +398,7 @@ const createGuestOrder = async (req, res) => {
         gift_recipient_name  || null,
         gift_recipient_phone || null,
         gift_message         || null,
+        ['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid',
       ]
     );
 

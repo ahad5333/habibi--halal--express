@@ -315,24 +315,17 @@ cron.schedule('0 12 * * *', async () => {
   }
 });
 
-// ── Order abandonment cleanup ─────────────────────────────────────────────────
-// Runs every 5 minutes. Cancels orders stuck in 'pending' for over 30 minutes
-// — these are unpaid sessions where the customer closed the browser.
-cron.schedule('*/5 * * * *', async () => {
-  try {
-    const { rowCount } = await pool.query(`
-      UPDATE guest_orders
-         SET order_status = 'cancelled', updated_at = NOW()
-       WHERE order_status = 'pending'
-         AND placed_at < NOW() - INTERVAL '30 minutes'
-    `);
-    if (rowCount > 0) {
-      console.log(`[Cron] Abandoned orders cancelled: ${rowCount}`);
-    }
-  } catch (err) {
-    console.error('[Cron] Abandonment cleanup error:', err.message);
-  }
-});
+// ── Order abandonment cleanup — REMOVED ───────────────────────────────────────
+// This used to auto-cancel any guest_orders row stuck in 'pending' for over 30
+// minutes, on the assumption that 'pending' meant "checkout started but the
+// customer closed the browser before paying." That assumption doesn't hold:
+// in the current checkout flow (Checkout.jsx), a guest_orders row is only ever
+// created AFTER payment succeeds (card/PayPal) or after the customer confirms
+// an offline method (cash/Zelle/Cash App) — so 'pending' always means "a real,
+// placed order waiting for staff to accept it," which can legitimately sit
+// for a while during a rush or overnight. This cron was silently cancelling
+// real customer orders — including cash-on-delivery orders — whenever staff
+// hadn't clicked Accept within 30 minutes.
 
 // ── Expired revoked-token cleanup ────────────────────────────────────────────
 // Runs daily. Removes rows whose token has naturally expired — keeps the table lean.

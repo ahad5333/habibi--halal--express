@@ -553,7 +553,7 @@ const getCashReport = async (req, res) => {
               da.delivered_at, go.total AS order_total, go.payment_method
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
-       WHERE go.payment_method = 'cod'
+       WHERE go.payment_method = 'cash'
          AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $1
        ORDER BY da.assigned_at ASC`,
       [date]
@@ -649,10 +649,10 @@ const getDriverCashSummary = async (req, res) => {
          COALESCE(SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'), 0)                AS total_tips,
          COALESCE(SUM(go.total)
            FILTER (WHERE da.status = 'delivered'
-                     AND go.payment_method = 'cod'
+                     AND go.payment_method = 'cash'
                      AND da.cash_collected_at IS NOT NULL), 0)                                  AS total_cod,
          COUNT(*) FILTER (WHERE da.status = 'delivered'
-                            AND go.payment_method = 'cod'
+                            AND go.payment_method = 'cash'
                             AND da.cash_collected_at IS NOT NULL)                               AS cod_orders_count
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
@@ -721,7 +721,7 @@ const collectCash = async (req, res) => {
     );
     if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found or not yours' });
     const assignment = asgn.rows[0];
-    if (assignment.payment_method !== 'cod') {
+    if (assignment.payment_method !== 'cash') {
       return res.status(400).json({ message: 'Not a COD order' });
     }
     if (assignment.cash_collected_at) {
@@ -779,7 +779,7 @@ const codDeliveryFailed = async (req, res) => {
     );
     if (!asgn.rows.length) return res.status(404).json({ message: 'Assignment not found or not yours' });
     const assignment = asgn.rows[0];
-    if (assignment.payment_method !== 'cod') {
+    if (assignment.payment_method !== 'cash') {
       return res.status(400).json({ message: 'Not a COD order' });
     }
 
