@@ -770,27 +770,15 @@ const Checkout = () => {
             <div className="checkout-section">
               <h2 className="checkout-section-title mb-6">{isDineIn ? 'Your Details' : 'Delivery Details'}</h2>
 
-              {/* Auth gate — must be logged in to enter address / place order */}
+              {/* Optional, non-blocking nudge — guests can still order without an account */}
               {!isLoggedIn && (
-                <div className="checkout-auth-gate">
-                  <div className="checkout-auth-gate-icon">🔐</div>
-                  <h3 className="checkout-auth-gate-title">Sign in to continue</h3>
-                  <p className="checkout-auth-gate-sub">
-                    Create an account or log in to place your order and track it in real time.
-                  </p>
-                  <div className="checkout-auth-gate-btns">
-                    <Link to={`/login?redirect=/checkout`} className="btn btn-primary checkout-auth-btn">
-                      Log In
-                    </Link>
-                    <Link to={`/signup?redirect=/checkout`} className="btn btn-outline checkout-auth-btn">
-                      Sign Up
-                    </Link>
-                  </div>
+                <div className="checkout-guest-nudge">
+                  <span>Already have an account?</span>
+                  <Link to="/login?redirect=/checkout">Log in for faster checkout</Link>
                 </div>
               )}
 
-              {/* Show form only when logged in */}
-              {isLoggedIn && (isDineIn ? (
+              {(isDineIn ? (
                 <div className="form-row two-col mb-6">
                   <div className="form-group">
                     <label className="form-label">YOUR NAME (for the kitchen)</label>
@@ -1121,7 +1109,7 @@ const Checkout = () => {
                 </>
               ))}
 
-              {isLoggedIn && <>
+              {<>
                 <h4 className="font-bold mb-4">Order Timing</h4>
                 <div className="timing-options flex gap-4 mb-6">
                   <button className={`timing-card ${timing === 'asap' ? 'active' : ''}`} onClick={() => setTiming('asap')}>
@@ -1181,8 +1169,8 @@ const Checkout = () => {
               </>}
             </div>
 
-            {/* Payment — only visible when logged in */}
-            {isLoggedIn && <div className="checkout-section">
+            {/* Payment */}
+            {<div className="checkout-section">
               <h2 className="checkout-section-title mb-6">Secure Payment</h2>
               <div className="payment-options">
 
@@ -1259,31 +1247,6 @@ const Checkout = () => {
             <h3 className="summary-title">Order Summary</h3>
 
             {(() => {
-              // Show locked state only when not logged in
-              if (!isLoggedIn) {
-                return (
-                  <div className="summary-locked">
-                    <MapPin size={28} style={{ color: 'var(--color-primary)', marginBottom: '0.75rem' }} />
-                    <p className="summary-locked-title">Sign in to see your total</p>
-                    <p className="summary-locked-sub">
-                      Log in or create an account to place your order and track it in real time.
-                    </p>
-                    {items.length > 0 && (
-                      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                        <Link to="/login?redirect=/checkout" className="btn btn-primary place-order-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                          Sign in to order
-                        </Link>
-                        <p style={{ marginTop: '0.65rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
-                          New here?{' '}
-                          <Link to="/signup?redirect=/checkout" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
-                            Create an account →
-                          </Link>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              }
               const needsAddress = !isDineIn && deliveryMode === 'delivery' && !addressValidated;
               return (
                 <>
@@ -1513,7 +1476,7 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {isLoggedIn && showCTABtn && ctaLabel() && (
+                  {showCTABtn && ctaLabel() && (
                     <button
                       className="btn btn-primary place-order-btn"
                       onClick={handlePlaceOrder}
@@ -1529,8 +1492,8 @@ const Checkout = () => {
 
             <p className="text-center text-xs text-muted mt-4">
               By placing this order you agree to our{' '}
-              <Link to="#" className="text-primary">Privacy Service</Link>{' '}
-              &amp; all applicable order <Link to="#" className="text-primary">charges</Link>.
+              <Link to="/terms" className="text-primary">Terms of Service</Link> and{' '}
+              <Link to="/privacy-policy" className="text-primary">Privacy Policy</Link>.
             </p>
 
             <div className="halal-seal">
@@ -1564,11 +1527,7 @@ const Checkout = () => {
             </span>
             <span className="ck-sticky-total">${total.toFixed(2)}</span>
           </div>
-          {!isLoggedIn ? (
-            <Link to="/login?redirect=/checkout" className="ck-sticky-btn">
-              Log In to Order
-            </Link>
-          ) : showCTABtn ? (
+          {showCTABtn ? (
             <button
               className="ck-sticky-btn"
               onClick={handlePlaceOrder}

@@ -1,6 +1,30 @@
 /* Checkout.css */
 
 /* ── Auth Gate ── */
+.checkout-guest-nudge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.checkout-guest-nudge a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.checkout-guest-nudge a:hover {
+  text-decoration: underline;
+}
+
 .checkout-auth-gate {
   text-align: center;
   padding: 2rem 1.5rem;
