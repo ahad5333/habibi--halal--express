@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send, Share2, Check } from 'lucide-react';
 import { ordersAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './OrderTracking.css';
@@ -44,6 +44,44 @@ const DRIVER = { name: 'Ahmad K.', rating: 4.9, deliveries: '1.2K' };
 
 function statusToStep(status) {
   return STATUS_STEP[(status || '').toLowerCase()] || 1;
+}
+
+/* ── Notification chime — synthesized via Web Audio API so no audio
+   asset needs to be shipped/hosted. Browsers block autoplay until the
+   user has interacted with the page at least once; that's already true
+   by the time a live status update can arrive (they had to search/tap
+   an order to get here), so this reliably plays in practice. ── */
+function playNotificationChime() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = now + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.35);
+    });
+    setTimeout(() => ctx.close(), 600);
+  } catch (_) { /* audio not available — silently skip */ }
+}
+
+function vibrateDevice() {
+  try { navigator.vibrate?.([80, 40, 80]); } catch (_) {}
+}
+
+function notifyLiveUpdate() {
+  playNotificationChime();
+  vibrateDevice();
 }
 
 /* ── Bearing between two coords (degrees 0-360) ────────── */
@@ -160,6 +198,7 @@ export default function OrderTracking() {
   const [chatSending, setChatSending]               = useState(false);
   const [chatError, setChatError]                   = useState('');
   const [hasUnreadReply, setHasUnreadReply]         = useState(false);
+  const [shareCopied, setShareCopied]               = useState(false);
 
   const socketRef            = useRef(null);
   const timerRef             = useRef(null);
@@ -315,6 +354,7 @@ export default function OrderTracking() {
       if (step >= 4) setDriverProgress(step === 4 ? 40 : step === 5 ? 80 : 100);
       // Clear queue position once order moves past kitchen queue
       if (!['pending', 'accepted', 'preparing'].includes(status)) setQueuePosition(null);
+      notifyLiveUpdate();
     });
 
     // Live queue position updates broadcast whenever any order status changes
@@ -328,13 +368,17 @@ export default function OrderTracking() {
       setCurrentStep(prev => Math.max(prev, 5));
       setNearbyToast(true);
       setTimeout(() => setNearbyToast(false), 10000);
+      notifyLiveUpdate();
     });
 
     // Support chat — staff replies arrive here live (customer's own sent
     // messages also echo back through this since io.to(room) includes the sender)
     socket.on('receive_message', (msg) => {
       setChatMessages(prev => [...prev, msg]);
-      if (msg.sender === 'admin') setHasUnreadReply(true);
+      if (msg.sender === 'admin') {
+        setHasUnreadReply(true);
+        notifyLiveUpdate();
+      }
     });
 
     // Real GPS from driver app (backend emits 'driver_location_update')
@@ -540,6 +584,22 @@ export default function OrderTracking() {
     setTimeout(() => setChatSending(false), 300);
   };
 
+  // ── Share tracking link ──
+  const handleShareTracking = async () => {
+    const url = `${window.location.origin}/order-tracking?order=${orderNum}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Track my Habibi Halal Express order', text: `Track my order #${orderNum} live:`, url });
+      } catch (_) { /* user cancelled the share sheet — no-op */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch (_) { /* clipboard unavailable — no-op */ }
+  };
+
   return (
     <div className="ot-page">
 
@@ -639,19 +699,24 @@ export default function OrderTracking() {
                   Placed {order.placed_at ? new Date(order.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                 </span>
               </div>
-              <div className={`ot-eta-chip${runningLate ? ' ot-eta-chip-late' : ''}`}>
-                <Clock size={13} />
-                <span>
-                  {isDelivered
-                    ? 'Delivered ✓'
-                    : runningLate
-                      ? 'Running a bit behind'
-                      : etaFromGPS != null
-                        ? `~${etaFromGPS} min away`
-                        : etaSeconds != null
-                          ? `ETA ${fmtEta(etaSeconds)}`
-                          : 'Estimating…'}
-                </span>
+              <div className="ot-topbar-right">
+                <button type="button" className="ot-share-btn" onClick={handleShareTracking} title="Share tracking link">
+                  {shareCopied ? <><Check size={13} /> Copied</> : <><Share2 size={13} /> Share</>}
+                </button>
+                <div className={`ot-eta-chip${runningLate ? ' ot-eta-chip-late' : ''}`}>
+                  <Clock size={13} />
+                  <span>
+                    {isDelivered
+                      ? 'Delivered ✓'
+                      : runningLate
+                        ? 'Running a bit behind'
+                        : etaFromGPS != null
+                          ? `~${etaFromGPS} min away`
+                          : etaSeconds != null
+                            ? `ETA ${fmtEta(etaSeconds)}`
+                            : 'Estimating…'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
