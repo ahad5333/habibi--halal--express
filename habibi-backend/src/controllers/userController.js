@@ -130,7 +130,7 @@ const getMyOrders = async (req, res) => {
     // guest orders when they happen to share the same contact details.
     const result = await pool.query(
       `SELECT order_number, customer_name, delivery_method,
-              order_status, total, sub_total, tax, service_fee,
+              order_status, payment_status, total, sub_total, tax, service_fee,
               delivery_fee, tip, discount, coupon_code, payment_method,
               delivery_address, delivery_city, delivery_state, delivery_zip,
               placed_at, items

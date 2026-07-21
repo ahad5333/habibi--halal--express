@@ -6,7 +6,7 @@ const ACCEPT_JS = {
   sandbox:    'https://jstest.authorize.net/v1/Accept.js',
 };
 
-export default function AuthNetForm({ config, amount, orderNumber, onSuccess, onError }) {
+export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, onSuccess, onError }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expMonth,   setExpMonth]   = useState('');
   const [expYear,    setExpYear]    = useState('');
@@ -83,6 +83,10 @@ export default function AuthNetForm({ config, amount, orderNumber, onSuccess, on
             opaqueData:  response.opaqueData,
             amount,
             orderNumber,
+            customerName,
+            customerPhone,
+            reason,
+            note,
           }),
         });
         const data = await res.json();

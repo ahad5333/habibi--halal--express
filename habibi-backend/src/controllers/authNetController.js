@@ -29,7 +29,7 @@ const getPublicConfig = async (req, res) => {
 
 // ── Public: charge card using opaqueData token from Accept.js ─────────────
 const chargeCardEndpoint = async (req, res) => {
-  const { opaqueData, amount, orderNumber } = req.body;
+  const { opaqueData, amount, orderNumber, customerName, customerPhone, reason, note } = req.body;
   if (!opaqueData?.dataDescriptor || !opaqueData?.dataValue) {
     return res.status(400).json({ error: 'Invalid payment token.' });
   }
@@ -52,7 +52,7 @@ const chargeCardEndpoint = async (req, res) => {
       environment:    account.environment,
     });
 
-    // Update order payment status if orderNumber provided
+    // Update order payment status if orderNumber matches a real order
     if (orderNumber) {
       await pool.query(
         `UPDATE guest_orders
@@ -63,6 +63,16 @@ const chargeCardEndpoint = async (req, res) => {
         [result.transactionId, orderNumber]
       );
     }
+
+    // Durable record of the charge itself — independent of whether it's
+    // tied to a real order, so a catering deposit / wholesale invoice /
+    // other ad-hoc charge through the Make a Payment page isn't only ever
+    // visible in the Authorize.net dashboard.
+    await pool.query(
+      `INSERT INTO quick_payments (order_number, amount, reason, note, customer_name, customer_phone, transaction_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [orderNumber || null, parseFloat(amount), reason || null, note || null, customerName || null, customerPhone || null, result.transactionId]
+    ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
 
     res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
   } catch (err) {

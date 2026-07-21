@@ -379,16 +379,38 @@ const createTables = async () => {
     `);
 
     // ── Payment Methods ───────────────────────────────────────────
+    // customer_id references customers.id (a separate 1:1 profile table,
+    // linked via customers.user_id), NOT users.id directly — this was out
+    // of sync with the real deployed schema (which uses customer_id/type/
+    // last_four, no expiry column) until this table definition was fixed
+    // to match what paymentMethodController.js actually expects.
     await client.query(`
       CREATE TABLE IF NOT EXISTS payment_methods (
-        id         SERIAL PRIMARY KEY,
-        user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        brand      VARCHAR(50),
-        last4      VARCHAR(4),
-        expiry     VARCHAR(10),
-        token      VARCHAR(255),
-        is_default BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id          SERIAL PRIMARY KEY,
+        customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+        type        VARCHAR(50),
+        last_four   VARCHAR(4),
+        token       VARCHAR(255),
+        is_default  BOOLEAN DEFAULT FALSE,
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // ── Quick Payments log ──────────────────────────────────────────
+    // Durable record of every charge made through the "Make a Payment" page
+    // (/payment), independent of whether it's tied to a real order — the
+    // Authorize.net dashboard was previously the only record these existed.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS quick_payments (
+        id             SERIAL PRIMARY KEY,
+        order_number   VARCHAR(100),
+        amount         NUMERIC(10,2) NOT NULL,
+        reason         VARCHAR(100),
+        note           TEXT,
+        customer_name  VARCHAR(255),
+        customer_phone VARCHAR(30),
+        transaction_id VARCHAR(100),
+        created_at     TIMESTAMPTZ DEFAULT NOW()
       );
     `);
 

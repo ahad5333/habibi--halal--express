@@ -39,9 +39,14 @@ const Payment = () => {
       userAPI.getOrders()
         .then(data => {
           const orders = Array.isArray(data) ? data : (data.orders || []);
-          // Show only orders with an outstanding balance or unpaid status
+          // Only orders actually still owed on — payment_status is what's
+          // real here, not order_status (an order "pending" in the kitchen
+          // can already be fully paid if it went through card/PayPal at
+          // checkout; only cash/zelle/cashapp orders sit unpaid until
+          // collected). Also exclude cancelled orders — nothing to collect.
           const unpaid = orders.filter(o =>
-            ['pending', 'received', 'accepted'].includes((o.order_status || o.status || '').toLowerCase())
+            (o.payment_status || '').toLowerCase() !== 'paid' &&
+            (o.order_status || '').toLowerCase() !== 'cancelled'
           );
           setBalanceOrders(unpaid);
         })
@@ -107,22 +112,25 @@ const Payment = () => {
     setLookupLoading(true);
     setLookupError('');
     try {
-      // Try backend lookup first
-      const data = await ordersAPI.getById(orderRef.trim());
+      const data = await ordersAPI.track(orderRef.trim().toUpperCase());
+      const alreadyPaid = (data.payment_status || '').toLowerCase() === 'paid';
       setFoundOrder({
-        id: data.id || orderRef,
         ref: data.order_number || orderRef,
         customer: data.customer_name || 'Customer',
-        total: data.total_amount || 0,
-        balance: data.balance_due || data.total_amount || 0,
-        status: data.status || 'pending',
+        total: parseFloat(data.total || 0),
+        balance: alreadyPaid ? 0 : parseFloat(data.total || 0),
+        status: data.order_status || 'pending',
+        alreadyPaid,
       });
-      setAmount(String((data.balance_due || data.total_amount || '').toFixed?.(2) ?? ''));
+      if (alreadyPaid) {
+        setLookupError(`This order is already paid in full. Nothing due.`);
+        setLookupLoading(false);
+        return;
+      }
+      setAmount(parseFloat(data.total || 0).toFixed(2));
       setStep(2);
-    } catch {
-      // Demo fallback — accept any ref
-      setFoundOrder({ ref: orderRef, customer: 'Customer', balance: 0, status: 'open' });
-      setStep(2);
+    } catch (err) {
+      setLookupError('No order found with that reference. Check the number and try again, or pay a custom amount below.');
     } finally {
       setLookupLoading(false);
     }
@@ -274,7 +282,7 @@ const Payment = () => {
               <div className="pay-signin-prompt">
                 <CreditCard size={36} className="pay-prompt-icon" />
                 <h3>No Saved Payment Methods</h3>
-                <p>Payment methods are saved automatically when you complete a card payment.</p>
+                <p>You don't have any saved cards on file yet.</p>
                 <button className="btn btn-primary" onClick={() => setActiveTab('quickpay')}>Make a Payment</button>
               </div>
             ) : (
@@ -285,7 +293,6 @@ const Payment = () => {
                     <div className="pay-method-left">
                       <span className="pay-method-brand">{(m.brand || m.card_brand || 'Card').toUpperCase()}</span>
                       <span className="pay-method-num">•••• {m.last4 || m.last_four || '****'}</span>
-                      <span className="pay-method-exp">Exp {m.exp_month}/{m.exp_year}</span>
                       {m.is_default && <span className="pay-method-default-badge">Default</span>}
                     </div>
                     <div className="pay-method-actions">
@@ -456,7 +463,11 @@ const Payment = () => {
                     <AuthNetForm
                       config={authNetConfig}
                       amount={parseFloat(amount)}
-                      orderNumber={foundOrder?.ref || `QPAY-${Date.now()}`}
+                      orderNumber={foundOrder?.ref}
+                      customerName={customerName}
+                      customerPhone={customerPhone}
+                      reason={payReason}
+                      note={payNote}
                       onSuccess={handleAuthNetSuccess}
                       onError={(msg) => setPayError(msg || 'Payment failed.')}
                     />

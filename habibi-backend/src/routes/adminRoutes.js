@@ -126,7 +126,7 @@ router.delete("/business-menus/:id", deleteBusinessMenu);
 // Payments (standalone)
 router.get("/payments", async (req, res) => {
   try {
-    const [rows, stats, byMethod] = await Promise.all([
+    const [rows, stats, byMethod, quickPayments] = await Promise.all([
       pool.query(`
         SELECT id, order_number, customer_name, customer_email,
                payment_method, delivery_method,
@@ -154,11 +154,21 @@ router.get("/payments", async (req, res) => {
         GROUP BY payment_method
         ORDER BY revenue DESC
       `),
+      // Charges made through the "Make a Payment" page — separate from
+      // regular order checkout, e.g. catering deposits, wholesale invoices.
+      pool.query(`
+        SELECT id, order_number, amount, reason, note, customer_name,
+               customer_phone, transaction_id, created_at
+        FROM quick_payments
+        ORDER BY created_at DESC
+        LIMIT 200
+      `),
     ]);
     res.json({
-      transactions: rows.rows,
-      stats:        stats.rows[0],
-      by_method:    byMethod.rows,
+      transactions:    rows.rows,
+      stats:           stats.rows[0],
+      by_method:       byMethod.rows,
+      quick_payments:  quickPayments.rows,
     });
   } catch (error) {
     res.status(500).json(safeError(error));

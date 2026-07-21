@@ -220,6 +220,45 @@ export default function Payments() {
         </div>
       )}
 
+      {/* Quick Payments — charges from the "Make a Payment" page, not tied to a regular checkout order */}
+      {data?.quick_payments?.length > 0 && (
+        <div className="pay-table-wrap card" style={{ marginBottom: '1.5rem' }}>
+          <p className="pay-methods-title" style={{ padding: '1rem 1.25rem 0' }}>
+            Quick Payments <span className="text-muted" style={{ fontWeight: 400, fontSize: '0.8rem' }}>— catering deposits, invoices &amp; other charges from /payment</span>
+          </p>
+          <table className="pay-table">
+            <thead>
+              <tr>
+                <th>Order # / Ref</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Reason</th>
+                <th className="num">Amount</th>
+                <th>Transaction ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.quick_payments.map(p => (
+                <tr key={p.id}>
+                  <td><span className="pay-order-num">{p.order_number || '—'}</span></td>
+                  <td>
+                    <p className="pay-customer-name">{p.customer_name || 'Guest'}</p>
+                    {p.customer_phone && <p className="pay-customer-email">{p.customer_phone}</p>}
+                  </td>
+                  <td className="pay-date">{fmtDateTime(p.created_at)}</td>
+                  <td>
+                    {p.reason || '—'}
+                    {p.note && <p className="pay-customer-email">{p.note}</p>}
+                  </td>
+                  <td className="num pay-total">${fmt(p.amount)}</td>
+                  <td className="muted" style={{ fontSize: '0.75rem' }}>{p.transaction_id || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Table toolbar */}
       <div className="pay-toolbar">
         <div className="pay-method-filters">
@@ -350,8 +389,8 @@ export default function Payments() {
               <strong>{refundTarget.order_number}</strong>?
             </p>
             <p className="pay-modal-sub">
-              If this order was paid via Stripe, the refund will be processed automatically.
-              For cash/offline orders, mark it as refunded for record-keeping.
+              If this order was paid by card, the refund will be processed automatically via Authorize.net.
+              For cash/offline orders, this marks it as refunded for record-keeping.
             </p>
             {refundMsg && (
               <p className={`pay-modal-msg ${refundMsg.startsWith('Error') ? 'error' : 'success'}`}>
