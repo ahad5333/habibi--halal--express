@@ -1,9 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Pencil, Trash2, X, Check, KeyRound, Smartphone, Wifi, WifiOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Truck, Plus, Pencil, Trash2, X, Check, KeyRound, Smartphone, Wifi, WifiOff, Upload, FileSpreadsheet } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
 const BLANK = { name: '', email: '', phone: '', shift_start: '', shift_end: '', notes: '', is_active: true };
+
+// Minimal CSV parser — handles quoted fields (so a name with a comma in it
+// doesn't break column alignment). Matches "name"/"phone" headers case-
+// insensitively; falls back to column order (name, phone) if there's no
+// recognizable header row at all.
+function parseDriverCsv(text) {
+  const parseLine = (line) => {
+    const cells = [];
+    let cur = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQuotes) {
+        if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { cur += c; }
+      } else if (c === '"') { inQuotes = true; }
+      else if (c === ',') { cells.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    cells.push(cur);
+    return cells.map(c => c.trim());
+  };
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length === 0) return [];
+
+  let rows = lines.map(parseLine);
+  let nameIdx = 0, phoneIdx = 1;
+  const header = rows[0].map(h => h.toLowerCase());
+  const hasHeader = header.some(h => h === 'name' || h === 'phone');
+  if (hasHeader) {
+    const ni = header.indexOf('name');
+    const pi = header.indexOf('phone');
+    if (ni !== -1) nameIdx = ni;
+    if (pi !== -1) phoneIdx = pi;
+    rows = rows.slice(1);
+  }
+
+  return rows.map(cells => ({
+    name:  cells[nameIdx]  || '',
+    phone: cells[phoneIdx] || '',
+  })).filter(r => r.name || r.phone);
+}
 
 export default function Drivers() {
   const [drivers, setDrivers]     = useState([]);
@@ -17,6 +60,14 @@ export default function Drivers() {
   const [newPin, setNewPin]       = useState('');
   const [pinSaving, setPinSaving] = useState(false);
   const [smsPrompt, setSmsPrompt] = useState(null); // {id, name, phone} shown after create
+
+  // Bulk CSV import
+  const [bulkModal, setBulkModal]     = useState(false);
+  const [bulkRows, setBulkRows]       = useState([]);   // parsed preview rows
+  const [bulkFileName, setBulkFileName] = useState('');
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkResult, setBulkResult]   = useState(null); // { created_count, skipped_count, skipped }
+  const fileInputRef = useRef(null);
 
   const load = async () => {
     try {
@@ -91,6 +142,36 @@ export default function Drivers() {
     }
   };
 
+  const openBulk = () => {
+    setBulkRows([]); setBulkFileName(''); setBulkResult(null);
+    setBulkModal(true);
+  };
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setBulkRows(parseDriverCsv(String(reader.result || '')));
+    reader.readAsText(file);
+  };
+
+  const runBulkImport = async () => {
+    const valid = bulkRows.filter(r => r.name.trim());
+    if (valid.length === 0) return;
+    setBulkImporting(true);
+    try {
+      const result = await adminAPI.bulkImportDrivers(valid);
+      setBulkResult(result);
+      setBulkRows([]);
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
   const sendSms = async (id) => {
     try {
       await adminAPI.sendDriverSetupSms(id);
@@ -111,9 +192,14 @@ export default function Drivers() {
           <h1 className="page-title">Drivers</h1>
           <p className="page-sub">{active.length} active · {onDuty} on duty</p>
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>
-          <Plus size={15} /> Add Driver
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={openBulk}>
+            <Upload size={15} /> Bulk Import
+          </button>
+          <button className="btn btn-primary" onClick={openAdd}>
+            <Plus size={15} /> Add Driver
+          </button>
+        </div>
       </div>
 
       {err && <p className="text-error" style={{ marginBottom: '1rem' }}>{err}</p>}
@@ -328,6 +414,101 @@ export default function Drivers() {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setDelete(null)}>Cancel</button>
               <button className="btn btn-danger" onClick={remove}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {bulkModal && (
+        <div className="modal-overlay" onClick={() => setBulkModal(false)}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Bulk Import Drivers</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setBulkModal(false)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              {bulkResult ? (
+                <div>
+                  <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                    ✓ {bulkResult.created_count} driver{bulkResult.created_count !== 1 ? 's' : ''} added
+                    {bulkResult.created_count > 0 && ' — setup SMS sent to each'}
+                  </p>
+                  {bulkResult.skipped_count > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <p style={{ fontWeight: 600, color: 'var(--color-danger, #e5484d)', marginBottom: '0.4rem' }}>
+                        {bulkResult.skipped_count} skipped
+                      </p>
+                      <div className="table-wrap">
+                        <table className="table">
+                          <thead><tr><th>Name</th><th>Phone</th><th>Reason</th></tr></thead>
+                          <tbody>
+                            {bulkResult.skipped.map((s, i) => (
+                              <tr key={i}>
+                                <td>{s.name || '—'}</td>
+                                <td>{s.phone || '—'}</td>
+                                <td className="text-muted">{s.reason}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                    Upload a CSV with <code>name</code> and <code>phone</code> columns (header row optional —
+                    without one, the first column is treated as name, the second as phone). Each driver is
+                    added without a PIN and immediately sent a text to set their own.
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    style={{ display: 'none' }}
+                    onChange={handleCsvFile}
+                  />
+                  <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                    <FileSpreadsheet size={14} /> {bulkFileName || 'Choose CSV file…'}
+                  </button>
+
+                  {bulkRows.length > 0 && (
+                    <div className="table-wrap" style={{ marginTop: '1rem', maxHeight: 260, overflowY: 'auto' }}>
+                      <table className="table">
+                        <thead><tr><th>Name</th><th>Phone</th></tr></thead>
+                        <tbody>
+                          {bulkRows.map((r, i) => (
+                            <tr key={i} style={!r.name.trim() ? { opacity: 0.5 } : undefined}>
+                              <td>{r.name || <em>missing name</em>}</td>
+                              <td>{r.phone || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              {bulkResult ? (
+                <button className="btn btn-primary" onClick={() => setBulkModal(false)}>Done</button>
+              ) : (
+                <>
+                  <button className="btn btn-secondary" onClick={() => setBulkModal(false)}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={runBulkImport}
+                    disabled={bulkImporting || bulkRows.filter(r => r.name.trim()).length === 0}
+                  >
+                    {bulkImporting
+                      ? <div className="spinner" />
+                      : <><Check size={14} /> Import {bulkRows.filter(r => r.name.trim()).length || ''} Drivers</>}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

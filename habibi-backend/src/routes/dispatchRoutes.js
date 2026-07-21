@@ -63,6 +63,7 @@ const {
   driverSetPin,
   adminResetDriverPin,
   driverSendSetupSms,
+  bulkImportDrivers,
   saveDriverFcmToken,
   getDriverChat,
   sendDriverChat,
@@ -132,6 +133,7 @@ router.post('/driver/login',          driverLogin);
 router.post('/driver/set-pin',        driverOrAdmin, driverSetPin);
 router.patch('/drivers/:id/reset-pin',  protect, admin, adminResetDriverPin);
 router.post('/driver/send-setup-sms',  protect, admin, driverSendSetupSms);
+router.post('/drivers/bulk-import',    protect, admin, bulkImportDrivers);
 router.post('/driver/fcm-token',      saveDriverFcmToken);
 
 // ── Driver-facing routes (HMAC or JWT) ────────────────────────────

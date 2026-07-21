@@ -934,6 +934,56 @@ const adminResetDriverPin = async (req, res) => {
   }
 };
 
+// ── Admin: bulk-import drivers from a CSV (name, phone) + auto-send each a
+// self-service PIN setup link, same mechanism as the single-driver flow. ──
+const bulkImportDrivers = async (req, res) => {
+  const { drivers } = req.body;
+  if (!Array.isArray(drivers) || drivers.length === 0) {
+    return res.status(400).json({ message: 'No drivers provided.' });
+  }
+  if (drivers.length > 200) {
+    return res.status(400).json({ message: 'Max 200 drivers per import.' });
+  }
+
+  const created = [];
+  const skipped = [];
+
+  for (const row of drivers) {
+    const name  = String(row.name  || '').trim().slice(0, 100);
+    const phone = String(row.phone || '').trim().slice(0, 30);
+    if (!name) { skipped.push({ name, phone, reason: 'Missing name' }); continue; }
+
+    try {
+      if (phone) {
+        const existing = await pool.query(
+          `SELECT id FROM staff_members WHERE phone=$1 AND role='delivery'`,
+          [phone]
+        );
+        if (existing.rows.length) { skipped.push({ name, phone, reason: 'Phone already registered' }); continue; }
+      }
+
+      const result = await pool.query(
+        `INSERT INTO staff_members (name, phone, role, is_active) VALUES ($1,$2,'delivery',TRUE) RETURNING id, name, phone`,
+        [name, phone || null]
+      );
+      const driver = result.rows[0];
+      created.push(driver);
+
+      if (phone) {
+        const token = driverToken(driver.id);
+        const base  = process.env.FRONTEND_URL || 'https://habibihe.com';
+        const url   = `${base}/driver/set-pin?id=${driver.id}&token=${token}`;
+        sendSMS(phone, `Hi ${name}! Set up your Habibi driver PIN to log in anytime: ${url}`)
+          .catch(err => console.error('[BulkImport] SMS failed for', phone, err.message));
+      }
+    } catch (err) {
+      skipped.push({ name, phone, reason: err.message });
+    }
+  }
+
+  res.json({ created_count: created.length, skipped_count: skipped.length, created, skipped });
+};
+
 const driverSendSetupSms = async (req, res) => {
   try {
     const { driver_id } = req.body;
@@ -1220,6 +1270,7 @@ module.exports = {
   driverSetPin,
   adminResetDriverPin,
   driverSendSetupSms,
+  bulkImportDrivers,
   saveDriverFcmToken,
   getDriverChat,
   sendDriverChat,
