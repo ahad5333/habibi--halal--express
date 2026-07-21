@@ -1525,6 +1525,96 @@
   margin: 0;
 }
 
+/* ── Recent orders quick-pick ────────────────────────────────── */
+.ot-recent-orders {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.ot-recent-orders-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.ot-recent-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ot-recent-order-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+.ot-recent-order-item:hover { border-color: var(--color-primary); }
+.ot-recent-order-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.ot-recent-order-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ot-recent-order-date {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.ot-recent-order-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ot-recent-order-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  padding: 0.15rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--color-text-muted);
+}
+.ot-recent-order-status.status-delivered,
+.ot-recent-order-status.status-completed {
+  background: rgba(74,222,128,0.12);
+  color: #4ade80;
+}
+.ot-recent-order-status.status-cancelled {
+  background: rgba(248,113,113,0.12);
+  color: #f87171;
+}
+.ot-recent-order-status.status-pending,
+.ot-recent-order-status.status-accepted,
+.ot-recent-order-status.status-preparing,
+.ot-recent-order-status.status-out_for_delivery,
+.ot-recent-order-status.status-nearby {
+  background: rgba(249,115,22,0.12);
+  color: var(--color-primary);
+}
+.ot-recent-order-total {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
 /* ── Static dot (disconnected) ───────────────────────────────── */
 .dot-static {
   width: 7px;

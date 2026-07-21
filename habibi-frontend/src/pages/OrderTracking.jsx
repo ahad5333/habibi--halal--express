@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send } from 'lucide-react';
-import { ordersAPI } from '../services/api';
+import { ordersAPI, userAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './OrderTracking.css';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -119,6 +120,7 @@ async function geocodeAddress(addr) {
 export default function OrderTracking() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const urlOrder = params.get('order') || localStorage.getItem('last_order_number') || '';
 
   const [searchInput, setSearchInput]   = useState(urlOrder || '');
@@ -126,6 +128,7 @@ export default function OrderTracking() {
   const [order, setOrder]               = useState(null);
   const [loading, setLoading]           = useState(false);
   const [notFound, setNotFound]         = useState(false);
+  const [recentOrders, setRecentOrders] = useState([]);
   const [currentStep, setCurrentStep]   = useState(1);
   const [orderStatus, setOrderStatus]   = useState(''); // raw status string — tracks 'cancelled' which currentStep can't represent
   const [etaSeconds, setEtaSeconds]     = useState(null);
@@ -254,6 +257,14 @@ export default function OrderTracking() {
   useEffect(() => {
     if (urlOrder) fetchOrder(urlOrder);
   }, []); // eslint-disable-line
+
+  // ── Recent orders quick-pick (logged-in users, shown on the empty state) ──
+  useEffect(() => {
+    if (!isLoggedIn) { setRecentOrders([]); return; }
+    userAPI.getOrders()
+      .then(data => setRecentOrders(Array.isArray(data) ? data.slice(0, 5) : []))
+      .catch(() => setRecentOrders([]));
+  }, [isLoggedIn]);
 
   // ── ETA countdown ────────────────────────────────────────
   useEffect(() => {
@@ -580,7 +591,38 @@ export default function OrderTracking() {
         <div className="container ot-empty-state">
           <Scooter size={48} className="ot-empty-icon" color="var(--color-primary)" />
           <h2>Track Your Order</h2>
-          <p>Enter your order number above to see live status updates.</p>
+
+          {isLoggedIn && recentOrders.length > 0 ? (
+            <div className="ot-recent-orders">
+              <p className="ot-recent-orders-label">Your recent orders — tap to track</p>
+              <div className="ot-recent-orders-list">
+                {recentOrders.map(o => (
+                  <button
+                    key={o.order_number}
+                    type="button"
+                    className="ot-recent-order-item"
+                    onClick={() => { setSearchInput(o.order_number); fetchOrder(o.order_number); }}
+                  >
+                    <div className="ot-recent-order-main">
+                      <span className="ot-recent-order-num">#{o.order_number}</span>
+                      <span className="ot-recent-order-date">
+                        {o.placed_at ? new Date(o.placed_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
+                      </span>
+                    </div>
+                    <div className="ot-recent-order-sub">
+                      <span className={`ot-recent-order-status status-${(o.order_status || '').toLowerCase()}`}>
+                        {(o.order_status || '').replace(/_/g, ' ')}
+                      </span>
+                      <span className="ot-recent-order-total">${parseFloat(o.total || 0).toFixed(2)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p>Enter your order number above to see live status updates.</p>
+          )}
+
           <Link to="/menu" className="btn btn-primary" style={{ marginTop: '1rem' }}>Place an Order</Link>
         </div>
       )}
