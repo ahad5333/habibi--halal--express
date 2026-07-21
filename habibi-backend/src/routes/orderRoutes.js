@@ -9,6 +9,7 @@ const {
   createGuestOrder,
   getAdminOrders,
   updateGuestOrderStatus,
+  cancelOrder,
   deleteGuestOrder,
   clearCompletedOrders,
   createOrder,
@@ -81,7 +82,8 @@ router.get("/track/:orderNumber", async (req, res) => {
                 sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
                 order_status, items, placed_at, updated_at, expected_time,
-                table_number, estimated_minutes
+                table_number, estimated_minutes, payment_method,
+                EXTRACT(EPOCH FROM (NOW() - placed_at)) AS seconds_since_placed
            FROM guest_orders
           WHERE order_number = $1`,
         [orderNumber]
@@ -161,11 +163,21 @@ router.get("/track/:orderNumber", async (req, res) => {
       };
     }
 
-    res.json({ ...o, items, driver });
+    // Computed server-side (see cancelOrder for why: placed_at is stored as
+    // timestamp-without-timezone, so the client must not do its own date math on it)
+    const CANCEL_WINDOW_SECONDS = 3 * 60;
+    const secondsSincePlaced = parseFloat(o.seconds_since_placed) || 0;
+    const cancel_seconds_left = Math.max(0, Math.round(CANCEL_WINDOW_SECONDS - secondsSincePlaced));
+    delete o.seconds_since_placed;
+
+    res.json({ ...o, items, driver, cancel_seconds_left });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
 });
+
+/* ── Customer self-service cancellation (ownership-verified) ── */
+router.post("/:orderNumber/cancel", optionalAuth, cancelOrder);
 
 /* ── Chat history for an order (ownership-verified) ── */
 router.get("/chat/:orderNumber", optionalAuth, async (req, res) => {

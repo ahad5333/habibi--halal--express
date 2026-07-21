@@ -719,6 +719,75 @@ const updateGuestOrderStatus = async (req, res) => {
   }
 };
 
+/* ── Customer self-service cancellation ────────────────────────────────────
+   Public, ownership-verified (same pattern as the chat endpoint below):
+   logged-in users must own the order, guests must supply the order's email.
+   Only allowed while the order is still 'pending' and within a short grace
+   window after placement, so the kitchen never loses work already started. ── */
+const CANCEL_WINDOW_MINUTES = 3;
+
+const cancelOrder = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { customer_email } = req.body;
+
+    // minutes_elapsed computed DB-side (NOW() - placed_at, both evaluated in the
+    // same session) -- placed_at is stored as timestamp-without-timezone, so
+    // comparing it against a JS Date.now() here would be skewed by whatever the
+    // DB session's timezone happens to be. Let Postgres do the subtraction.
+    const result = await pool.query(
+      `SELECT id, user_id, customer_email, order_status, payment_method,
+              EXTRACT(EPOCH FROM (NOW() - placed_at)) / 60 AS minutes_elapsed
+         FROM guest_orders WHERE order_number = $1`,
+      [orderNumber]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Order not found.' });
+    const order = result.rows[0];
+
+    if (req.user) {
+      const ownsById    = order.user_id && order.user_id === req.user.id;
+      const ownsByEmail = order.customer_email && order.customer_email.toLowerCase() === req.user.email?.toLowerCase();
+      if (!ownsById && !ownsByEmail) return res.status(403).json({ message: 'Access denied.' });
+    } else {
+      const provided = (customer_email || '').trim().toLowerCase();
+      if (!provided || !order.customer_email || order.customer_email.toLowerCase() !== provided) {
+        return res.status(401).json({ message: 'Enter the email used for this order to cancel it.' });
+      }
+    }
+
+    if ((order.order_status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ message: 'This order can no longer be cancelled automatically — the kitchen has already started. Please call us for help.' });
+    }
+
+    if (parseFloat(order.minutes_elapsed) > CANCEL_WINDOW_MINUTES) {
+      return res.status(400).json({ message: `The ${CANCEL_WINDOW_MINUTES}-minute cancellation window has passed. Please call us and we'll help you right away.` });
+    }
+
+    await pool.query(
+      `UPDATE guest_orders
+          SET order_status = 'cancelled', cancellation_reason = 'Cancelled by customer', updated_at = NOW()
+        WHERE id = $1`,
+      [order.id]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${orderNumber}`).emit('order_status_updated', { order_id: orderNumber, order_number: orderNumber, status: 'cancelled' });
+    }
+
+    const paidOnline = order.payment_method && !['cash', 'zelle', 'cashapp'].includes(order.payment_method.toLowerCase());
+    res.json({
+      success: true,
+      message: paidOnline
+        ? 'Your order has been cancelled. Our team will process your refund shortly.'
+        : 'Your order has been cancelled.',
+    });
+  } catch (err) {
+    console.error('cancelOrder error:', err.message);
+    res.status(500).json(safeError(err));
+  }
+};
+
 /* ── Admin: soft-delete order (preserves financial record) ── */
 const deleteGuestOrder = async (req, res) => {
   try {
@@ -849,6 +918,7 @@ module.exports = {
   createGuestOrder,
   getAdminOrders,
   updateGuestOrderStatus,
+  cancelOrder,
   deleteGuestOrder,
   clearCompletedOrders,
   createOrder,
