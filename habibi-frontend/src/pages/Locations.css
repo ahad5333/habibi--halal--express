@@ -701,6 +701,17 @@
   justify-content: center;
 }
 
+/* Fine dot-grid texture, masked to a soft circle */
+.cov-grid {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px);
+  background-size: 13px 13px;
+  -webkit-mask-image: radial-gradient(circle, black 55%, transparent 100%);
+          mask-image: radial-gradient(circle, black 55%, transparent 100%);
+}
+
 .cov-ring {
   position: absolute;
   border-radius: 50%;
@@ -711,32 +722,88 @@
 
 .cov-r1 {
   width: 70px;  height: 70px;
-  border: 1.5px solid rgba(249,115,22,0.6);
+  border: 1.5px solid rgba(249,115,22,0.55);
   background: rgba(249,115,22,0.06);
+  box-shadow: 0 0 18px rgba(249,115,22,0.12) inset;
   animation: ring-pulse 2.5s ease-in-out infinite;
 }
 
 .cov-r2 {
   width: 140px; height: 140px;
-  border: 1px dashed rgba(249,115,22,0.35);
+  border: 1px solid rgba(249,115,22,0.28);
   animation: ring-pulse 2.5s ease-in-out 0.5s infinite;
 }
 
 .cov-r3 {
   width: 220px; height: 220px;
-  border: 1px dashed rgba(249,115,22,0.18);
+  border: 1px solid rgba(249,115,22,0.16);
   animation: ring-pulse 2.5s ease-in-out 1s infinite;
 }
 
 .cov-r4 {
   width: 310px; height: 310px;
-  border: 1px solid rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.09);
   background: radial-gradient(circle, rgba(249,115,22,0.03) 0%, transparent 70%);
 }
 
 @keyframes ring-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
+}
+
+/* Cardinal tick marks — % positioned so they scale with the container */
+.cov-ticks span {
+  position: absolute;
+  background: rgba(249,115,22,0.5);
+  border-radius: 1px;
+}
+.cov-ticks span:nth-child(1) { top: 3%; left: 50%; width: 2px; height: 9px; transform: translateX(-50%); }
+.cov-ticks span:nth-child(2) { top: 50%; right: 3%; width: 9px; height: 2px; transform: translateY(-50%); }
+.cov-ticks span:nth-child(3) { bottom: 3%; left: 50%; width: 2px; height: 9px; transform: translateX(-50%); }
+.cov-ticks span:nth-child(4) { top: 50%; left: 3%; width: 9px; height: 2px; transform: translateY(-50%); }
+
+/* Rotating radar sweep beam */
+.cov-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 268deg,
+    rgba(249,115,22,0.30) 315deg,
+    rgba(255,178,102,0.55) 350deg,
+    rgba(249,115,22,0.05) 360deg
+  );
+  -webkit-mask-image: radial-gradient(circle, black 62%, transparent 100%);
+          mask-image: radial-gradient(circle, black 62%, transparent 100%);
+  animation: sweep-rotate 4.5s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes sweep-rotate { to { transform: rotate(360deg); } }
+
+/* Live delivery pings — flashes scattered across the coverage field */
+.cov-ping {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff8f0;
+  box-shadow: 0 0 6px 2px rgba(249,115,22,0.85);
+  opacity: 0;
+  animation: ping-flash 3.4s ease-in-out infinite;
+}
+.cov-ping-1 { top: 26%; left: 64%; animation-delay: 0s; }
+.cov-ping-2 { top: 62%; left: 28%; animation-delay: 0.9s; }
+.cov-ping-3 { top: 71%; left: 66%; animation-delay: 1.8s; }
+.cov-ping-4 { top: 21%; left: 36%; animation-delay: 2.6s; }
+
+@keyframes ping-flash {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  12%      { opacity: 1; transform: scale(1.4); }
+  28%      { opacity: 0.55; transform: scale(1); }
+  45%, 100% { opacity: 0; transform: scale(0.7); }
 }
 
 .cov-center {
@@ -772,50 +839,21 @@
   box-shadow: 0 0 12px #f97316, 0 0 24px rgba(249,115,22,0.5);
 }
 
-/* Orbiting dots */
-.cov-orbit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  transform-origin: 0 0;
-}
-
-.cov-orbit-1 {
-  width: 140px; height: 140px;
-  margin: -70px 0 0 -70px;
-  animation: orbit-spin 8s linear infinite;
-}
-.cov-orbit-2 {
-  width: 220px; height: 220px;
-  margin: -110px 0 0 -110px;
-  animation: orbit-spin 14s linear infinite reverse;
-}
-.cov-orbit-3 {
-  width: 310px; height: 310px;
-  margin: -155px 0 0 -155px;
-  animation: orbit-spin 20s linear infinite;
-}
-
-@keyframes orbit-spin { to { transform: rotate(360deg); } }
-
-.cov-orbit-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f97316;
-  box-shadow: 0 0 8px rgba(249,115,22,0.7);
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
 .coverage-stat-center {
   position: relative;
   z-index: 4;
   text-align: center;
   pointer-events: none;
+  width: 148px;
+  height: 148px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(10,10,12,0.88) 0%, rgba(10,10,12,0.6) 68%, transparent 100%);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(249,115,22,0.18);
 }
 
 .coverage-num {
@@ -924,8 +962,7 @@
   .coverage-visual { width: 260px; height: 260px; }
   .cov-r3 { width: 190px; height: 190px; }
   .cov-r4 { width: 255px; height: 255px; }
-  .cov-orbit-2 { width: 190px; height: 190px; margin: -95px 0 0 -95px; }
-  .cov-orbit-3 { width: 255px; height: 255px; margin: -127.5px 0 0 -127.5px; }
+  .coverage-stat-center { width: 128px; height: 128px; }
 }
 
 /* Tablet */
@@ -985,8 +1022,8 @@
   .coverage-visual { width: 220px; height: 220px; }
   .cov-r3 { width: 160px; height: 160px; }
   .cov-r4 { width: 215px; height: 215px; }
-  .cov-orbit-2 { width: 160px; height: 160px; margin: -80px 0 0 -80px; }
-  .cov-orbit-3 { width: 215px; height: 215px; margin: -107.5px 0 0 -107.5px; }
+  .coverage-stat-center { width: 108px; height: 108px; }
+  .coverage-num { font-size: 2.4rem; }
 
   .coverage-title { font-size: 1.7rem; }
   .coverage-metrics { gap: 1.5rem; }

@@ -548,19 +548,34 @@ const Locations = () => {
           {/* Left: visual */}
           <div className="coverage-visual">
             <div className="coverage-map-bg">
+              {/* Fine dot-grid texture, like a tracking/radar display */}
+              <div className="cov-grid" />
+
+              {/* Concentric range rings */}
               <div className="cov-ring cov-r1" />
               <div className="cov-ring cov-r2" />
               <div className="cov-ring cov-r3" />
               <div className="cov-ring cov-r4" />
-              {/* Center pulse */}
+
+              {/* Cardinal tick marks */}
+              <div className="cov-ticks">
+                <span /><span /><span /><span />
+              </div>
+
+              {/* Rotating radar sweep beam */}
+              <div className="cov-sweep" />
+
+              {/* Live delivery "pings" flashing across the coverage field */}
+              <div className="cov-ping cov-ping-1" />
+              <div className="cov-ping cov-ping-2" />
+              <div className="cov-ping cov-ping-3" />
+              <div className="cov-ping cov-ping-4" />
+
+              {/* Center hub */}
               <div className="cov-center">
                 <div className="cov-pulse" />
                 <div className="cov-dot" />
               </div>
-              {/* Orbiting dots */}
-              <div className="cov-orbit cov-orbit-1"><div className="cov-orbit-dot" /></div>
-              <div className="cov-orbit cov-orbit-2"><div className="cov-orbit-dot" /></div>
-              <div className="cov-orbit cov-orbit-3"><div className="cov-orbit-dot" /></div>
             </div>
             <div className="coverage-stat-center">
               <p className="coverage-num"><AnimatedCounter target="300" suffix="+" /></p>
