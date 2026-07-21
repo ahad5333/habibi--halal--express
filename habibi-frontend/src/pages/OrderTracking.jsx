@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send } from 'lucide-react';
 import { ordersAPI } from '../services/api';
 import './OrderTracking.css';
 
@@ -147,8 +147,20 @@ export default function OrderTracking() {
   // cancelOrder/track comments for why the client must not do its own date math)
   const [cancelSecondsLeft, setCancelSecondsLeft] = useState(0);
 
+  // ── "Report an issue" chat ──
+  const [showChatPanel, setShowChatPanel]           = useState(false);
+  const [chatEmail, setChatEmail]                   = useState('');
+  const [chatEmailConfirmed, setChatEmailConfirmed] = useState(false);
+  const [chatMessages, setChatMessages]             = useState([]);
+  const [chatInput, setChatInput]                   = useState('');
+  const [chatLoading, setChatLoading]               = useState(false);
+  const [chatSending, setChatSending]               = useState(false);
+  const [chatError, setChatError]                   = useState('');
+  const [hasUnreadReply, setHasUnreadReply]         = useState(false);
+
   const socketRef            = useRef(null);
   const timerRef             = useRef(null);
+  const chatBottomRef        = useRef(null);
   const mapContainerRef      = useRef(null);  // DOM div for Leaflet
   const leafletRef           = useRef(null);  // L.Map instance
   const driverMarkerRef      = useRef(null);  // L.Marker for driver
@@ -307,6 +319,13 @@ export default function OrderTracking() {
       setTimeout(() => setNearbyToast(false), 10000);
     });
 
+    // Support chat — staff replies arrive here live (customer's own sent
+    // messages also echo back through this since io.to(room) includes the sender)
+    socket.on('receive_message', (msg) => {
+      setChatMessages(prev => [...prev, msg]);
+      if (msg.sender === 'admin') setHasUnreadReply(true);
+    });
+
     // Real GPS from driver app (backend emits 'driver_location_update')
     socket.on('driver_location_update', ({ lat, lng, assignment_id }) => {
       // Only accept if this is our assignment (or we haven't identified one yet)
@@ -435,6 +454,11 @@ export default function OrderTracking() {
     return () => clearInterval(iv);
   }, [currentStep]); // eslint-disable-line
 
+  // ── Auto-scroll chat to latest message ──
+  useEffect(() => {
+    if (showChatPanel) chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, showChatPanel]);
+
   const fmtEta = (s) => {
     const m = Math.floor(s / 60);
     const sec = String(s % 60).padStart(2, '0');
@@ -472,6 +496,37 @@ export default function OrderTracking() {
     } finally {
       setCancelling(false);
     }
+  };
+
+  // ── Support chat handlers ──
+  const handleChatEmailSubmit = async () => {
+    if (!chatEmail.trim()) { setChatError('Enter the email used for this order.'); return; }
+    setChatLoading(true);
+    setChatError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(chatEmail.trim())}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not load messages.');
+      setChatMessages(data);
+      setChatEmailConfirmed(true);
+    } catch (err) {
+      setChatError(err.message || 'Could not load messages.');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleSendChatMessage = () => {
+    const text = chatInput.trim();
+    if (!text || !socketRef.current || chatSending) return;
+    setChatSending(true);
+    socketRef.current.emit('send_message', {
+      order_id: orderNum,
+      text,
+      timestamp: new Date().toISOString(),
+    });
+    setChatInput('');
+    setTimeout(() => setChatSending(false), 300);
   };
 
   return (
@@ -863,6 +918,68 @@ export default function OrderTracking() {
                     </div>
                   )
                 )}
+
+                {/* Report an issue / message support — always available regardless
+                    of delivery method or order status */}
+                <div className="ot-chat-card">
+                  <button
+                    type="button"
+                    className="ot-chat-trigger"
+                    onClick={() => { setShowChatPanel(v => !v); setHasUnreadReply(false); }}
+                  >
+                    <MessageSquare size={16} />
+                    <span>{showChatPanel ? 'Hide messages' : 'Need help? Message us about this order'}</span>
+                    {hasUnreadReply && !showChatPanel && <span className="ot-chat-unread-dot" />}
+                  </button>
+
+                  {showChatPanel && (
+                    !chatEmailConfirmed ? (
+                      <div className="ot-chat-email-gate">
+                        <p className="ot-chat-email-hint">Enter the email used for this order to view and send messages.</p>
+                        <input
+                          type="email"
+                          className="ot-cancel-email-input"
+                          placeholder="you@example.com"
+                          value={chatEmail}
+                          onChange={e => setChatEmail(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleChatEmailSubmit()}
+                          autoFocus
+                        />
+                        {chatError && <p className="ot-cancel-error">{chatError}</p>}
+                        <button type="button" className="ot-chat-confirm-btn" onClick={handleChatEmailSubmit} disabled={chatLoading}>
+                          {chatLoading ? 'Loading…' : 'Continue'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="ot-chat-thread">
+                        <div className="ot-chat-messages">
+                          {chatMessages.length === 0 && (
+                            <p className="ot-chat-empty">No messages yet — send us a note and we'll get back to you.</p>
+                          )}
+                          {chatMessages.map((m, i) => (
+                            <div key={m.id || i} className={`ot-chat-msg ${m.sender === 'admin' ? 'ot-chat-msg-staff' : 'ot-chat-msg-me'}`}>
+                              <span className="ot-chat-msg-bubble">{m.text}</span>
+                            </div>
+                          ))}
+                          <div ref={chatBottomRef} />
+                        </div>
+                        <div className="ot-chat-input-row">
+                          <input
+                            type="text"
+                            className="ot-chat-input"
+                            placeholder="Type a message…"
+                            value={chatInput}
+                            onChange={e => setChatInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
+                          />
+                          <button type="button" className="ot-chat-send-btn" onClick={handleSendChatMessage} disabled={!chatInput.trim()}>
+                            <Send size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
 
                 {/* Receipt */}
                 <div className="ot-receipt">

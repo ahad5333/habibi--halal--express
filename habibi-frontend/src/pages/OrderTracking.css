@@ -715,6 +715,136 @@
 .ot-cancel-confirm-btn:hover { filter: brightness(1.1); }
 .ot-cancel-confirm-btn:disabled { opacity: 0.6; cursor: default; }
 
+/* ── Support chat ─────────────────────────────────────────────── */
+.ot-chat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ot-chat-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--color-text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  text-align: left;
+}
+.ot-chat-trigger:hover { color: var(--color-primary); }
+.ot-chat-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f87171;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ot-chat-email-gate {
+  padding: 0 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ot-chat-email-hint {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.ot-chat-confirm-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.ot-chat-confirm-btn:hover { filter: brightness(1.1); }
+.ot-chat-confirm-btn:disabled { opacity: 0.6; cursor: default; }
+
+.ot-chat-thread {
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+}
+.ot-chat-messages {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ot-chat-empty {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0.5rem 0;
+}
+.ot-chat-msg { display: flex; }
+.ot-chat-msg-me { justify-content: flex-end; }
+.ot-chat-msg-staff { justify-content: flex-start; }
+.ot-chat-msg-bubble {
+  max-width: 78%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.ot-chat-msg-me .ot-chat-msg-bubble {
+  background: var(--color-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.ot-chat-msg-staff .ot-chat-msg-bubble {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+  border-bottom-left-radius: 4px;
+}
+.ot-chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--color-border);
+}
+.ot-chat-input {
+  flex: 1;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--color-text-main);
+}
+.ot-chat-input:focus { outline: none; border-color: var(--color-primary); }
+.ot-chat-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.15s;
+}
+.ot-chat-send-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.ot-chat-send-btn:disabled { opacity: 0.4; cursor: default; }
+
 /* ── Right column ────────────────────────────────────────────── */
 .ot-right {
   display: flex;
