@@ -192,7 +192,7 @@ router.patch("/locations/:id/toggle", toggleLocation);
 // (Menu availability route is registered before /:id above)
 
 // Staff
-const { getStaff, createStaff, updateStaff, deleteStaff } = require("../controllers/staffController");
+const { getStaff, createStaff, updateStaff, deleteStaff, bulkImportStaff, bulkDeleteStaff, bulkSetStaffStatus } = require("../controllers/staffController");
 const staffValidation = [
   body('name').notEmpty().withMessage('Name is required.').isLength({ max: 100 }).withMessage('Name too long.').trim(),
   body('email').optional({ checkFalsy: true }).isEmail().withMessage('Invalid email.').normalizeEmail(),
@@ -205,6 +205,9 @@ router.get("/staff", getStaff);
 router.post("/staff", staffValidation, createStaff);
 router.put("/staff/:id", staffValidation, updateStaff);
 router.delete("/staff/:id", deleteStaff);
+router.post("/staff/bulk-import", bulkImportStaff);
+router.post("/staff/bulk-delete", bulkDeleteStaff);
+router.patch("/staff/bulk-status", bulkSetStaffStatus);
 
 // Inventory
 const {

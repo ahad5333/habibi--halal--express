@@ -136,6 +136,9 @@ export const adminAPI = {
   // Staff
   getStaff:    () => req('/api/admin/staff'),
   createStaff: (body) => req('/api/admin/staff', { method: 'POST', body: JSON.stringify(body) }),
+  bulkImportStaff: (staff) => req('/api/admin/staff/bulk-import', { method: 'POST', body: JSON.stringify({ staff }) }),
+  bulkDeleteStaff: (ids)   => req('/api/admin/staff/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  bulkSetStaffStatus: (ids, is_active) => req('/api/admin/staff/bulk-status', { method: 'PATCH', body: JSON.stringify({ ids, is_active }) }),
   updateStaff: (id, body) => req(`/api/admin/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteStaff: (id) => req(`/api/admin/staff/${id}`, { method: 'DELETE' }),
 

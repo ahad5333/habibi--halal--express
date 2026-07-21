@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound, Upload, FileSpreadsheet, UserCheck, UserX } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
@@ -14,6 +14,56 @@ const ROLE_COLOR = {
 
 const BLANK = { name: '', email: '', phone: '', role: 'kitchen', shift_start: '', shift_end: '', notes: '', is_active: true };
 
+// Minimal CSV parser — handles quoted fields. Matches name/phone/email/role
+// headers case-insensitively; falls back to column order if there's no
+// recognizable header row. Unrecognized/blank role defaults to 'kitchen'
+// (applied server-side too, so this is just for an accurate preview).
+function parseStaffCsv(text) {
+  const parseLine = (line) => {
+    const cells = [];
+    let cur = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQuotes) {
+        if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { cur += c; }
+      } else if (c === '"') { inQuotes = true; }
+      else if (c === ',') { cells.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    cells.push(cur);
+    return cells.map(c => c.trim());
+  };
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length === 0) return [];
+
+  let rows = lines.map(parseLine);
+  let nameIdx = 0, phoneIdx = 1, emailIdx = 2, roleIdx = 3;
+  const header = rows[0].map(h => h.toLowerCase());
+  const hasHeader = header.some(h => ['name', 'phone', 'email', 'role'].includes(h));
+  if (hasHeader) {
+    const ni = header.indexOf('name'), pi = header.indexOf('phone');
+    const ei = header.indexOf('email'), ri = header.indexOf('role');
+    if (ni !== -1) nameIdx = ni;
+    if (pi !== -1) phoneIdx = pi;
+    if (ei !== -1) emailIdx = ei;
+    if (ri !== -1) roleIdx = ri;
+    rows = rows.slice(1);
+  }
+
+  return rows.map(cells => {
+    const role = (cells[roleIdx] || '').toLowerCase().trim();
+    return {
+      name:  cells[nameIdx]  || '',
+      phone: cells[phoneIdx] || '',
+      email: cells[emailIdx] || '',
+      role:  ROLES.includes(role) ? role : 'kitchen',
+    };
+  }).filter(r => r.name || r.phone);
+}
+
 export default function Staff() {
   const [staff, setStaff]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -25,6 +75,19 @@ export default function Staff() {
   const [pinTarget, setPinTarget]   = useState(null); // driver to reset PIN for
   const [newPin, setNewPin]         = useState('');
   const [pinSaving, setPinSaving]   = useState(false);
+
+  // Bulk CSV import
+  const [bulkModal, setBulkModal]         = useState(false);
+  const [bulkRows, setBulkRows]           = useState([]);
+  const [bulkFileName, setBulkFileName]   = useState('');
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkResult, setBulkResult]       = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Bulk select / remove / activate-deactivate
+  const [selected, setSelected]           = useState(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const load = async () => {
     try {
@@ -86,6 +149,80 @@ export default function Staff() {
     }
   };
 
+  const openBulk = () => {
+    setBulkRows([]); setBulkFileName(''); setBulkResult(null);
+    setBulkModal(true);
+  };
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setBulkRows(parseStaffCsv(String(reader.result || '')));
+    reader.readAsText(file);
+  };
+
+  const runBulkImport = async () => {
+    const valid = bulkRows.filter(r => r.name.trim());
+    if (valid.length === 0) return;
+    setBulkImporting(true);
+    try {
+      const result = await adminAPI.bulkImportStaff(valid);
+      setBulkResult(result);
+      setBulkRows([]);
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (rows) => {
+    setSelected(prev => {
+      const allSelected = rows.every(r => prev.has(r.id));
+      const next = new Set(prev);
+      rows.forEach(r => allSelected ? next.delete(r.id) : next.add(r.id));
+      return next;
+    });
+  };
+
+  const runBulkDelete = async () => {
+    setBulkActionLoading(true);
+    try {
+      await adminAPI.bulkDeleteStaff([...selected]);
+      setSelected(new Set());
+      setBulkDeleteConfirm(false);
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const runBulkStatus = async (is_active) => {
+    setBulkActionLoading(true);
+    try {
+      await adminAPI.bulkSetStaffStatus([...selected], is_active);
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const active  = staff.filter(s => s.is_active);
   const inactive = staff.filter(s => !s.is_active);
 
@@ -96,12 +233,40 @@ export default function Staff() {
           <h1 className="page-title">Staff Management</h1>
           <p className="page-sub">{staff.length} team members</p>
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>
-          <Plus size={15} /> Add Staff
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={openBulk}>
+            <Upload size={15} /> Bulk Import
+          </button>
+          <button className="btn btn-primary" onClick={openAdd}>
+            <Plus size={15} /> Add Staff
+          </button>
+        </div>
       </div>
 
       {err && <p className="text-error" style={{marginBottom:'1rem'}}>{err}</p>}
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="card" style={{
+          marginBottom: '1rem', padding: '0.75rem 1.25rem', display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
+          borderLeft: '3px solid var(--color-primary)',
+        }}>
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{selected.size} selected</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-secondary btn-sm" disabled={bulkActionLoading} onClick={() => runBulkStatus(true)}>
+              <UserCheck size={13} /> Activate
+            </button>
+            <button className="btn btn-secondary btn-sm" disabled={bulkActionLoading} onClick={() => runBulkStatus(false)}>
+              <UserX size={13} /> Deactivate
+            </button>
+            <button className="btn btn-danger btn-sm" disabled={bulkActionLoading} onClick={() => setBulkDeleteConfirm(true)}>
+              <Trash2 size={13} /> Remove
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{display:'flex',justifyContent:'center',padding:'4rem'}}>
@@ -134,12 +299,20 @@ export default function Staff() {
                 <table className="table">
                   <thead>
                     <tr>
+                      <th style={{width: 32}}>
+                        <input
+                          type="checkbox"
+                          checked={active.length > 0 && active.every(s => selected.has(s.id))}
+                          onChange={() => toggleSelectAll(active)}
+                        />
+                      </th>
                       <th>Name</th><th>Role</th><th>Contact</th><th>Shift</th><th>Notes</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {active.map(s => (
                       <tr key={s.id}>
+                        <td><input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id)} /></td>
                         <td style={{fontWeight:600}}>{s.name}</td>
                         <td><span className={`badge ${ROLE_COLOR[s.role] || 'badge-muted'}`}>{s.role}</span></td>
                         <td>
@@ -198,10 +371,22 @@ export default function Staff() {
               <div className="staff-section-hdr text-muted">Inactive / Former Staff ({inactive.length})</div>
               <div className="table-wrap">
                 <table className="table">
-                  <thead><tr><th>Name</th><th>Role</th><th>Contact</th><th>Actions</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th style={{width: 32}}>
+                        <input
+                          type="checkbox"
+                          checked={inactive.length > 0 && inactive.every(s => selected.has(s.id))}
+                          onChange={() => toggleSelectAll(inactive)}
+                        />
+                      </th>
+                      <th>Name</th><th>Role</th><th>Contact</th><th>Actions</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {inactive.map(s => (
                       <tr key={s.id} style={{opacity:0.6}}>
+                        <td><input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id)} /></td>
                         <td>{s.name}</td>
                         <td><span className={`badge ${ROLE_COLOR[s.role] || 'badge-muted'}`}>{s.role}</span></td>
                         <td>{s.email || '—'}</td>
@@ -328,6 +513,127 @@ export default function Staff() {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setDelete(null)}>Cancel</button>
               <button className="btn btn-danger" onClick={remove}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm */}
+      {bulkDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => setBulkDeleteConfirm(false)}>
+          <div className="modal" style={{maxWidth:400}} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Remove {selected.size} Staff Member{selected.size !== 1 ? 's' : ''}</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setBulkDeleteConfirm(false)}><X size={16} /></button>
+            </div>
+            <p style={{marginBottom:'1.5rem'}}>
+              Remove {selected.size} selected staff member{selected.size !== 1 ? 's' : ''}? This cannot be undone.
+            </p>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>Cancel</button>
+              <button className="btn btn-danger" onClick={runBulkDelete} disabled={bulkActionLoading}>
+                {bulkActionLoading ? <div className="spinner" /> : 'Remove All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {bulkModal && (
+        <div className="modal-overlay" onClick={() => setBulkModal(false)}>
+          <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Bulk Import Staff</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setBulkModal(false)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              {bulkResult ? (
+                <div>
+                  <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                    ✓ {bulkResult.created_count} staff member{bulkResult.created_count !== 1 ? 's' : ''} added
+                  </p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>
+                    Any delivery role with a phone number was texted a PIN setup link automatically.
+                  </p>
+                  {bulkResult.skipped_count > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <p style={{ fontWeight: 600, color: 'var(--color-danger, #e5484d)', marginBottom: '0.4rem' }}>
+                        {bulkResult.skipped_count} skipped
+                      </p>
+                      <div className="table-wrap">
+                        <table className="table">
+                          <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Reason</th></tr></thead>
+                          <tbody>
+                            {bulkResult.skipped.map((s, i) => (
+                              <tr key={i}>
+                                <td>{s.name || '—'}</td>
+                                <td>{s.phone || '—'}</td>
+                                <td>{s.role || '—'}</td>
+                                <td className="text-muted">{s.reason}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                    Upload a CSV with <code>name</code>, <code>phone</code>, <code>email</code>, and <code>role</code> columns
+                    (header row optional — role defaults to "kitchen" if missing or unrecognized). Rows with role
+                    "delivery" and a phone are immediately texted a link to set their own PIN, same as adding one at a time.
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    style={{ display: 'none' }}
+                    onChange={handleCsvFile}
+                  />
+                  <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                    <FileSpreadsheet size={14} /> {bulkFileName || 'Choose CSV file…'}
+                  </button>
+
+                  {bulkRows.length > 0 && (
+                    <div className="table-wrap" style={{ marginTop: '1rem', maxHeight: 260, overflowY: 'auto' }}>
+                      <table className="table">
+                        <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th></tr></thead>
+                        <tbody>
+                          {bulkRows.map((r, i) => (
+                            <tr key={i} style={!r.name.trim() ? { opacity: 0.5 } : undefined}>
+                              <td>{r.name || <em>missing name</em>}</td>
+                              <td>{r.phone || '—'}</td>
+                              <td>{r.email || '—'}</td>
+                              <td><span className={`badge ${ROLE_COLOR[r.role] || 'badge-muted'}`}>{r.role}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              {bulkResult ? (
+                <button className="btn btn-primary" onClick={() => setBulkModal(false)}>Done</button>
+              ) : (
+                <>
+                  <button className="btn btn-secondary" onClick={() => setBulkModal(false)}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={runBulkImport}
+                    disabled={bulkImporting || bulkRows.filter(r => r.name.trim()).length === 0}
+                  >
+                    {bulkImporting
+                      ? <div className="spinner" />
+                      : <><Check size={14} /> Import {bulkRows.filter(r => r.name.trim()).length || ''} Staff</>}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
