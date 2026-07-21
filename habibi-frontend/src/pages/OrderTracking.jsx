@@ -379,9 +379,21 @@ export default function OrderTracking() {
     });
 
     // Support chat — staff replies arrive here live (customer's own sent
-    // messages also echo back through this since io.to(room) includes the sender)
+    // messages also echo back through this since io.to(room) includes the
+    // sender, but the sender's own copy is already shown optimistically by
+    // handleSendChatMessage — so reconcile with that instead of duplicating)
     socket.on('receive_message', (msg) => {
-      setChatMessages(prev => [...prev, msg]);
+      setChatMessages(prev => {
+        const optimisticIdx = prev.findIndex(m =>
+          String(m.id).startsWith('local-') && m.sender === msg.sender && m.text === msg.text
+        );
+        if (optimisticIdx !== -1) {
+          const next = [...prev];
+          next[optimisticIdx] = msg;
+          return next;
+        }
+        return [...prev, msg];
+      });
       if (msg.sender === 'admin') {
         setHasUnreadReply(true);
         notifyLiveUpdate();
@@ -614,11 +626,16 @@ export default function OrderTracking() {
     const text = chatInput.trim();
     if (!text || !socketRef.current || chatSending) return;
     setChatSending(true);
-    socketRef.current.emit('send_message', {
-      order_id: orderNum,
-      text,
-      timestamp: new Date().toISOString(),
-    });
+
+    // Show it immediately — don't wait on the socket round-trip. Any
+    // connection hiccup around send time would otherwise leave the
+    // customer's own message invisible until they reload the page, even
+    // though it saved server-side. The receive_message handler reconciles
+    // this with the server's echo once it arrives (matched by id prefix).
+    const timestamp = new Date().toISOString();
+    setChatMessages(prev => [...prev, { id: `local-${Date.now()}`, sender: 'customer', text, timestamp }]);
+
+    socketRef.current.emit('send_message', { order_id: orderNum, text, timestamp });
     setChatInput('');
     setTimeout(() => setChatSending(false), 300);
   };
