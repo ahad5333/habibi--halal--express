@@ -1086,22 +1086,19 @@ const seedDefaults = async () => {
   // Seed locations
   const locCount = await pool.query("SELECT COUNT(*) FROM locations");
   if (parseInt(locCount.rows[0].count) === 0) {
+    // Only 3 real locations — keep in sync with production by hand if it ever changes.
     await pool.query(`
       INSERT INTO locations (title, brief_address, exact_address, phone_number, working_days_hours, is_active, preference_level, delivery_radius_miles, latitude, longitude, image_url) VALUES
-        ('Bedford Park & Jerome Ave',      'Bronx, NY 10458', '204 E Mosholu Pkwy S, Bronx, NY 10458',           '(718) 367-7878', 'Open 24 Hours · 365 Days a Year', TRUE, 5, 5.0, 40.8726, -73.8901, '/images/locations/bedford-park.jpg'),
-        ('Lehman College Area',            'Bronx, NY 10468', '250 Bedford Park Blvd W, Bronx, NY 10468',        '(718) 367-7879', 'Mon–Sun: 7AM – 11PM',             TRUE, 4, 4.0, 40.8731, -73.8967, '/images/hero_dining_ambiance.jpg'),
-        ('Bronx High School of Science',   'Bronx, NY 10468', '75 W 205th St, Bronx, NY 10468',                  '(718) 367-7880', 'Mon–Fri: 6AM – 10PM',             TRUE, 3, 4.0, 40.8744, -73.8989, '/images/chef-plating.jpg'),
-        ('Kingsbridge Road & Jerome Ave',  'Bronx, NY 10458', '3521 Jerome Ave, Bronx, NY 10467',                '(718) 367-7881', 'Mon–Sun: 7AM – 12AM',             TRUE, 2, 4.5, 40.8785, -73.8925, '/images/locations/kings-bridge.jpg'),
-        ('White Plains Road',              'Bronx, NY 10462', '1892 White Plains Rd, Bronx, NY 10462',           '(718) 367-7882', 'Mon–Sun: 8AM – 11PM',             TRUE, 1, 4.0, 40.8401, -73.8593, '/images/locations/white-plains.jpg')
+        ('Bedford Park & Jerome Ave', 'Bronx, NY 10458', '204 E Mosholu Pkwy S, Bronx, NY 10458', '(718) 367-7878', 'Open 24 Hours · 365 Days a Year', TRUE, 5, 5.0, 40.8726,    -73.8901,    '/images/locations/bedford-park.webp'),
+        ('Kingsbridge Road',          'Bronx, NY 10468', '2 E Kingsbridge Rd, Bronx, NY 10468',    '(718) 367-7879', 'Mon–Sun: 7AM – 11PM',             TRUE, 4, 4.0, 40.8672738, -73.8972187, '/images/locations/kings-bridge.webp'),
+        ('White Plains Road',         'Bronx, NY 10466', '3971 White Plains Rd, Bronx, NY 10466',  '(718) 367-7880', 'Mon–Fri: 6AM – 10PM',             TRUE, 3, 4.0, 40.887949,  -73.860493,  '/images/locations/white-plains.webp')
     `);
     console.log("✅ Default locations seeded");
   } else {
     // Backfill image_url for existing rows that were seeded without it
-    await pool.query(`UPDATE locations SET image_url='/images/locations/bedford-park.jpg'  WHERE LOWER(title) LIKE '%bedford%'    AND (image_url IS NULL OR image_url='')`);
-    await pool.query(`UPDATE locations SET image_url='/images/locations/kings-bridge.jpg'  WHERE LOWER(title) LIKE '%kingsbridge%' AND (image_url IS NULL OR image_url='')`);
-    await pool.query(`UPDATE locations SET image_url='/images/locations/white-plains.jpg'  WHERE LOWER(title) LIKE '%white plains%' AND (image_url IS NULL OR image_url='')`);
-    await pool.query(`UPDATE locations SET image_url='/images/hero_dining_ambiance.jpg'    WHERE LOWER(title) LIKE '%lehman%'      AND (image_url IS NULL OR image_url='')`);
-    await pool.query(`UPDATE locations SET image_url='/images/chef-plating.jpg'            WHERE LOWER(title) LIKE '%science%'     AND (image_url IS NULL OR image_url='')`);
+    await pool.query(`UPDATE locations SET image_url='/images/locations/bedford-park.webp'  WHERE LOWER(title) LIKE '%bedford%'     AND (image_url IS NULL OR image_url='')`);
+    await pool.query(`UPDATE locations SET image_url='/images/locations/kings-bridge.webp'  WHERE LOWER(title) LIKE '%kingsbridge%' AND (image_url IS NULL OR image_url='')`);
+    await pool.query(`UPDATE locations SET image_url='/images/locations/white-plains.webp'  WHERE LOWER(title) LIKE '%white plains%' AND (image_url IS NULL OR image_url='')`);
   }
 
   // ── Referrals ─────────────────────────────────────────────────────

@@ -13,37 +13,26 @@ const BRONX_LOCATIONS = [
     preference_level: 5
   },
   {
-    title: 'Lehman College Area',
-    brief_address: '250 Bedford Park Blvd W, Bronx',
-    exact_address: '250 Bedford Park Blvd W, Bronx, NY 10468',
+    title: 'Kingsbridge Road',
+    brief_address: '2 E Kingsbridge Rd, Bronx',
+    exact_address: '2 E Kingsbridge Rd, Bronx, NY 10468',
     phone_number: '(718) 367-7879',
     working_days_hours: 'Mon – Sun: 7AM – 11PM',
-    latitude: 40.8718,
-    longitude: -73.8999,
+    latitude: 40.8672738,
+    longitude: -73.8972187,
     delivery_radius_miles: 4,
     preference_level: 4
   },
   {
-    title: 'Bronx High School of Science',
-    brief_address: '75 W 205th St, Bronx',
-    exact_address: '75 W 205th St, Bronx, NY 10468',
+    title: 'White Plains Road',
+    brief_address: '3971 White Plains Rd, Bronx',
+    exact_address: '3971 White Plains Rd, Bronx, NY 10466',
     phone_number: '(718) 367-7880',
     working_days_hours: 'Mon – Fri: 6AM – 10PM',
-    latitude: 40.8782,
-    longitude: -73.8912,
+    latitude: 40.887949,
+    longitude: -73.860493,
     delivery_radius_miles: 4,
     preference_level: 3
-  },
-  {
-    title: 'Kingsbridge Road & Jerome Ave',
-    brief_address: '3521 Jerome Ave, Bronx',
-    exact_address: '3521 Jerome Ave, Bronx, NY 10467',
-    phone_number: '(718) 367-7881',
-    working_days_hours: 'Mon – Sun: 7AM – 12AM',
-    latitude: 40.8839,
-    longitude: -73.8824,
-    delivery_radius_miles: 4,
-    preference_level: 2
   }
 ];
 

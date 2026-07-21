@@ -821,7 +821,7 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/locations/bedford-park.jpg" alt="Bedford Park" className="location-img" />
+                <img src="/images/locations/bedford-park.webp" alt="Bedford Park" className="location-img" />
                 <span className="location-badge outline">OPEN 24/7</span>
               </div>
               <div className="location-info">
@@ -834,12 +834,12 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/locations/kings-bridge.jpg" alt="Lehman College Area" className="location-img" />
+                <img src="/images/locations/kings-bridge.webp" alt="Kingsbridge Road" className="location-img" />
                 <span className="location-badge outline">NOW OPEN</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">Lehman College Area</h3>
-                <p className="location-address">250 Bedford Park Blvd W, Bronx, NY 10468</p>
+                <h3 className="location-title">Kingsbridge Road</h3>
+                <p className="location-address">2 E Kingsbridge Rd, Bronx, NY 10468</p>
                 <p className="location-hours">Mon–Sun: 7AM – 11PM</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
@@ -847,12 +847,12 @@ const Home = () => {
 
             <div className="location-card">
               <div className="location-img-wrapper">
-                <img src="/images/locations/white-plains.jpg" alt="Bronx Science Area" className="location-img" />
+                <img src="/images/locations/white-plains.webp" alt="White Plains Road" className="location-img" />
                 <span className="location-badge outline">NOW OPEN</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">Bronx Science Area</h3>
-                <p className="location-address">75 W 205th St, Bronx, NY 10468</p>
+                <h3 className="location-title">White Plains Road</h3>
+                <p className="location-address">3971 White Plains Rd, Bronx, NY 10466</p>
                 <p className="location-hours">Mon–Fri: 6AM – 10PM</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>

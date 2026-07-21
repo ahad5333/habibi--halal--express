@@ -59,8 +59,8 @@ const LEFT_ITEMS = [
     panel: { bg: 'linear-gradient(160deg,#faf5ff 0%,#e9d5ff 100%)', emoji: '📍', caption: 'Find Your Nearest Location' },
     sub: [
       { label: 'Bedford Park & Jerome Ave', path: '/locations#bedford' },
-      { label: 'Lehman College', path: '/locations#lehman' },
-      { label: 'Bronx Science', path: '/locations#bronx-science' },
+      { label: 'Kingsbridge Road', path: '/locations#kingsbridge' },
+      { label: 'White Plains Road', path: '/locations#white-plains' },
     ],
   },
 ];

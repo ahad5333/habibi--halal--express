@@ -22,7 +22,7 @@ const MILESTONES = [
   {
     year: '2022',
     title: 'Second Location Opens',
-    desc: 'The demand from the Lehman College area had been building for years. We listened. Our second location brought Habibi closer to thousands more Bronx residents — students, families, and everyone in between.',
+    desc: 'The demand from the Kingsbridge area had been building for years. We listened. Our second location brought Habibi closer to thousands more Bronx residents — students, families, and everyone in between.',
   },
   {
     year: '2023',
@@ -32,7 +32,7 @@ const MILESTONES = [
   {
     year: '2024',
     title: 'Three Locations Strong',
-    desc: 'The Bronx Science area gets its own Habibi. Three locations across the borough, one uncompromising standard. More people than ever can access the food they love without travelling across the Bronx.',
+    desc: 'The White Plains Road corridor gets its own Habibi. Three locations across the borough, one uncompromising standard. More people than ever can access the food they love without travelling across the Bronx.',
   },
 ];
 

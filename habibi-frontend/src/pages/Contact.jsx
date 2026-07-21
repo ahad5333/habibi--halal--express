@@ -100,7 +100,7 @@ const FORM_TYPES = [
 ];
 
 const LOCATIONS = [
-  'Bedford Park Blvd', 'Lehman College Area', 'Bronx Science Area', 'All Locations',
+  'Bedford Park & Jerome Ave', 'Kingsbridge Road', 'White Plains Road', 'All Locations',
 ];
 
 const PARTNER_TYPES = [

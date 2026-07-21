@@ -11,8 +11,6 @@ const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday',
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
   if (t.includes('bedford'))                                     return '/images/locations/bedford-park.webp';
-  if (t.includes('lehman'))                                      return '/images/locations/lehman.webp';
-  if (t.includes('bronx') || t.includes('science'))             return '/images/locations/bronx-science.webp';
   if (t.includes('kingsbridge') || t.includes('king'))          return '/images/locations/kings-bridge.webp';
   if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.webp';
   return null; // no local image — will use map embed
@@ -23,21 +21,17 @@ const sanitizeTitle = (title) => (title || '').replace(/\s+area\b/gi, '').trim()
 
 const getShortTitle = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                            return 'Bedford Park';
-  if (t.includes('lehman'))                             return 'Lehman';
-  if (t.includes('bronx') || t.includes('science'))    return 'Bronx Science';
-  if (t.includes('kingsbridge'))                        return 'Kingsbridge';
-  if (t.includes('white plains'))                       return 'White Plains';
+  if (t.includes('bedford'))      return 'Bedford Park';
+  if (t.includes('kingsbridge'))  return 'Kingsbridge';
+  if (t.includes('white plains')) return 'White Plains';
   return (title || '').split(/\s+/).slice(0, 3).join(' ');
 };
 
 const getNeighborhood = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))   return 'Jerome Ave · Bronx';
-  if (t.includes('lehman'))    return 'Bedford Park · Bronx';
-  if (t.includes('bronx') || t.includes('science')) return 'W 205th St · Bronx';
-  if (t.includes('kingsbridge')) return 'Kingsbridge · Bronx';
-  if (t.includes('white plains')) return 'White Plains · NY';
+  if (t.includes('bedford'))      return 'Jerome Ave · Bronx';
+  if (t.includes('kingsbridge'))  return 'Kingsbridge · Bronx';
+  if (t.includes('white plains')) return 'White Plains · Bronx';
   return 'Bronx, New York';
 };
 
@@ -133,14 +127,14 @@ const parseHoursTable = (hoursStr) => {
 
 const getAnchorId = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                          return 'bedford';
-  if (t.includes('lehman'))                           return 'lehman';
-  if (t.includes('bronx') || t.includes('science'))  return 'bronx-science';
-  if (t.includes('kingsbridge'))                      return 'kingsbridge';
-  if (t.includes('white plains'))                     return 'white-plains';
+  if (t.includes('bedford'))          return 'bedford';
+  if (t.includes('kingsbridge'))      return 'kingsbridge';
+  if (t.includes('white plains'))     return 'white-plains';
   return t.replace(/\W+/g, '-');
 };
 
+// Used only if the live /api/locations call fails or returns empty —
+// must be kept in sync with the real `locations` table by hand.
 const FALLBACK_LOCATIONS = [
   {
     id: 1, title: 'Bedford Park & Jerome Ave',
@@ -151,20 +145,20 @@ const FALLBACK_LOCATIONS = [
     latitude: 40.8726, longitude: -73.8901,
   },
   {
-    id: 2, title: 'Lehman College',
-    brief_address: '250 Bedford Park Blvd W, Bronx, NY 10468',
+    id: 2, title: 'Kingsbridge Road',
+    brief_address: '2 E Kingsbridge Rd, Bronx, NY 10468',
     phone_number: '(718) 367-7879',
     working_days_hours: 'Mon – Sun: 7AM – 11PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 4,
-    latitude: 40.8731, longitude: -73.8967,
+    latitude: 40.8672738, longitude: -73.8972187,
   },
   {
-    id: 3, title: 'Bronx High School of Science',
-    brief_address: '75 W 205th St, Bronx, NY 10468',
+    id: 3, title: 'White Plains Road',
+    brief_address: '3971 White Plains Rd, Bronx, NY 10466',
     phone_number: '(718) 367-7880',
     working_days_hours: 'Mon – Fri: 6AM – 10PM',
     delivery_radius_miles: 4, is_active: true, preference_level: 3,
-    latitude: 40.8744, longitude: -73.8989,
+    latitude: 40.887949, longitude: -73.860493,
   },
 ];
 
@@ -453,8 +447,8 @@ const Locations = () => {
     <div className="locations-page page-watermark">
       <SEO
         title="Locations | 3 Bronx Outlets & Tri-State Delivery"
-        description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Lehman College, and Bronx Science."
-        keywords="halal food nyc, locations habibi halal, bedford park restaurant, lehman college food, bronx halal"
+        description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Kingsbridge Road, and White Plains Road."
+        keywords="halal food nyc, locations habibi halal, bedford park restaurant, kingsbridge road food, white plains road bronx, bronx halal"
         schema={locations.length > 0 ? locationsSchema : null}
       />
 
