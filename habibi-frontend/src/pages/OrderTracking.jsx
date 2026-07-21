@@ -529,8 +529,12 @@ export default function OrderTracking() {
   }, [currentStep]); // eslint-disable-line
 
   // ── Auto-scroll chat to latest message ──
+  // block/inline: 'nearest' keeps this confined to the chat panel's own
+  // scroll container — without it, scrollIntoView also scrolls the whole
+  // page to center the chat card in the viewport, which is jarring and not
+  // what "scroll the message list" should do.
   useEffect(() => {
-    if (showChatPanel) chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (showChatPanel) chatBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [chatMessages, showChatPanel]);
 
   const fmtEta = (s) => {
