@@ -124,6 +124,11 @@
   border-radius: 20px;
   letter-spacing: 0.02em;
 }
+.ot-eta-chip-late {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.35);
+  color: #f59e0b;
+}
 
 /* ── Pill tracker (Domino's-style) ───────────────────────────── */
 .ot-timeline-bar {
@@ -530,6 +535,29 @@
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--color-text-muted);
+}
+
+.ot-eta-late {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 1rem;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 12px;
+  text-align: center;
+  max-width: 320px;
+}
+.ot-eta-late-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+.ot-eta-late-sub {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .ot-delivered-actions {

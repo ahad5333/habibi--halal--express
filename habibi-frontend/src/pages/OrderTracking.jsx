@@ -129,6 +129,7 @@ export default function OrderTracking() {
   const [currentStep, setCurrentStep]   = useState(1);
   const [etaSeconds, setEtaSeconds]     = useState(null);
   const [etaFromGPS, setEtaFromGPS]     = useState(null); // recalculated from live GPS
+  const [runningLate, setRunningLate]   = useState(false); // ETA hit 0 and stayed there
   const [showItems, setShowItems]       = useState(false);
   const [driverProgress, setDriverProgress] = useState(0);
   const [liveConnected, setLiveConnected]   = useState(false);
@@ -238,6 +239,18 @@ export default function OrderTracking() {
     timerRef.current = setInterval(() => setEtaSeconds(s => Math.max(0, s - 1)), 1000);
     return () => clearInterval(timerRef.current);
   }, [currentStep, etaSeconds !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── "Running late" — ETA hit 0 and the order still isn't delivered.
+  //    Grace period avoids flashing this the instant the timer naturally
+  //    reaches zero as the order is genuinely about to arrive. ────────
+  useEffect(() => {
+    if (currentStep >= 6 || etaSeconds !== 0) {
+      setRunningLate(false);
+      return;
+    }
+    const t = setTimeout(() => setRunningLate(true), 60000);
+    return () => clearTimeout(t);
+  }, [etaSeconds, currentStep]);
 
   // ── Socket.IO ────────────────────────────────────────────
   useEffect(() => {
@@ -486,16 +499,18 @@ export default function OrderTracking() {
                   Placed {order.placed_at ? new Date(order.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                 </span>
               </div>
-              <div className="ot-eta-chip">
+              <div className={`ot-eta-chip${runningLate ? ' ot-eta-chip-late' : ''}`}>
                 <Clock size={13} />
                 <span>
                   {isDelivered
                     ? 'Delivered ✓'
-                    : etaFromGPS != null
-                      ? `~${etaFromGPS} min away`
-                      : etaSeconds != null
-                        ? `ETA ${fmtEta(etaSeconds)}`
-                        : 'Estimating…'}
+                    : runningLate
+                      ? 'Running a bit behind'
+                      : etaFromGPS != null
+                        ? `~${etaFromGPS} min away`
+                        : etaSeconds != null
+                          ? `ETA ${fmtEta(etaSeconds)}`
+                          : 'Estimating…'}
                 </span>
               </div>
             </div>
@@ -601,12 +616,21 @@ export default function OrderTracking() {
 
                   {!isDelivered && (
                     <div className="ot-eta-block">
-                      <span className="ot-eta-num">
-                        {etaFromGPS != null ? `~${etaFromGPS}` : etaSeconds != null ? fmtEta(etaSeconds) : '—'}
-                      </span>
-                      <span className="ot-eta-label">
-                        {etaFromGPS != null ? 'minutes away · GPS live' : 'estimated arrival'}
-                      </span>
+                      {runningLate ? (
+                        <div className="ot-eta-late">
+                          <span className="ot-eta-late-title">Running a bit behind schedule</span>
+                          <span className="ot-eta-late-sub">Thanks for your patience — your order is still being taken care of.</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="ot-eta-num">
+                            {etaFromGPS != null ? `~${etaFromGPS}` : etaSeconds != null ? fmtEta(etaSeconds) : '—'}
+                          </span>
+                          <span className="ot-eta-label">
+                            {etaFromGPS != null ? 'minutes away · GPS live' : 'estimated arrival'}
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
 
