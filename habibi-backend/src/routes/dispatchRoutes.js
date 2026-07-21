@@ -41,6 +41,7 @@ const {
   getAssignments,
   assignDriver,
   broadcastOrderToDrivers,
+  getAvailableOrders,
   claimOrder,
   respondToAssignment,
   getDriverAssignment,
@@ -91,7 +92,7 @@ function driverOrAdmin(req, res, next) {
   const driverToken = req.headers['x-driver-token'] || '';
   const driverId    = req.params.driver_id || req.params.assignment_id
                       ? (req.params.driver_id || req.body?.driver_id || '')
-                      : (req.body?.driver_id || '');
+                      : (req.body?.driver_id || req.query?.driver_id || '');
   const salt        = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
   if (driverId && driverToken) {
     try {
@@ -134,6 +135,7 @@ router.post('/driver/send-setup-sms',  protect, admin, driverSendSetupSms);
 router.post('/driver/fcm-token',      saveDriverFcmToken);
 
 // ── Driver-facing routes (HMAC or JWT) ────────────────────────────
+router.get   ('/orders/available',                 driverOrAdmin,              getAvailableOrders);
 router.post  ('/assignments/claim',                driverOrAdmin,              claimOrder);
 router.get   ('/driver/:driver_id',                driverOrAdmin,              getDriverAssignment);
 router.patch ('/assignments/:assignment_id/gps',   gpsLimiter, driverOrAdmin,  updateDriverGPS);

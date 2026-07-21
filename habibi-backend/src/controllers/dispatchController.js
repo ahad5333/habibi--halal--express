@@ -279,6 +279,46 @@ const broadcastOrderToDrivers = async (req, res) => {
   }
 };
 
+// ── Driver: list currently-unclaimed accepted delivery orders ───────
+// Safety net for the live 'new_order_broadcast' socket event — a driver's
+// browser tab can miss that broadcast entirely (backgrounded/locked screen,
+// brief reconnect gap) with no way to know it happened. The driver app polls
+// this on reconnect, on regaining focus, and periodically while online, so a
+// missed broadcast still surfaces within seconds instead of never.
+const getAvailableOrders = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT go.order_number, go.customer_name, go.delivery_address, go.delivery_city,
+              go.total, go.tip, go.items, go.placed_at
+         FROM guest_orders go
+        WHERE go.order_status = 'accepted'
+          AND go.delivery_method = 'delivery'
+          AND NOT EXISTS (
+            SELECT 1 FROM delivery_assignments da
+             WHERE da.order_number = go.order_number AND da.status != 'cancelled'
+          )
+        ORDER BY go.placed_at ASC
+        LIMIT 10`
+    );
+    const orders = result.rows.map(o => {
+      let itemCount = 0;
+      try { itemCount = (typeof o.items === 'string' ? JSON.parse(o.items) : o.items || []).length; } catch (_) {}
+      return {
+        order_number:     o.order_number,
+        customer_name:    o.customer_name,
+        delivery_address: [o.delivery_address, o.delivery_city].filter(Boolean).join(', '),
+        total:            parseFloat(o.total || 0),
+        tip:              parseFloat(o.tip || 0),
+        item_count:       itemCount,
+        broadcast_at:     o.placed_at,
+      };
+    });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Driver: claim a broadcast order (first-accept-wins) ────────────
 const claimOrder = async (req, res) => {
   const { order_number, driver_id, driver_name } = req.body;
@@ -1158,6 +1198,7 @@ module.exports = {
   getAssignments,
   assignDriver,
   broadcastOrderToDrivers,
+  getAvailableOrders,
   claimOrder,
   respondToAssignment,
   getDriverAssignment,

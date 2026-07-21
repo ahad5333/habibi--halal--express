@@ -219,10 +219,18 @@ export default function DriverView() {
   const prevAssignmentRef    = useRef(null);
   const deliverySuccessRef   = useRef(false);
   const installPromptRef     = useRef(null);
+  const onDutyRef            = useRef(false);
+  const broadcastOrderRef    = useRef(null);
+  const assignmentRef        = useRef(null);
+  const queuedOrderRef       = useRef(null);
 
   // Keep refs in sync
   useEffect(() => { onBreakRef.current = onBreak; }, [onBreak]);
   useEffect(() => { deliverySuccessRef.current = showDeliverySuccess; }, [showDeliverySuccess]);
+  useEffect(() => { onDutyRef.current = onDuty; }, [onDuty]);
+  useEffect(() => { broadcastOrderRef.current = broadcastOrder; }, [broadcastOrder]);
+  useEffect(() => { assignmentRef.current = assignment; }, [assignment]);
+  useEffect(() => { queuedOrderRef.current = queuedOrder; }, [queuedOrder]);
 
   // Restore session from localStorage on mount (persists across PWA restarts)
   const handleLogout = () => {
@@ -392,6 +400,43 @@ export default function DriverView() {
       .catch(() => {});
   }, [assignment?.delivery_address, assignment?.delivery_city]);
 
+  // Shows the claim modal + bell + notification for a broadcast-shaped order.
+  // Shared by the live socket event and the missed-broadcast fallback below.
+  const presentBroadcastOrder = useCallback((data) => {
+    if (onBreakRef.current) return;
+    setBroadcastOrder(data);
+    setClaimCountdown(30);
+    setClaimResult(null);
+    playBell();
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification('🔔 New Delivery Order', {
+          body: `#${data.order_number} — ${data.delivery_address || ''}`,
+          icon: '/favicon.png',
+          tag:  'new-order',
+          requireInteraction: true,
+        });
+      } catch (_) {}
+    }
+  }, []);
+
+  // Safety net for 'new_order_broadcast' — a driver's tab can miss that
+  // live event entirely (backgrounded/locked screen, brief reconnect gap)
+  // with no way to know it happened. Called on socket reconnect, on the tab
+  // regaining focus, and on a periodic timer while online — so a missed
+  // broadcast still surfaces within seconds instead of requiring a reload.
+  const checkAvailableOrders = useCallback(async () => {
+    if (!driverId || !onDutyRef.current || onBreakRef.current || broadcastOrderRef.current) return;
+    try {
+      const orders = await apiFetch(`/api/dispatch/orders/available?driver_id=${driverId}`);
+      const next = (orders || []).find(o =>
+        o.order_number !== assignmentRef.current?.order_number &&
+        o.order_number !== queuedOrderRef.current?.order_number
+      );
+      if (next) presentBroadcastOrder(next);
+    } catch (_) {}
+  }, [driverId, apiFetch, presentBroadcastOrder]);
+
   useEffect(() => {
     if (!driverId) return;
     const socket = io(API_BASE, { transports: ['websocket', 'polling'], reconnectionAttempts: 10 });
@@ -401,28 +446,13 @@ export default function DriverView() {
       setSocketConnected(true);
       socket.emit('join_driver', driverId);
       socket.emit('join_drivers_online', { driver_id: driverId, hmac_token: token });
+      checkAvailableOrders();
     });
     socket.on('disconnect',    () => setSocketConnected(false));
     socket.on('connect_error', () => setSocketConnected(false));
     socket.on('assignment_created',       () => loadAssignment());
     socket.on('assignment_status_update', () => loadAssignment());
-    socket.on('new_order_broadcast', (data) => {
-      if (onBreakRef.current) return;
-      setBroadcastOrder(data);
-      setClaimCountdown(30);
-      setClaimResult(null);
-      playBell();
-      if (Notification.permission === 'granted') {
-        try {
-          new Notification('🔔 New Delivery Order', {
-            body: `#${data.order_number} — ${data.delivery_address || ''}`,
-            icon: '/favicon.png',
-            tag:  'new-order',
-            requireInteraction: true,
-          });
-        } catch (_) {}
-      }
-    });
+    socket.on('new_order_broadcast', presentBroadcastOrder);
 
     socket.on('dispatch_chat_reply', (msg) => {
       setChatMsgs(prev => [...prev, msg]);
@@ -434,7 +464,24 @@ export default function DriverView() {
     });
 
     return () => socket.disconnect();
-  }, [driverId, loadAssignment]);
+  }, [driverId, loadAssignment, checkAvailableOrders, presentBroadcastOrder]);
+
+  // Resync when the tab regains focus — catches a broadcast missed while
+  // the phone screen was locked or the app was backgrounded.
+  useEffect(() => {
+    if (!driverId) return;
+    const onVisible = () => { if (document.visibilityState === 'visible') checkAvailableOrders(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [driverId, checkAvailableOrders]);
+
+  // Belt-and-suspenders poll while online, on top of the socket + visibility
+  // resync above — closes the gap even if both miss a beat.
+  useEffect(() => {
+    if (!driverId || !onDuty || onBreak) return;
+    const interval = setInterval(checkAvailableOrders, 20000);
+    return () => clearInterval(interval);
+  }, [driverId, onDuty, onBreak, checkAvailableOrders]);
 
   const sendGPS = useCallback(async (lat, lng) => {
     if (!assignment?.id) return;
@@ -547,7 +594,9 @@ export default function DriverView() {
         body: JSON.stringify({ on_duty: true }),
       });
       setOnDuty(true);
+      onDutyRef.current = true; // update synchronously — checkAvailableOrders reads the ref, not state
       setShiftStartTime(new Date());
+      checkAvailableOrders(); // catch anything that was already waiting before we came online
     } catch (e) { setError(e.message); }
     setDutyLoading(false);
   };
