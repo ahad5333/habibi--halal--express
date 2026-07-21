@@ -158,7 +158,7 @@ async function geocodeAddress(addr) {
 export default function OrderTracking() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const urlOrder = params.get('order') || localStorage.getItem('last_order_number') || '';
 
   const [searchInput, setSearchInput]   = useState(urlOrder || '');
@@ -226,6 +226,13 @@ export default function OrderTracking() {
     if (!num) return;
     setLoading(true);
     setNotFound(false);
+    // Reset chat panel state — a different order means a different conversation;
+    // openChatPanel() will re-load it (instantly, via the remembered email) next open.
+    setShowChatPanel(false);
+    setChatEmailConfirmed(false);
+    setChatMessages([]);
+    setChatError('');
+    setHasUnreadReply(false);
     try {
       const data = await ordersAPI.track(num.trim().toUpperCase());
       setOrder(data);
@@ -554,20 +561,42 @@ export default function OrderTracking() {
   };
 
   // ── Support chat handlers ──
-  const handleChatEmailSubmit = async () => {
-    if (!chatEmail.trim()) { setChatError('Enter the email used for this order.'); return; }
+  // Loads history for a known email — used both for the manual "Continue"
+  // button and for auto-loading when we already know who's asking (logged-in
+  // user, or a guest who confirmed earlier and got remembered for this order).
+  const loadChatHistory = async (email) => {
     setChatLoading(true);
     setChatError('');
     try {
-      const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(chatEmail.trim())}`);
+      const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(email)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not load messages.');
       setChatMessages(data);
       setChatEmailConfirmed(true);
+      if (!isLoggedIn) localStorage.setItem(`chat_email_${orderNum}`, email);
     } catch (err) {
       setChatError(err.message || 'Could not load messages.');
     } finally {
       setChatLoading(false);
+    }
+  };
+
+  const handleChatEmailSubmit = () => {
+    if (!chatEmail.trim()) { setChatError('Enter the email used for this order.'); return; }
+    loadChatHistory(chatEmail.trim());
+  };
+
+  // Opening the panel: skip the email gate entirely if we already know who's
+  // asking, so returning to an existing conversation doesn't require typing
+  // the email again every time.
+  const openChatPanel = () => {
+    setShowChatPanel(true);
+    setHasUnreadReply(false);
+    if (chatEmailConfirmed || chatLoading) return;
+    const knownEmail = (isLoggedIn && user?.email) || localStorage.getItem(`chat_email_${orderNum}`);
+    if (knownEmail) {
+      setChatEmail(knownEmail);
+      loadChatHistory(knownEmail);
     }
   };
 
@@ -1032,7 +1061,7 @@ export default function OrderTracking() {
                   <button
                     type="button"
                     className="ot-chat-trigger"
-                    onClick={() => { setShowChatPanel(v => !v); setHasUnreadReply(false); }}
+                    onClick={() => showChatPanel ? setShowChatPanel(false) : openChatPanel()}
                   >
                     <MessageSquare size={16} />
                     <span>{showChatPanel ? 'Hide messages' : 'Need help? Message us about this order'}</span>
