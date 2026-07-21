@@ -316,6 +316,7 @@ const sendCateringQuoteConfirmation = async (email, name, quote) => {
     event_date:      eventDate,
     party_size:      quote.party_size,
     service_type:    quote.service_type || 'Delivery',
+    event_address:   quote.event_address || '',
     quote_number:    `#CAT-${String(quote.id).padStart(4, '0')}`,
     estimated_total: quote.estimated_total || 0,
   });
@@ -338,6 +339,7 @@ const sendCateringAdminAlert = async (adminEmail, quote) => {
     event_date:      eventDate,
     party_size:      quote.party_size,
     service_type:    quote.service_type,
+    event_address:   quote.event_address || '—',
     estimated_total: quote.estimated_total || 0,
     notes:           quote.notes || '—',
   });

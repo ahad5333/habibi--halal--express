@@ -7,6 +7,7 @@
     <tr><td style="color:#64748b;padding:5px 0;">Date &amp; Time</td><td style="font-weight:600;">{{event_date}}</td></tr>
     <tr><td style="color:#64748b;padding:5px 0;">Guest Count</td><td style="font-weight:600;">{{party_size}} guests</td></tr>
     <tr><td style="color:#64748b;padding:5px 0;">Service Type</td><td style="font-weight:600;text-transform:capitalize;">{{service_type}}</td></tr>
+    {{#if event_address}}<tr><td style="color:#64748b;padding:5px 0;">Address</td><td style="font-weight:600;">{{event_address}}</td></tr>{{/if}}
     <tr><td style="color:#64748b;padding:5px 0;">Quote #</td><td style="font-weight:600;">{{quote_number}}</td></tr>
     <tr><td style="color:#64748b;padding:5px 0;">Est. Starting Price</td><td style="font-weight:700;color:#b8860b;">~${{currency estimated_total}}</td></tr>
   </table>

@@ -521,6 +521,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS admin_notes     TEXT`);
     await client.query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS invoice_sent    BOOLEAN DEFAULT FALSE`);
     await client.query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS quoted_price    NUMERIC(10,2)`);
+    await client.query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS event_address   VARCHAR(500)`);
 
     // ── Business (Wholesale) Menu ──────────────────────────────────
     await client.query(`

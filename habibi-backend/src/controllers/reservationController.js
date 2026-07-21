@@ -15,12 +15,16 @@ const createReservation = async (req, res) => {
     const {
       name, full_name, email, phone,
       event_type, event_date, guest_count, service_type,
-      notes,
+      event_address, notes,
     } = req.body;
     const customerName = (full_name || name || '').trim();
+    const address = (event_address || '').trim();
 
     if (!customerName || !email || !event_date || !guest_count) {
       return res.status(400).json({ message: 'name, email, event_date, and guest_count are required' });
+    }
+    if (service_type !== 'pickup' && !address) {
+      return res.status(400).json({ message: 'Event address is required for delivery and on-site setup.' });
     }
 
     const guests = parseInt(guest_count) || 1;
@@ -29,8 +33,8 @@ const createReservation = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO reservations
          (name, email, phone, party_size, scheduled_date,
-          event_type, service_type, estimated_total, notes, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
+          event_type, service_type, event_address, estimated_total, notes, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
        RETURNING *`,
       [
         customerName,
@@ -40,6 +44,7 @@ const createReservation = async (req, res) => {
         event_date,
         event_type || 'Event',
         service_type || 'delivery',
+        address || null,
         estimated_total,
         notes?.trim() || '',
       ]
