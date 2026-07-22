@@ -995,6 +995,27 @@ const createTables = async () => {
         updated_at     TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    // Widen categories to cover the Build Your Own Bowl preview widget
+    // (bowl_base/bowl_topping), and relax uniqueness to (category, option_key)
+    // since a key like 'rice' is legitimately used in both 'veg' (sandwich
+    // filling) and 'bowl_base' (bowl base) categories.
+    await client.query(`
+      DO $$
+      BEGIN
+        ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_option_key_key;
+        ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_category_check;
+        BEGIN
+          ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_check
+            CHECK (category IN ('base','cheese','veg','protein','sauce','bowl_base','bowl_topping'));
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+        BEGIN
+          ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_option_key_key
+            UNIQUE (category, option_key);
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+      END $$;
+    `);
 
     // ── Global Addon Groups (Sauces, Make it a Meal!, Add a Drink) ──
     await client.query(`
@@ -1343,6 +1364,25 @@ const seedDefaults = async () => {
         ('blue', 'sauce', 'Blue Cheese', 1.25, '/images/byo/ing/sauce-blue-cheese.webp', NULL, NULL, NULL, NULL, NULL, NULL, 47)
     `);
     console.log("✅ Default BYO ingredients seeded");
+  }
+
+  // Seed Build Your Own Bowl preview widget options (separate check since the
+  // main byo_ingredients seed above only runs once, before these existed)
+  const bowlCount = await pool.query("SELECT COUNT(*) FROM byo_ingredients WHERE category IN ('bowl_base','bowl_topping')");
+  if (parseInt(bowlCount.rows[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO byo_ingredients
+        (option_key, category, label, price, image_url, sort_order)
+      VALUES
+        ('rice',     'bowl_base',    'Rice',     2.00, '/images/byo/ing/rice.jpg',    1),
+        ('hummus',   'bowl_base',    'Hummus',   2.50, '/images/byo/ing/hummus.webp', 2),
+        ('salad',    'bowl_base',    'Salad',    2.00, '/images/byo/ing/lettuce.webp',3),
+        ('lettuce',  'bowl_topping', 'Lettuce',  0.50, '/images/byo/ing/lettuce.webp', 1),
+        ('tomato',   'bowl_topping', 'Tomato',   0.50, '/images/byo/ing/tomato.webp',  2),
+        ('cucumber', 'bowl_topping', 'Cucumber', 0.50, '/images/byo/ing/cucumber.webp',3),
+        ('onion',    'bowl_topping', 'Onion',    0.50, '/images/byo/ing/onion.webp',   4)
+    `);
+    console.log("✅ Default Build Your Own Bowl options seeded");
   }
 
   // Seed payment settings

@@ -80,24 +80,22 @@ const CAT_ORDER = [
   'Habibi Specials','Specials','Extras','Drinks','Family Tray','Build Your Own',
 ];
 
-const BOWL_BASE_OPTIONS = [
-  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.jpg',   type: 'bowl' },
-  { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp', type: 'bowl' },
-  { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp', type: 'bowl' },
+// Fallback defaults for the Build Your Own Bowl preview card — used only if
+// the /api/byo-ingredients fetch fails. All four option lists are otherwise
+// fully admin-managed (add/remove/edit) via Menu Builder > Build Your Own
+// Ingredients, same as the main /customize builder.
+const DEFAULT_BOWL_BASE_OPTIONS = [
+  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.jpg' },
+  { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp' },
+  { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp' },
 ];
-// Ids here match real byo_ingredients rows, so the live admin-managed label/
-// image/price get merged in at render time (see proteinPreviewOpts/
-// saucePreviewOpts below). Kept as the fallback if that fetch fails.
 const DEFAULT_BOWL_PROTEIN_OPTIONS = [
   { id: 'chicken',    label: 'Chicken',    image: '/images/byo/ing/chicken.webp' },
   { id: 'lamb-gyro',  label: 'Lamb Gyro',  image: '/images/byo/ing/lamb-gyro.webp' },
   { id: 'beef-kabab', label: 'Beef Kabab', image: '/images/byo/ing/beef-kabab.webp' },
   { id: 'falafel',    label: 'Falafel',    image: '/images/byo/ing/falafel.webp' },
 ];
-// Topping ids here are singular ('tomato') and don't match the byo_ingredients
-// veg category (plural 'tomatoes') — kept separate/static since bowlTopping
-// ids are also persisted in saved/edit-bowl cart data and must stay stable.
-const BOWL_TOPPING_OPTIONS = [
+const DEFAULT_BOWL_TOPPING_OPTIONS = [
   { id: 'lettuce',  label: 'Lettuce',  image: '/images/byo/ing/lettuce.webp' },
   { id: 'tomato',   label: 'Tomato',   image: '/images/byo/ing/tomato.webp' },
   { id: 'cucumber', label: 'Cucumber', image: '/images/byo/ing/cucumber.webp' },
@@ -190,20 +188,22 @@ const Menu = () => {
   const [editingBowlCartKey, setEditingBowlCartKey] = useState(null);
   const [byoItem,     setByoItem]     = useState(null);
 
-  // Build Your Own Bowl preview card: protein/sauce options mirror the
-  // admin-managed BYO ingredients (same ids) so a price/image/label change
-  // made in Menu Builder shows up here too, not just in the full customizer.
+  // Build Your Own Bowl preview card — fully admin-managed (add/remove/edit)
+  // via Menu Builder > Build Your Own Ingredients, same as the /customize
+  // builder. Seeded with hardcoded defaults so the card still works if the
+  // fetch fails.
+  const [bowlBaseOptions, setBowlBaseOptions]       = useState(DEFAULT_BOWL_BASE_OPTIONS);
   const [bowlProteinOptions, setBowlProteinOptions] = useState(DEFAULT_BOWL_PROTEIN_OPTIONS);
+  const [bowlToppingOptions, setBowlToppingOptions] = useState(DEFAULT_BOWL_TOPPING_OPTIONS);
   const [bowlSauceOptions, setBowlSauceOptions]     = useState(DEFAULT_BOWL_SAUCE_OPTIONS);
 
   useEffect(() => {
     byoIngredientsAPI.getAll().then(d => {
-      const merge = (defaults, rows) => defaults.map(opt => {
-        const live = rows?.find(r => r.option_key === opt.id);
-        return live ? { ...opt, label: live.label, image: live.image_url || opt.image } : opt;
-      });
-      setBowlProteinOptions(merge(DEFAULT_BOWL_PROTEIN_OPTIONS, d.protein));
-      setBowlSauceOptions(merge(DEFAULT_BOWL_SAUCE_OPTIONS, d.sauce));
+      const adapt = row => ({ id: row.option_key, label: row.label, image: row.image_url || undefined, price: parseFloat(row.price) });
+      if (d.bowl_base?.length) setBowlBaseOptions(d.bowl_base.map(adapt));
+      if (d.protein?.length)   setBowlProteinOptions(d.protein.map(adapt));
+      if (d.bowl_topping?.length) setBowlToppingOptions(d.bowl_topping.map(adapt));
+      if (d.sauce?.length)     setBowlSauceOptions(d.sauce.map(adapt));
     }).catch(() => {});
   }, []);
 
@@ -481,9 +481,9 @@ const Menu = () => {
     });
   };
 
-  const selectedBase    = BOWL_BASE_OPTIONS.find(o => o.id === bowlBase);
+  const selectedBase    = bowlBaseOptions.find(o => o.id === bowlBase);
   const selectedProtein = bowlProteinOptions.find(o => o.id === bowlProtein);
-  const selectedTopping = BOWL_TOPPING_OPTIONS.find(o => o.id === bowlTopping);
+  const selectedTopping = bowlToppingOptions.find(o => o.id === bowlTopping);
   const selectedSauce   = bowlSauceOptions.find(o => o.id === bowlSauce);
   const isPlatterBase   = selectedBase?.type === 'platter';
   const bowlReady = !!bowlBase && !!bowlProtein && !!bowlTopping && !!bowlSauce;
@@ -983,7 +983,7 @@ const Menu = () => {
                   <div className="builder-step">
                     <p className="step-title">1. CHOOSE YOUR BASE</p>
                     <div className="step-options">
-                      {BOWL_BASE_OPTIONS.map(opt => (
+                      {bowlBaseOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlBase === opt.id ? ' active' : ''}`} onClick={() => setBowlBase(opt.id)}>
                           <img src={opt.image} alt={opt.label} className="btn-option-image" />
                           {opt.label}
@@ -1007,7 +1007,7 @@ const Menu = () => {
                   <div className="builder-step">
                     <p className="step-title">3. ADD TOPPINGS</p>
                     <div className="step-options">
-                      {BOWL_TOPPING_OPTIONS.map(opt => (
+                      {bowlToppingOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlTopping === opt.id ? ' active' : ''}`} onClick={() => setBowlTopping(opt.id)}>
                           <img src={opt.image} alt={opt.label} className="btn-option-image" />
                           {opt.label}
