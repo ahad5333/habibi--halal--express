@@ -7,7 +7,7 @@ const API      = import.meta.env.VITE_API_URL      || 'http://localhost:5001';
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5174';
 const ALL_CATEGORIES = [
   'Breakfast','Platter','Sandwich','Bergers','Tacos','Habibi Specials',
-  'Extras','Drinks','Family Tray','Build Your Own',
+  'Extras','Drinks','Family Tray','Build Your Own','Build Your Own Sandwich',
 ];
 
 const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '', sort_order: 0 };
@@ -85,8 +85,8 @@ function MenuModal({ item, categories, onClose, onSave }) {
       fd.append('quota_required', form.quota_required || '');
       fd.append('sort_order', form.sort_order ?? 0);
       if (form.image) fd.append('image', form.image);
-      if (form.choices?.length) fd.append('choices', JSON.stringify(form.choices));
-      if (form.addons?.length)  fd.append('addons',  JSON.stringify(form.addons));
+      fd.append('choices', JSON.stringify(form.choices || []));
+      fd.append('addons',  JSON.stringify(form.addons  || []));
       await onSave(fd, item?.id);
       onClose();
     } catch (err) {
@@ -370,6 +370,9 @@ export default function MenuBuilder() {
   const [selectedLoc, setSelectedLoc] = useState('');
   const [locAvailMap, setLocAvailMap] = useState({});
   const [savingAvail, setSavingAvail] = useState(null);
+  const [locSearch, setLocSearch]   = useState('');
+  const [bulkStatus, setBulkStatus] = useState('available');
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -403,11 +406,29 @@ export default function MenuBuilder() {
     finally { setSavingAvail(null); }
   };
 
-  const categories = ['all', ...new Set(items.map(i => i.category).filter(Boolean))];
+  const locVisibleItems = items.filter(i =>
+    !locSearch || (i.name + (i.category || '')).toLowerCase().includes(locSearch.toLowerCase())
+  );
+
+  const handleBulkSetAvail = async () => {
+    const ids = locVisibleItems.map(i => i.id);
+    if (!ids.length) return;
+    if (!window.confirm(`Set ${AVAIL_LABELS[bulkStatus]} for ${ids.length} item${ids.length !== 1 ? 's' : ''} at this location?`)) return;
+    setBulkSaving(true);
+    try {
+      await adminAPI.setBulkLocationMenuAvailability({ location_id: parseInt(selectedLoc), status: bulkStatus, menu_ids: ids });
+      setLocAvailMap(prev => { const next = { ...prev }; ids.forEach(id => { next[id] = bulkStatus; }); return next; });
+    } catch (e) { showToast(e.message || 'Bulk action failed.'); }
+    finally { setBulkSaving(false); }
+  };
+
+  const itemCats = (i) => (Array.isArray(i.categories) && i.categories.length ? i.categories : [i.category]).filter(Boolean);
+
+  const categories = ['all', ...new Set(items.flatMap(itemCats))];
 
   const visible = items
     .filter(i => {
-      if (catFilter !== 'all' && i.category !== catFilter) return false;
+      if (catFilter !== 'all' && !itemCats(i).includes(catFilter)) return false;
       if (search) return (i.name + (i.description || '') + (i.category || '')).toLowerCase().includes(search.toLowerCase());
       return true;
     })
@@ -510,6 +531,33 @@ export default function MenuBuilder() {
                 : 'Select a location above to manage per-location item availability.'}
             </p>
           </div>
+          {selectedLoc && (
+            <div className="mb-loc-avail-bulk" style={{display:'flex',alignItems:'center',gap:'0.5rem',flexWrap:'wrap',margin:'0 0 0.75rem'}}>
+              <input
+                className="input mb-search"
+                placeholder="Search name, category…"
+                value={locSearch}
+                onChange={e => setLocSearch(e.target.value)}
+                style={{maxWidth:260}}
+              />
+              <span style={{fontSize:'0.78rem',color:'var(--color-text-muted)'}}>
+                Set all {locVisibleItems.length} visible item{locVisibleItems.length !== 1 ? 's' : ''} to:
+              </span>
+              <select
+                className="input select"
+                style={{fontSize:'0.78rem',padding:'0.25rem 0.4rem',width:'auto'}}
+                value={bulkStatus}
+                onChange={e => setBulkStatus(e.target.value)}
+              >
+                <option value="available">Available</option>
+                <option value="sold_out">Sold Out</option>
+                <option value="inactive">Inactive (hidden)</option>
+              </select>
+              <button className="btn btn-secondary btn-sm" onClick={handleBulkSetAvail} disabled={bulkSaving || !locVisibleItems.length}>
+                {bulkSaving ? <span className="spinner" style={{width:12,height:12}} /> : 'Apply'}
+              </button>
+            </div>
+          )}
           <div className="mb-table-wrap">
             {!selectedLoc ? null : (
               <table className="mb-table">
@@ -521,7 +569,7 @@ export default function MenuBuilder() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map(item => {
+                  {locVisibleItems.map(item => {
                     const current = locAvailMap[item.id] || 'available';
                     return (
                       <tr key={item.id} className={current === 'inactive' ? 'mb-row-inactive' : ''}>

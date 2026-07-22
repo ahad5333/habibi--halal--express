@@ -68,7 +68,8 @@ export const adminAPI = {
   stats:       () => req('/api/admin/stats'),
   sidebar:     () => req('/api/admin/sidebar'),
 
-  orders:      () => req('/api/admin/orders'),
+  orders:      ({ page, limit } = {}) =>
+    req(`/api/admin/orders${page ? `?page=${page}&limit=${limit || 100}` : ''}`),
   updateOrder: (id, status, cancellation_reason) => req(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...(cancellation_reason ? { cancellation_reason } : {}) }) }),
 
   menus:       () => req('/api/admin/menus'),
@@ -104,6 +105,7 @@ export const adminAPI = {
     req(`/api/admin/partners/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes: note, price_tier, payment_methods, credit_balance }) }),
 
   urgent:      () => req('/api/urgent-requests'),
+  updateUrgentStatus: (id, status) => req(`/api/urgent-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   revenue:     (start, end) => req(`/api/admin/analytics/revenue${start||end ? `?start=${start||''}&end=${end||''}` : ''}`),
   growth:      () => req('/api/admin/analytics/growth'),
@@ -132,6 +134,7 @@ export const adminAPI = {
   toggleMenuAvailability: (body) => req('/api/admin/menus/availability', { method: 'PATCH', body: JSON.stringify(body) }),
   getLocationMenuAvailability: (location_id) => req(`/api/admin/menus/location-availability?location_id=${location_id}`),
   setLocationMenuAvailability: (body) => req('/api/admin/menus/location-availability', { method: 'POST', body: JSON.stringify(body) }),
+  setBulkLocationMenuAvailability: (body) => req('/api/admin/menus/location-availability/bulk', { method: 'POST', body: JSON.stringify(body) }),
 
   // Staff
   getStaff:    () => req('/api/admin/staff'),
