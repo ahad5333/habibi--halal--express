@@ -298,7 +298,6 @@ const createGuestOrder = async (req, res) => {
           const row = dbMap[menuId];
           if (!row) {
             await client.query('ROLLBACK');
-            client.release();
             return res.status(400).json({ message: 'One or more items are no longer available. Please refresh your cart.' });
           }
 
@@ -324,7 +323,6 @@ const createGuestOrder = async (req, res) => {
           const clientUnit   = parseFloat(item.price || item.unit_price || 0);
           if (clientUnit < expectedUnit - 0.02) {
             await client.query('ROLLBACK');
-            client.release();
             return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
           }
           recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
@@ -332,7 +330,6 @@ const createGuestOrder = async (req, res) => {
 
         if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.02) {
           await client.query('ROLLBACK');
-          client.release();
           return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
         }
       }
@@ -345,7 +342,6 @@ const createGuestOrder = async (req, res) => {
         const availablePoints = userRes.rows[0]?.loyalty_points || 0;
         if (loyalty_points_redeemed > availablePoints) {
           await client.query('ROLLBACK');
-          client.release();
           return res.status(400).json({ message: 'Insufficient loyalty points.' });
         }
       }

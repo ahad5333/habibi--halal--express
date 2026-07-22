@@ -45,14 +45,34 @@ const getAllOrders = async (req, res) => {
       let items = [];
       try {
         const raw = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []);
-        items = raw.map(i => ({
-          name: i.name || 'Item',
-          quantity: i.quantity || 1,
-          price: parseFloat(i.price) || 0,
-          choices: i.selectedOption ? [i.selectedOption] : [],
-          addons: (i.selectedAddons || []).map(a => (typeof a === 'string' ? a : (a.name || '')))
-        }));
-      } catch (e) { items = []; }
+        items = raw.map(i => {
+          // selectedAddons/selectedChoices come from the real checkout flow as
+          // plain objects (e.g. {"123": 1}, keyed by option id), not arrays —
+          // .map()-ing them directly threw and silently dropped every item on
+          // the order (caught below), which is why real orders were showing
+          // "0 items" in the admin table despite having a normal total. Names
+          // for those option ids aren't in this payload, but `note` already
+          // carries a human-readable summary (e.g. "Choose Your Bread: Burger
+          // Bun") built at checkout, so prefer that over trying to relabel ids.
+          const addonList = Array.isArray(i.selectedAddons)
+            ? i.selectedAddons.map(a => (typeof a === 'string' ? a : (a.name || '')))
+            : [];
+          const choiceList = Array.isArray(i.choices)
+            ? i.choices
+            : (i.selectedOption ? [i.selectedOption] : []);
+          return {
+            name: i.name || 'Item',
+            quantity: i.quantity || i.qty || 1,
+            price: parseFloat(i.price ?? i.unit_price) || 0,
+            note: i.note || '',
+            choices: choiceList,
+            addons: addonList,
+          };
+        });
+      } catch (e) {
+        console.error('[Admin] Failed to parse order items for', o.order_number, e.message);
+        items = [];
+      }
 
       return {
         id: o.order_number || String(o.id),
