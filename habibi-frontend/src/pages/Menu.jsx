@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
-import { menuAPI, favoritesAPI, reviewsAPI } from '../services/api';
+import { menuAPI, favoritesAPI, reviewsAPI, byoIngredientsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import BuildYourOwn from '../components/BuildYourOwn';
@@ -85,19 +85,25 @@ const BOWL_BASE_OPTIONS = [
   { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp', type: 'bowl' },
   { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp', type: 'bowl' },
 ];
-const BOWL_PROTEIN_OPTIONS = [
+// Ids here match real byo_ingredients rows, so the live admin-managed label/
+// image/price get merged in at render time (see proteinPreviewOpts/
+// saucePreviewOpts below). Kept as the fallback if that fetch fails.
+const DEFAULT_BOWL_PROTEIN_OPTIONS = [
   { id: 'chicken',    label: 'Chicken',    image: '/images/byo/ing/chicken.webp' },
   { id: 'lamb-gyro',  label: 'Lamb Gyro',  image: '/images/byo/ing/lamb-gyro.webp' },
   { id: 'beef-kabab', label: 'Beef Kabab', image: '/images/byo/ing/beef-kabab.webp' },
   { id: 'falafel',    label: 'Falafel',    image: '/images/byo/ing/falafel.webp' },
 ];
+// Topping ids here are singular ('tomato') and don't match the byo_ingredients
+// veg category (plural 'tomatoes') — kept separate/static since bowlTopping
+// ids are also persisted in saved/edit-bowl cart data and must stay stable.
 const BOWL_TOPPING_OPTIONS = [
   { id: 'lettuce',  label: 'Lettuce',  image: '/images/byo/ing/lettuce.webp' },
   { id: 'tomato',   label: 'Tomato',   image: '/images/byo/ing/tomato.webp' },
   { id: 'cucumber', label: 'Cucumber', image: '/images/byo/ing/cucumber.webp' },
   { id: 'onion',    label: 'Onion',    image: '/images/byo/ing/onion.webp' },
 ];
-const BOWL_SAUCE_OPTIONS = [
+const DEFAULT_BOWL_SAUCE_OPTIONS = [
   { id: 'white', label: 'White Sauce', image: '/images/byo/ing/sauce-white-bowl.webp' },
   { id: 'hot',   label: 'Hot Sauce',   image: '/images/byo/ing/sauce-hot-bowl.webp' },
   { id: 'bbq',   label: 'BBQ Sauce',   image: '/images/byo/ing/sauce-bbq.webp' },
@@ -183,6 +189,23 @@ const Menu = () => {
   const [bowlSauce,   setBowlSauce]   = useState('');
   const [editingBowlCartKey, setEditingBowlCartKey] = useState(null);
   const [byoItem,     setByoItem]     = useState(null);
+
+  // Build Your Own Bowl preview card: protein/sauce options mirror the
+  // admin-managed BYO ingredients (same ids) so a price/image/label change
+  // made in Menu Builder shows up here too, not just in the full customizer.
+  const [bowlProteinOptions, setBowlProteinOptions] = useState(DEFAULT_BOWL_PROTEIN_OPTIONS);
+  const [bowlSauceOptions, setBowlSauceOptions]     = useState(DEFAULT_BOWL_SAUCE_OPTIONS);
+
+  useEffect(() => {
+    byoIngredientsAPI.getAll().then(d => {
+      const merge = (defaults, rows) => defaults.map(opt => {
+        const live = rows?.find(r => r.option_key === opt.id);
+        return live ? { ...opt, label: live.label, image: live.image_url || opt.image } : opt;
+      });
+      setBowlProteinOptions(merge(DEFAULT_BOWL_PROTEIN_OPTIONS, d.protein));
+      setBowlSauceOptions(merge(DEFAULT_BOWL_SAUCE_OPTIONS, d.sauce));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const eb = location.state?.editBowl;
@@ -459,9 +482,9 @@ const Menu = () => {
   };
 
   const selectedBase    = BOWL_BASE_OPTIONS.find(o => o.id === bowlBase);
-  const selectedProtein = BOWL_PROTEIN_OPTIONS.find(o => o.id === bowlProtein);
+  const selectedProtein = bowlProteinOptions.find(o => o.id === bowlProtein);
   const selectedTopping = BOWL_TOPPING_OPTIONS.find(o => o.id === bowlTopping);
-  const selectedSauce   = BOWL_SAUCE_OPTIONS.find(o => o.id === bowlSauce);
+  const selectedSauce   = bowlSauceOptions.find(o => o.id === bowlSauce);
   const isPlatterBase   = selectedBase?.type === 'platter';
   const bowlReady = !!bowlBase && !!bowlProtein && !!bowlTopping && !!bowlSauce;
 
@@ -972,7 +995,7 @@ const Menu = () => {
                   <div className="builder-step">
                     <p className="step-title">2. SELECT PROTEIN</p>
                     <div className="step-options">
-                      {BOWL_PROTEIN_OPTIONS.map(opt => (
+                      {bowlProteinOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlProtein === opt.id ? ' active' : ''}`} onClick={() => setBowlProtein(opt.id)}>
                           <img src={opt.image} alt={opt.label} className="btn-option-image" />
                           {opt.label}
@@ -996,7 +1019,7 @@ const Menu = () => {
                   <div className="builder-step">
                     <p className="step-title">4. CHOOSE SAUCE</p>
                     <div className="step-options">
-                      {BOWL_SAUCE_OPTIONS.map(opt => (
+                      {bowlSauceOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlSauce === opt.id ? ' active' : ''}`} onClick={() => setBowlSauce(opt.id)}>
                           <img src={opt.image} alt={opt.label} className="btn-option-image" />
                           {opt.label}

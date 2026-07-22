@@ -100,6 +100,11 @@ export const menuAPI = {
   getModifiers: (id) => request(`/api/menus/${id}/modifiers`),
 };
 
+export const byoIngredientsAPI = {
+  /** GET /api/byo-ingredients — { base, cheese, veg, protein, sauce } arrays */
+  getAll: () => request('/api/byo-ingredients'),
+};
+
 // ─── Locations ───────────────────────────────────────────────────────────────
 
 export const locationsAPI = {
@@ -189,6 +194,20 @@ export const contactAPI = {
   unsubscribe: (token) =>
     request(`/api/contact/unsubscribe?token=${encodeURIComponent(token)}`, {
       headers: { Accept: 'application/json' },
+    }),
+};
+
+// ─── Urgent Requests ─────────────────────────────────────────────────────────
+// Separate from contactAPI.submitFeedback — that endpoint silently drops
+// phone/order_id and hardcodes urgency_level, so it can't carry what an
+// urgent report actually needs (a callback number, chiefly).
+
+export const urgentAPI = {
+  /** POST /api/urgent-requests */
+  submit: (payload) =>
+    request('/api/urgent-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
 

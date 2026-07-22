@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Minus, ChevronDown, Info, ShoppingBag, Check, Bookmark, Trash2, Camera } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { useCart } from '../context/CartContext';
-import { menuAPI, savedCustomAPI } from '../services/api';
+import { menuAPI, savedCustomAPI, byoIngredientsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO';
 import './CustomOrder.css';
@@ -12,7 +12,7 @@ import './CustomOrder.css';
    DATA DEFINITIONS
    ================================================================ */
 
-const BASES = [
+const DEFAULT_BASES = [
   { id: '39a', label: 'Hero',        price: 1.99, img: '/images/byo/bases/39a.webp', family: 'hero' },
   { id: '39b', label: 'Wrap',        price: 1.99, img: '/images/byo/bases/39b.webp', family: 'wrap',       note: 'Habibi Special Wrap' },
   { id: '39c', label: 'Pita Bread',  price: 1.99, img: '/images/byo/bases/39c.webp', family: 'wrap' },
@@ -25,14 +25,14 @@ const BASES = [
   { id: '39j', label: 'Family Tray', price: 4.99, img: '/images/byo/bases/39j.webp', family: 'familyTray', rim: '/images/byo/bases/39j-rim.webp' },
 ];
 
-const CHEESE_OPTS = [
+const DEFAULT_CHEESE_OPTS = [
   { id: 'none',          label: 'No Cheese',      price: 0,    emoji: '⬜', default: true },
   { id: 'american',      label: 'American Cheese', price: 1.00, emoji: '🧀', img: '/images/byo/ing/american-cheese.webp'  },
   { id: 'butter',        label: 'Butter',          price: 2.00, emoji: '🫙', img: '/images/byo/ing/butter2.webp'           },
   { id: 'liquid_cheese', label: 'Cream Cheese',    price: 1.50, emoji: '🫕', img: '/images/byo/ing/liquid-cheese.webp'   },
 ];
 
-const VEG_OPTS = [
+const DEFAULT_VEG_OPTS = [
   { id: 'onions',    label: 'Onions',        price: 0.50, emoji: '🧅', img: '/images/byo/ing/onion2.webp'    },
   { id: 'peppers',   label: 'Green Peppers', price: 0.50, emoji: '🌿', img: '/images/byo/ing/pepper.webp'   },
   { id: 'cucumbers', label: 'Cucumbers',     price: 0.50, emoji: '🥒', img: '/images/byo/ing/cucumber2.webp' },
@@ -46,7 +46,7 @@ const VEG_OPTS = [
    'eggs'          → 1 / 2 / 3 / 4 eggs  ($1 each)
    'single-double' → Single / Double
    'single-triple' → Single / Double / Triple               */
-const PROTEIN_OPTS = [
+const DEFAULT_PROTEIN_OPTS = [
   { id: 'egg-fried',       label: 'Egg (Fried)',           price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-fried.webp'       },
   { id: 'egg-scrambled',   label: 'Egg (Scrambled)',        price: 1.00, qtyType: 'eggs',          emoji: '🍳', img: '/images/byo/ing/egg-scrambled.webp'   },
   { id: 'chicken',         label: 'Chicken Broasted',       price: 6.00, qtyType: 'low-extra',     emoji: '🍗', img: '/images/byo/ing/chicken-broasted.webp'  },
@@ -68,7 +68,7 @@ const PROTEIN_OPTS = [
   { id: 'chicken-burger',  label: 'Chicken Berger',        price: 5.00, qtyType: 'single-double', emoji: '🍔', img: '/images/byo/ing/chicken-burger.webp'  },
 ];
 
-const SAUCE_OPTS = [
+const DEFAULT_SAUCE_OPTS = [
   { id: 'white',   label: 'White Sauce',         price: 1.00, emoji: '🤍', img: '/images/byo/ing/sauce-white-bowl.webp'  },
   { id: 'hot',     label: 'Hot Sauce',           price: 1.00, emoji: '🔥', img: '/images/byo/ing/sauce-hot-bowl.webp'    },
   { id: 'ketchup', label: 'Ketchup',             price: 0.75, emoji: '🍅', img: '/images/byo/ing/sauce-ketchup.webp'     },
@@ -333,7 +333,7 @@ function clampIngPos(pos, zMin, zMax, maxW) {
 
 
 /* ── Top-down food-photography canvas ─────────────────────────── */
-function IngCanvas({ base, cfg, onReset }) {
+function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
   const family = base?.family;
   const isFlatBase  = family === 'platter' || family === 'familyTray';
   /* Split-bun bases show both halves opened from above. Food is shifted into the bottom half
@@ -502,7 +502,7 @@ function IngCanvas({ base, cfg, onReset }) {
     }
     const rawPos = def.pos[family] || def.pos.standard;
     if (!rawPos) return;
-    const protOpt = PROTEIN_OPTS.find(p => p.id === id);
+    const protOpt = proteinOpts.find(p => p.id === id);
     const qtyType = protOpt?.qtyType;
 
     let src = def.src;
@@ -636,9 +636,9 @@ function IngCanvas({ base, cfg, onReset }) {
 
   /* ── Sauces: split into on-food (drizzle) and on-side (bowl) ── */
   const onFoodSauces  = Object.entries(cfg.sauces).filter(([,s]) => s.placement === 'on_food')
-    .map(([id]) => SAUCE_OPTS.find(o => o.id === id)).filter(Boolean);
+    .map(([id]) => sauceOpts.find(o => o.id === id)).filter(Boolean);
   const onSideSauces  = Object.entries(cfg.sauces).filter(([,s]) => s.placement === 'on_side')
-    .map(([id]) => SAUCE_OPTS.find(o => o.id === id)).filter(Boolean);
+    .map(([id]) => sauceOpts.find(o => o.id === id)).filter(Boolean);
 
   /* Drizzle — narrowed to 70% of zone width and shifted inward so the sauce looks
      like it's drizzled ON the food, not spanning the whole canvas */
@@ -823,7 +823,7 @@ function IngCanvas({ base, cfg, onReset }) {
                       )] : []),
                       ...sideProteins.map(id => {
                         const def = CO_ING_DB[id];
-                        const label = PROTEIN_OPTS.find(p => p.id === id)?.label || id;
+                        const label = proteinOpts.find(p => p.id === id)?.label || id;
                         return (
                           <div className="co-side-plate" key={`${id}-aside`}>
                             <div className="co-side-plate-dish">
@@ -957,7 +957,7 @@ const PRESETS = [
     emoji: '🏆',
     desc: 'Hero · Chicken · White Sauce',
     cfg: {
-      base:       BASES.find(b => b.id === '39a'),
+      baseId:     '39a',
       cheese:     { type: 'american', qty: 'regular' },
       vegetables: { onions: { qty: 'regular' }, lettuce: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
       proteins:   { chicken: { qty: 'regular' } },
@@ -971,7 +971,7 @@ const PRESETS = [
     emoji: '🔥',
     desc: 'Wrap · Lamb Gyro · Hot Sauce',
     cfg: {
-      base:       BASES.find(b => b.id === '39b'),
+      baseId:     '39b',
       cheese:     { type: 'none', qty: 'regular' },
       vegetables: { onions: { qty: 'regular' }, peppers: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
       proteins:   { 'lamb-gyro': { qty: 'regular' } },
@@ -985,7 +985,7 @@ const PRESETS = [
     emoji: '🍔',
     desc: 'Burger Bun · Beef Berger · Ketchup',
     cfg: {
-      base:       BASES.find(b => b.id === '39g'),
+      baseId:     '39g',
       cheese:     { type: 'american', qty: 'regular' },
       vegetables: { lettuce: { qty: 'regular' }, tomatoes: { qty: 'regular' }, onions: { qty: 'regular' } },
       proteins:   { 'beef-burger': { qty: 'single' } },
@@ -999,7 +999,7 @@ const PRESETS = [
     emoji: '🧆',
     desc: 'Pita · Falafel · Green Sauce',
     cfg: {
-      base:       BASES.find(b => b.id === '39c'),
+      baseId:     '39c',
       cheese:     { type: 'none', qty: 'regular' },
       vegetables: { lettuce: { qty: 'regular' }, cucumbers: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
       proteins:   { falafel: { qty: 'regular' } },
@@ -1095,6 +1095,37 @@ export default function CustomOrder() {
   const [totalFlash, setTotalFlash]       = useState(false);
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
 
+  /* BYO ingredient data — admin-managed via Menu Builder. Seeded with the
+     hardcoded defaults so the builder renders identically even before the
+     fetch resolves (or if it fails), then swapped for live data on success. */
+  const [basesData, setBasesData]     = useState(DEFAULT_BASES);
+  const [cheeseData, setCheeseData]   = useState(DEFAULT_CHEESE_OPTS);
+  const [vegData, setVegData]         = useState(DEFAULT_VEG_OPTS);
+  const [proteinData, setProteinData] = useState(DEFAULT_PROTEIN_OPTS);
+  const [sauceData, setSauceData]     = useState(DEFAULT_SAUCE_OPTS);
+
+  useEffect(() => {
+    byoIngredientsAPI.getAll().then(d => {
+      const adapt = row => ({
+        id: row.option_key,
+        label: row.label,
+        price: parseFloat(row.price),
+        img: row.image_url || undefined,
+        emoji: row.emoji || undefined,
+        qtyType: row.qty_type || undefined,
+        family: row.family || undefined,
+        note: row.note || undefined,
+        rim: row.rim_image_url || undefined,
+        imgByQty: row.img_by_qty || undefined,
+      });
+      if (d.base?.length)    setBasesData(d.base.map(adapt));
+      if (d.cheese?.length)  setCheeseData(d.cheese.map(adapt));
+      if (d.veg?.length)     setVegData(d.veg.map(adapt));
+      if (d.protein?.length) setProteinData(d.protein.map(adapt));
+      if (d.sauce?.length)   setSauceData(d.sauce.map(adapt));
+    }).catch(() => {}); // keep hardcoded defaults on failure
+  }, []);
+
   /* Fetch extras + drinks from menu */
   useEffect(() => {
     menuAPI.getAll().then(items => {
@@ -1174,9 +1205,12 @@ export default function CustomOrder() {
     setQty(1);
   };
 
-  /* Apply a staff-pick preset */
+  /* Apply a staff-pick preset — resolves the base from live (possibly
+     admin-edited) ingredient data rather than the preset's own baseId,
+     so pricing always reflects current prices. */
   const applyPreset = preset => {
-    setCfg({ ...preset.cfg });
+    const liveBase = basesData.find(b => b.id === preset.cfg.baseId) || DEFAULT_BASES.find(b => b.id === preset.cfg.baseId);
+    setCfg({ ...preset.cfg, base: liveBase });
     setOpen(new Set(['base', 'cheese', 'vegetables', 'proteins', 'sauces', 'extras', 'drinks']));
     setWarnProtein(false);
     setQty(1);
@@ -1185,14 +1219,14 @@ export default function CustomOrder() {
   /* Surprise Me — random base + protein + 2 veg + sauce, respecting active diet filters */
   const [rollAnim, setRollAnim] = useState(false);
   const randomizeOrder = () => {
-    const base = BASES[Math.floor(Math.random() * BASES.length)];
+    const base = basesData[Math.floor(Math.random() * basesData.length)];
 
-    const proteinPool = PROTEIN_OPTS.filter(p => !isProteinExcluded(p.id));
+    const proteinPool = proteinData.filter(p => !isProteinExcluded(p.id));
     const protein = proteinPool[Math.floor(Math.random() * proteinPool.length)];
 
-    const vegPicks = shuffleArray(VEG_OPTS).slice(0, 2);
+    const vegPicks = shuffleArray(vegData).slice(0, 2);
 
-    const saucePool = SAUCE_OPTS.filter(s => !isSauceExcluded(s.id));
+    const saucePool = sauceData.filter(s => !isSauceExcluded(s.id));
     const sauce = saucePool[Math.floor(Math.random() * saucePool.length)];
 
     setCfg({
@@ -1218,7 +1252,7 @@ export default function CustomOrder() {
     setCfg(p => ({
       ...p,
       proteins: Object.fromEntries(sugg.proteins.map(id => {
-        const opt = PROTEIN_OPTS.find(x => x.id === id);
+        const opt = proteinData.find(x => x.id === id);
         return [id, { qty: defaultQtyFor(opt), placement: 'on_food' }];
       })),
       cheese:     sugg.cheese ? { type: sugg.cheese, qty: 'regular' } : p.cheese,
@@ -1269,7 +1303,7 @@ export default function CustomOrder() {
 
   const toggleProtein = id => setCfg(p => {
     const v = { ...p.proteins };
-    const pr = PROTEIN_OPTS.find(x => x.id === id);
+    const pr = proteinData.find(x => x.id === id);
     v[id] ? delete v[id] : (v[id] = { qty: pr?.qtyType === 'eggs' ? 1 : pr?.qtyType === 'single-double' || pr?.qtyType === 'single-triple' ? 'single' : 'regular', placement: 'on_food' });
     return { ...p, proteins: v };
   });
@@ -1304,22 +1338,22 @@ export default function CustomOrder() {
     const mult = getBaseMultipliers(cfg.base);
     let t = cfg.base?.price || 0;
     if (cfg.cheese.type !== 'none') {
-      const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
+      const c = cheeseData.find(x => x.id === cfg.cheese.type);
       if (c) t += c.price * mult.cheese;
     }
     Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
-      const v = VEG_OPTS.find(x => x.id === id);
+      const v = vegData.find(x => x.id === id);
       if (v) t += v.price * (VEG_QTY_MULT[qty] || 1) * mult.veg;
     });
     Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
-      const p = PROTEIN_OPTS.find(x => x.id === id);
+      const p = proteinData.find(x => x.id === id);
       if (p) {
         const m = PROTEIN_BASE_TIERED.has(id) ? mult.protein : 1;
         t += calcProteinPrice(p, qty) * m;
       }
     });
     Object.entries(cfg.sauces).forEach(([id, s]) => {
-      const sc = SAUCE_OPTS.find(x => x.id === id);
+      const sc = sauceData.find(x => x.id === id);
       if (!sc) return;
       t += s.placement === 'on_side'
         ? sc.price * (s.count || 1)
@@ -1351,22 +1385,22 @@ export default function CustomOrder() {
     const lines = [];
     lines.push({ label: cfg.base.label + ' (base)', price: cfg.base.price });
     if (cfg.cheese.type !== 'none') {
-      const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
+      const c = cheeseData.find(x => x.id === cfg.cheese.type);
       if (c) lines.push({ label: `${c.label} (${cfg.cheese.qty})`, price: c.price * mult.cheese });
     }
     Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
-      const v = VEG_OPTS.find(x => x.id === id);
+      const v = vegData.find(x => x.id === id);
       if (v) lines.push({ label: `${v.label} (${qty})`, price: v.price * (VEG_QTY_MULT[qty] || 1) * mult.veg });
     });
     Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
-      const p = PROTEIN_OPTS.find(x => x.id === id);
+      const p = proteinData.find(x => x.id === id);
       if (p) {
         const m = PROTEIN_BASE_TIERED.has(id) ? mult.protein : 1;
         lines.push({ label: `${p.label} (${proteinQtyLabel(p, qty)})`, price: calcProteinPrice(p, qty) * m });
       }
     });
     Object.entries(cfg.sauces).forEach(([id, s]) => {
-      const sc = SAUCE_OPTS.find(x => x.id === id);
+      const sc = sauceData.find(x => x.id === id);
       if (!sc) return;
       const price = s.placement === 'on_side' ? sc.price * (s.count || 1) : sc.price * (SAUCE_FOOD_MULT[s.qty] || 1);
       lines.push({ label: `${sc.label}${s.placement === 'on_side' ? ' (on side)' : ''}`, price });
@@ -1387,19 +1421,19 @@ export default function CustomOrder() {
     const parts = [];
     if (cfg.base?.id === '39e') parts.push(`Bagel: ${cfg.bagelType}`);
     if (cfg.cheese.type !== 'none') {
-      const c = CHEESE_OPTS.find(x => x.id === cfg.cheese.type);
+      const c = cheeseData.find(x => x.id === cfg.cheese.type);
       parts.push(`${c?.label} (${cfg.cheese.qty})`);
     }
     Object.entries(cfg.vegetables).forEach(([id, { qty }]) => {
-      const v = VEG_OPTS.find(x => x.id === id);
+      const v = vegData.find(x => x.id === id);
       if (v) parts.push(`${v.label} (${qty})`);
     });
     Object.entries(cfg.proteins).forEach(([id, { qty }]) => {
-      const p = PROTEIN_OPTS.find(x => x.id === id);
+      const p = proteinData.find(x => x.id === id);
       if (p) parts.push(`${p.label} (${proteinQtyLabel(p, qty)})`);
     });
     Object.entries(cfg.sauces).forEach(([id, s]) => {
-      const sc = SAUCE_OPTS.find(x => x.id === id);
+      const sc = sauceData.find(x => x.id === id);
       if (sc) parts.push(`${sc.label} (${s.placement === 'on_side' ? `x${s.count} on side` : s.qty})`);
     });
     Object.entries(cfg.extras).forEach(([id, cnt]) => {
@@ -1568,12 +1602,12 @@ export default function CustomOrder() {
 
         {/* ── Mobile-only canvas (above sections, hidden on desktop) ── */}
         <div className="co-mobile-canvas-wrap">
-          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} />
+          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} proteinOpts={proteinData} sauceOpts={sauceData} />
         </div>
 
         {/* ── Left: sticky canvas (desktop sidebar) ── */}
         <aside className="co-sidebar">
-          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} />
+          <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} proteinOpts={proteinData} sauceOpts={sauceData} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
             <span className={`co-price-val${totalFlash ? ' co-price-flash' : ''}`}>${total.toFixed(2)}</span>
@@ -1803,7 +1837,7 @@ export default function CustomOrder() {
               {PRESETS.map(preset => (
                 <button
                   key={preset.id}
-                  className={`co-preset-card${cfg.base?.id === preset.cfg.base?.id && JSON.stringify(cfg.proteins) === JSON.stringify(preset.cfg.proteins) ? ' active' : ''}`}
+                  className={`co-preset-card${cfg.base?.id === preset.cfg.baseId && JSON.stringify(cfg.proteins) === JSON.stringify(preset.cfg.proteins) ? ' active' : ''}`}
                   onClick={() => applyPreset(preset)}
                 >
                   <span className="co-preset-emoji">{preset.emoji}</span>
@@ -1842,7 +1876,7 @@ export default function CustomOrder() {
               </div>
             )}
             <div className="co-base-grid">
-              {BASES.map(base => (
+              {basesData.map(base => (
                 <button
                   key={base.id}
                   className={`co-base-card${cfg.base?.id === base.id ? ' selected' : ''}`}
@@ -1862,7 +1896,7 @@ export default function CustomOrder() {
           <Section id="cheese" title="Cheese" icon="🧀"
             badge={badges.cheese} open={open.has('cheese')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-4">
-              {CHEESE_OPTS.map(opt => (
+              {cheeseData.map(opt => (
                 <button
                   key={opt.id}
                   className={`co-opt-card${cfg.cheese.type === opt.id ? ' selected' : ''}${isCheeseExcluded(opt.id) ? ' co-filtered' : ''}`}
@@ -1889,7 +1923,7 @@ export default function CustomOrder() {
           <Section id="vegetables" title="Vegetables & Fillings" icon="🥗"
             badge={badges.vegetables} open={open.has('vegetables')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-3">
-              {VEG_OPTS.map(veg => {
+              {vegData.map(veg => {
                 const sel = cfg.vegetables[veg.id];
                 return (
                   <div key={veg.id} className="co-opt-wrap">
@@ -1938,7 +1972,7 @@ export default function CustomOrder() {
               </div>
             )}
             <div className="co-opt-grid co-grid-2">
-              {PROTEIN_OPTS.map(prot => {
+              {proteinData.map(prot => {
                 const sel = cfg.proteins[prot.id];
                 return (
                   <div key={prot.id} className="co-opt-wrap">
@@ -1987,7 +2021,7 @@ export default function CustomOrder() {
           <Section id="sauces" title="Sauces" icon="🫙"
             badge={badges.sauces} open={open.has('sauces')} onToggle={toggleSection}>
             <div className="co-opt-grid co-grid-4">
-              {SAUCE_OPTS.map(sauce => {
+              {sauceData.map(sauce => {
                 const sel = cfg.sauces[sauce.id];
                 return (
                   <div key={sauce.id} className="co-opt-wrap">
