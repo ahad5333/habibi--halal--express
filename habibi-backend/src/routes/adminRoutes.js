@@ -24,6 +24,7 @@ const {
   toggleMenuAvailability,
   getLocationMenuAvailability,
   setLocationMenuAvailability,
+  setBulkLocationMenuAvailability,
   getCouponStats,
   getChatConversations,
   getChatMessages,
@@ -102,6 +103,7 @@ router.get("/menus", getAllMenus);
 router.patch("/menus/availability", toggleMenuAvailability);
 router.get("/menus/location-availability", getLocationMenuAvailability);
 router.post("/menus/location-availability", setLocationMenuAvailability);
+router.post("/menus/location-availability/bulk", setBulkLocationMenuAvailability);
 router.post("/menus", upload.single("image"), createMenu);
 router.patch("/menus/:id", upload.single("image"), updateMenu);
 router.delete("/menus/:id", deleteMenu);

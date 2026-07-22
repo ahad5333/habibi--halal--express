@@ -523,6 +523,27 @@ const setLocationMenuAvailability = async (req, res) => {
   }
 };
 
+const setBulkLocationMenuAvailability = async (req, res) => {
+  try {
+    const { location_id, status, menu_ids } = req.body;
+    if (!location_id || !status || !Array.isArray(menu_ids) || !menu_ids.length) {
+      return res.status(400).json({ error: 'location_id, status, and menu_ids required' });
+    }
+    const allowed = ['available', 'sold_out', 'inactive'];
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    await pool.query(
+      `INSERT INTO menu_location_availability (menu_id, location_id, status, updated_at)
+       SELECT unnest($1::int[]), $2, $3, NOW()
+       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, updated_at=NOW()`,
+      [menu_ids, location_id, status]
+    );
+    logAudit(pool, req.user?.id, req.user?.name, 'bulk_set_location_menu_availability', 'menu', menu_ids.join(','), { location_id, status, count: menu_ids.length }, req.ip);
+    res.json({ updated: menu_ids.length });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Menu Availability Toggle ─────────────────────────────────────
 const toggleMenuAvailability = async (req, res) => {
   try {
@@ -530,7 +551,10 @@ const toggleMenuAvailability = async (req, res) => {
     let result;
     if (category) {
       result = await pool.query(
-        `UPDATE menus SET is_available=$1 WHERE LOWER(category)=LOWER($2) RETURNING id`,
+        `UPDATE menus SET is_available=$1
+         WHERE LOWER(category)=LOWER($2)
+            OR EXISTS (SELECT 1 FROM unnest(categories) c WHERE LOWER(c)=LOWER($2))
+         RETURNING id`,
         [is_available !== false, category]
       );
     } else if (ids && ids.length) {
@@ -846,6 +870,7 @@ module.exports = {
   toggleMenuAvailability,
   getLocationMenuAvailability,
   setLocationMenuAvailability,
+  setBulkLocationMenuAvailability,
   getCouponStats,
   getChatConversations,
   getChatMessages,
