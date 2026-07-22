@@ -103,6 +103,7 @@ const adminLimiter = rateLimit({
 });
 const userRoutes = require("./routes/userRoutes")
 const menuRoutes = require("./routes/menuRoutes")
+const byoIngredientRoutes = require("./routes/byoIngredientRoutes")
 const authRoutes = require("./routes/authRoutes")
 const cartRoutes = require("./routes/cartRoutes")
 const orderRoutes = require("./routes/orderRoutes")
@@ -178,6 +179,7 @@ app.use("/uploads", express.static("public/uploads", staticOpts))
 app.use("/api/users/me/notifications", notificationsRoutes)  // must be before /api/users
 app.use("/api/users", userRoutes)
 app.use("/api/menus", menuRoutes)
+app.use("/api/byo-ingredients", byoIngredientRoutes)
 app.use("/api/auth", authLimiter, authRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderLimiter, orderRoutes);

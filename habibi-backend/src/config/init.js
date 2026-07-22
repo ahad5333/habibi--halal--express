@@ -970,6 +970,32 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(is_published, created_at DESC);`);
 
+    // ── Build-Your-Own ingredients (bases/cheese/veg/protein/sauce) ──
+    // Backs the Custom Order (BYO) builder on the frontend and the "Build
+    // Your Own Ingredients" section of the admin Menu Builder. option_key
+    // must stay stable — it's the identifier used throughout the BYO
+    // pricing/rendering logic and inside stored cart/order JSON.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS byo_ingredients (
+        id             SERIAL PRIMARY KEY,
+        option_key     VARCHAR(50) NOT NULL UNIQUE,
+        category       VARCHAR(20) NOT NULL CHECK (category IN ('base','cheese','veg','protein','sauce')),
+        label          VARCHAR(100) NOT NULL,
+        price          NUMERIC(6,2) NOT NULL DEFAULT 0,
+        image_url      VARCHAR(500),
+        emoji          VARCHAR(10),
+        qty_type       VARCHAR(20),
+        family         VARCHAR(20),
+        note           VARCHAR(200),
+        rim_image_url  VARCHAR(500),
+        img_by_qty     JSONB,
+        is_active      BOOLEAN NOT NULL DEFAULT TRUE,
+        sort_order     INT     NOT NULL DEFAULT 0,
+        created_at     TIMESTAMPTZ DEFAULT NOW(),
+        updated_at     TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // ── Global Addon Groups (Sauces, Make it a Meal!, Add a Drink) ──
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_addon_groups (
@@ -1259,6 +1285,64 @@ const seedDefaults = async () => {
       ]', 3)
     `);
     console.log("✅ Default global addon groups seeded");
+  }
+
+  // Seed Build-Your-Own ingredients (bases/cheese/veg/protein/sauce)
+  const byoCount = await pool.query("SELECT COUNT(*) FROM byo_ingredients");
+  if (parseInt(byoCount.rows[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO byo_ingredients
+        (option_key, category, label, price, image_url, emoji, qty_type, family, note, rim_image_url, img_by_qty, sort_order)
+      VALUES
+        ('39a', 'base', 'Hero', 1.99, '/images/byo/bases/39a.webp', NULL, NULL, 'hero', NULL, NULL, NULL, 1),
+        ('39b', 'base', 'Wrap', 1.99, '/images/byo/bases/39b.webp', NULL, NULL, 'wrap', 'Habibi Special Wrap', NULL, NULL, 2),
+        ('39c', 'base', 'Pita Bread', 1.99, '/images/byo/bases/39c.webp', NULL, NULL, 'wrap', NULL, NULL, NULL, 3),
+        ('39d', 'base', 'Croissant', 1.99, '/images/byo/bases/39d.webp', NULL, NULL, 'compact', NULL, NULL, NULL, 4),
+        ('39e', 'base', 'Bagel', 1.99, '/images/byo/bases/39e.webp', NULL, NULL, 'standard', NULL, NULL, NULL, 5),
+        ('39f', 'base', 'Roll', 1.49, '/images/byo/bases/39f.webp', NULL, NULL, 'standard', NULL, NULL, NULL, 6),
+        ('39g', 'base', 'Burger Bun', 1.99, '/images/byo/bases/39g.webp', NULL, NULL, 'standard', NULL, NULL, NULL, 7),
+        ('39h', 'base', 'Hot Dog Bun', 0.99, '/images/byo/bases/39h.webp', NULL, NULL, 'compact', NULL, NULL, NULL, 8),
+        ('39i', 'base', 'Platter', 2.99, '/images/byo/bases/39i.webp', NULL, NULL, 'platter', NULL, '/images/byo/bases/39i-rim.webp', NULL, 9),
+        ('39j', 'base', 'Family Tray', 4.99, '/images/byo/bases/39j.webp', NULL, NULL, 'familyTray', NULL, '/images/byo/bases/39j-rim.webp', NULL, 10),
+        ('none', 'cheese', 'No Cheese', 0, NULL, '⬜', NULL, NULL, NULL, NULL, NULL, 11),
+        ('american', 'cheese', 'American Cheese', 1, '/images/byo/ing/american-cheese.webp', '🧀', NULL, NULL, NULL, NULL, NULL, 12),
+        ('butter', 'cheese', 'Butter', 2, '/images/byo/ing/butter2.webp', '🫙', NULL, NULL, NULL, NULL, NULL, 13),
+        ('liquid_cheese', 'cheese', 'Cream Cheese', 1.5, '/images/byo/ing/liquid-cheese.webp', '🫕', NULL, NULL, NULL, NULL, NULL, 14),
+        ('onions', 'veg', 'Onions', 0.5, '/images/byo/ing/onion2.webp', '🧅', NULL, NULL, NULL, NULL, NULL, 15),
+        ('peppers', 'veg', 'Green Peppers', 0.5, '/images/byo/ing/pepper.webp', '🌿', NULL, NULL, NULL, NULL, NULL, 16),
+        ('cucumbers', 'veg', 'Cucumbers', 0.5, '/images/byo/ing/cucumber2.webp', '🥒', NULL, NULL, NULL, NULL, NULL, 17),
+        ('lettuce', 'veg', 'Lettuce', 0.5, '/images/byo/ing/lettuce.webp', '🥬', NULL, NULL, NULL, NULL, NULL, 18),
+        ('tomatoes', 'veg', 'Tomatoes', 0.5, '/images/byo/ing/tomato.webp', '🍅', NULL, NULL, NULL, NULL, NULL, 19),
+        ('rice', 'veg', 'Rice', 2, '/images/byo/ing/rice.webp', '🍚', NULL, NULL, NULL, NULL, NULL, 20),
+        ('egg-fried', 'protein', 'Egg (Fried)', 1, '/images/byo/ing/egg-fried.webp', NULL, 'eggs', NULL, NULL, NULL, NULL, 21),
+        ('egg-scrambled', 'protein', 'Egg (Scrambled)', 1, '/images/byo/ing/egg-scrambled.webp', NULL, 'eggs', NULL, NULL, NULL, NULL, 22),
+        ('chicken', 'protein', 'Chicken Broasted', 6, '/images/byo/ing/chicken-broasted.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 23),
+        ('lamb-gyro', 'protein', 'Lamb Gyro', 6, '/images/byo/ing/lamb-gyro.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 24),
+        ('mix', 'protein', 'Mix', 7, '/images/byo/ing/mix.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 25),
+        ('hotdog', 'protein', 'Hot Dog', 2, '/images/byo/ing/hotdog.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 26),
+        ('bacon', 'protein', 'Bacon', 3, '/images/byo/ing/bacon.webp', NULL, 'low-extra', NULL, 'Beef bacon, halal', NULL, NULL, 27),
+        ('hot-sausage', 'protein', 'Hot Sausage', 3, '/images/byo/ing/hot-sausage.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 28),
+        ('italian-sausage', 'protein', 'Italian Sausage', 6, '/images/byo/ing/italian-sausage.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 29),
+        ('turkey', 'protein', 'Turkey', 6, '/images/byo/ing/turkey.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 30),
+        ('chicken-kabab', 'protein', 'Chicken Shish Kabab', 3, '/images/byo/ing/chicken-kabab.webp', NULL, 'single-triple', NULL, NULL, NULL, NULL, 31),
+        ('beef-kabab', 'protein', 'Beef Shish Kabab', 4, '/images/byo/ing/beef-kabab.webp', NULL, 'single-triple', NULL, NULL, NULL, NULL, 32),
+        ('philly-steak', 'protein', 'Philly Steak', 6, '/images/byo/ing/philly-steak.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 33),
+        ('falafel', 'protein', 'Falafel', 6, '/images/byo/ing/falafel-6.webp', NULL, 'low-extra', NULL, NULL, NULL, '{"low":"/images/byo/ing/falafel-3.webp","regular":"/images/byo/ing/falafel-6.webp","extra":"/images/byo/ing/falafel-9.webp","double":"/images/byo/ing/falafel-12.webp"}'::jsonb, 34),
+        ('fish-fillet', 'protein', 'Fish Fillet', 7, '/images/byo/ing/fish-fillet2.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 35),
+        ('shrimp', 'protein', 'Shrimp', 8, '/images/byo/ing/shrimp.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 36),
+        ('tuna', 'protein', 'Tuna Fish', 7, '/images/byo/ing/tuna.webp', NULL, 'low-extra', NULL, NULL, NULL, NULL, 37),
+        ('beef-burger', 'protein', 'Beef Berger', 5, '/images/byo/ing/beef-burger2.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 38),
+        ('chicken-burger', 'protein', 'Chicken Berger', 5, '/images/byo/ing/chicken-burger.webp', NULL, 'single-double', NULL, NULL, NULL, NULL, 39),
+        ('white', 'sauce', 'White Sauce', 1, '/images/byo/ing/sauce-white-bowl.webp', NULL, NULL, NULL, NULL, NULL, NULL, 40),
+        ('hot', 'sauce', 'Hot Sauce', 1, '/images/byo/ing/sauce-hot-bowl.webp', NULL, NULL, NULL, NULL, NULL, NULL, 41),
+        ('ketchup', 'sauce', 'Ketchup', 0.75, '/images/byo/ing/sauce-ketchup.webp', NULL, NULL, NULL, NULL, NULL, NULL, 42),
+        ('mustard', 'sauce', 'Mustard', 0.75, '/images/byo/ing/sauce-mustard.webp', NULL, NULL, NULL, NULL, NULL, NULL, 43),
+        ('bbq', 'sauce', 'BBQ Sauce', 1, '/images/byo/ing/sauce-bbq.webp', NULL, NULL, NULL, NULL, NULL, NULL, 44),
+        ('green', 'sauce', 'Special Green Sauce', 1.25, '/images/byo/ing/sauce-green.webp', NULL, NULL, NULL, NULL, NULL, NULL, 45),
+        ('mayo', 'sauce', 'Mayonnaise', 0.75, '/images/byo/ing/sauce-mayo.webp', NULL, NULL, NULL, NULL, NULL, NULL, 46),
+        ('blue', 'sauce', 'Blue Cheese', 1.25, '/images/byo/ing/sauce-blue-cheese.webp', NULL, NULL, NULL, NULL, NULL, NULL, 47)
+    `);
+    console.log("✅ Default BYO ingredients seeded");
   }
 
   // Seed payment settings

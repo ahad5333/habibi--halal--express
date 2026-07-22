@@ -97,7 +97,11 @@ router.patch("/partners/applications/:id", updateApplicationStatus);
 // Master Menu
 const { createMenu, updateMenu, deleteMenu } = require("../controllers/menuController");
 const { getBusinessMenus, createBusinessMenu, updateBusinessMenu, deleteBusinessMenu } = require("../controllers/businessMenuController");
+const {
+  getAdminByoIngredients, createByoIngredient, updateByoIngredient, deleteByoIngredient,
+} = require("../controllers/byoIngredientController");
 const upload = require("../middleware/uploadMiddleware");
+const uploadByoImages = upload.fields([{ name: 'image', maxCount: 1 }, { name: 'rim_image', maxCount: 1 }]);
 
 router.get("/menus", getAllMenus);
 router.patch("/menus/availability", toggleMenuAvailability);
@@ -107,6 +111,12 @@ router.post("/menus/location-availability/bulk", setBulkLocationMenuAvailability
 router.post("/menus", upload.single("image"), createMenu);
 router.patch("/menus/:id", upload.single("image"), updateMenu);
 router.delete("/menus/:id", deleteMenu);
+
+// Build-Your-Own ingredients (bases/cheese/veg/protein/sauce)
+router.get("/byo-ingredients", getAdminByoIngredients);
+router.post("/byo-ingredients", uploadByoImages, createByoIngredient);
+router.patch("/byo-ingredients/:id", uploadByoImages, updateByoIngredient);
+router.delete("/byo-ingredients/:id", deleteByoIngredient);
 
 // Modifiers (shared choice groups & addon groups)
 router.get("/modifiers",         getModifiers);
