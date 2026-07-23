@@ -385,7 +385,7 @@ function DriverChatPanel({ socket }) {
       {/* Thread list */}
       <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto' }}>
         {threads.length === 0 && (
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '2rem' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '2rem' }}>
             No driver messages yet
           </p>
         )}
@@ -396,18 +396,18 @@ function DriverChatPanel({ socket }) {
               key={t.driver_id}
               onClick={() => openThread(t.driver_id)}
               style={{
-                background: activeId === t.driver_id ? 'rgba(229,182,78,0.12)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${activeId === t.driver_id ? 'rgba(229,182,78,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                background: activeId === t.driver_id ? 'rgba(229,182,78,0.12)' : 'var(--color-surface-2)',
+                border: `1px solid ${activeId === t.driver_id ? 'rgba(229,182,78,0.3)' : 'var(--color-border)'}`,
                 borderRadius: 10, padding: '0.65rem 0.8rem', cursor: 'pointer',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#f1f1f1' }}>{t.driver_name || `Driver #${t.driver_id}`}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text)' }}>{t.driver_name || `Driver #${t.driver_id}`}</span>
                 {unread > 0 && (
                   <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.65rem', fontWeight: 700, borderRadius: 8, padding: '1px 6px' }}>{unread}</span>
                 )}
               </div>
-              <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {t.last_direction === 'outbound' ? '↩ ' : ''}{t.last_message}
               </p>
             </div>
@@ -416,36 +416,36 @@ function DriverChatPanel({ socket }) {
       </div>
 
       {/* Message thread */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, overflow: 'hidden' }}>
         {!activeId ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.25)', fontSize: '0.85rem' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
             Select a driver to view their messages
           </div>
         ) : (
           <>
-            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.07)', fontWeight: 600, fontSize: '0.9rem', color: '#E5B64E' }}>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-primary)' }}>
               {active?.driver_name || `Driver #${activeId}`}
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {messages.map(m => (
                 <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.direction === 'inbound' ? 'flex-start' : 'flex-end', gap: '0.1rem' }}>
                   {m.direction === 'outbound' && (
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', paddingRight: '0.4rem' }}>{m.sent_by || 'You'}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', paddingRight: '0.4rem' }}>{m.sent_by || 'You'}</span>
                   )}
                   <div style={{
                     maxWidth: '75%', padding: '0.5rem 0.8rem', borderRadius: m.direction === 'inbound' ? '12px 12px 12px 4px' : '12px 12px 4px 12px',
-                    background: m.direction === 'inbound' ? 'rgba(255,255,255,0.09)' : '#E5B64E',
-                    color: m.direction === 'inbound' ? '#f1f1f1' : '#0a0a0a',
+                    background: m.direction === 'inbound' ? 'var(--color-surface-2)' : '#E5B64E',
+                    color: m.direction === 'inbound' ? 'var(--color-text)' : '#0a0a0a',
                     fontSize: '0.875rem', lineHeight: 1.4, wordBreak: 'break-word',
                   }}>{m.message}</div>
-                  <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)' }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)' }}>
                     {new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               ))}
               <div ref={messagesEndRef}/>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid var(--color-border)' }}>
               <input
                 className="dd-input"
                 style={{ flex: 1 }}
@@ -491,14 +491,14 @@ function DriverPerformancePanel() {
   const colClick = (col) => setSort(s => ({ col, dir: s.col === col ? -s.dir : -1 }));
   const arrow = (col) => sort.col === col ? (sort.dir === -1 ? ' ↓' : ' ↑') : '';
 
-  const thStyle = { padding: '0.6rem 0.75rem', textAlign: 'left', fontWeight: 600, fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
-  const tdStyle = { padding: '0.65rem 0.75rem', fontSize: '0.85rem', color: '#f1f1f1', borderBottom: '1px solid rgba(255,255,255,0.05)', verticalAlign: 'middle' };
+  const thStyle = { padding: '0.6rem 0.75rem', textAlign: 'left', fontWeight: 600, fontSize: '0.78rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
+  const tdStyle = { padding: '0.65rem 0.75rem', fontSize: '0.85rem', color: 'var(--color-text)', borderBottom: '1px solid var(--color-border)', verticalAlign: 'middle' };
 
   return (
     <div>
       {/* Period filter */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>Period:</span>
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Period:</span>
         {[{ label: '7 days', val: 7 }, { label: '30 days', val: 30 }, { label: '90 days', val: 90 }, { label: 'All time', val: 0 }].map(p => (
           <button
             key={p.val}
@@ -532,41 +532,41 @@ function DriverPerformancePanel() {
                 const rateColor = rate >= 85 ? '#22c55e' : rate >= 65 ? '#E5B64E' : '#ef4444';
                 const mins = parseInt(d.avg_delivery_mins) || null;
                 return (
-                  <tr key={d.id} style={{ background: 'transparent' }} onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  <tr key={d.id} style={{ background: 'transparent' }} onMouseEnter={e => e.currentTarget.style.background='var(--color-surface-2)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
                     <td style={tdStyle}>
                       <span style={{ fontWeight: 600 }}>{d.name}</span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 8, background: d.is_on_duty ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.07)', color: d.is_on_duty ? '#22c55e' : 'rgba(255,255,255,0.35)' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 8, background: d.is_on_duty ? 'rgba(34,197,94,0.15)' : 'var(--color-surface-2)', color: d.is_on_duty ? '#22c55e' : 'var(--color-text-muted)' }}>
                         {d.is_on_duty ? '● On Duty' : '○ Off'}
                       </span>
                     </td>
                     <td style={tdStyle}>
                       <span style={{ fontWeight: 700, fontSize: '1rem' }}>{d.deliveries ?? 0}</span>
                       {parseInt(d.total_dispatched) > 0 && (
-                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '0.35rem' }}>/ {d.total_dispatched} dispatched</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '0.35rem' }}>/ {d.total_dispatched} dispatched</span>
                       )}
                     </td>
                     <td style={tdStyle}>
                       {d.total_dispatched > 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div style={{ width: 60, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                          <div style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--color-border)', overflow: 'hidden' }}>
                             <div style={{ width: `${rate}%`, height: '100%', background: rateColor, borderRadius: 3 }}/>
                           </div>
                           <span style={{ color: rateColor, fontWeight: 600, fontSize: '0.85rem' }}>{rate}%</span>
                         </div>
-                      ) : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                      ) : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
                     </td>
                     <td style={tdStyle}>
                       {mins !== null && !isNaN(mins)
                         ? <span>{mins} min</span>
-                        : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                        : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
                     </td>
                     <td style={tdStyle}>
                       <span style={{ color: '#22c55e', fontWeight: 600 }}>${parseFloat(d.total_tips || 0).toFixed(2)}</span>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ color: parseInt(d.rejections) > 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }}>{d.rejections ?? 0}</span>
+                      <span style={{ color: parseInt(d.rejections) > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{d.rejections ?? 0}</span>
                     </td>
                   </tr>
                 );
@@ -649,9 +649,9 @@ function DriverMapPanel({ assignments }) {
         <span className="dd-badge dd-badge-success">🟢 {withGPS.length} on map</span>
         {noGPS.length > 0 && <span className="dd-badge dd-badge-warn">⚠ {noGPS.length} no GPS yet</span>}
       </div>
-      <div ref={mapDivRef} style={{ height: 460, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }} />
+      <div ref={mapDivRef} style={{ height: 460, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)' }} />
       {noGPS.length > 0 && (
-        <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
+        <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
           <strong>Waiting for GPS:</strong>{' '}
           {noGPS.map(a => a.driver_name || a.driver_full_name || `#${a.id}`).join(', ')}
         </div>
