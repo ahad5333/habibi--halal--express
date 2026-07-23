@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, ChefHat, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import { articlesAPI } from '../services/api';
 import './ArticleDetail.css';
@@ -84,8 +84,15 @@ export default function ArticleDetail() {
         <div dangerouslySetInnerHTML={{ __html: article.body || '' }} />
 
         <div className="article-cta-block">
-          <p>Hungry yet?</p>
-          <Link to="/menu" className="article-cta-btn">Order Now</Link>
+          <div className="article-cta-glow" aria-hidden="true" />
+          <ChefHat size={26} className="article-cta-icon" />
+          <p className="article-cta-eyebrow">Ready when you are</p>
+          <h3 className="article-cta-heading">Taste the Habibi Difference</h3>
+          <p className="article-cta-sub">Fresh halal food, made to order, ready at any of our Bronx locations.</p>
+          <div className="article-cta-btns">
+            <Link to="/menu" className="article-cta-btn">Order Now <ArrowRight size={15} /></Link>
+            <Link to="/locations" className="article-cta-btn article-cta-btn--outline">Find a Location</Link>
+          </div>
         </div>
       </div>
 
