@@ -15,6 +15,24 @@ const RESTAURANT_ADDRESS = process.env.RESTAURANT_ADDRESS || '204 E Mosholu Pkwy
 const RESTAURANT_NAME    = process.env.RESTAURANT_NAME    || 'Habibi Halal Express';
 const RESTAURANT_PHONE   = process.env.RESTAURANT_PHONE   || '+13477033731';
 
+// Delivery fee is always measured from this one fixed address (multi-location fulfillment
+// isn't wired into checkout at all yet), but delivery_zones can still be scoped to a
+// specific location -- getFeeForDistance() prefers that over a global zone. Without
+// resolving which location this address actually is, that scoping is silently dead:
+// every call defaults to "global zones only." Resolved once and cached for the process
+// lifetime since RESTAURANT_ADDRESS is a fixed env var, not something that changes mid-run.
+let _originLocationId;
+async function getOriginLocationId() {
+  if (_originLocationId !== undefined) return _originLocationId;
+  try {
+    const r = await pool.query('SELECT id FROM locations WHERE exact_address = $1 LIMIT 1', [RESTAURANT_ADDRESS]);
+    _originLocationId = r.rows[0]?.id || null;
+  } catch {
+    _originLocationId = null;
+  }
+  return _originLocationId;
+}
+
 async function autoDispatchDoorDash(order_id, order) {
   if (!ddConfigured()) return;
   if ((order.delivery_method || '').toLowerCase() !== 'delivery') return;
@@ -203,7 +221,7 @@ const createGuestOrder = async (req, res) => {
           .filter(Boolean).join(', ');
         const dist = await getDistance(RESTAURANT_ADDRESS, addrStr);
         if (dist) {
-          const serverDelFee = await getFeeForDistance(dist.miles);
+          const serverDelFee = await getFeeForDistance(dist.miles, await getOriginLocationId());
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }

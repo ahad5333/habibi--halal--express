@@ -558,10 +558,10 @@ const calculateDeliveryFee = async (req, res) => {
     let origin = process.env.RESTAURANT_ADDRESS || '204 E Mosholu Pkwy S, Bronx, NY 10458';
     if (location_id) {
       const locResult = await pool.query(
-        `SELECT address FROM locations WHERE id=$1`, [location_id]
+        `SELECT exact_address FROM locations WHERE id=$1`, [location_id]
       );
-      if (locResult.rows.length && locResult.rows[0].address) {
-        origin = locResult.rows[0].address;
+      if (locResult.rows.length && locResult.rows[0].exact_address) {
+        origin = locResult.rows[0].exact_address;
       }
     }
 

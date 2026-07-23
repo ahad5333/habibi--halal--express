@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Truck, Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './DeliveryZones.css';
 
 const BLANK = { location_id: '', name: '', min_radius_mi: 0, max_radius_mi: 5, delivery_fee: 0, is_active: true };
+
+// Active zones for a location should tile 0 -> max with no gaps; getFeeForDistance
+// rejects any distance that doesn't fall in an active zone ("outside delivery range"),
+// so a gap here silently turns away real customers with no warning unless we surface it.
+function findCoverageGaps(zoneList) {
+  const active = [...zoneList]
+    .filter(z => z.is_active)
+    .sort((a, b) => parseFloat(a.min_radius_mi) - parseFloat(b.min_radius_mi));
+  if (active.length === 0) return [];
+
+  const gaps = [];
+  if (parseFloat(active[0].min_radius_mi) > 0) {
+    gaps.push(`0–${active[0].min_radius_mi} mi`);
+  }
+  for (let i = 0; i < active.length - 1; i++) {
+    const curMax = parseFloat(active[i].max_radius_mi);
+    const nextMin = parseFloat(active[i + 1].min_radius_mi);
+    if (nextMin > curMax) gaps.push(`${curMax}–${nextMin} mi`);
+  }
+  return gaps;
+}
 
 export default function DeliveryZones() {
   const [zones, setZones]         = useState([]);
@@ -77,13 +98,24 @@ export default function DeliveryZones() {
       ) : (
         <div>
           {/* Zones by location */}
-          {Object.values(grouped).map(loc => (
+          {Object.values(grouped).map(loc => {
+            // A location falls back to global zones wherever it has none of its own
+            // (getFeeForDistance matches location-specific OR global), so real coverage
+            // for gap-checking purposes is the combined set, not just this location's rows.
+            const gaps = findCoverageGaps([...loc.zones, ...unassigned]);
+            return (
             <div key={loc.id} className="card dz-location-card">
               <div className="dz-location-hdr">
                 <Truck size={16}/>
                 <h3>{loc.title}</h3>
                 <span className="text-muted" style={{fontSize:'0.72rem'}}>{loc.brief_address}</span>
               </div>
+              {gaps.length > 0 && (
+                <div className="dz-gap-alert">
+                  <AlertTriangle size={16}/>
+                  <span>Gap in coverage: orders at <strong>{gaps.join(', ')}</strong> from this location will be rejected as outside delivery range.</span>
+                </div>
+              )}
               {loc.zones.length === 0 ? (
                 <p className="text-muted" style={{fontSize:'0.82rem',padding:'0.5rem 0'}}>No zones defined for this location.</p>
               ) : (
@@ -99,7 +131,8 @@ export default function DeliveryZones() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {/* Unassigned zones */}
           {unassigned.length > 0 && (
@@ -108,6 +141,12 @@ export default function DeliveryZones() {
                 <Truck size={16}/>
                 <h3>Global Zones (all locations)</h3>
               </div>
+              {findCoverageGaps(unassigned).length > 0 && (
+                <div className="dz-gap-alert">
+                  <AlertTriangle size={16}/>
+                  <span>Gap in coverage: orders at <strong>{findCoverageGaps(unassigned).join(', ')}</strong> will be rejected as outside delivery range (for any location with no zones of its own).</span>
+                </div>
+              )}
               <div className="table-wrap">
                 <table className="table">
                   <thead><tr><th>Zone Name</th><th>Distance Range</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
