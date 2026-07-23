@@ -1104,6 +1104,25 @@ const createTables = async () => {
     await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_driver_id_fkey`);
     await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES staff_members(id) ON DELETE SET NULL`);
 
+    // assigned_at/delivered_at/last_location_update drifted to TIMESTAMP WITHOUT
+    // TIME ZONE on some deployments (should be TIMESTAMPTZ, same as accepted_at/
+    // cash_collected_at). The DB session TimeZone is America/New_York, so every
+    // NOW() written to a naive column silently lost 4-5 hours, and reading it
+    // back mislabeled that shifted local time as UTC — timestamps shown in the
+    // admin dispatch board would be hours off. USING ... AT TIME ZONE reinterprets
+    // the existing naive value as the New York local time it actually represents.
+    const driftedTsCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='delivery_assignments'
+        AND column_name IN ('assigned_at','delivered_at','last_location_update')
+        AND data_type = 'timestamp without time zone'
+    `);
+    for (const { column_name } of driftedTsCols.rows) {
+      await client.query(
+        `ALTER TABLE delivery_assignments ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
+
     // ── staff_members: on-duty toggle + driver PIN + FCM push token ──
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS is_on_duty          BOOLEAN      DEFAULT FALSE`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_hash     VARCHAR(100)`);
