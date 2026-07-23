@@ -100,6 +100,14 @@ export const menuAPI = {
   getModifiers: (id) => request(`/api/menus/${id}/modifiers`),
 };
 
+export const articlesAPI = {
+  /** GET /api/articles — published articles, list shape (excerpt not full body) */
+  getAll: () => request('/api/articles'),
+
+  /** GET /api/articles/:slug — full article incl. body */
+  getBySlug: (slug) => request(`/api/articles/${slug}`),
+};
+
 export const byoIngredientsAPI = {
   /** GET /api/byo-ingredients — { base, cheese, veg, protein, sauce } arrays */
   getAll: () => request('/api/byo-ingredients'),

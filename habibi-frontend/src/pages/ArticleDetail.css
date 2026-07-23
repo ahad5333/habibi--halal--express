@@ -90,6 +90,24 @@
   line-height: 1.85;
   margin: 0 0 1.2rem;
 }
+.article-body ul, .article-body ol {
+  color: rgba(255,255,255,0.72);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  margin: 0 0 1.2rem;
+  padding-left: 1.4rem;
+}
+.article-body li { margin-bottom: 0.4rem; }
+.article-body blockquote {
+  border-left: 3px solid #d97706;
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+  color: rgba(255,255,255,0.75);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.7;
+}
+.article-body a { color: #f59e0b; }
 
 /* Checklist */
 .article-checklist {

@@ -24,7 +24,7 @@ const Wholesale        = lazy(() => import('./pages/Wholesale'));
 const Account          = lazy(() => import('./pages/Account'));
 const Videos               = lazy(() => import('./pages/Videos'));
 const Articles             = lazy(() => import('./pages/Articles'));
-const ArticleHabibiTacos   = lazy(() => import('./pages/ArticleHabibiTacos'));
+const ArticleDetail        = lazy(() => import('./pages/ArticleDetail'));
 const Urgent           = lazy(() => import('./pages/Urgent'));
 const Payment          = lazy(() => import('./pages/Payment'));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'));
@@ -54,9 +54,6 @@ const Offers              = lazy(() => import('./pages/Offers'));
 const KitchenBehindScenes    = lazy(() => import('./pages/KitchenBehindScenes'));
 const CustomerStories        = lazy(() => import('./pages/CustomerStories'));
 const OurJourney             = lazy(() => import('./pages/OurJourney'));
-const ArticleLambKofta       = lazy(() => import('./pages/ArticleLambKofta'));
-const ArticleBuildYourOwn    = lazy(() => import('./pages/ArticleBuildYourOwn'));
-const ArticleHalalCertified  = lazy(() => import('./pages/ArticleHalalCertified'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -141,10 +138,7 @@ function Layout() {
           <Route path="/staff" element={<Careers />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/articles" element={<Articles />} />
-          <Route path="/articles/habibi-tacos"    element={<ArticleHabibiTacos />} />
-          <Route path="/articles/lamb-kofta-secret" element={<ArticleLambKofta />} />
-          <Route path="/articles/build-your-own"    element={<ArticleBuildYourOwn />} />
-          <Route path="/articles/halal-certified"   element={<ArticleHalalCertified />} />
+          <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/account" element={<Account />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
