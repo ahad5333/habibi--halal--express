@@ -1095,6 +1095,22 @@ export default function CustomOrder() {
   const [totalFlash, setTotalFlash]       = useState(false);
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
 
+  /* The sticky sidebar (canvas + price card) needs to sit BELOW the sticky
+     site navbar, not just 72px down — the navbar's real height varies a lot
+     by viewport (90px–176px depending on whether the promo bar/nav wraps),
+     so a hardcoded offset left the top of the canvas hidden behind the
+     navbar while scrolling. Measure it live instead of guessing. */
+  const [navbarH, setNavbarH] = useState(72);
+  useEffect(() => {
+    const navEl = document.querySelector('header.navbar');
+    if (!navEl) return;
+    const update = () => setNavbarH(navEl.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(navEl);
+    return () => ro.disconnect();
+  }, []);
+
   /* BYO ingredient data — admin-managed via Menu Builder. Seeded with the
      hardcoded defaults so the builder renders identically even before the
      fetch resolves (or if it fails), then swapped for live data on success. */
@@ -1606,7 +1622,7 @@ export default function CustomOrder() {
         </div>
 
         {/* ── Left: sticky canvas (desktop sidebar) ── */}
-        <aside className="co-sidebar">
+        <aside className="co-sidebar" style={{ top: navbarH + 12 }}>
           <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} proteinOpts={proteinData} sauceOpts={sauceData} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
