@@ -47,7 +47,11 @@ const validateCoupon = async (req, res) => {
       if (!req.user) {
         return res.status(401).json({ message: "Please log in to use this coupon." });
       }
-      if (coupon.customer_email.toLowerCase() !== req.user.email.toLowerCase()) {
+      // The JWT payload doesn't carry email, so look it up rather than
+      // reading req.user.email (which is always undefined).
+      const userRow  = await pool.query('SELECT email FROM users WHERE id=$1', [req.user.id]);
+      const userEmail = userRow.rows[0]?.email || '';
+      if (coupon.customer_email.toLowerCase() !== userEmail.toLowerCase()) {
         return res.status(400).json({ message: "This coupon is not valid for your account." });
       }
     }
