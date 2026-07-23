@@ -1006,7 +1006,7 @@ const createTables = async () => {
         ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_category_check;
         BEGIN
           ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_check
-            CHECK (category IN ('base','cheese','veg','protein','sauce','bowl_base','bowl_topping'));
+            CHECK (category IN ('base','cheese','veg','protein','sauce','bowl_base','bowl_topping','bowl_protein','bowl_sauce'));
         EXCEPTION WHEN duplicate_object THEN NULL;
         END;
         BEGIN
@@ -1383,6 +1383,28 @@ const seedDefaults = async () => {
         ('onion',    'bowl_topping', 'Onion',    0.50, '/images/byo/ing/onion.webp',   4)
     `);
     console.log("✅ Default Build Your Own Bowl options seeded");
+  }
+
+  // Bowl Protein / Bowl Sauce — the BYO Bowl preview widget uses its own
+  // small curated list here (not the full 19 proteins / 8 sauces used by
+  // the /customize sandwich builder), same option_keys as their sandwich
+  // counterparts but a separate category so admin can manage this smaller
+  // set independently.
+  const bowlProteinSauceCount = await pool.query("SELECT COUNT(*) FROM byo_ingredients WHERE category IN ('bowl_protein','bowl_sauce')");
+  if (parseInt(bowlProteinSauceCount.rows[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO byo_ingredients
+        (option_key, category, label, price, image_url, sort_order)
+      VALUES
+        ('chicken',    'bowl_protein', 'Chicken Broasted',  6.00, '/images/byo/ing/chicken-broasted.webp', 1),
+        ('lamb-gyro',  'bowl_protein', 'Lamb Gyro',         6.00, '/images/byo/ing/lamb-gyro.webp',         2),
+        ('beef-kabab', 'bowl_protein', 'Beef Shish Kabab',  4.00, '/images/byo/ing/beef-kabab.webp',        3),
+        ('falafel',    'bowl_protein', 'Falafel',           6.00, '/images/byo/ing/falafel-6.webp',         4),
+        ('white',      'bowl_sauce',   'White Sauce',       1.00, '/images/byo/ing/sauce-white-bowl.webp',  1),
+        ('hot',        'bowl_sauce',   'Hot Sauce',         1.00, '/images/byo/ing/sauce-hot-bowl.webp',    2),
+        ('bbq',        'bowl_sauce',   'BBQ Sauce',         1.00, '/images/byo/ing/sauce-bbq.webp',         3)
+    `);
+    console.log("✅ Default Bowl Protein / Bowl Sauce options seeded");
   }
 
   // Seed payment settings

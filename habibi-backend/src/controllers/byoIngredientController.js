@@ -2,10 +2,10 @@ const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { logAudit } = require('./auditController');
 
-const CATEGORIES = ['base', 'cheese', 'veg', 'protein', 'sauce', 'bowl_base', 'bowl_topping'];
+const CATEGORIES = ['base', 'cheese', 'veg', 'protein', 'sauce', 'bowl_base', 'bowl_topping', 'bowl_protein', 'bowl_sauce'];
 
 function groupByCategory(rows) {
-  const grouped = { base: [], cheese: [], veg: [], protein: [], sauce: [], bowl_base: [], bowl_topping: [] };
+  const grouped = { base: [], cheese: [], veg: [], protein: [], sauce: [], bowl_base: [], bowl_topping: [], bowl_protein: [], bowl_sauce: [] };
   for (const r of rows) {
     if (grouped[r.category]) grouped[r.category].push(r);
   }

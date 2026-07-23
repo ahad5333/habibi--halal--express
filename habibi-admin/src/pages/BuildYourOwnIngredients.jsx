@@ -16,13 +16,15 @@ function imgSrc(url) {
 const BYO_TAB_LABELS = {
   base: 'Bases', cheese: 'Cheese', veg: 'Veggies', protein: 'Proteins', sauce: 'Sauces',
   bowl_base: 'Bowl Bases', bowl_topping: 'Bowl Toppings',
+  bowl_protein: 'Bowl Proteins', bowl_sauce: 'Bowl Sauces',
 };
-// Which category tabs belong to which customer-facing page. Proteins and
-// Sauces are shared — both /customize and the /menu/byo bowl widget pull
-// from the same protein/sauce data — so they appear under both pages.
+// Which category tabs belong to which customer-facing page. The Bowl page
+// has its own small curated protein/sauce list (bowl_protein/bowl_sauce) —
+// separate from the full 19/8 list /customize uses — since the bowl preview
+// card is meant to stay compact, not show every sandwich protein.
 const BYO_PAGES = [
   { id: 'customize', label: 'Customize Page', icon: UtensilsCrossed, tabs: ['base', 'cheese', 'veg', 'protein', 'sauce'] },
-  { id: 'bowl',      label: 'BYO Bowl Page',  icon: Soup,            tabs: ['bowl_base', 'protein', 'bowl_topping', 'sauce'] },
+  { id: 'bowl',      label: 'BYO Bowl Page',  icon: Soup,            tabs: ['bowl_base', 'bowl_protein', 'bowl_topping', 'bowl_sauce'] },
 ];
 const BYO_FAMILY_OPTIONS = ['hero', 'wrap', 'compact', 'standard', 'platter', 'familyTray'];
 const BYO_QTY_TYPE_OPTIONS = ['eggs', 'low-extra', 'single-double', 'single-triple'];
@@ -174,7 +176,7 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
               </>
             )}
 
-            {(category === 'cheese' || category === 'veg' || category === 'sauce' || category === 'bowl_base' || category === 'bowl_topping') && (
+            {(category === 'cheese' || category === 'veg' || category === 'sauce' || category === 'bowl_base' || category === 'bowl_topping' || category === 'bowl_protein' || category === 'bowl_sauce') && (
               <div className="field">
                 <label>Emoji <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(shown alongside the image)</span></label>
                 <input className="input" placeholder="e.g. 🧅" value={form.emoji} onChange={e => set('emoji', e.target.value)} style={{ width: '5rem' }} />

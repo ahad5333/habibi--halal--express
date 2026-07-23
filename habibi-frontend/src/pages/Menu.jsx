@@ -200,10 +200,10 @@ const Menu = () => {
   useEffect(() => {
     byoIngredientsAPI.getAll().then(d => {
       const adapt = row => ({ id: row.option_key, label: row.label, image: row.image_url || undefined, price: parseFloat(row.price) });
-      if (d.bowl_base?.length) setBowlBaseOptions(d.bowl_base.map(adapt));
-      if (d.protein?.length)   setBowlProteinOptions(d.protein.map(adapt));
+      if (d.bowl_base?.length)    setBowlBaseOptions(d.bowl_base.map(adapt));
+      if (d.bowl_protein?.length) setBowlProteinOptions(d.bowl_protein.map(adapt));
       if (d.bowl_topping?.length) setBowlToppingOptions(d.bowl_topping.map(adapt));
-      if (d.sauce?.length)     setBowlSauceOptions(d.sauce.map(adapt));
+      if (d.bowl_sauce?.length)   setBowlSauceOptions(d.bowl_sauce.map(adapt));
     }).catch(() => {});
   }, []);
 
