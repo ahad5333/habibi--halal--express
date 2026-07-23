@@ -133,10 +133,10 @@ exports.placeOrder = async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO partner_orders
-         (order_number, partner_user_id, partner_application_id, business_name,
-          items, sub_total, tax, total, delivery_address, notes, price_tier, payment_method)
+         (order_number, partner_user_id, application_id, business_name,
+          items, sub_total, tax, total, delivery_address, notes, price_tier, payment_method, payment_status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-         (SELECT price_tier FROM partner_applications WHERE id=$3), $11)
+         (SELECT price_tier FROM partner_applications WHERE id=$3), $11, 'unpaid')
        RETURNING *`,
       [orderNumber, req.user.id, appId, businessName,
        JSON.stringify(items), sub_total || 0, 0,
@@ -204,7 +204,7 @@ exports.getInvoice = async (req, res) => {
               pa.business_name AS app_business_name, pa.ein_number, pa.address AS business_address
        FROM partner_orders po
        JOIN users u ON u.id = po.partner_user_id
-       LEFT JOIN partner_applications pa ON pa.id = po.partner_application_id
+       LEFT JOIN partner_applications pa ON pa.id = po.application_id
        WHERE po.id=$1 AND po.partner_user_id=$2`,
       [id, req.user.id]
     );

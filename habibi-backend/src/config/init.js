@@ -549,7 +549,7 @@ const createTables = async () => {
         id                      SERIAL PRIMARY KEY,
         order_number            VARCHAR(50) UNIQUE NOT NULL,
         partner_user_id         INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        partner_application_id  INTEGER REFERENCES partner_applications(id) ON DELETE SET NULL,
+        application_id          INTEGER REFERENCES partner_applications(id) ON DELETE SET NULL,
         business_name           VARCHAR(255),
         items                   JSONB DEFAULT '[]',
         sub_total               NUMERIC(10,2) DEFAULT 0,
@@ -566,8 +566,13 @@ const createTables = async () => {
     `);
 
     // ── Partner Orders: safe migration columns ────────────────────
+    // application_id predates this file's CREATE TABLE definition on already-provisioned
+    // databases (was created under this exact name, never "partner_application_id" --
+    // fixed here defensively in case a fresh install ever runs against an older dump).
+    await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS application_id      INTEGER REFERENCES partner_applications(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS payment_method      VARCHAR(100) DEFAULT 'invoice'`);
     await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS payment_status      VARCHAR(50)  DEFAULT 'unpaid'`);
+    await client.query(`ALTER TABLE partner_orders ALTER COLUMN payment_status SET DEFAULT 'unpaid'`);
     await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS delivery_fee        NUMERIC(10,2) DEFAULT 0`);
     await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS service_fee         NUMERIC(10,2) DEFAULT 0`);
     await client.query(`ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS credit_applied      NUMERIC(10,2) DEFAULT 0`);
