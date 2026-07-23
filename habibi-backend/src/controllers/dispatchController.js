@@ -618,6 +618,7 @@ const getCashReport = async (req, res) => {
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
        WHERE go.payment_method = 'cash'
+         AND da.status != 'cancelled'
          AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = $1
        ORDER BY da.assigned_at ASC`,
       [date]
@@ -656,10 +657,21 @@ const getCashReport = async (req, res) => {
 
     for (const h of handins.rows) {
       const key = h.driver_id || h.driver_name || 'Unknown';
-      if (byDriver[key]) {
-        byDriver[key].total_handed_in += parseFloat(h.amount || 0);
-        byDriver[key].handins.push(h);
+      if (!byDriver[key]) {
+        // Driver handed in cash today but had no deliveries assigned today
+        // (e.g. catching up cash from a previous day) — still needs to count.
+        byDriver[key] = {
+          driver_id:       h.driver_id,
+          driver_name:     h.driver_name || 'Unknown',
+          orders:          [],
+          total_collected: 0,
+          confirmed_count: 0,
+          total_handed_in: 0,
+          handins:         [],
+        };
       }
+      byDriver[key].total_handed_in += parseFloat(h.amount || 0);
+      byDriver[key].handins.push(h);
     }
 
     for (const d of Object.values(byDriver)) {
@@ -697,6 +709,21 @@ const recordCashHandin = async (req, res) => {
     const io = req.app.get('io');
     if (io) io.to('admins').emit('cash_handed_in', result.rows[0]);
     res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Admin: delete a mistaken cash hand-in entry ─────────────────────
+const deleteCashHandin = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM driver_cash_handins WHERE id=$1 RETURNING id`,
+      [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Hand-in record not found' });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -1288,6 +1315,7 @@ module.exports = {
   codDeliveryFailed,
   getCashReport,
   recordCashHandin,
+  deleteCashHandin,
   getDriverCashSummary,
   getDriverHistory,
   getDriverStats,

@@ -56,6 +56,7 @@ const {
   codDeliveryFailed,
   getCashReport,
   recordCashHandin,
+  deleteCashHandin,
   getDriverCashSummary,
   getDriverHistory,
   getDriverStats,
@@ -165,6 +166,7 @@ router.post('/assign',                   protect, admin, assignDriver);
 router.post('/broadcast/:order_number',  protect, admin, broadcastOrderToDrivers);
 router.get ('/cash-report',              protect, admin, getCashReport);
 router.post('/cash-handins',             protect, admin, recordCashHandin);
+router.delete('/cash-handins/:id',       protect, admin, deleteCashHandin);
 router.get ('/driver-performance',       protect, admin, getDriverPerformance);
 
 // Scheduled orders waiting for dispatch
