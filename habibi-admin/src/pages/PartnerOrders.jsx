@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw, ChevronDown, ChevronUp, Handshake, Download, DollarSign } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import { fmtDate } from '../utils/date.js';
+import './PartnerOrders.css';
 
 const STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
