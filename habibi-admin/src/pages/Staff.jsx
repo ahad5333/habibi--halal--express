@@ -285,6 +285,9 @@ export default function Staff() {
           onChange={e => setSearch(e.target.value)}
           style={{ maxWidth: 360 }}
         />
+        <p className="staff-role-legend">
+          Only <strong>Delivery</strong> staff have app login (driver PIN). Kitchen, Manager, Cashier, and Server are roster entries only — no login or admin access.
+        </p>
       </div>
 
       {err && <p className="text-error" style={{marginBottom:'1rem'}}>{err}</p>}
@@ -469,6 +472,11 @@ export default function Staff() {
                   <select className="input select" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
                     {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>)}
                   </select>
+                  <p className="staff-role-hint">
+                    {form.role === 'delivery'
+                      ? 'Has PIN-based login to the driver app.'
+                      : 'Roster only — this role has no app login or admin access.'}
+                  </p>
                 </div>
                 <div className="field">
                   <label>Email</label>

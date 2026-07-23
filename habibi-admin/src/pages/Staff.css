@@ -12,6 +12,8 @@
 .staff-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
 .staff-active-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; }
 .staff-active-toggle input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+.staff-role-hint { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.35rem; }
+.staff-role-legend { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.6rem; }
 
 @media (max-width: 600px) {
   .staff-form-grid { grid-template-columns: 1fr; }
