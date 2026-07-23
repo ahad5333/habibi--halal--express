@@ -123,6 +123,52 @@ function EstimateWidget() {
   );
 }
 
+function ManualDispatchWidget({ onDispatched }) {
+  const [ref, setRef]         = useState('');
+  const [sending, setSending] = useState(false);
+  const [result, setResult]   = useState(null);
+
+  const send = async () => {
+    if (!ref.trim()) return;
+    setSending(true); setResult(null);
+    try {
+      await adminAPI.createRoadieShipment(ref.trim());
+      setResult({ ok: true, message: `Shipment created for order ${ref.trim()}.` });
+      setRef('');
+      onDispatched?.();
+    } catch (err) {
+      setResult({ ok: false, message: err.message || 'Could not create shipment.' });
+    }
+    setSending(false);
+  };
+
+  return (
+    <div className="rd-estimate">
+      <h4>Manually Send an Order via Roadie</h4>
+      <p className="rd-empty-sub" style={{ margin: '0 0 0.5rem' }}>
+        For an order that didn't auto-dispatch (e.g. Roadie wasn't configured yet when it came in) or that you want to route through Roadie by hand.
+      </p>
+      <div className="rd-estimate-row">
+        <input
+          className="rd-input"
+          placeholder="Order number (e.g. HBB-...)"
+          value={ref}
+          onChange={e => setRef(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()}
+        />
+        <button className="rd-btn-primary" onClick={send} disabled={sending}>
+          {sending ? 'Sending…' : 'Send via Roadie'}
+        </button>
+      </div>
+      {result && (
+        result.ok
+          ? <p className="rd-estimate-result"><CheckCircle size={13}/> {result.message}</p>
+          : <p className="rd-estimate-error"><AlertCircle size={13}/> {result.message}</p>
+      )}
+    </div>
+  );
+}
+
 export default function RoadieDeliveries() {
   const [shipments, setShipments] = useState([]);
   const [configured, setConfigured] = useState(true);
@@ -200,6 +246,7 @@ export default function RoadieDeliveries() {
       </div>
 
       <EstimateWidget />
+      <ManualDispatchWidget onDispatched={load} />
 
       {/* Filter tabs */}
       <div className="rd-tabs">
