@@ -10,13 +10,15 @@ const partnerOnly = async (req, res, next) => {
     // Fast path: JWT already carries the flag
     if (req.user.is_partner) return next();
 
-    // Slow path: token pre-dates approval — check DB
+    // Slow path: token pre-dates approval (or pre-dates partner_id being embedded
+    // in the JWT at all) — check DB and backfill both onto req.user for this request
     const result = await pool.query(
-      'SELECT is_partner FROM users WHERE id=$1',
+      'SELECT is_partner, partner_id FROM users WHERE id=$1',
       [req.user.id]
     );
     if (result.rows[0]?.is_partner) {
       req.user.is_partner = true;
+      req.user.partner_id = result.rows[0].partner_id || null;
       return next();
     }
 

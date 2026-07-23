@@ -246,6 +246,7 @@ const loginUser = async (req, res) => {
         id: user.id,
         role: user.role,
         is_partner: !!user.is_partner,
+        partner_id: user.partner_id || null,
         jti: crypto.randomUUID(),
       },
       process.env.JWT_SECRET,
@@ -363,7 +364,7 @@ const verifyAdminMfa = async (req, res) => {
     );
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -385,7 +386,7 @@ const verifyEmail = async (req, res) => {
     if (!token) return res.status(400).json({ message: 'Verification token required.' });
 
     const result = await pool.query(
-      `SELECT id, name, email, role, is_partner
+      `SELECT id, name, email, role, is_partner, partner_id
        FROM users
        WHERE verification_token = $1
          AND verification_token_expires > NOW()`,
@@ -407,7 +408,7 @@ const verifyEmail = async (req, res) => {
     });
 
     const jwtToken = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -569,7 +570,7 @@ const verifySmsRecoveryCode = async (req, res) => {
 
     const cleaned = phone.replace(/\D/g, '');
     const result  = await pool.query(
-      `SELECT id, name, email, role, is_partner, sms_code_hash, sms_code_expires, sms_code_attempts
+      `SELECT id, name, email, role, is_partner, partner_id, sms_code_hash, sms_code_expires, sms_code_attempts
        FROM users WHERE phone_number = $1 OR phone_number = $2`,
       [cleaned, `+1${cleaned.slice(-10)}`]
     );
@@ -604,7 +605,7 @@ const verifySmsRecoveryCode = async (req, res) => {
 
     // Issue a short-lived recovery token (for password reset or direct login)
     const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, sms_verified: true, jti: crypto.randomUUID() },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, sms_verified: true, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
@@ -628,7 +629,7 @@ const verifyPhoneOtp = async (req, res) => {
 
     const cleaned = phone.replace(/\D/g, '');
     const result = await pool.query(
-      `SELECT id, name, email, role, is_partner, sms_code_hash, sms_code_expires, sms_code_attempts
+      `SELECT id, name, email, role, is_partner, partner_id, sms_code_hash, sms_code_expires, sms_code_attempts
        FROM users WHERE (phone_number=$1 OR phone_number=$2) AND email_verified=FALSE`,
       [cleaned, `+1${cleaned.slice(-10)}`]
     );
@@ -660,7 +661,7 @@ const verifyPhoneOtp = async (req, res) => {
     sendSMS(phone.trim(), `Welcome to Habibi Halal Express, ${user.name}! Your account is now active. Start ordering at habibihe.com`).catch(() => {});
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -763,7 +764,7 @@ const socialAuth = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, is_partner: !!user.is_partner, jti: crypto.randomUUID() },
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
