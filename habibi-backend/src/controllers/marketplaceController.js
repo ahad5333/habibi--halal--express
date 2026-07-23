@@ -6,7 +6,7 @@ const { notifyPlatform } = require('../services/orderCallbackService');
 // ── Webhook signature helpers ───────────────────────────────────────
 function verifyUberSignature(rawBody, signature) {
   const secret = process.env.UBEREATS_WEBHOOK_SECRET;
-  if (!secret) return true;
+  if (!secret) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   try { return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected)); }
   catch { return false; }
@@ -14,16 +14,18 @@ function verifyUberSignature(rawBody, signature) {
 
 function verifyGrubHubSignature(rawBody, signature) {
   const secret = process.env.GRUBHUB_WEBHOOK_SECRET;
-  if (!secret) return true;
+  if (!secret) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
+  try { return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected)); }
+  catch { return false; }
 }
 
 function verifyCaviarSignature(rawBody, signature) {
   const secret = process.env.DOORDASH_WEBHOOK_SECRET;
-  if (!secret) return true;
+  if (!secret) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
+  try { return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected)); }
+  catch { return false; }
 }
 
 // ── Resolve location_id from platform store ID ──────────────────────
