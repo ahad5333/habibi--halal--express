@@ -484,7 +484,8 @@ router.get('/group-orders', async (req, res) => {
   }
 });
 
-// ── Saved Custom Orders — admin read-only ────────────────────────────────
+// ── Saved Custom Orders — admin view + moderation delete ─────────────────
+const { deleteSavedCustomAdmin } = require("../controllers/savedCustomController");
 router.get('/saved-customs', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -502,6 +503,7 @@ router.get('/saved-customs', async (req, res) => {
     res.status(500).json(safeError(err));
   }
 });
+router.delete('/saved-customs/:id', deleteSavedCustomAdmin);
 
 // ── Authorize.net merchant accounts ──────────────────────────────────────
 const {

@@ -66,4 +66,20 @@ const deleteSavedCustom = async (req, res) => {
   }
 };
 
-module.exports = { getSavedCustoms, createSavedCustom, deleteSavedCustom };
+// DELETE /api/admin/saved-customs/:id — admin moderation (no user_id
+// restriction; names are customer-supplied free text with no other way
+// to remove an inappropriate one).
+const deleteSavedCustomAdmin = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM saved_custom_orders WHERE id = $1 RETURNING id`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Saved order not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete saved order' });
+  }
+};
+
+module.exports = { getSavedCustoms, createSavedCustom, deleteSavedCustom, deleteSavedCustomAdmin };
