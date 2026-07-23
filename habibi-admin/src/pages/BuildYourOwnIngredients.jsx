@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, ImageOff, EyeOff, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, ImageOff, EyeOff, Eye, UtensilsCrossed, Soup } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
@@ -13,11 +13,17 @@ function imgSrc(url) {
   return `${API}${url}`;
 }
 
-const BYO_TABS = ['base', 'cheese', 'veg', 'protein', 'sauce', 'bowl_base', 'bowl_topping'];
 const BYO_TAB_LABELS = {
   base: 'Bases', cheese: 'Cheese', veg: 'Veggies', protein: 'Proteins', sauce: 'Sauces',
   bowl_base: 'Bowl Bases', bowl_topping: 'Bowl Toppings',
 };
+// Which category tabs belong to which customer-facing page. Proteins and
+// Sauces are shared — both /customize and the /menu/byo bowl widget pull
+// from the same protein/sauce data — so they appear under both pages.
+const BYO_PAGES = [
+  { id: 'customize', label: 'Customize Page', icon: UtensilsCrossed, tabs: ['base', 'cheese', 'veg', 'protein', 'sauce'] },
+  { id: 'bowl',      label: 'BYO Bowl Page',  icon: Soup,            tabs: ['bowl_base', 'protein', 'bowl_topping', 'sauce'] },
+];
 const BYO_FAMILY_OPTIONS = ['hero', 'wrap', 'compact', 'standard', 'platter', 'familyTray'];
 const BYO_QTY_TYPE_OPTIONS = ['eggs', 'low-extra', 'single-double', 'single-triple'];
 const BYO_EMPTY_FORM = { option_key: '', label: '', price: '', emoji: '', qty_type: '', family: '', note: '', sort_order: 0, is_active: true, image: null, rim_image: null };
@@ -199,11 +205,18 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
 export default function BuildYourOwnIngredients() {
   const [byoData, setByoData]       = useState({ base: [], cheese: [], veg: [], protein: [], sauce: [], bowl_base: [], bowl_topping: [] });
   const [byoLoading, setByoLoading] = useState(true);
+  const [byoPage, setByoPage]       = useState('customize'); // 'customize' | 'bowl'
   const [byoTab, setByoTab]         = useState('base');
   const [byoModal, setByoModal]     = useState(null); // null | 'add' | item
   const [byoDeleting, setByoDeleting] = useState(null);
   const [toast, setToast]           = useState('');
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 4000); };
+
+  const activePage = BYO_PAGES.find(p => p.id === byoPage);
+  const selectPage = (pageId) => {
+    setByoPage(pageId);
+    setByoTab(BYO_PAGES.find(p => p.id === pageId).tabs[0]);
+  };
 
   const fetchByo = async () => {
     setByoLoading(true);
@@ -258,11 +271,26 @@ export default function BuildYourOwnIngredients() {
           <p className="page-title">Build Your Own</p>
           <p className="page-sub">Bases, cheese, veggies, proteins & sauces used by the Custom Order builder and Build Your Own Bowl preview</p>
         </div>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          {BYO_PAGES.map(p => {
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.id}
+                className={`btn btn-sm ${byoPage === p.id ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => selectPage(p.id)}
+                title={`Show items used on the ${p.label}`}
+              >
+                <Icon size={14}/> {p.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mb-loc-avail-panel">
         <div className="mb-cats" style={{marginBottom:'1rem'}}>
-          {BYO_TABS.map(t => (
+          {activePage.tabs.map(t => (
             <button
               key={t}
               className={`orders-filter-btn${byoTab === t ? ' active' : ''}`}
