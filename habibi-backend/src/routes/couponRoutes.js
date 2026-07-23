@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
-const { admin } = require("../middleware/authMiddleware");
+const { admin, optionalAuth } = require("../middleware/authMiddleware");
 const { handleValidation, rules, body } = require('../middleware/validate');
 const {
   validateCoupon,
@@ -12,8 +12,11 @@ const {
   deleteCoupon,
 } = require("../controllers/couponController");
 
-// Public — validate coupon
+// Public — validate coupon. optionalAuth so req.user is populated for
+// logged-in customers (needed for the customer_email and first-order-only
+// restrictions) without requiring login for coupons that don't need it.
 router.post("/validate",
+  optionalAuth,
   rules.couponCode(),
   body('subtotal').optional({ checkFalsy: true }).isFloat({ min: 0 }).withMessage('Subtotal must be non-negative.'),
   handleValidation,
