@@ -259,6 +259,7 @@ export const adminAPI = {
   // COD cash accountability
   getCashReport:    (date) => req(`/api/dispatch/cash-report${date ? `?date=${date}` : ''}`),
   recordCashHandin: (body) => req('/api/dispatch/cash-handins', { method: 'POST', body: JSON.stringify(body) }),
+  deleteCashHandin: (id)   => req(`/api/dispatch/cash-handins/${id}`, { method: 'DELETE' }),
 
   // Driver PIN setup
   sendDriverSetupSms: (driver_id) => req('/api/dispatch/driver/send-setup-sms', { method: 'POST', body: JSON.stringify({ driver_id }) }),

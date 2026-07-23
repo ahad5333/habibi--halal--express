@@ -87,7 +87,7 @@ function HandinModal({ driver, onConfirm, onClose }) {
 }
 
 // ── Driver summary row ─────────────────────────────────────────────
-function DriverRow({ driver, onHandin }) {
+function DriverRow({ driver, onHandin, onDeleteHandin }) {
   const [open, setOpen] = useState(false);
   const settled = driver.outstanding <= 0;
 
@@ -179,6 +179,13 @@ function DriverRow({ driver, onHandin }) {
                   <span>{fmt(h.amount)} received at {fmtTime(h.created_at)}</span>
                   {h.confirmed_by && <span className="cl-muted"> · by {h.confirmed_by}</span>}
                   {h.notes && <span className="cl-muted"> · "{h.notes}"</span>}
+                  <button
+                    className="cl-handin-delete"
+                    title="Delete this hand-in record"
+                    onClick={e => { e.stopPropagation(); onDeleteHandin(h); }}
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>
@@ -213,9 +220,22 @@ export default function CashLog() {
     await load();
   };
 
+  const handleDeleteHandin = async (handin) => {
+    if (!window.confirm(`Delete this $${parseFloat(handin.amount).toFixed(2)} hand-in record? This cannot be undone.`)) return;
+    try {
+      await adminAPI.deleteCashHandin(handin.id);
+      await load();
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  };
+
   const totalCollected = report?.drivers.reduce((s, d) => s + d.total_collected, 0) || 0;
   const totalHandedIn  = report?.drivers.reduce((s, d) => s + d.total_handed_in, 0)  || 0;
-  const totalOutstanding = Math.max(0, totalCollected - totalHandedIn);
+  // Sum each driver's own (already-clamped) outstanding balance rather than
+  // netting collected/handed-in globally — cash is physically separate per
+  // driver, so one driver over-handing can't offset another's real shortfall.
+  const totalOutstanding = report?.drivers.reduce((s, d) => s + d.outstanding, 0) || 0;
   const unconfirmedCount = report?.deliveries.filter(d => !d.cash_collected_at).length || 0;
 
   return (
@@ -283,6 +303,7 @@ export default function CashLog() {
             key={driver.driver_id || driver.driver_name}
             driver={driver}
             onHandin={setHandinTarget}
+            onDeleteHandin={handleDeleteHandin}
           />
         ))}
       </div>

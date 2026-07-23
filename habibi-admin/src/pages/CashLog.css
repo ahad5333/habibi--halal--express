@@ -216,9 +216,12 @@
 .cl-orders-table {
   border-top: 1px solid #f3f4f6;
   padding: 0 1.25rem 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .cl-orders-table table {
   width: 100%;
+  min-width: 480px;
   border-collapse: collapse;
   font-size: 0.82rem;
   margin-top: 0.75rem;
@@ -287,6 +290,18 @@
   padding: 0.3rem 0;
 }
 .cl-green-icon { color: #16a34a; flex-shrink: 0; }
+.cl-handin-delete {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+.cl-handin-delete:hover { color: #dc2626; background: rgba(220,38,38,0.08); }
 
 /* ─ Modal ───────────────────────────────────────────────── */
 .cl-overlay {
