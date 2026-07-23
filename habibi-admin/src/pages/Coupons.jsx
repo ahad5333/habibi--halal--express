@@ -5,16 +5,16 @@ import './Coupons.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const DISCOUNT_TYPES = [
-  { value: 'percentage',           label: 'Percentage Off (%)',               needsValue: true,  needsCategory: false },
-  { value: 'fixed_amount',         label: 'Fixed Amount Off ($)',              needsValue: true,  needsCategory: false },
-  { value: 'free_delivery',        label: 'Free Delivery',                    needsValue: false, needsCategory: false },
-  { value: 'bogo',                 label: 'Buy One Get One Free (no Family Tray)', needsValue: false, needsCategory: false },
-  { value: 'bogo_half',            label: 'Buy One Get One 50% Off (no Family Tray)', needsValue: false, needsCategory: false },
-  { value: 'free_item',            label: 'Free Item (cheapest in cart)',     needsValue: false, needsCategory: false },
-  { value: 'free_item_from_category', label: 'Free Item from Category',      needsValue: false, needsCategory: true  },
+  { value: 'percentage',           label: 'Percentage Off (%)',               needsValue: true,  needsCategory: false, needsCap: true  },
+  { value: 'fixed_amount',         label: 'Fixed Amount Off ($)',              needsValue: true,  needsCategory: false, needsCap: false },
+  { value: 'free_delivery',        label: 'Free Delivery',                    needsValue: false, needsCategory: false, needsCap: false },
+  { value: 'bogo',                 label: 'Buy One Get One Free (no Family Tray)', needsValue: false, needsCategory: false, needsCap: false },
+  { value: 'bogo_half',            label: 'Buy One Get One 50% Off (no Family Tray)', needsValue: false, needsCategory: false, needsCap: false },
+  { value: 'free_item',            label: 'Free Item (cheapest in cart)',     needsValue: false, needsCategory: false, needsCap: false },
+  { value: 'free_item_from_category', label: 'Free Item from Category',      needsValue: false, needsCategory: true,  needsCap: false },
 ];
 
-const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'' };
+const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'', max_discount:'', is_first_order_only:false };
 
 function CouponModal({ onClose, onCreate, onUpdate, editData }) {
   const isEdit = !!editData;
@@ -29,6 +29,8 @@ function CouponModal({ onClose, onCreate, onUpdate, editData }) {
     customer_email: editData.customer_email || '',
     location_id: editData.location_id || '',
     free_item_category: editData.free_item_category || '',
+    max_discount: editData.max_discount || '',
+    is_first_order_only: !!editData.is_first_order_only,
   } : { ...EMPTY });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -89,6 +91,12 @@ function CouponModal({ onClose, onCreate, onUpdate, editData }) {
                   <input className="input" placeholder="e.g. Drinks" value={form.free_item_category} onChange={e => set('free_item_category', e.target.value)} required />
                 </div>
               )}
+              {DISCOUNT_TYPES.find(dt => dt.value === form.discount_type)?.needsCap && (
+                <div className="field">
+                  <label>Max Discount Cap ($) <span style={{ color: 'var(--color-text-dim)' }}>(optional)</span></label>
+                  <input type="number" min="0" step="0.01" className="input" placeholder="No cap" value={form.max_discount} onChange={e => set('max_discount', e.target.value)} />
+                </div>
+              )}
             </div>
             <div className="coupon-row">
               <div className="field">
@@ -126,6 +134,15 @@ function CouponModal({ onClose, onCreate, onUpdate, editData }) {
                     ))}
                   </select>
                 </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="is_first_order_only"
+                  checked={form.is_first_order_only}
+                  onChange={e => set('is_first_order_only', e.target.checked)}
+                />
+                <label htmlFor="is_first_order_only" style={{ fontSize: '0.82rem' }}>First order only (new customers — requires being logged in)</label>
               </div>
             </div>
           </div>
@@ -167,9 +184,11 @@ export default function Coupons() {
 
   const handleToggle = async (id) => {
     try {
-      await adminAPI.toggleCoupon(id);
-      setCoupons(prev => prev.map(c => c.id === id ? { ...c, is_active: !c.is_active } : c));
-    } catch (_) {}
+      const updated = await adminAPI.toggleCoupon(id);
+      setCoupons(prev => prev.map(c => c.id === id ? updated : c));
+    } catch (e) {
+      alert('Failed to toggle coupon: ' + e.message);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -212,7 +231,14 @@ export default function Coupons() {
               <tbody>
                 {coupons.map(c => (
                   <tr key={c.id}>
-                    <td className="mono" style={{fontWeight:600,letterSpacing:'0.08em'}}>{c.code}</td>
+                    <td className="mono" style={{fontWeight:600,letterSpacing:'0.08em'}}>
+                      {c.code}
+                      {c.is_first_order_only && (
+                        <span className="badge badge-muted" style={{marginLeft:'0.4rem',fontSize:'0.62rem',letterSpacing:'normal',textTransform:'none'}} title="First order only">
+                          New customers
+                        </span>
+                      )}
+                    </td>
                     <td style={{fontWeight:600,color:'var(--color-primary)'}}>
                       {c.discount_type === 'percentage'    ? `${c.discount_value}% off` :
                        c.discount_type === 'fixed_amount'  ? `$${parseFloat(c.discount_value||0).toFixed(2)} off` :
@@ -220,7 +246,11 @@ export default function Coupons() {
                        c.discount_type === 'bogo'          ? 'BOGO Free' :
                        c.discount_type === 'bogo_half'     ? 'BOGO 50%' :
                        c.discount_type === 'free_item'     ? '🎁 Free Item' :
+                       c.discount_type === 'free_item_from_category' ? `🎁 Free ${c.free_item_category || 'item'}` :
                        c.discount_type}
+                      {c.max_discount > 0 && (
+                        <span className="text-muted" style={{fontWeight:400,fontSize:'0.72rem'}}> (max ${parseFloat(c.max_discount).toFixed(2)})</span>
+                      )}
                     </td>
                     <td className="text-muted">{c.condition_value > 0 ? `$${parseFloat(c.condition_value).toFixed(2)}` : '—'}</td>
                     <td>
