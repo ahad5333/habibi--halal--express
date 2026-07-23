@@ -218,7 +218,7 @@ export default function Locations() {
               </div>
               <div className="field">
                 <label>Exact Address</label>
-                <input className="input" value={form.exact_address} onChange={e => setForm({...form,exact_address:e.target.value})} placeholder="123 Main St, Bronx, NY 10451" />
+                <input className="input" value={form.exact_address} onChange={e => setForm({...form,exact_address:e.target.value})} placeholder="e.g. 3717 Bedford Park Blvd, Bronx, NY 10467" />
               </div>
               <div className="field">
                 <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers, optional)</span></label>
