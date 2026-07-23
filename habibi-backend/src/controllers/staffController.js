@@ -33,6 +33,7 @@ exports.createStaff = async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'This email is already used by another staff member.' });
     res.status(500).json(safeError(err));
   }
 };
@@ -53,6 +54,7 @@ exports.updateStaff = async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Staff not found' });
     res.json(result.rows[0]);
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'This email is already used by another staff member.' });
     res.status(500).json(safeError(err));
   }
 };

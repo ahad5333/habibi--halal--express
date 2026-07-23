@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound, Upload, FileSpreadsheet, UserCheck, UserX } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound, Upload, Download, FileSpreadsheet, UserCheck, UserX } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
@@ -64,10 +64,21 @@ function parseStaffCsv(text) {
   }).filter(r => r.name || r.phone);
 }
 
+function downloadCsv(filename, headers, rows) {
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
+
 export default function Staff() {
   const [staff, setStaff]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [err, setErr]             = useState('');
+  const [search, setSearch]       = useState('');
   const [modal, setModal]         = useState(null); // null | 'add' | {id,...}
   const [form, setForm]           = useState(BLANK);
   const [saving, setSaving]       = useState(false);
@@ -223,8 +234,28 @@ export default function Staff() {
     }
   };
 
-  const active  = staff.filter(s => s.is_active);
-  const inactive = staff.filter(s => !s.is_active);
+  const filteredStaff = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return staff;
+    return staff.filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.email || '').toLowerCase().includes(q) ||
+      (s.phone || '').toLowerCase().includes(q)
+    );
+  }, [staff, search]);
+
+  const active  = filteredStaff.filter(s => s.is_active);
+  const inactive = filteredStaff.filter(s => !s.is_active);
+
+  const exportCSV = () => {
+    const headers = ['Name', 'Role', 'Email', 'Phone', 'Shift Start', 'Shift End', 'Notes', 'Status'];
+    const rows = filteredStaff.map(s => [
+      s.name, s.role, s.email || '', s.phone || '',
+      s.shift_start || '', s.shift_end || '', s.notes || '',
+      s.is_active ? 'Active' : 'Inactive',
+    ]);
+    downloadCsv(`habibi-staff-${Date.now()}.csv`, headers, rows);
+  };
 
   return (
     <div>
@@ -234,6 +265,9 @@ export default function Staff() {
           <p className="page-sub">{staff.length} team members</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={exportCSV}>
+            <Download size={15} /> Export CSV
+          </button>
           <button className="btn btn-secondary" onClick={openBulk}>
             <Upload size={15} /> Bulk Import
           </button>
@@ -241,6 +275,16 @@ export default function Staff() {
             <Plus size={15} /> Add Staff
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.25rem' }}>
+        <input
+          className="input"
+          placeholder="Search name, email, phone…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ maxWidth: 360 }}
+        />
       </div>
 
       {err && <p className="text-error" style={{marginBottom:'1rem'}}>{err}</p>}
