@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { Plus, Pencil, Trash2, X, Upload, ToggleLeft, ToggleRight, FileSpreadsheet, Check } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './MenuBuilder.css';
 
@@ -10,6 +11,49 @@ const UNITS = ['case', 'dozen', 'tray', 'bag', 'lb', 'kg', 'each', 'box'];
 function imgSrc(url) {
   if (!url) return null;
   return url.startsWith('http') ? url : `${API}${url}`;
+}
+
+// Matches a spreadsheet's header row to our fields regardless of exact wording/casing —
+// client-provided catalogs won't reliably use our internal column names.
+const HEADER_ALIASES = {
+  name:         ['name', 'productname', 'product', 'item', 'itemname', 'title'],
+  description:  ['description', 'desc', 'details', 'notes'],
+  category:     ['category', 'cat', 'type'],
+  price:        ['price', 'tier1price', 'tier1', 'standardprice', 'baseprice', 'wholesaleprice'],
+  price_tier_2: ['pricetier2', 'tier2price', 'tier2', 'silverprice', 'bulkprice'],
+  price_tier_3: ['pricetier3', 'tier3price', 'tier3', 'goldprice', 'vipprice'],
+  min_quantity: ['minquantity', 'minqty', 'minimumquantity', 'moq', 'minimumorder'],
+  unit:         ['unit', 'uom', 'units', 'packaging'],
+};
+const normalizeHeader = (h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function parseSpreadsheetRows(workbook) {
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  if (rows.length === 0) return [];
+
+  const headers = Object.keys(rows[0]);
+  const normalized = headers.map(normalizeHeader);
+  const map = {};
+  for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
+    const idx = normalized.findIndex(h => aliases.includes(h));
+    if (idx !== -1) map[field] = headers[idx];
+  }
+
+  const val = (row, field) => (map[field] !== undefined && row[map[field]] !== undefined) ? String(row[map[field]]).trim() : '';
+
+  return rows
+    .map(r => ({
+      name: val(r, 'name'),
+      description: val(r, 'description'),
+      category: val(r, 'category'),
+      price: val(r, 'price'),
+      price_tier_2: val(r, 'price_tier_2'),
+      price_tier_3: val(r, 'price_tier_3'),
+      min_quantity: val(r, 'min_quantity'),
+      unit: val(r, 'unit'),
+    }))
+    .filter(r => r.name);
 }
 
 /* ── Add / Edit Modal ────────────────────────────────────────────── */
@@ -157,6 +201,14 @@ export default function BusinessMenuAdmin() {
   const [search, setSearch] = useState('');
   const [modal, setModal]   = useState(null); // null | 'add' | item object
 
+  // Bulk import from a client-provided spreadsheet
+  const [bulkModal, setBulkModal]         = useState(false);
+  const [bulkRows, setBulkRows]           = useState([]);
+  const [bulkFileName, setBulkFileName]   = useState('');
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkResult, setBulkResult]       = useState(null);
+  const fileInputRef = useRef(null);
+
   const load = async () => {
     setLoad(true);
     try { setItems(await adminAPI.getBusinessMenus()); }
@@ -164,6 +216,40 @@ export default function BusinessMenuAdmin() {
     finally { setLoad(false); }
   };
   useEffect(() => { load(); }, []);
+
+  const openBulk = () => { setBulkRows([]); setBulkFileName(''); setBulkResult(null); setBulkModal(true); };
+
+  const handleBulkFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+        setBulkRows(parseSpreadsheetRows(wb));
+      } catch (err) {
+        alert('Could not read this file: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const runBulkImport = async () => {
+    const valid = bulkRows.filter(r => r.name && r.price);
+    if (valid.length === 0) return;
+    setBulkImporting(true);
+    try {
+      const result = await adminAPI.bulkImportBusinessMenus(valid);
+      setBulkResult(result);
+      setBulkRows([]);
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkImporting(false);
+    }
+  };
 
   const handleSave = async (fd, id) => {
     if (id) {
@@ -194,9 +280,14 @@ export default function BusinessMenuAdmin() {
           <h1 className="page-title">Wholesale Catalog</h1>
           <p className="page-sub">{items.length} products · Partner-only pricing</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal('add')}>
-          <Plus size={15} /> Add Product
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={openBulk}>
+            <Upload size={15} /> Bulk Import
+          </button>
+          <button className="btn btn-primary" onClick={() => setModal('add')}>
+            <Plus size={15} /> Add Product
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.25rem' }}>
@@ -297,6 +388,107 @@ export default function BusinessMenuAdmin() {
           onClose={() => setModal(null)}
           onSave={handleSave}
         />
+      )}
+
+      {bulkModal && (
+        <div className="modal-overlay" onClick={() => setBulkModal(false)}>
+          <div className="modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h3 className="modal-title">Bulk Import Wholesale Products</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setBulkModal(false)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              {bulkResult ? (
+                <div>
+                  <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                    ✓ {bulkResult.created_count} product{bulkResult.created_count !== 1 ? 's' : ''} added
+                  </p>
+                  {bulkResult.skipped_count > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <p style={{ fontWeight: 600, color: 'var(--color-danger, #e5484d)', marginBottom: '0.4rem' }}>
+                        {bulkResult.skipped_count} skipped
+                      </p>
+                      <div className="table-wrap">
+                        <table className="table">
+                          <thead><tr><th>Name</th><th>Reason</th></tr></thead>
+                          <tbody>
+                            {bulkResult.skipped.map((s, i) => (
+                              <tr key={i}>
+                                <td>{s.name || '—'}</td>
+                                <td className="text-muted">{s.reason}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                    Upload an Excel (.xlsx/.xls) or CSV file. Column headers are matched
+                    automatically regardless of exact wording — e.g. <code>Product Name</code>,
+                    <code> Price</code>, <code>Tier 2 Price</code>, <code>Category</code>,{' '}
+                    <code>Min Qty</code>, <code>Unit</code>. Only <code>name</code> and{' '}
+                    <code>price</code> are required per row.
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    style={{ display: 'none' }}
+                    onChange={handleBulkFile}
+                  />
+                  <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                    <FileSpreadsheet size={14} /> {bulkFileName || 'Choose spreadsheet…'}
+                  </button>
+
+                  {bulkRows.length > 0 && (
+                    <div className="table-wrap" style={{ marginTop: '1rem', maxHeight: 300, overflowY: 'auto' }}>
+                      <table className="table">
+                        <thead>
+                          <tr><th>Name</th><th>Category</th><th>Price</th><th>Tier 2</th><th>Tier 3</th><th>Min Qty</th><th>Unit</th></tr>
+                        </thead>
+                        <tbody>
+                          {bulkRows.map((r, i) => (
+                            <tr key={i} style={!r.price ? { opacity: 0.5 } : undefined}>
+                              <td>{r.name}</td>
+                              <td>{r.category || '—'}</td>
+                              <td>{r.price || <em>missing price</em>}</td>
+                              <td>{r.price_tier_2 || '—'}</td>
+                              <td>{r.price_tier_3 || '—'}</td>
+                              <td>{r.min_quantity || 1}</td>
+                              <td>{r.unit || 'case'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              {bulkResult ? (
+                <button className="btn btn-primary" onClick={() => setBulkModal(false)}>Done</button>
+              ) : (
+                <>
+                  <button className="btn btn-secondary" onClick={() => setBulkModal(false)}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={runBulkImport}
+                    disabled={bulkImporting || bulkRows.filter(r => r.name && r.price).length === 0}
+                  >
+                    {bulkImporting
+                      ? <div className="spinner" />
+                      : <><Check size={14} /> Import {bulkRows.filter(r => r.name && r.price).length || ''} Products</>}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

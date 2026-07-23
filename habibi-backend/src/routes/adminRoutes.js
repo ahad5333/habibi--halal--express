@@ -108,7 +108,7 @@ router.patch("/partners/applications/:id", updateApplicationStatus);
 
 // Master Menu
 const { createMenu, updateMenu, deleteMenu } = require("../controllers/menuController");
-const { getBusinessMenus, createBusinessMenu, updateBusinessMenu, deleteBusinessMenu } = require("../controllers/businessMenuController");
+const { getBusinessMenus, createBusinessMenu, updateBusinessMenu, deleteBusinessMenu, bulkImportBusinessMenus } = require("../controllers/businessMenuController");
 const {
   getAdminByoIngredients, createByoIngredient, updateByoIngredient, deleteByoIngredient,
 } = require("../controllers/byoIngredientController");
@@ -144,6 +144,7 @@ router.patch("/global-addons/:id",  updateGlobalAddonGroup);
 // Business Menus
 router.get("/business-menus", getBusinessMenus);
 router.post("/business-menus", upload.single("image"), createBusinessMenu);
+router.post("/business-menus/bulk-import", bulkImportBusinessMenus);
 router.patch("/business-menus/:id", upload.single("image"), updateBusinessMenu);
 router.delete("/business-menus/:id", deleteBusinessMenu);
 

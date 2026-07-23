@@ -278,6 +278,7 @@ export const adminAPI = {
   createBusinessMenu:  (fd) => upload('/api/admin/business-menus', fd),
   updateBusinessMenu:  (id, fd) => uploadPatch(`/api/admin/business-menus/${id}`, fd),
   deleteBusinessMenu:  (id) => req(`/api/admin/business-menus/${id}`, { method: 'DELETE' }),
+  bulkImportBusinessMenus: (products) => req('/api/admin/business-menus/bulk-import', { method: 'POST', body: JSON.stringify({ products }) }),
 
   // Partner orders (B2B)
   getPartnerOrders:           () => req('/api/admin/partner-orders'),

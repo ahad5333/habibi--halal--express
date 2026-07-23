@@ -92,10 +92,58 @@ const deleteBusinessMenu = async (req, res) => {
   }
 };
 
+// Bulk-create wholesale products from an admin-uploaded spreadsheet (parsed to JSON
+// client-side). Each row is inserted independently so one bad row doesn't sink the batch.
+const bulkImportBusinessMenus = async (req, res) => {
+  const { products } = req.body;
+  if (!Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ message: 'No products provided.' });
+  }
+  if (products.length > 1000) {
+    return res.status(400).json({ message: 'Max 1000 products per import.' });
+  }
+
+  const created = [];
+  const skipped = [];
+
+  for (const row of products) {
+    const name = String(row.name || '').trim().slice(0, 255);
+    const price = parseFloat(row.price);
+
+    if (!name) { skipped.push({ name, reason: 'Missing product name' }); continue; }
+    if (!Number.isFinite(price) || price <= 0) { skipped.push({ name, reason: 'Missing or invalid price' }); continue; }
+
+    const description = String(row.description || '').trim().slice(0, 2000);
+    const category = String(row.category || 'General').trim().slice(0, 100);
+    const priceTier2 = row.price_tier_2 !== undefined && row.price_tier_2 !== '' ? parseFloat(row.price_tier_2) : null;
+    const priceTier3 = row.price_tier_3 !== undefined && row.price_tier_3 !== '' ? parseFloat(row.price_tier_3) : null;
+    const minQuantity = parseInt(row.min_quantity, 10) || 1;
+    const unit = String(row.unit || 'case').trim().slice(0, 50);
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO business_menus (name, description, category, price, price_tier_2, price_tier_3, min_quantity, unit, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+         RETURNING id, name, price`,
+        [name, description || null, category, price,
+         Number.isFinite(priceTier2) ? priceTier2 : null,
+         Number.isFinite(priceTier3) ? priceTier3 : null,
+         minQuantity, unit]
+      );
+      created.push(result.rows[0]);
+    } catch (err) {
+      skipped.push({ name, reason: err.message });
+    }
+  }
+
+  res.json({ created_count: created.length, skipped_count: skipped.length, created, skipped });
+};
+
 module.exports = {
   getBusinessMenus,
   getBusinessMenuById,
   createBusinessMenu,
   updateBusinessMenu,
+  bulkImportBusinessMenus,
   deleteBusinessMenu
 };
