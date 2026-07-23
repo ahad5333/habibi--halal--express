@@ -168,9 +168,9 @@ const updateDriverGPS = async (req, res) => {
              current_lng=$2,
              last_location_update=NOW(),
              status='en_route',
-             gps_trail = COALESCE(gps_trail, '[]'::jsonb) || jsonb_build_object('lat',$1::text,'lng',$2::text,'ts',NOW()::text)
+             gps_trail = COALESCE(gps_trail, '[]'::jsonb) || jsonb_build_object('lat',$4::text,'lng',$5::text,'ts',NOW()::text)
        WHERE id=$3`,
-      [lat, lng, assignment_id]
+      [lat, lng, assignment_id, lat, lng]
     );
 
     const io = req.app.get('io');
