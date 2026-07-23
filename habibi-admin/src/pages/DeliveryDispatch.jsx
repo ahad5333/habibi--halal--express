@@ -5,6 +5,8 @@ import {
   Package, ChevronDown, Bell, Map, MessageSquare, Send, BarChart2,
 } from 'lucide-react';
 import io from 'socket.io-client';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { adminAPI } from '../services/api';
 import './DeliveryDispatch.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -512,7 +514,7 @@ function DriverPerformancePanel() {
         <div className="dd-empty">No driver data yet for this period.</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={thStyle}>Driver</th>
@@ -577,7 +579,8 @@ function DriverPerformancePanel() {
   );
 }
 
-// ── Live Driver Map (Leaflet via CDN) ──────────────────────────────
+// ── Live Driver Map (Leaflet, bundled — the admin panel's CSP doesn't
+// allowlist any third-party script CDN, so this can't load from unpkg.com) ──
 function DriverMapPanel({ assignments }) {
   const mapDivRef     = useRef(null);
   const leafletMapRef = useRef(null);
@@ -585,39 +588,23 @@ function DriverMapPanel({ assignments }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (window.L) { initMap(); return; }
-
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(css);
-
-    const js = document.createElement('script');
-    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    js.onload = initMap;
-    document.head.appendChild(js);
-
-    return () => {
-      if (leafletMapRef.current) { leafletMapRef.current.remove(); leafletMapRef.current = null; }
-    };
-  }, []);
-
-  function initMap() {
     if (!mapDivRef.current || leafletMapRef.current) return;
-    const L = window.L;
     leafletMapRef.current = L.map(mapDivRef.current).setView([40.8448, -73.8648], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 18,
     }).addTo(leafletMapRef.current);
     setReady(true);
-  }
+
+    return () => {
+      if (leafletMapRef.current) { leafletMapRef.current.remove(); leafletMapRef.current = null; }
+    };
+  }, []);
 
   // Update markers whenever assignments change
   useEffect(() => {
-    const L = window.L;
     const map = leafletMapRef.current;
-    if (!L || !map || !ready) return;
+    if (!map || !ready) return;
 
     const active = assignments.filter(a =>
       ['assigned', 'en_route'].includes(a.status) && a.current_lat && a.current_lng
