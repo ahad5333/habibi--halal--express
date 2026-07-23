@@ -148,7 +148,7 @@ const QTY_OPTS = {
    ================================================================ */
 const CO_ING_DB = {
   /* ── PROTEINS  z=4 ─────────────────────────────────────────── */
-  chicken:          { zone:'protein', src:'/images/byo/ing/chicken-broasted.webp',          z:4, hotDogPos:[{x:50,y:66,w:39}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:44,w:45}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  chicken:          { zone:'protein', src:'/images/byo/ing/chicken-broasted.webp',          z:4, hotDogPos:[{x:50,y:66,w:39}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:41,w:38,rot:-1.8}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
   'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, hotDogPos:[{x:31,y:50,w:56}], pos:{ familyTray:[{x:50,y:43,w:44}], platter:[{x:50,y:43,w:46}], hero:[{x:50,y:27,w:28}], standard:[{x:50,y:43,w:30}], compact:[{x:50,y:43,w:66}], wrap:[{x:50,y:43,w:74}] } },
   mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:37,w:48}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
   hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, hotDogPos:[{x:50,y:43,w:74}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:68}], wrap:[{x:50,y:43,w:74}] } },
@@ -176,7 +176,7 @@ const CO_ING_DB = {
   liquid_cheese: { zone:'cheese', src:'/images/byo/ing/liquid-cheese.webp',   z:3, hotDogPos:[{x:49,y:69,w:57}], pos:{ familyTray:[{x:50,y:47,w:30}], platter:[{x:50,y:47,w:32}], hero:[{x:50,y:35,w:40}], standard:[{x:50,y:47,w:36}], compact:[{x:50,y:47,w:34}], wrap:[{x:50,y:47,w:38}] } },
 
   /* ── VEGETABLES  z=2 bed / z=5 scattered ───────────────────── */
-  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, hotDogPos:[{x:50,y:50,w:71}], pos:{ familyTray:[{x:70,y:53,w:50}], platter:[{x:75,y:53,w:35}], hero:[{x:51,y:50,w:65,peekY:39}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:52,w:70}], wrap:[{x:50,y:44,w:84}] } },
+  lettuce:  { zone:'veg', src:'/images/byo/ing/lettuce.webp',  z:2, hotDogPos:[{x:50,y:50,w:71}], pos:{ familyTray:[{x:70,y:53,w:50}], platter:[{x:75,y:53,w:35}], hero:[{x:51,y:50,w:92,peekY:46}], standard:[{x:50,y:44,w:68}], compact:[{x:50,y:52,w:70}], wrap:[{x:50,y:44,w:84}] } },
   /* Rice: square yellow basmati for flat trays; platter uses same dense image, bread bases use elongated pile */
   rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',
     srcByFamily: { familyTray:'/images/byo/ing/rice-tray.webp', platter:'/images/byo/ing/rice-tray.webp' },
@@ -476,12 +476,12 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
      Flat bases (platter/familyTray) have narrow zones (19–29% wide) so we keep
      natural widths (remapZoneX).  Bread bases use proportional scaling (remapZone)
      so veg doesn't balloon to 2× in split-mode half-zones. */
-  const pushItem = (id, def, rawPositions, src, zone) => {
+  const pushItem = (id, def, rawPositions, src, zone, maxWOverride) => {
     rawPositions.forEach(pos => {
       const zPos = isFlatBase
         ? remapZoneX(pos, zone[0], zone[1])
         : remapZone(pos, zone[0], zone[1]);
-      const cPos = clampIngPos(zPos, zone[0], zone[1], bounds.maxW);
+      const cPos = clampIngPos(zPos, zone[0], zone[1], maxWOverride ?? bounds.maxW);
       layers.push({ id, def, pos: cPos, src });
     });
   };
@@ -564,7 +564,10 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
     const rawPos = def.pos[family] || def.pos.standard;
     if (!rawPos) return;
     const wScale = QTY_W_SCALE[sel.qty] || 1;
-    pushItem(id, def, rawPos.map(p => ({ ...p, w: Math.round(p.w * wScale) })), def.src, VEG_ZONE);
+    /* Veg on split-bun bases (hero/standard/compact) only ever renders via the
+       unmasked "peek" path below, which has its own (usually wider) peekMaxW —
+       clamping against the regular maxW here left peekMaxW unreachable. */
+    pushItem(id, def, rawPos.map(p => ({ ...p, w: Math.round(p.w * wScale) })), def.src, VEG_ZONE, bounds.peekMaxW ?? bounds.maxW);
   });
 
   /* Rice — only render inside the canvas for flat bases (platter / family tray).
