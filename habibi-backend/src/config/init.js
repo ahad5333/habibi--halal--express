@@ -1096,7 +1096,13 @@ const createTables = async () => {
       )
     `);
     await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_status_check`);
-    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','delivered','cancelled'))`);
+    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','picked_up','delivered','cancelled'))`);
+
+    // driver_id historically pointed at users(id) on some deployments (predates
+    // staff_members-based drivers); every driver lookup in the app now uses
+    // staff_members, so the FK must reference that table or every assignment fails.
+    await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_driver_id_fkey`);
+    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES staff_members(id) ON DELETE SET NULL`);
 
     // ── staff_members: on-duty toggle + driver PIN + FCM push token ──
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS is_on_duty          BOOLEAN      DEFAULT FALSE`);
