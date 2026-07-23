@@ -145,11 +145,14 @@ router.post('/:sessionId/items', async (req, res) => {
     }
 
     const sessRes = await pool.query(
-      `SELECT status FROM group_order_sessions WHERE session_id = $1`,
+      `SELECT status, expires_at FROM group_order_sessions WHERE session_id = $1`,
       [req.params.sessionId]
     );
     if (sessRes.rows.length === 0 || sessRes.rows[0].status !== 'open') {
       return res.status(404).json({ error: 'Session not found or locked.' });
+    }
+    if (new Date(sessRes.rows[0].expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Session has expired.' });
     }
 
     // Verify participant belongs to this session before allowing item updates
@@ -159,6 +162,29 @@ router.post('/:sessionId/items', async (req, res) => {
     );
     if (partRes.rows.length === 0) {
       return res.status(403).json({ error: 'Not a participant in this session.' });
+    }
+
+    // Look up real menu prices so a participant can't submit an under-priced
+    // item — checkout's own re-validation can't fully catch this for group
+    // orders since addon/choice selections aren't carried through to it, so
+    // this is the only place that can check against the true base price.
+    const menuIds = items
+      .slice(0, 50)
+      .map(i => parseInt(i.menu_item_id, 10))
+      .filter(id => Number.isInteger(id) && id > 0);
+    let menuPriceMap = {};
+    if (menuIds.length) {
+      const menuRows = await pool.query(`SELECT id, price FROM menus WHERE id = ANY($1)`, [menuIds]);
+      menuPriceMap = Object.fromEntries(menuRows.rows.map(r => [r.id, parseFloat(r.price)]));
+    }
+    for (const item of items.slice(0, 50)) {
+      const menuId = parseInt(item.menu_item_id, 10);
+      if (Number.isInteger(menuId) && menuId > 0 && menuPriceMap[menuId] != null) {
+        const submitted = parseFloat(item.price) || 0;
+        if (submitted < menuPriceMap[menuId] - 0.02) {
+          return res.status(400).json({ error: `"${item.name}" price is lower than expected. Please refresh and re-add it.` });
+        }
+      }
     }
 
     await pool.query(
