@@ -150,13 +150,17 @@ const updateOrderStatus = async (req, res) => {
     const parsedMinutes = estimated_minutes != null ? parseInt(estimated_minutes, 10) : null;
 
     const updated = await pool.query(
-      `UPDATE guest_orders
+      `WITH prev AS (
+         SELECT order_status FROM guest_orders WHERE order_number = $2 OR CAST(id AS TEXT) = $2
+       )
+       UPDATE guest_orders
        SET order_status        = $1::varchar,
            updated_at          = NOW(),
            cancellation_reason = CASE WHEN $1::varchar = 'cancelled' THEN $3::text ELSE cancellation_reason END,
            estimated_minutes   = CASE WHEN $4::integer IS NOT NULL   THEN $4::integer ELSE estimated_minutes END
        WHERE order_number = $2 OR CAST(id AS TEXT) = $2
-       RETURNING customer_phone, customer_email, order_number, user_id`,
+       RETURNING customer_phone, customer_email, order_number, user_id, total,
+                 (SELECT order_status FROM prev) AS previous_status`,
       [status.toLowerCase(), id, cancellation_reason || null, parsedMinutes]
     );
 
@@ -262,10 +266,54 @@ const updateOrderStatus = async (req, res) => {
     } else if (customer_email) {
       void (async () => {
         try {
-          const userRes = await pool.query("SELECT id FROM users WHERE email = $1", [customer_email]);
+          const userRes = await pool.query("SELECT id FROM users WHERE LOWER(email) = LOWER($1)", [customer_email]);
           if (userRes.rows.length > 0) await sendFCM(userRes.rows[0].id);
         } catch (err) { console.error('[Admin] FCM lookup failed:', err.message); }
       })();
+    }
+
+    // Award loyalty points on delivery (1 pt per $1 spent) and complete any
+    // pending referral on the referee's first delivered order. This is the
+    // real order-status-update path used by both the merchant app and the
+    // admin panel — orderController.js has an equivalent block but on a
+    // route (PUT /api/orders/admin/:id/status) nothing actually calls, so
+    // without this the loyalty-on-delivery bonus and the entire referral
+    // program never fire for any real order.
+    const normalizedStatus = status.toLowerCase();
+    if (normalizedStatus === 'delivered' && row.previous_status !== 'delivered' && customer_email && row.total) {
+      const pts = Math.floor(parseFloat(row.total) || 0);
+      if (pts > 0) {
+        pool.query(
+          `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
+          [pts, customer_email]
+        ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
+      }
+
+      pool.query(
+        `SELECT id FROM guest_orders WHERE customer_email = $1 AND order_status = 'delivered'`,
+        [customer_email]
+      ).then(async (countRes) => {
+        if (countRes.rows.length !== 1) return; // not their first delivered order
+        const userRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [customer_email]);
+        if (!userRes.rows[0]) return;
+        const refereeId = userRes.rows[0].id;
+        const refRow = await pool.query(
+          `SELECT id, referrer_id FROM referrals WHERE referee_user_id = $1 AND status = 'pending' LIMIT 1`,
+          [refereeId]
+        );
+        if (!refRow.rows[0]) return;
+        const { id: refId, referrer_id } = refRow.rows[0];
+        const REFERRAL_BONUS = 500;
+        await pool.query(
+          `UPDATE referrals SET status = 'completed', points_awarded = $1, completed_at = NOW() WHERE id = $2`,
+          [REFERRAL_BONUS, refId]
+        );
+        await pool.query(
+          `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE id = $2`,
+          [REFERRAL_BONUS, referrer_id]
+        );
+        console.log(`[Referral] Awarded ${REFERRAL_BONUS} pts to user ${referrer_id} for referring user ${refereeId}`);
+      }).catch(err => console.error('[Referral] Completion check failed:', err.message));
     }
   } catch (error) {
     console.error("[updateOrderStatus ERROR]", error.message, error.stack);
