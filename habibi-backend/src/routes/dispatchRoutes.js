@@ -145,7 +145,7 @@ router.patch ('/assignments/:id/status',           driverOrAdmin,              u
 router.patch ('/assignments/:id/respond',          driverOrAdmin,              respondToAssignment);
 router.patch ('/assignments/:id/collect-cash',     driverOrAdmin,              collectCash);
 router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              codDeliveryFailed);
-router.post  ('/assignments/:assignment_id/proof', driverOrAdmin, proofUpload.single('photo'), uploadProof);
+router.post  ('/assignments/:assignment_id/proof', proofUpload.single('photo'), driverOrAdmin, uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 router.get   ('/drivers/:driver_id/history',       driverOrAdmin,              getDriverHistory);
