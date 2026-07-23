@@ -318,6 +318,7 @@ export const adminAPI = {
 
   // Saved Custom Orders
   getSavedCustoms: () => req('/api/admin/saved-customs'),
+  deleteSavedCustom: (id) => req(`/api/admin/saved-customs/${id}`, { method: 'DELETE' }),
 };
 
 export const chatAPI = {

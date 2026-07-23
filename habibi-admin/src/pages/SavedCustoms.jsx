@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Bookmark, ChevronDown, ChevronUp, Search, Trash2 } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './SavedCustoms.css';
 
@@ -8,22 +8,65 @@ function fmt(dt) {
   return new Date(dt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// The saved config's shape (from CustomOrder.jsx's INIT) is mostly nested
+// objects — base is a full ingredient record, cheese is {type,qty}, and
+// vegetables/proteins/sauces/extras/drinks are all keyed by ingredient ID.
+// Naively stringifying any of that produced "[object Object]" for 6 of the
+// 9 fields. This renders each shape human-readably instead; ingredient IDs
+// aren't resolved to names since the admin page has no live catalog to
+// cross-reference against.
+function formatConfigField(key, value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (key === 'base') {
+    if (typeof value === 'object') return value.name || `Base #${value.id ?? '?'}`;
+    return String(value);
+  }
+
+  if (typeof value !== 'object') return String(value);
+
+  if (Array.isArray(value)) {
+    return value.length ? value.map(v => (typeof v === 'object' ? (v.name || JSON.stringify(v)) : String(v))).join(', ') : null;
+  }
+
+  const entries = Object.entries(value);
+  if (!entries.length) return null;
+
+  // cheese: { type, qty } — a single flat object, not a keyed collection
+  if (key === 'cheese') {
+    if (!value.type || value.type === 'none') return null;
+    return value.qty && value.qty !== 'regular' ? `${value.type} (${value.qty})` : value.type;
+  }
+
+  // vegetables/proteins/sauces/extras/drinks: keyed by ingredient ID
+  return entries.map(([id, detail]) => {
+    if (detail === null || typeof detail !== 'object') return `#${id}${detail ? ` ×${detail}` : ''}`;
+    const bits = [];
+    if (detail.qty && detail.qty !== 'regular') bits.push(detail.qty);
+    if (detail.count && detail.count !== 1) bits.push(`×${detail.count}`);
+    if (detail.placement && detail.placement !== 'on_food') bits.push(detail.placement.replace('_', ' '));
+    return `#${id}${bits.length ? ` (${bits.join(', ')})` : ''}`;
+  }).join(', ');
+}
+
 function ConfigDetails({ config }) {
   if (!config) return <span className="text-muted">—</span>;
-  const entries = typeof config === 'object' ? Object.entries(config) : [];
+  const entries = (typeof config === 'object' ? Object.entries(config) : [])
+    .map(([k, v]) => [k, formatConfigField(k, v)])
+    .filter(([, v]) => v != null);
   if (!entries.length) return <span className="text-muted">Empty</span>;
   return (
     <div className="sc-config">
       {entries.map(([k, v]) => (
-        <span key={k} className="sc-config-tag">
-          <strong>{k}:</strong> {String(v).slice(0, 40)}
+        <span key={k} className="sc-config-tag" title={v}>
+          <strong>{k}:</strong> {v}
         </span>
       ))}
     </div>
   );
 }
 
-function Row({ row }) {
+function Row({ row, onDelete }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -37,9 +80,18 @@ function Row({ row }) {
         </td>
         <td>{fmt(row.created_at)}</td>
         <td>
-          <button className="sc-expand-btn" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
-            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
+          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+            <button
+              className="sc-expand-btn"
+              title="Delete"
+              onClick={e => { e.stopPropagation(); onDelete(row); }}
+            >
+              <Trash2 size={14} />
+            </button>
+            <button className="sc-expand-btn" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+              {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          </div>
         </td>
       </tr>
       {open && (
@@ -64,6 +116,16 @@ export default function SavedCustoms() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete "${row.name}" (saved by ${row.user_name || row.user_email})? This cannot be undone.`)) return;
+    try {
+      await adminAPI.deleteSavedCustom(row.id);
+      setRows(prev => prev.filter(r => r.id !== row.id));
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  };
 
   const q = search.toLowerCase();
   const visible = q
@@ -109,7 +171,7 @@ export default function SavedCustoms() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map(r => <Row key={r.id} row={r} />)}
+                {visible.map(r => <Row key={r.id} row={r} onDelete={handleDelete} />)}
               </tbody>
             </table>
           </div>
