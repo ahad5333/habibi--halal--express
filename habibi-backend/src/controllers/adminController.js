@@ -712,6 +712,7 @@ const updateAdminLocation = async (req, res) => {
       delivery_radius_miles, delivery_cost,
       holidays, preference_level, image_url,
       tablet_username, tablet_password, delivery_addresses,
+      exact_address, brief_address, latitude, longitude,
     } = req.body;
 
     // Only hash tablet password if a new one was provided
@@ -734,6 +735,10 @@ const updateAdminLocation = async (req, res) => {
            tablet_username=$11,
            tablet_password_hash = COALESCE($12, tablet_password_hash),
            delivery_addresses = COALESCE($14::jsonb, delivery_addresses),
+           exact_address = COALESCE($15, exact_address),
+           brief_address = COALESCE($16, brief_address),
+           latitude = COALESCE($17, latitude),
+           longitude = COALESCE($18, longitude),
            updated_at=NOW()
        WHERE id=$13 RETURNING *`,
       [
@@ -747,6 +752,10 @@ const updateAdminLocation = async (req, res) => {
         tabletPasswordHash || null,
         id,
         addrJson,
+        exact_address || null,
+        brief_address || null,
+        latitude !== undefined && latitude !== '' ? parseFloat(latitude) : null,
+        longitude !== undefined && longitude !== '' ? parseFloat(longitude) : null,
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });

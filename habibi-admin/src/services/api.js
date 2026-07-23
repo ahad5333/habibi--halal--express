@@ -153,8 +153,10 @@ export const adminAPI = {
 
   // Locations
   getLocations:   () => req('/api/admin/locations'),
+  createLocation: (body) => req('/api/admin/locations', { method: 'POST', body: JSON.stringify(body) }),
   updateLocation: (id, body) => req(`/api/admin/locations/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   toggleLocation: (id, field) => req(`/api/admin/locations/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ field }) }),
+  deleteLocation: (id) => req(`/api/admin/locations/${id}`, { method: 'DELETE' }),
 
   // Menu availability
   toggleMenuAvailability: (body) => req('/api/admin/menus/availability', { method: 'PATCH', body: JSON.stringify(body) }),

@@ -3,6 +3,11 @@ import { MapPin, Pencil, ToggleLeft, ToggleRight, Clock, Phone, CheckCircle, XCi
 import { adminAPI } from '../services/api';
 import './Locations.css';
 
+const BLANK_NEW_LOCATION = {
+  title: '', exact_address: '', brief_address: '', latitude: '', longitude: '',
+  phone_number: '', working_days_hours: '', delivery_radius_miles: 5, preference_level: 1, is_active: true,
+};
+
 export default function Locations() {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -11,6 +16,11 @@ export default function Locations() {
   const [saving, setSaving]       = useState(false);
   const [toggling, setToggling]   = useState(null);
   const [addrInput, setAddrInput] = useState('');
+  const [addModal, setAddModal]   = useState(false);
+  const [addForm, setAddForm]     = useState(BLANK_NEW_LOCATION);
+  const [addErr, setAddErr]       = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting]   = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -25,6 +35,10 @@ export default function Locations() {
   const openEdit = (loc) => {
     setForm({
       title:                 loc.title,
+      exact_address:         loc.exact_address || '',
+      brief_address:         loc.brief_address || '',
+      latitude:              loc.latitude ?? '',
+      longitude:             loc.longitude ?? '',
       phone_number:          loc.phone_number || '',
       working_days_hours:    loc.working_days_hours || '',
       holidays:              loc.holidays || '',
@@ -71,6 +85,40 @@ export default function Locations() {
     setToggling(null);
   };
 
+  const openAdd = () => { setAddForm(BLANK_NEW_LOCATION); setAddErr(''); setAddModal(true); };
+
+  const createLoc = async () => {
+    if (!addForm.title.trim()) { setAddErr('Name is required.'); return; }
+    if (!addForm.exact_address.trim()) { setAddErr('Address is required.'); return; }
+    if (addForm.latitude === '' || addForm.longitude === '') { setAddErr('Latitude and longitude are required.'); return; }
+    setSaving(true);
+    setAddErr('');
+    try {
+      await adminAPI.createLocation(addForm);
+      setAddModal(false);
+      load();
+    } catch (e) {
+      setAddErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await adminAPI.deleteLocation(deleteTarget.id);
+      setDeleteTarget(null);
+      setModal(null);
+      load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const activeCount = locations.filter(l => l.is_active).length;
   const acceptingCount = locations.filter(l => l.accepting_orders !== false).length;
 
@@ -81,6 +129,7 @@ export default function Locations() {
           <h1 className="page-title">Location Management</h1>
           <p className="page-sub">{activeCount} active · {acceptingCount} accepting orders</p>
         </div>
+        <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Location</button>
       </div>
 
       {loading ? (
@@ -167,6 +216,27 @@ export default function Locations() {
                 <label>Location Name</label>
                 <input className="input" value={form.title} onChange={e => setForm({...form,title:e.target.value})} />
               </div>
+              <div className="field">
+                <label>Exact Address</label>
+                <input className="input" value={form.exact_address} onChange={e => setForm({...form,exact_address:e.target.value})} placeholder="123 Main St, Bronx, NY 10451" />
+              </div>
+              <div className="field">
+                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers, optional)</span></label>
+                <input className="input" value={form.brief_address} onChange={e => setForm({...form,brief_address:e.target.value})} placeholder="Bedford Park, Bronx" />
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+                <div className="field">
+                  <label>Latitude</label>
+                  <input className="input" type="number" step="any" value={form.latitude} onChange={e => setForm({...form,latitude:e.target.value})} placeholder="40.8712" />
+                </div>
+                <div className="field">
+                  <label>Longitude</label>
+                  <input className="input" type="number" step="any" value={form.longitude} onChange={e => setForm({...form,longitude:e.target.value})} placeholder="-73.8859" />
+                </div>
+              </div>
+              <p className="text-muted" style={{fontSize:'0.7rem',marginTop:'-0.5rem',marginBottom:'0.75rem'}}>
+                Used to calculate delivery distance. Right-click the location on Google Maps and copy the coordinates shown at the top of the menu.
+              </p>
               <div className="field">
                 <label>Phone Number</label>
                 <input className="input" value={form.phone_number} onChange={e => setForm({...form,phone_number:e.target.value})} placeholder="(718) 555-0000" />
@@ -291,10 +361,112 @@ export default function Locations() {
                 )}
               </div>
             </div>
+            <div className="modal-footer" style={{justifyContent:'space-between'}}>
+              <button className="btn btn-danger" onClick={() => setDeleteTarget(modal)}>
+                <Trash2 size={14}/> Delete Location
+              </button>
+              <div style={{display:'flex',gap:'0.5rem'}}>
+                <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={save} disabled={saving}>
+                  {saving ? <div className="spinner"/> : <><Check size={14}/> Save</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Location Modal */}
+      {addModal && (
+        <div className="modal-overlay" onClick={() => setAddModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Add Location</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setAddModal(false)}><X size={16}/></button>
+            </div>
+            <div className="modal-body">
+              {addErr && <p style={{color:'#ef4444',fontSize:'0.8rem',marginBottom:'0.75rem'}}>{addErr}</p>}
+              <div className="field">
+                <label>Location Name *</label>
+                <input className="input" value={addForm.title} onChange={e => setAddForm({...addForm,title:e.target.value})} placeholder="e.g. Yonkers" />
+              </div>
+              <div className="field">
+                <label>Exact Address *</label>
+                <input className="input" value={addForm.exact_address} onChange={e => setAddForm({...addForm,exact_address:e.target.value})} placeholder="123 Main St, Yonkers, NY 10701" />
+              </div>
+              <div className="field">
+                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers, optional)</span></label>
+                <input className="input" value={addForm.brief_address} onChange={e => setAddForm({...addForm,brief_address:e.target.value})} placeholder="Downtown Yonkers" />
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+                <div className="field">
+                  <label>Latitude *</label>
+                  <input className="input" type="number" step="any" value={addForm.latitude} onChange={e => setAddForm({...addForm,latitude:e.target.value})} placeholder="40.9312" />
+                </div>
+                <div className="field">
+                  <label>Longitude *</label>
+                  <input className="input" type="number" step="any" value={addForm.longitude} onChange={e => setAddForm({...addForm,longitude:e.target.value})} placeholder="-73.8988" />
+                </div>
+              </div>
+              <p className="text-muted" style={{fontSize:'0.7rem',marginTop:'-0.5rem',marginBottom:'0.75rem'}}>
+                Right-click the location on Google Maps and copy the coordinates shown at the top of the menu.
+              </p>
+              <div className="field">
+                <label>Phone Number</label>
+                <input className="input" value={addForm.phone_number} onChange={e => setAddForm({...addForm,phone_number:e.target.value})} placeholder="(718) 555-0000" />
+              </div>
+              <div className="field">
+                <label>Hours</label>
+                <input className="input" value={addForm.working_days_hours} onChange={e => setAddForm({...addForm,working_days_hours:e.target.value})} placeholder="Mon–Sun: 7AM – 11PM" />
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+                <div className="field">
+                  <label>Delivery Radius (miles)</label>
+                  <input className="input" type="number" min="0" step="0.5" value={addForm.delivery_radius_miles} onChange={e => setAddForm({...addForm,delivery_radius_miles:e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Preference Level (1 = highest)</label>
+                  <input className="input" type="number" min="1" max="10" value={addForm.preference_level} onChange={e => setAddForm({...addForm,preference_level:+e.target.value})} />
+                </div>
+              </div>
+              <label className="loc-modal-toggle">
+                <input type="checkbox" checked={addForm.is_active} onChange={e => setAddForm({...addForm,is_active:e.target.checked})} />
+                <span>Location is Active</span>
+              </label>
+              <p className="text-muted" style={{fontSize:'0.72rem',marginTop:'0.75rem'}}>
+                After creating, open the new location's Edit panel to set up tablet login, delivery partners, holidays, and pre-selected delivery addresses.
+              </p>
+            </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={save} disabled={saving}>
-                {saving ? <div className="spinner"/> : <><Check size={14}/> Save</>}
+              <button className="btn btn-secondary" onClick={() => setAddModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={createLoc} disabled={saving}>
+                {saving ? <div className="spinner"/> : <><Check size={14}/> Create Location</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Delete Location</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(null)}><X size={16}/></button>
+            </div>
+            <div className="modal-body">
+              <p style={{marginBottom:'0.75rem'}}>
+                Permanently delete <strong>{deleteTarget.title}</strong>? This removes its menu availability settings and delivery-platform mappings. This cannot be undone.
+              </p>
+              <p className="text-muted" style={{fontSize:'0.8rem'}}>
+                If you just want to stop taking orders here temporarily, use "Active: Off" instead — it's reversible.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? <div className="spinner"/> : 'Delete'}
               </button>
             </div>
           </div>

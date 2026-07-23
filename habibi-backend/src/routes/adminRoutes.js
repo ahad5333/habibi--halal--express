@@ -220,9 +220,12 @@ router.use("/coupons", couponRoutes);
 router.get("/coupon-stats", getCouponStats);
 
 // Location Management
+const { createLocation, deleteLocation } = require("../controllers/locationController");
 router.get("/locations", getAdminLocations);
+router.post("/locations", createLocation);
 router.put("/locations/:id", updateAdminLocation);
 router.patch("/locations/:id/toggle", toggleLocation);
+router.delete("/locations/:id", deleteLocation);
 
 // (Menu availability route is registered before /:id above)
 
