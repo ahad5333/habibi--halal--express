@@ -27,7 +27,7 @@ const getBusinessMenuById = async (req, res) => {
 
 const createBusinessMenu = async (req, res) => {
   try {
-    const { name, description, category, price, price_tier_2, price_tier_3, is_active } = req.body;
+    const { name, description, category, price, price_tier_2, price_tier_3, is_active, min_quantity, unit } = req.body;
 
     let image_url = req.body.image_url || "";
     if (req.file) {
@@ -36,11 +36,12 @@ const createBusinessMenu = async (req, res) => {
 
     const result = await pool.query(
       `
-      INSERT INTO business_menus (name, description, category, price, price_tier_2, price_tier_3, image_url, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO business_menus (name, description, category, price, price_tier_2, price_tier_3, image_url, is_active, min_quantity, unit)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
       `,
-      [name, description, category, price, price_tier_2 || null, price_tier_3 || null, image_url, is_active !== undefined ? is_active : true]
+      [name, description, category, price, price_tier_2 || null, price_tier_3 || null, image_url, is_active !== undefined ? is_active : true,
+       parseInt(min_quantity, 10) || 1, unit || 'case']
     );
 
     res.status(201).json(result.rows[0]);
@@ -52,7 +53,7 @@ const createBusinessMenu = async (req, res) => {
 const updateBusinessMenu = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, category, price, price_tier_2, price_tier_3, is_active } = req.body;
+    const { name, description, category, price, price_tier_2, price_tier_3, is_active, min_quantity, unit } = req.body;
 
     const currentItem = await pool.query("SELECT image_url FROM business_menus WHERE id = $1", [id]);
     if (currentItem.rows.length === 0) {
@@ -67,11 +68,12 @@ const updateBusinessMenu = async (req, res) => {
     const result = await pool.query(
       `
       UPDATE business_menus
-      SET name=$1, description=$2, category=$3, price=$4, price_tier_2=$5, price_tier_3=$6, image_url=$7, is_active=$8
-      WHERE id=$9
+      SET name=$1, description=$2, category=$3, price=$4, price_tier_2=$5, price_tier_3=$6, image_url=$7, is_active=$8, min_quantity=$9, unit=$10
+      WHERE id=$11
       RETURNING *
       `,
-      [name, description, category, price, price_tier_2 || null, price_tier_3 || null, image_url, is_active !== undefined ? is_active : true, id]
+      [name, description, category, price, price_tier_2 || null, price_tier_3 || null, image_url, is_active !== undefined ? is_active : true,
+       parseInt(min_quantity, 10) || 1, unit || 'case', id]
     );
 
     res.json(result.rows[0]);

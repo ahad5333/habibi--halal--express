@@ -104,16 +104,23 @@ exports.getCatalog = async (req, res) => {
 };
 
 // ── Place Order ───────────────────────────────────────────────────
+// Prices/totals are never trusted from the client — every submitted line is
+// re-resolved here against the live catalog (regular menu partner_price, or
+// business_menus with this partner's tier applied) and priced server-side.
+// "Dozen of Tacos" quota bundles arrive as a composite cart id (`q<menuId>-t<tacoId>`)
+// that PartnerPortal.jsx generates client-side; the price is the quota menu item's
+// own partner_price, so we parse out menuId and resolve it the same way.
 exports.placeOrder = async (req, res) => {
   try {
-    const { items, delivery_address, notes, sub_total, total, payment_method } = req.body;
+    const { items, delivery_address, notes, payment_method } = req.body;
     if (!items || !items.length) return res.status(400).json({ error: 'No items in order' });
 
     const orderNumber = 'PO-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-    // Resolve business name + enforce the payment methods approved for this partner
+    // Resolve business name/tier + enforce the payment methods approved for this partner
     let businessName = 'Partner';
     let appId = null;
+    let priceTier = 'tier_1';
     if (req.user.partner_id) {
       const appRes = await pool.query(
         'SELECT id, business_name, price_tier, payment_methods FROM partner_applications WHERE id=$1',
@@ -123,6 +130,7 @@ exports.placeOrder = async (req, res) => {
       if (app) {
         businessName = app.business_name;
         appId = app.id;
+        priceTier = app.price_tier || 'tier_1';
         const allowed = Array.isArray(app.payment_methods) ? app.payment_methods
           : (typeof app.payment_methods === 'string' ? JSON.parse(app.payment_methods || '[]') : []);
         if (allowed.length > 0 && payment_method && !allowed.includes(payment_method)) {
@@ -130,17 +138,79 @@ exports.placeOrder = async (req, res) => {
         }
       }
     }
+    const tierField = priceTier === 'tier_3' ? 'price_tier_3' : priceTier === 'tier_2' ? 'price_tier_2' : null;
+
+    const resolvedItems = [];
+    let subTotal = 0;
+
+    for (const raw of items) {
+      const qty = parseInt(raw.quantity ?? raw.qty, 10);
+      if (!Number.isInteger(qty) || qty <= 0) {
+        return res.status(400).json({ error: 'Every item needs a valid quantity.' });
+      }
+
+      const quotaMatch = typeof raw.id === 'string' && raw.id.match(/^q(\d+)-t\d+$/);
+      let row, unitPrice, minQty = 1, itemName, itemUnit = 'ea', source;
+
+      if (quotaMatch) {
+        const r = await pool.query(
+          `SELECT id, name, partner_price, is_active, is_available FROM menus WHERE id=$1`,
+          [parseInt(quotaMatch[1], 10)]
+        );
+        row = r.rows[0];
+        if (!row || !row.is_active || !row.is_available || row.partner_price == null) {
+          return res.status(400).json({ error: `"${raw.name || 'An item'}" is no longer available.` });
+        }
+        unitPrice = parseFloat(row.partner_price);
+        itemName = raw.name || row.name;
+        source = 'regular';
+      } else if (raw.source === 'wholesale') {
+        const r = await pool.query(
+          `SELECT id, name, price, price_tier_2, price_tier_3, min_quantity, unit, is_active FROM business_menus WHERE id=$1`,
+          [raw.id]
+        );
+        row = r.rows[0];
+        if (!row || !row.is_active) {
+          return res.status(400).json({ error: `"${raw.name || 'An item'}" is no longer available.` });
+        }
+        unitPrice = parseFloat(tierField && row[tierField] != null ? row[tierField] : row.price);
+        minQty = row.min_quantity || 1;
+        itemUnit = row.unit || 'case';
+        itemName = row.name;
+        source = 'wholesale';
+      } else {
+        const r = await pool.query(
+          `SELECT id, name, partner_price, is_active, is_available FROM menus WHERE id=$1`,
+          [raw.id]
+        );
+        row = r.rows[0];
+        if (!row || !row.is_active || !row.is_available || row.partner_price == null) {
+          return res.status(400).json({ error: `"${raw.name || 'An item'}" is no longer available.` });
+        }
+        unitPrice = parseFloat(row.partner_price);
+        itemName = row.name;
+        source = 'regular';
+      }
+
+      if (qty < minQty) {
+        return res.status(400).json({ error: `"${itemName}" requires a minimum order of ${minQty}.` });
+      }
+
+      subTotal += Math.round(unitPrice * qty * 100) / 100;
+      resolvedItems.push({ menu_item_id: row.id, name: itemName, quantity: qty, unit_price: unitPrice, unit: itemUnit, source });
+    }
+
+    subTotal = Math.round(subTotal * 100) / 100;
 
     const result = await pool.query(
       `INSERT INTO partner_orders
          (order_number, partner_user_id, application_id, business_name,
           items, sub_total, tax, total, delivery_address, notes, price_tier, payment_method, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-         (SELECT price_tier FROM partner_applications WHERE id=$3), $11, 'unpaid')
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'unpaid')
        RETURNING *`,
       [orderNumber, req.user.id, appId, businessName,
-       JSON.stringify(items), sub_total || 0, 0,
-       total || 0, delivery_address || '', notes || '',
+       JSON.stringify(resolvedItems), subTotal, 0,
+       subTotal, delivery_address || '', notes || '', priceTier,
        payment_method || null]
     );
 
