@@ -1004,16 +1004,11 @@ const createTables = async () => {
       BEGIN
         ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_option_key_key;
         ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_category_check;
-        BEGIN
-          ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_check
-            CHECK (category IN ('base','cheese','veg','protein','sauce','bowl_base','bowl_topping','bowl_protein','bowl_sauce'));
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
-        BEGIN
-          ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_option_key_key
-            UNIQUE (category, option_key);
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
+        ALTER TABLE byo_ingredients DROP CONSTRAINT IF EXISTS byo_ingredients_category_option_key_key;
+        ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_check
+          CHECK (category IN ('base','cheese','veg','protein','sauce','bowl_base','bowl_topping','bowl_protein','bowl_sauce'));
+        ALTER TABLE byo_ingredients ADD CONSTRAINT byo_ingredients_category_option_key_key
+          UNIQUE (category, option_key);
       END $$;
     `);
 
