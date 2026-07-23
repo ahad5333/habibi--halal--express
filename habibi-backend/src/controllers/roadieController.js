@@ -5,7 +5,7 @@ const { roadieRequest, isConfigured } = require('../utils/roadie');
 
 function verifyRoadieSignature(rawBody, signature) {
   const secret = process.env.ROADIE_WEBHOOK_SECRET || process.env.ROADIE_API_KEY;
-  if (!secret) return true;
+  if (!secret) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   try {
     return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(expected));
@@ -39,7 +39,7 @@ const createShipment = async (req, res) => {
       `SELECT id, order_number, customer_name, customer_phone,
               delivery_address, delivery_city, delivery_zip, delivery_state,
               delivery_instructions, total
-       FROM guest_orders WHERE id = $1`,
+       FROM guest_orders WHERE id::text = $1 OR order_number = $1`,
       [order_id]
     );
     if (!orderResult.rows.length) return res.status(404).json({ message: 'Order not found' });

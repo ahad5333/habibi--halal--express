@@ -1096,7 +1096,7 @@ const createTables = async () => {
       )
     `);
     await client.query(`ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS delivery_assignments_status_check`);
-    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('assigned','en_route','picked_up','delivered','cancelled'))`);
+    await client.query(`ALTER TABLE delivery_assignments ADD CONSTRAINT delivery_assignments_status_check CHECK (status IN ('pending','assigned','en_route','picked_up','delivered','cancelled'))`);
 
     // driver_id historically pointed at users(id) on some deployments (predates
     // staff_members-based drivers); every driver lookup in the app now uses
@@ -1120,6 +1120,19 @@ const createTables = async () => {
     for (const { column_name } of driftedTsCols.rows) {
       await client.query(
         `ALTER TABLE delivery_assignments ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
+
+    // Same naive-timestamp drift as above, found on roadie_deliveries.
+    const driftedRoadieCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='roadie_deliveries'
+        AND column_name IN ('estimated_pickup_time','estimated_dropoff_time','created_at','updated_at')
+        AND data_type = 'timestamp without time zone'
+    `);
+    for (const { column_name } of driftedRoadieCols.rows) {
+      await client.query(
+        `ALTER TABLE roadie_deliveries ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
       );
     }
 

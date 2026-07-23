@@ -491,8 +491,27 @@ const createGuestOrder = async (req, res) => {
             if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
           } else if (provider === 'doordash') {
             autoDispatchDoorDash(db_id, dispatchPayload);
-          } else if (provider === 'roadie') {
+          } else if (provider === 'roadie' && roadieConfigured()) {
             autoDispatchRoadie(db_id, dispatchPayload);
+          } else if (provider === 'roadie') {
+            // Roadie is the right tier for this distance but credentials aren't
+            // configured yet — without this, the order would get no delivery
+            // dispatch of any kind and no one would know. Surface it the same
+            // way an in-house order does, so it lands on the admin dispatch board.
+            console.warn(`[Dispatch] ${order_number}: ${miles} mi wants Roadie but it's not configured — flagging for manual dispatch`);
+            await pool.query(
+              `INSERT INTO delivery_assignments
+                 (order_id, order_number, driver_id, driver_name, status,
+                  delivery_address, customer_name, customer_phone, delivery_note)
+               VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5,$6)
+               ON CONFLICT DO NOTHING`,
+              [db_id, order_number,
+               [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
+               customer_name || 'Guest', customer_phone || '',
+               `Long-distance order (${miles.toFixed(1)} mi) — Roadie not yet configured, needs manual delivery arrangement.`]
+            ).catch(e => console.error('[Dispatch] roadie-fallback assignment insert failed:', e.message));
+            const io = req.app.get('io');
+            if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
           } else {
             // pickup_only or unknown — just log
             console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);

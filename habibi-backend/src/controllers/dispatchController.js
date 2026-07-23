@@ -56,15 +56,39 @@ const assignDriver = async (req, res) => {
       if (tipRow.rows.length) tip_amount = tipRow.rows[0].tip;
     }
 
-    const result = await pool.query(
-      `INSERT INTO delivery_assignments
-         (order_id, order_number, driver_id, driver_name, status,
-          delivery_address, customer_name, customer_phone, tip_amount)
-       VALUES ($1,$2,$3,$4,'assigned',$5,$6,$7,$8)
-       RETURNING *`,
-      [order_id, order_number, driver_id, driver.name, delivery_address, customer_name, customer_phone, tip_amount]
-    );
-    const assignment = result.rows[0];
+    // Auto-dispatch may have already created an unassigned 'pending' placeholder
+    // row for this order (in-house tier, or Roadie-not-configured fallback) —
+    // fill that in instead of inserting a second row for the same order.
+    let assignment;
+    if (order_number) {
+      const pendingRow = await pool.query(
+        `SELECT id FROM delivery_assignments WHERE order_number=$1 AND status='pending' AND driver_id IS NULL LIMIT 1`,
+        [order_number]
+      );
+      if (pendingRow.rows.length) {
+        const updated = await pool.query(
+          `UPDATE delivery_assignments
+             SET driver_id=$1, driver_name=$2, status='assigned',
+                 delivery_address=$3, customer_name=$4, customer_phone=$5,
+                 tip_amount=$6, assigned_at=NOW()
+           WHERE id=$7
+           RETURNING *`,
+          [driver_id, driver.name, delivery_address, customer_name, customer_phone, tip_amount, pendingRow.rows[0].id]
+        );
+        assignment = updated.rows[0];
+      }
+    }
+    if (!assignment) {
+      const result = await pool.query(
+        `INSERT INTO delivery_assignments
+           (order_id, order_number, driver_id, driver_name, status,
+            delivery_address, customer_name, customer_phone, tip_amount)
+         VALUES ($1,$2,$3,$4,'assigned',$5,$6,$7,$8)
+         RETURNING *`,
+        [order_id, order_number, driver_id, driver.name, delivery_address, customer_name, customer_phone, tip_amount]
+      );
+      assignment = result.rows[0];
+    }
 
     const base  = process.env.FRONTEND_URL || 'https://habibihe.com';
     const token = driverToken(driver_id);
