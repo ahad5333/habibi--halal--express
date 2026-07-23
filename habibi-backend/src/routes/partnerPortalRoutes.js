@@ -43,7 +43,7 @@ router.get('/summary', async (req, res) => {
   }
 });
 
-// Business App — add items to existing order (only when status = 'created')
+// Business App — add items to existing order (only before it's been confirmed)
 router.patch('/orders/:id/items', async (req, res) => {
   try {
     const pool = require('../config/db');
@@ -51,7 +51,7 @@ router.patch('/orders/:id/items', async (req, res) => {
     if (!newItems || !newItems.length) return res.status(400).json({ message: 'No items provided.' });
 
     const result = await pool.query(
-      `SELECT items, sub_total, total FROM partner_orders WHERE id=$1 AND partner_user_id=$2 AND status='created'`,
+      `SELECT items, sub_total, total FROM partner_orders WHERE id=$1 AND partner_user_id=$2 AND status='pending'`,
       [req.params.id, req.user.id]
     );
     if (!result.rows.length) return res.status(400).json({ message: 'Order not found or cannot be modified.' });
@@ -84,17 +84,17 @@ router.patch('/orders/:id/items', async (req, res) => {
   }
 });
 
-// Business App — cancel order (only if status = 'created')
+// Business App — cancel order (only before it's been confirmed)
 router.patch('/orders/:id/cancel', async (req, res) => {
   try {
     const pool = require('../config/db');
     const { reason } = req.body;
     const result = await pool.query(
       `UPDATE partner_orders SET status='cancelled', cancellation_reason=$1, updated_at=NOW()
-       WHERE id=$2 AND partner_user_id=$3 AND status='created' RETURNING id`,
+       WHERE id=$2 AND partner_user_id=$3 AND status='pending' RETURNING id`,
       [reason || '', req.params.id, req.user.id]
     );
-    if (!result.rows.length) return res.status(400).json({ message: 'Order cannot be cancelled (not in Created status or not found).' });
+    if (!result.rows.length) return res.status(400).json({ message: 'Order cannot be cancelled (already confirmed or not found).' });
     res.json({ message: 'Order cancelled.' });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -112,22 +112,6 @@ router.patch('/orders/:id/payment-method', async (req, res) => {
       [payment_method, req.params.id, req.user.id]
     );
     res.json({ message: 'Payment method updated.' });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-});
-
-// Business App — pay now (mark order as paid)
-router.post('/orders/:id/pay', async (req, res) => {
-  try {
-    const pool = require('../config/db');
-    const { payment_method } = req.body;
-    await pool.query(
-      `UPDATE partner_orders SET payment_status='paid', payment_method=$1, updated_at=NOW()
-       WHERE id=$2 AND partner_user_id=$3`,
-      [payment_method, req.params.id, req.user.id]
-    );
-    res.json({ message: 'Payment recorded.' });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

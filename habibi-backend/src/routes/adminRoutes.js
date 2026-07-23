@@ -323,6 +323,25 @@ router.patch("/partner-orders/:id/status", async (req, res) => {
   }
 });
 
+// Admin-verified payment confirmation (e.g. a Net 30 check or bank transfer came in).
+// There is no partner-side self-service "pay" endpoint — a partner marking their own
+// invoice paid with no real charge behind it would be a billing-integrity hole.
+router.patch("/partner-orders/:id/payment", async (req, res) => {
+  const { payment_status } = req.body;
+  const allowed = ['unpaid', 'paid', 'refunded'];
+  if (!allowed.includes(payment_status)) return res.status(400).json({ message: 'Invalid payment status' });
+  try {
+    const result = await pool.query(
+      `UPDATE partner_orders SET payment_status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`,
+      [payment_status, req.params.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ message: 'Order not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
 // Careers
 const {
   getAdminVacancies, createVacancy, updateVacancy, deleteVacancy,

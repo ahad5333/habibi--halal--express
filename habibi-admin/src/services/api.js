@@ -282,6 +282,7 @@ export const adminAPI = {
   // Partner orders (B2B)
   getPartnerOrders:           () => req('/api/admin/partner-orders'),
   updatePartnerOrderStatus:   (id, status) => req(`/api/admin/partner-orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updatePartnerOrderPayment:  (id, payment_status) => req(`/api/admin/partner-orders/${id}/payment`, { method: 'PATCH', body: JSON.stringify({ payment_status }) }),
 
   // Careers
   getCareersVacancies:        () => req('/api/admin/careers/vacancies'),
