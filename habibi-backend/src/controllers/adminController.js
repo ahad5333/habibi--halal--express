@@ -576,9 +576,9 @@ const updateCustomer = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE users SET name = $1, email = $2, phone_number = $3, role = $4, updated_at = NOW()
-       WHERE id = $5
+       WHERE id = $5 AND role = ANY($6)
        RETURNING id, name, email, phone_number AS phone, role, loyalty_points, created_at`,
-      [name || null, email, phone || null, role, id]
+      [name || null, email, phone || null, role, id, CUSTOMER_ROLES]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'Customer not found' });
     res.json(result.rows[0]);
@@ -597,7 +597,7 @@ const bulkDeleteCustomers = async (req, res) => {
     if (numericIds.length === 0) {
       return res.status(400).json({ message: 'No valid customer IDs provided.' });
     }
-    const result = await pool.query('DELETE FROM users WHERE id = ANY($1) RETURNING id', [numericIds]);
+    const result = await pool.query('DELETE FROM users WHERE id = ANY($1) AND role = ANY($2) RETURNING id', [numericIds, CUSTOMER_ROLES]);
     res.json({ deleted_count: result.rowCount });
   } catch (error) {
     res.status(500).json(safeError(error));

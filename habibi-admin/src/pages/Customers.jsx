@@ -169,7 +169,7 @@ export default function Customers() {
       return next;
     });
   };
-  const registeredRows = customers.filter(c => !c.is_guest);
+  const registeredRows = customers.filter(c => !c.is_guest && CUSTOMER_ROLES.includes(c.role));
   const toggleCheckAll = () => {
     setChecked(prev => {
       const allChecked = registeredRows.length > 0 && registeredRows.every(c => prev.has(c.id));
@@ -360,7 +360,7 @@ export default function Customers() {
                   {customers.map(c => (
                     <tr key={c.id} onClick={() => openCustomer(c)} style={{ cursor: 'pointer' }} className={selected?.id === c.id ? 'row-selected' : ''}>
                       <td onClick={e => e.stopPropagation()}>
-                        {!c.is_guest && <input type="checkbox" checked={checked.has(c.id)} onChange={() => toggleCheck(c.id)} />}
+                        {!c.is_guest && CUSTOMER_ROLES.includes(c.role) && <input type="checkbox" checked={checked.has(c.id)} onChange={() => toggleCheck(c.id)} />}
                       </td>
                       <td>
                         <div className="cust-name-cell">
@@ -381,8 +381,10 @@ export default function Customers() {
                           <button className="btn btn-ghost btn-sm" title="Create a login account for this guest" onClick={() => openAdd({ name: c.name || '', email: c.email || '', phone: c.phone || '', role: 'customer' })}>
                             <UserPlus size={13} /> Create Account
                           </button>
-                        ) : (
+                        ) : CUSTOMER_ROLES.includes(c.role) ? (
                           <button className="btn btn-ghost btn-sm btn-icon" title="Edit" onClick={() => openEdit(c)}><Pencil size={13} /></button>
+                        ) : (
+                          <span className="text-muted" style={{ fontSize: '0.72rem' }}>—</span>
                         )}
                       </td>
                     </tr>
