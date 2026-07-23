@@ -98,11 +98,7 @@ export default function ArticleDetail() {
         <div className="article-progress-bar" style={{ width: `${progress}%` }} />
       </div>
 
-      <div
-        className="article-hero"
-        style={mediaSrc(article.media_url) ? { backgroundImage: `url('${mediaSrc(article.media_url)}')` } : undefined}
-      >
-        <div className="article-hero-overlay" />
+      <div className="article-hero-header">
         <div className="container article-hero-content">
           <div className="article-hero-top">
             <Link to="/articles" className="article-back"><ArrowLeft size={15} /> Back to Articles</Link>
@@ -115,6 +111,12 @@ export default function ArticleDetail() {
           {article.subtitle && <p className="article-subtitle">{article.subtitle}</p>}
         </div>
       </div>
+
+      {mediaSrc(article.media_url) && (
+        <div className="container article-poster-wrap">
+          <img src={mediaSrc(article.media_url)} alt={article.title} className="article-poster-img" />
+        </div>
+      )}
 
       <div className="container article-body-wrap">
         <div className="article-byline">

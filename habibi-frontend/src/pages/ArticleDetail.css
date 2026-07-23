@@ -14,24 +14,32 @@
   transition: width 0.1s linear;
 }
 
-/* Hero */
-.article-hero {
-  position: relative;
-  min-height: 420px;
-  display: flex;
-  align-items: flex-end;
-  background-size: cover;
-  background-position: center;
-}
-.article-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.2) 100%);
+/* Hero — plain text header, no cropped background image. The header image
+   (often a designed poster graphic with its own baked-in text/logo, not a
+   generic photo) is shown separately below at full size so nothing about
+   it ever gets cropped or covered by a readability gradient. */
+.article-hero-header {
+  background: linear-gradient(180deg, #1a0e04 0%, #0a0a0a 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .article-hero-content {
-  position: relative;
-  z-index: 1;
-  padding: 3rem 1rem 3.5rem;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 2rem;
+}
+
+/* Poster — the article's header image, always shown whole */
+.article-poster-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.75rem 1rem 0.5rem;
+}
+.article-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
 }
 .article-hero-top {
   display: flex;
@@ -393,13 +401,15 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .article-hero { min-height: 340px; }
   .article-title { font-size: 1.7rem; }
   .article-stats-row { flex-direction: column; }
   .article-stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }
   .article-stat:last-child { border-bottom: none; }
 }
 @media (max-width: 480px) {
+  .article-hero-content { padding: 1.75rem 1rem 1.5rem; }
+  .article-poster-wrap { padding: 1.25rem 1rem 0.25rem; }
+  .article-poster-img { border-radius: 10px; }
   .article-body { padding: 2rem 0 3rem; }
   .article-title { font-size: 1.45rem; }
   .article-lead { font-size: 1rem; }
