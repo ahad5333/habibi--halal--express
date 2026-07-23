@@ -16,11 +16,15 @@ exports.getProfile = async (req, res) => {
     if (user.partner_id) {
       const appRes = await pool.query(
         `SELECT id, business_name, ein_number, contact_name, email, phone,
-                address, status, price_tier, notes, created_at
+                address, status, price_tier, notes, payment_methods, credit_balance, created_at
          FROM partner_applications WHERE id=$1`,
         [user.partner_id]
       );
       application = appRes.rows[0] || null;
+      if (application) {
+        application.payment_methods = Array.isArray(application.payment_methods) ? application.payment_methods
+          : (typeof application.payment_methods === 'string' ? JSON.parse(application.payment_methods || '[]') : []);
+      }
     }
 
     res.json({ user, application });
@@ -107,16 +111,24 @@ exports.placeOrder = async (req, res) => {
 
     const orderNumber = 'PO-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-    // Resolve business name
+    // Resolve business name + enforce the payment methods approved for this partner
     let businessName = 'Partner';
     let appId = null;
     if (req.user.partner_id) {
       const appRes = await pool.query(
-        'SELECT id, business_name, price_tier FROM partner_applications WHERE id=$1',
+        'SELECT id, business_name, price_tier, payment_methods FROM partner_applications WHERE id=$1',
         [req.user.partner_id]
       );
       const app = appRes.rows[0];
-      if (app) { businessName = app.business_name; appId = app.id; }
+      if (app) {
+        businessName = app.business_name;
+        appId = app.id;
+        const allowed = Array.isArray(app.payment_methods) ? app.payment_methods
+          : (typeof app.payment_methods === 'string' ? JSON.parse(app.payment_methods || '[]') : []);
+        if (allowed.length > 0 && payment_method && !allowed.includes(payment_method)) {
+          return res.status(400).json({ error: `"${payment_method}" is not an approved payment method for your account. Allowed: ${allowed.join(', ')}` });
+        }
+      }
     }
 
     const result = await pool.query(

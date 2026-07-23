@@ -7,6 +7,7 @@ import './ForgotPassword.css';
 export default function ResetPassword() {
   const [params]          = useSearchParams();
   const token             = params.get('token') || '';
+  const isPartner         = params.get('type') === 'partner';
   const navigate          = useNavigate();
   const [password, setPassword]     = useState('');
   const [confirm, setConfirm]       = useState('');
@@ -23,7 +24,7 @@ export default function ResetPassword() {
     try {
       await authAPI.resetPassword(token, password);
       setDone(true);
-      setTimeout(() => navigate('/login'), 2500);
+      setTimeout(() => navigate(isPartner ? '/partner/login' : '/login'), 2500);
     } catch (err) {
       setError(err.message || 'Invalid or expired link. Please request a new one.');
     } finally {

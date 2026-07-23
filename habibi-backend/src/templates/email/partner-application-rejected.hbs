@@ -1,0 +1,15 @@
+<h2>{{#if wasApproved}}Your Partner Access Has Changed{{else}}Update on Your Wholesale Partner Application{{/if}}</h2>
+<p>Hi {{contact_name}},</p>
+{{#if wasApproved}}
+<p>This is to let you know that <strong>{{business_name}}</strong>'s wholesale partner access has been revoked and is no longer active.</p>
+{{else}}
+<p>Thank you for your interest in becoming a Habibi Halal Express wholesale partner. After review, we're not able to approve <strong>{{business_name}}</strong>'s application at this time.</p>
+{{/if}}
+
+{{#if notes}}
+<div style="background:#151515;border-left:3px solid #E5B64E;padding:12px 16px;margin:20px 0;border-radius:4px;">
+  <p style="font-size:13px;color:#ccc;margin:0;">{{notes}}</p>
+</div>
+{{/if}}
+
+<p style="font-size:13px;color:#666;">If you'd like to discuss this further, feel free to reply to this email.</p>

@@ -306,6 +306,29 @@ const sendPartnerPasswordReset = async (email, resetUrl) => {
   return sendMailHelper(email, `Partner Portal — Password Reset | Habibi Wholesale`, html);
 };
 
+const sendPartnerApplicationApproved = async (email, { contact_name, business_name, price_tier_label, setupUrl }) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = renderEmail('partner-application-approved', {
+    contact_name: contact_name || 'there',
+    business_name,
+    price_tier_label,
+    setupUrl: setupUrl || null,
+    partnerLoginUrl: `${frontendUrl}/partner/login`,
+  }, 'base-dark');
+  return sendMailHelper(email, `You're Approved! Welcome to Habibi Wholesale Partners`, html);
+};
+
+const sendPartnerApplicationRejected = async (email, { contact_name, business_name, notes, wasApproved }) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = renderEmail('partner-application-rejected', {
+    contact_name: contact_name || 'there',
+    business_name,
+    notes: notes || null,
+    wasApproved: !!wasApproved,
+  }, 'base-dark');
+  return sendMailHelper(email, wasApproved ? `Update on Your Habibi Wholesale Partner Access` : `Update on Your Habibi Wholesale Partner Application`, html);
+};
+
 const sendCateringQuoteConfirmation = async (email, name, quote) => {
   const eventDate = quote.scheduled_date
     ? new Date(quote.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -408,6 +431,8 @@ module.exports = {
   sendPasswordReset,
   sendPartnerPasswordReset,
   sendPartnerOrderUpdate,
+  sendPartnerApplicationApproved,
+  sendPartnerApplicationRejected,
   sendNewsletter,
   syncNewsletterContact,
   sendCateringQuoteConfirmation,

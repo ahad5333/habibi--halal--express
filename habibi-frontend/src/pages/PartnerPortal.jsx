@@ -393,6 +393,8 @@ function AccountTab({ profile, onLogout }) {
               ['EIN', application.ein_number],
               ['Phone', application.phone],
               ['Price Tier', TIER_LABELS[application.price_tier] || application.price_tier || 'Standard'],
+              ['Payment Methods', application.payment_methods?.length ? application.payment_methods.join(', ') : null],
+              ['Credit Balance', application.credit_balance != null && parseFloat(application.credit_balance) > 0 ? `$${parseFloat(application.credit_balance).toFixed(2)}` : null],
               ['Partner Since', new Date(application.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'})],
             ].map(([label, value]) => value ? (
               <div key={label} className="pp-biz-field">

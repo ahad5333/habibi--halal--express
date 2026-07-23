@@ -1,0 +1,22 @@
+<h2>You're Approved! 🎉</h2>
+<p>Hi {{contact_name}},</p>
+<p>Great news — <strong>{{business_name}}</strong> has been approved as a Habibi Halal Express wholesale partner{{#if price_tier_label}}, at the <strong>{{price_tier_label}}</strong> pricing tier{{/if}}.</p>
+
+{{#if setupUrl}}
+<p>Your Partner Portal account has been created. Set a password to sign in — this link expires in <strong>24 hours</strong>.</p>
+<div style="text-align:center;margin:32px 0;">
+  <a href="{{setupUrl}}" class="cta-btn">Set Your Password</a>
+</div>
+<p style="font-size:13px;color:#666;line-height:1.5;">
+  If the button doesn't work, copy and paste this URL into your browser:<br>
+  <a href="{{setupUrl}}" style="word-break:break-all;color:#E5B64E;">{{setupUrl}}</a>
+</p>
+{{else}}
+<div style="text-align:center;margin:32px 0;">
+  <a href="{{partnerLoginUrl}}" class="cta-btn">Sign In to the Partner Portal</a>
+</div>
+<p style="font-size:13px;color:#666;">Use your existing Habibi account email and password to sign in.</p>
+{{/if}}
+
+<hr style="border:0;border-top:1px solid #2a2a2a;margin:24px 0;">
+<p style="font-size:13px;color:#555;">Questions? Just reply to this email and our team will help.</p>
