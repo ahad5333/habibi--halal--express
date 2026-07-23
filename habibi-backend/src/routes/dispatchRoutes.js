@@ -98,10 +98,11 @@ function driverOrAdmin(req, res, next) {
   if (driverId && driverToken) {
     try {
       const expected = crypto.createHmac('sha256', salt).update(String(driverId)).digest('hex');
+      console.log('[DBG driverOrAdmin]', JSON.stringify({ driverId, driverTokenLen: driverToken.length, expectedLen: expected.length, driverToken, expected, match: driverToken === expected }));
       if (crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected))) {
         return next();
       }
-    } catch (_) {}
+    } catch (e) { console.log('[DBG driverOrAdmin] threw:', e.message); }
   }
 
   return res.status(401).json({ message: 'Driver authentication required' });
