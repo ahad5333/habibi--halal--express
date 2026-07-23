@@ -18,8 +18,9 @@ if (accountSid && authToken) {
 
 const toE164 = (phone) => {
   if (!phone) return phone;
-  if (phone.startsWith('+')) return phone;
+  const hasPlus = phone.trim().startsWith('+');
   const digits = phone.replace(/\D/g, '');
+  if (hasPlus) return `+${digits}`;
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return `+${digits}`;
