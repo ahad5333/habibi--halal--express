@@ -59,6 +59,20 @@ const validateCoupon = async (req, res) => {
       }
     }
 
+    // Check first-order-only restriction
+    if (coupon.is_first_order_only) {
+      if (!req.user) {
+        return res.status(401).json({ message: "Please log in to use this coupon." });
+      }
+      const priorOrders = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM guest_orders WHERE user_id=$1 AND order_status != 'cancelled'`,
+        [req.user.id]
+      );
+      if (priorOrders.rows[0].n > 0) {
+        return res.status(400).json({ message: "This coupon is only valid on your first order." });
+      }
+    }
+
     // All checks passed — now atomically lock + verify + increment in one transaction
     const client = await pool.connect();
     try {
@@ -153,6 +167,11 @@ const validateCoupon = async (req, res) => {
         discount = 0;
     }
 
+    // Cap discount at the coupon's configured max, if any
+    if (coupon.max_discount != null && parseFloat(coupon.max_discount) > 0) {
+      discount = Math.min(discount, parseFloat(coupon.max_discount));
+    }
+
     // Cap discount at order amount
     discount = Math.min(discount, parseFloat(amount));
 
@@ -197,6 +216,8 @@ const createCoupon = async (req, res) => {
       customer_email,
       location_id,
       free_item_category,
+      max_discount,
+      is_first_order_only,
     } = req.body;
 
     const minOrder = parseFloat(min_order || min_order_amount || 0);
@@ -205,6 +226,7 @@ const createCoupon = async (req, res) => {
     const usageLimit     = parseInt(max_uses || usage_limit || 0) || null;
     const validUntil     = expires_at || expiry_date || valid_until || null;
     const validFrom      = valid_from || starts_at || null;
+    const maxDiscount    = parseFloat(max_discount) > 0 ? parseFloat(max_discount) : null;
 
     // Validate discount_value — must be non-negative for types that use it
     const needsValue = ['percentage', 'fixed_amount', 'fixed'].includes(discount_type);
@@ -222,8 +244,9 @@ const createCoupon = async (req, res) => {
         condition_type, condition_value,
         usage_limit, valid_from, valid_until,
         title, description,
-        customer_email, location_id, free_item_category
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        customer_email, location_id, free_item_category,
+        max_discount, is_first_order_only
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         code.toUpperCase(),
         discount_type || 'percentage',
@@ -238,6 +261,8 @@ const createCoupon = async (req, res) => {
         customer_email || null,
         location_id ? parseInt(location_id) : null,
         free_item_category || null,
+        maxDiscount,
+        !!is_first_order_only,
       ]
     );
 
@@ -248,17 +273,16 @@ const createCoupon = async (req, res) => {
   }
 };
 
-// Admin: Toggle status
+// Admin: Toggle status — flips server-side so it doesn't depend on the
+// client sending the current value (the toggle button call sends no body).
 const toggleCouponStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { is_active } = req.body;
-
     const result = await pool.query(
-      "UPDATE coupons SET is_active=$1 WHERE id=$2 RETURNING *",
-      [is_active, id]
+      "UPDATE coupons SET is_active = NOT is_active WHERE id=$1 RETURNING *",
+      [id]
     );
-
+    if (!result.rows.length) return res.status(404).json({ message: 'Coupon not found.' });
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json(safeError(error));
@@ -277,6 +301,7 @@ const updateCoupon = async (req, res) => {
       valid_from, starts_at,
       title, description,
       customer_email, location_id, free_item_category,
+      max_discount, is_first_order_only,
     } = req.body;
 
     const cur = await pool.query('SELECT * FROM coupons WHERE id=$1', [id]);
@@ -291,6 +316,10 @@ const updateCoupon = async (req, res) => {
     const validFrom      = valid_from || starts_at || c.valid_from || null;
     const parsedValue    = discount_value !== undefined ? (parseFloat(discount_value) || 0) : parseFloat(c.discount_value);
     const dtype          = discount_type || c.discount_type;
+    const maxDiscount    = max_discount !== undefined
+      ? (parseFloat(max_discount) > 0 ? parseFloat(max_discount) : null)
+      : c.max_discount;
+    const firstOrderOnly = is_first_order_only !== undefined ? !!is_first_order_only : c.is_first_order_only;
 
     if (dtype === 'percentage' && parsedValue > 100) {
       return res.status(400).json({ message: 'Percentage discount cannot exceed 100%.' });
@@ -300,8 +329,9 @@ const updateCoupon = async (req, res) => {
       `UPDATE coupons
        SET discount_type=$1, discount_value=$2, condition_type=$3, condition_value=$4,
            usage_limit=$5, valid_from=$6, valid_until=$7,
-           title=$8, description=$9, customer_email=$10, location_id=$11, free_item_category=$12
-       WHERE id=$13 RETURNING *`,
+           title=$8, description=$9, customer_email=$10, location_id=$11, free_item_category=$12,
+           max_discount=$13, is_first_order_only=$14
+       WHERE id=$15 RETURNING *`,
       [
         dtype, parsedValue, conditionType, conditionValue, usageLimit,
         validFrom, validUntil,
@@ -310,6 +340,8 @@ const updateCoupon = async (req, res) => {
         customer_email !== undefined ? (customer_email || null) : c.customer_email,
         location_id !== undefined ? (location_id ? parseInt(location_id) : null) : c.location_id,
         free_item_category !== undefined ? (free_item_category || null) : c.free_item_category,
+        maxDiscount,
+        firstOrderOnly,
         id,
       ]
     );

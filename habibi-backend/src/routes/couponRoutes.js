@@ -26,7 +26,7 @@ router.get("/",          protect, admin, getCoupons);
 router.post("/",         protect, admin,
   rules.couponCode(),
   body('discount_type').notEmpty().withMessage('Discount type is required.')
-    .isIn(['percentage','fixed_amount','free_delivery','bogo','bogo_half','free_item']).withMessage('Invalid discount type.'),
+    .isIn(['percentage','fixed_amount','free_delivery','bogo','bogo_half','free_item','free_item_from_category']).withMessage('Invalid discount type.'),
   body('discount_value').optional({ checkFalsy: true }).isFloat({ min: 0 }).withMessage('Discount value must be non-negative.'),
   body('customer_email').optional({ checkFalsy: true }).isEmail().withMessage('Must be a valid email.').normalizeEmail(),
   handleValidation,

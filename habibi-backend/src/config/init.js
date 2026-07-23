@@ -60,6 +60,23 @@ const createTables = async () => {
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_type      VARCHAR(50)`);
     await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_value     NUMERIC(10,2)`);
 
+    // valid_from/valid_until/expiry_date drifted to naive TIMESTAMP (or DATE for
+    // expiry_date) on some deployments instead of TIMESTAMPTZ — same class of bug
+    // fixed on delivery_assignments/roadie_deliveries above. A naive value read
+    // back gets mislabeled as UTC, so a coupon set to expire "Aug 1" would
+    // actually cut off ~4-5 hours early in America/New_York.
+    const driftedCouponCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='coupons'
+        AND column_name IN ('valid_from','valid_until','expiry_date')
+        AND data_type IN ('timestamp without time zone','date')
+    `);
+    for (const { column_name } of driftedCouponCols.rows) {
+      await client.query(
+        `ALTER TABLE coupons ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
+
     // ── Partner applications: add payment_methods + credit_balance ──
     await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
     await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS credit_balance  NUMERIC(10,2) DEFAULT 0`);
