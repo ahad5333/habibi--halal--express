@@ -101,6 +101,13 @@ const adminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const reviewLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 300 : 30,
+  message: { error: "Too many requests. Please wait a moment." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const userRoutes = require("./routes/userRoutes")
 const menuRoutes = require("./routes/menuRoutes")
 const byoIngredientRoutes = require("./routes/byoIngredientRoutes")
@@ -205,7 +212,7 @@ app.use("/api/dine-in", dineInRoutes);
 app.use("/api/offers", offersRoutes);
 app.use("/api/roadie", roadieRoutes);
 app.use("/api/careers", careersRoutes);
-app.use("/api/reviews", reviewsRoutes);
+app.use("/api/reviews", reviewLimiter, reviewsRoutes);
 app.use("/api/favorites", favoritesRoutes);
 app.use("/api/saved-customs", savedCustomRoutes);
 app.use("/api/group-orders", groupOrderRoutes);

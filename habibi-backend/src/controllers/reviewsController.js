@@ -1,5 +1,6 @@
 ﻿const pool      = require('../config/db');
 const safeError = require('../utils/safeError');
+const emailService = require('../services/emailService');
 
 // Public: GET /api/reviews
 const getReviews = async (req, res) => {
@@ -91,6 +92,16 @@ const submitReview = async (req, res) => {
       [order_number || null, user_id, customer_name.trim(),
        customer_email?.trim() || null, r, comment?.trim() || null]
     );
+
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihalal.com';
+    emailService.sendReviewAdminAlert(adminEmail, {
+      id: result.rows[0].id,
+      customer_name: customer_name.trim(),
+      rating: r,
+      comment: comment?.trim() || '',
+      order_number: order_number || null,
+    }).catch(err => console.error('[Reviews] admin alert email failed:', err.message));
+
     res.status(201).json({
       success: true,
       id: result.rows[0].id,
@@ -102,15 +113,22 @@ const submitReview = async (req, res) => {
 };
 
 // Admin: GET /api/admin/reviews
+// Cross-references order_number against guest_orders so the admin can tell a review
+// tied to a real order apart from one with a made-up or missing order number --
+// order_number itself is free text with no FK, so this is the only signal available.
 const getAdminReviews = async (req, res) => {
   try {
     const { status } = req.query;
     let where = '';
-    if (status === 'pending')  where = 'WHERE is_approved = FALSE';
-    if (status === 'approved') where = 'WHERE is_approved = TRUE';
-    if (status === 'featured') where = 'WHERE is_featured = TRUE';
+    if (status === 'pending')  where = 'WHERE r.is_approved = FALSE';
+    if (status === 'approved') where = 'WHERE r.is_approved = TRUE';
+    if (status === 'featured') where = 'WHERE r.is_featured = TRUE';
     const result = await pool.query(
-      `SELECT * FROM reviews ${where} ORDER BY created_at DESC`
+      `SELECT r.*, (go.order_number IS NOT NULL) AS verified_order
+       FROM reviews r
+       LEFT JOIN guest_orders go ON go.order_number = r.order_number
+       ${where}
+       ORDER BY r.created_at DESC`
     );
     res.json(result.rows);
   } catch (err) {

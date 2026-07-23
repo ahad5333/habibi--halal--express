@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Trash2, MessageSquare, X, CheckCircle, XCircle, Award } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Star, Trash2, MessageSquare, X, CheckCircle, XCircle, Award, ShieldCheck } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Reviews.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -10,6 +10,8 @@ const TABS = [
   { key: 'approved', label: 'Approved' },
   { key: 'featured', label: 'Featured' },
 ];
+
+const RATING_OPTIONS = [5, 4, 3, 2, 1];
 
 function StarDisplay({ rating }) {
   return (
@@ -36,6 +38,8 @@ export default function Reviews() {
   const [replyText, setReplyText]   = useState('');
   const [replySaving, setReplySaving] = useState(false);
   const [deleteId, setDeleteId]   = useState(null);
+  const [search, setSearch]       = useState('');
+  const [ratingFilter, setRatingFilter] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +97,17 @@ export default function Reviews() {
 
   const pendingCount = reviews.filter(r => !r.is_approved).length;
 
+  const filteredReviews = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return reviews.filter(r => {
+      if (ratingFilter && r.rating !== parseInt(ratingFilter, 10)) return false;
+      if (!q) return true;
+      return (r.customer_name || '').toLowerCase().includes(q) ||
+             (r.customer_email || '').toLowerCase().includes(q) ||
+             (r.comment || '').toLowerCase().includes(q);
+    });
+  }, [reviews, search, ratingFilter]);
+
   return (
     <div className="reviews-admin">
       <div className="page-header">
@@ -118,21 +133,43 @@ export default function Reviews() {
         ))}
       </div>
 
+      {/* Search + rating filter */}
+      <div className="rev-toolbar">
+        <input
+          className="rev-search"
+          placeholder="Search name, email, comment…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <select className="rev-rating-select" value={ratingFilter} onChange={e => setRatingFilter(e.target.value)}>
+          <option value="">All ratings</option>
+          {RATING_OPTIONS.map(n => <option key={n} value={n}>{n} star{n !== 1 ? 's' : ''}</option>)}
+        </select>
+      </div>
+
       {/* Content */}
       {loading && <div className="rev-empty">Loading…</div>}
       {error   && <div className="rev-empty rev-error">{error}</div>}
       {!loading && !error && reviews.length === 0 && (
         <div className="rev-empty">No reviews in this category.</div>
       )}
+      {!loading && !error && reviews.length > 0 && filteredReviews.length === 0 && (
+        <div className="rev-empty">No reviews match your search/filter.</div>
+      )}
 
-      {!loading && !error && reviews.length > 0 && (
+      {!loading && !error && filteredReviews.length > 0 && (
         <div className="rev-list">
-          {reviews.map(r => (
+          {filteredReviews.map(r => (
             <div key={r.id} className={`rev-card${r.is_featured ? ' rev-card-featured' : ''}${!r.is_approved ? ' rev-card-pending' : ''}`}>
               <div className="rev-card-top">
                 <div className="rev-meta">
                   <div className="rev-author-row">
                     <span className="rev-author">{r.customer_name}</span>
+                    {r.verified_order && (
+                      <span className="rev-chip rev-chip-verified" title="order_number matches a real order">
+                        <ShieldCheck size={11} /> Verified Purchase
+                      </span>
+                    )}
                     {r.is_featured && (
                       <span className="rev-chip rev-chip-featured">
                         <Award size={11} /> Featured
@@ -142,6 +179,7 @@ export default function Reviews() {
                       <span className="rev-chip rev-chip-pending">Pending</span>
                     )}
                   </div>
+                  {r.customer_email && <div className="rev-email">{r.customer_email}</div>}
                   <div className="rev-sub-row">
                     <StarDisplay rating={r.rating} />
                     <span className="rev-date">{fmtDate(r.created_at)}</span>

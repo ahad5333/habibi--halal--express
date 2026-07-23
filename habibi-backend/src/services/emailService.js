@@ -407,6 +407,28 @@ const sendTableReservationConfirmation = async (email, { name, location, date, t
   );
 };
 
+// Raw template literals here skip Handlebars' auto-escaping, so user-submitted
+// text (name/comment) must be escaped by hand before it goes into the HTML.
+const escapeHtml = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[c]));
+
+const sendReviewAdminAlert = async (adminEmail, review) => {
+  if (!adminEmail) return { success: false, error: 'No email provided' };
+  const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+  const name = escapeHtml(review.customer_name);
+  const orderLabel = review.order_number ? `(Order #${escapeHtml(review.order_number)})` : '(no order number given)';
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">New Customer Review</h2>
+      <p style="margin:0 0 4px;font-size:15px"><strong>${name}</strong> ${orderLabel}</p>
+      <p style="margin:0 0 16px;font-size:20px;color:#c9a84c;letter-spacing:2px">${stars}</p>
+      ${review.comment ? `<div style="background:#1a1a1a;border-left:3px solid #c9a84c;padding:12px 16px;margin:0 0 20px;border-radius:4px"><p style="margin:0;font-size:14px;color:#ddd">${escapeHtml(review.comment)}</p></div>` : ''}
+      <p style="margin:0;font-size:13px;color:#9ca3af">This review is pending — approve, feature, or reply to it from the admin panel.</p>
+    </div>`;
+  return sendMailHelper(adminEmail, `New ${review.rating}-star review from ${name}`, html);
+};
+
 const sendAdminOTP = async (email, code) => {
   if (!email) return { success: false, error: 'No email provided' };
   const html = `
@@ -439,4 +461,5 @@ module.exports = {
   sendCateringAdminAlert,
   sendCateringInvoice,
   sendAdminOTP,
+  sendReviewAdminAlert,
 };

@@ -47,6 +47,43 @@
   line-height: 1.4;
 }
 
+/* Toolbar (search + rating filter) */
+.rev-toolbar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.rev-search {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  color: var(--color-text-main);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.rev-rating-select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  color: var(--color-text-main);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.rev-email {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 /* List */
 .rev-list {
   display: flex;
@@ -171,6 +208,11 @@
 .rev-chip-pending {
   background: #fef9c3;
   color: #854d0e;
+}
+
+.rev-chip-verified {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 /* Actions */
