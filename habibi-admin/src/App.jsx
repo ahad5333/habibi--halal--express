@@ -31,6 +31,7 @@ import Dashboard from './pages/Dashboard';
 // Lazy-loaded — split into separate chunks
 const Orders           = lazy(() => import('./pages/Orders'));
 const MenuBuilder      = lazy(() => import('./pages/MenuBuilder'));
+const BuildYourOwnIngredients = lazy(() => import('./pages/BuildYourOwnIngredients'));
 const Customers        = lazy(() => import('./pages/Customers'));
 const Coupons          = lazy(() => import('./pages/Coupons'));
 const Analytics        = lazy(() => import('./pages/Analytics'));
@@ -87,6 +88,7 @@ function AdminLayout() {
             <Route path="/"          element={<Dashboard />} />
             <Route path="/orders"    element={<Orders />} />
             <Route path="/menu"      element={<MenuBuilder />} />
+            <Route path="/byo-ingredients" element={<BuildYourOwnIngredients />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/coupons"   element={<Coupons />} />
             <Route path="/catering"         element={<CateringAdmin />} />

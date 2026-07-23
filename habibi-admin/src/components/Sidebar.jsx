@@ -7,7 +7,7 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2,
+  Bookmark, Share2, Users2, Layers,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -19,6 +19,7 @@ const NAV = [
   { to: '/liveboard',  icon: <Monitor size={17} />,         label: 'Live Board',      badge: 'live' },
   { to: '/catering',      icon: <CalendarDays size={17} />, label: 'Catering Quotes' },
   { to: '/menu',           icon: <Utensils size={17} />,    label: 'Menu Builder' },
+  { to: '/byo-ingredients', icon: <Layers size={17} />,     label: 'Build Your Own' },
   { to: '/global-addons',  icon: <Package size={17} />,    label: 'Global Add-ons' },
   { to: '/articles',       icon: <BookOpen size={17} />,   label: 'Articles' },
   { to: '/customers',  icon: <Users size={17} />,           label: 'Customers' },
