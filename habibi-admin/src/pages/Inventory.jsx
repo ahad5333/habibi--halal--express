@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Plus, Pencil, Trash2, X, Check, RefreshCw, AlertTriangle, History, Link } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Package, Plus, Pencil, Trash2, X, Check, RefreshCw, AlertTriangle, History, Link, Download } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Inventory.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -7,6 +7,16 @@ import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 const BLANK = { name: '', category: 'General', current_stock: '', unit: 'unit', low_stock_threshold: '10', cost_per_unit: '', supplier: '', notes: '', menu_item_id: '' };
 
 const CATEGORIES = ['General', 'Meat', 'Produce', 'Dairy', 'Bread', 'Spices', 'Beverages', 'Packaging', 'Cleaning'];
+
+function downloadCsv(filename, headers, rows) {
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
 
 export default function Inventory() {
   const [items, setItems]         = useState([]);
@@ -22,6 +32,7 @@ export default function Inventory() {
   const [restockNote, setRestockNote] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [loadErr, setLoadErr]     = useState('');
+  const [search, setSearch]       = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -93,7 +104,21 @@ export default function Inventory() {
   const cats = ['all', ...new Set(items.map(i => i.category))];
   const lowStock = items.filter(i => parseFloat(i.current_stock) <= parseFloat(i.low_stock_threshold));
   const outOfStock = items.filter(i => parseFloat(i.current_stock) <= 0 && i.menu_item_id);
-  const displayed = filterCat === 'all' ? items : items.filter(i => i.category === filterCat);
+  const displayed = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items
+      .filter(i => filterCat === 'all' || i.category === filterCat)
+      .filter(i => !q || i.name.toLowerCase().includes(q) || (i.supplier || '').toLowerCase().includes(q) || (i.menu_item_name || '').toLowerCase().includes(q));
+  }, [items, filterCat, search]);
+
+  const exportCSV = () => {
+    const headers = ['Name', 'Category', 'Stock', 'Unit', 'Low Stock Threshold', 'Unit Cost', 'Supplier', 'Linked Menu Item', 'Notes'];
+    const rows = displayed.map(i => [
+      i.name, i.category, i.current_stock, i.unit, i.low_stock_threshold,
+      i.cost_per_unit || '', i.supplier || '', i.menu_item_name || '', i.notes || '',
+    ]);
+    downloadCsv(`habibi-inventory-${Date.now()}.csv`, headers, rows);
+  };
 
   return (
     <div>
@@ -103,6 +128,7 @@ export default function Inventory() {
           <p className="page-sub">{items.length} items · {lowStock.length} low stock{outOfStock.length > 0 ? ` · ${outOfStock.length} auto sold-out` : ''}</p>
         </div>
         <div style={{display:'flex',gap:'0.5rem'}}>
+          <button className="btn btn-secondary" onClick={exportCSV}><Download size={14}/> Export CSV</button>
           <button className="btn btn-secondary" onClick={load}><RefreshCw size={14}/></button>
           <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Item</button>
         </div>
@@ -143,6 +169,13 @@ export default function Inventory() {
       ) : tab === 'items' ? (
         <div className="card">
           <div className="inv-toolbar">
+            <input
+              className="input"
+              placeholder="Search name, supplier, menu item…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{maxWidth:280}}
+            />
             <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
               {cats.map(c => (
                 <button key={c} className={`inv-cat-btn ${filterCat===c?'active':''}`} onClick={() => setFilterCat(c)}>

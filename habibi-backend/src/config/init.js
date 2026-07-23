@@ -617,6 +617,10 @@ const createTables = async () => {
         updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // menu_item_id predates this file's CREATE TABLE definition on already-provisioned
+    // databases -- the controller has always referenced it, but it was missing here,
+    // so a fresh install would crash the whole Inventory page on first use.
+    await client.query(`ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS menu_item_id INTEGER REFERENCES menus(id) ON DELETE SET NULL`);
 
     // ── Inventory Restock Log ──────────────────────────────────────
     await client.query(`
