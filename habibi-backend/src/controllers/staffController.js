@@ -1,7 +1,7 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const crypto = require('crypto');
-const { sendSMS } = require('../services/smsService');
+const { sendSMS, toE164 } = require('../services/smsService');
 
 function driverToken(driver_id) {
   const salt = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
@@ -25,10 +25,11 @@ exports.createStaff = async (req, res) => {
   try {
     const { name, email, phone, role, shift_start, shift_end, notes } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
+    const normalizedPhone = phone ? toE164(String(phone).trim()) : null;
     const result = await pool.query(
       `INSERT INTO staff_members (name, email, phone, role, shift_start, shift_end, notes)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, email || null, phone || null, role || 'kitchen',
+      [name, email || null, normalizedPhone, role || 'kitchen',
        shift_start || null, shift_end || null, notes || null]
     );
     res.status(201).json(result.rows[0]);
@@ -42,13 +43,14 @@ exports.updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, phone, role, shift_start, shift_end, notes, is_active } = req.body;
+    const normalizedPhone = phone ? toE164(String(phone).trim()) : null;
     const result = await pool.query(
       `UPDATE staff_members
        SET name=$1, email=$2, phone=$3, role=$4,
            shift_start=$5, shift_end=$6, notes=$7, is_active=$8,
            updated_at=NOW()
        WHERE id=$9 RETURNING *`,
-      [name, email || null, phone || null, role, shift_start || null,
+      [name, email || null, normalizedPhone, role, shift_start || null,
        shift_end || null, notes || null, is_active !== false, id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Staff not found' });
@@ -86,7 +88,8 @@ exports.bulkImportStaff = async (req, res) => {
 
   for (const row of staff) {
     const name  = String(row.name  || '').trim().slice(0, 100);
-    const phone = String(row.phone || '').trim().slice(0, 30);
+    let phone   = String(row.phone || '').trim().slice(0, 30);
+    if (phone) phone = toE164(phone);
     const email = String(row.email || '').trim().slice(0, 100);
     let role    = String(row.role  || 'kitchen').trim().toLowerCase();
     if (!VALID_ROLES.includes(role)) role = 'kitchen';

@@ -5,7 +5,7 @@ const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
 const { getDistance } = require('../utils/googleMaps');
 const { getFeeForDistance } = require('../utils/deliveryFee');
-const { sendSMS } = require('../services/smsService');
+const { sendSMS, toE164 } = require('../services/smsService');
 const { sendPushNotification } = require('../services/fcmService');
 
 // Generate HMAC token for a driver — used in SMS links and X-Driver-Token header
@@ -855,11 +855,11 @@ const driverLogin = async (req, res) => {
     if (!phone || !pin) return res.status(400).json({ message: 'Phone and PIN are required.' });
     if (!/^\d{4}$/.test(String(pin))) return res.status(400).json({ message: 'PIN must be exactly 4 digits.' });
 
-    const cleaned = String(phone).replace(/\D/g, '');
+    const normalizedPhone = toE164(String(phone).trim());
     const result = await pool.query(
       `SELECT id, name, phone, is_active, driver_pin_hash, driver_pin_attempts, driver_pin_lockout_until
-       FROM staff_members WHERE (phone=$1 OR phone=$2) AND role='delivery' AND is_active=TRUE`,
-      [cleaned, `+1${cleaned.slice(-10)}`]
+       FROM staff_members WHERE phone=$1 AND role='delivery' AND is_active=TRUE`,
+      [normalizedPhone]
     );
 
     if (!result.rows.length) {
@@ -950,7 +950,8 @@ const bulkImportDrivers = async (req, res) => {
 
   for (const row of drivers) {
     const name  = String(row.name  || '').trim().slice(0, 100);
-    const phone = String(row.phone || '').trim().slice(0, 30);
+    let phone   = String(row.phone || '').trim().slice(0, 30);
+    if (phone) phone = toE164(phone);
     if (!name) { skipped.push({ name, phone, reason: 'Missing name' }); continue; }
 
     try {

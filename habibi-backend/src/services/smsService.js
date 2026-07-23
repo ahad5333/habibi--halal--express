@@ -75,5 +75,6 @@ const sendUrgentSOS = async (adminPhone, details) => {
 module.exports = {
   sendSMS,
   sendOrderUpdate,
-  sendUrgentSOS
+  sendUrgentSOS,
+  toE164
 };
