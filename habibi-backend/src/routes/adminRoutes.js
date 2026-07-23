@@ -454,17 +454,27 @@ router.get('/referrals', async (req, res) => {
 // ── Group Orders — admin read-only ────────────────────────────────────────
 router.get('/group-orders', async (req, res) => {
   try {
+    // Participants and items must be aggregated independently before joining —
+    // joining both directly on session_id fans out N participants × M items,
+    // inflating item_count/total_value by a factor of the participant count.
     const result = await pool.query(`
       SELECT gs.session_id, gs.join_code, gs.host_name, gs.status, gs.expires_at, gs.created_at,
              u.email AS host_email,
-             COUNT(DISTINCT gp.participant_id) AS participant_count,
-             COUNT(goi.id)                     AS item_count,
-             COALESCE(SUM(goi.price * goi.qty), 0) AS total_value
+             COALESCE(pc.participant_count, 0) AS participant_count,
+             COALESCE(ic.item_count, 0)        AS item_count,
+             COALESCE(ic.total_value, 0)       AS total_value
         FROM group_order_sessions gs
-        LEFT JOIN users u   ON u.id = gs.host_user_id
-        LEFT JOIN group_order_participants gp ON gp.session_id = gs.session_id
-        LEFT JOIN group_order_items goi        ON goi.session_id = gs.session_id
-       GROUP BY gs.session_id, gs.join_code, gs.host_name, gs.status, gs.expires_at, gs.created_at, u.email
+        LEFT JOIN users u ON u.id = gs.host_user_id
+        LEFT JOIN (
+          SELECT session_id, COUNT(*) AS participant_count
+            FROM group_order_participants
+           GROUP BY session_id
+        ) pc ON pc.session_id = gs.session_id
+        LEFT JOIN (
+          SELECT session_id, COUNT(*) AS item_count, SUM(price * qty) AS total_value
+            FROM group_order_items
+           GROUP BY session_id
+        ) ic ON ic.session_id = gs.session_id
        ORDER BY gs.created_at DESC
        LIMIT 500
     `);
