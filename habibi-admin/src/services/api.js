@@ -82,6 +82,17 @@ export const adminAPI = {
   },
   deleteMenu:  (id) => req(`/api/admin/menus/${id}`, { method: 'DELETE' }),
 
+  // Build-Your-Own ingredients (bases/cheese/veg/protein/sauce)
+  getByoIngredients: () => req('/api/admin/byo-ingredients'),
+  createByoIngredient: (fd) => upload('/api/admin/byo-ingredients', fd),
+  updateByoIngredient: (id, fd) => {
+    return fetch(`${BASE}/api/admin/byo-ingredients/${id}`, {
+      method: 'PATCH', body: fd,
+      credentials: 'include',
+    }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.message || r.status); return d; });
+  },
+  deleteByoIngredient: (id) => req(`/api/admin/byo-ingredients/${id}`, { method: 'DELETE' }),
+
   // Modifiers (shared choice/addon groups)
   getModifiers:    ()           => req('/api/admin/modifiers'),
   createModifier:  (body)       => req('/api/admin/modifiers',     { method: 'POST',  body: JSON.stringify(body) }),
@@ -90,8 +101,23 @@ export const adminAPI = {
 
   changePassword: (current_password, new_password) => req('/api/admin/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
 
-  customers:   (search = '', page = 1, limit = 50) => req(`/api/admin/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
-  customer:    (id) => req(`/api/admin/customers/${id}`),
+  customers:   (filters = {}, page = 1, limit = 50) => {
+    const qs = new URLSearchParams({ ...filters, page, limit });
+    return req(`/api/admin/customers?${qs.toString()}`);
+  },
+  customer:       (id) => req(`/api/admin/customers/${encodeURIComponent(id)}`),
+  createCustomer: (body) => req('/api/admin/customers', { method: 'POST', body: JSON.stringify(body) }),
+  updateCustomer: (id, body) => req(`/api/admin/customers/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  bulkDeleteCustomers: (ids) => req('/api/admin/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  bulkImportCustomers: (customers) => req('/api/admin/customers/bulk-import', { method: 'POST', body: JSON.stringify({ customers }) }),
+  exportCustomers: (filters = {}) => {
+    const qs = new URLSearchParams(filters);
+    return req(`/api/admin/customers/export?${qs.toString()}`);
+  },
+  topCustomers: (dateFrom, dateTo, sort = 'spent', limit = 50) => {
+    const qs = new URLSearchParams({ dateFrom, dateTo, sort, limit });
+    return req(`/api/admin/customers/top?${qs.toString()}`);
+  },
   integrationStatus: () => req('/api/admin/integration-status'),
 
   coupons:     () => req('/api/admin/coupons'),

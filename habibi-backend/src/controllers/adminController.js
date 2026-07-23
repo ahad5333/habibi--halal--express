@@ -1,5 +1,7 @@
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { sendOrderUpdate } = require("../services/smsService");
 const emailService = require("../services/emailService");
 const fcmService = require("../services/fcmService");
@@ -284,41 +286,160 @@ const getSidebarItems = async (req, res) => {
 };
 
 // 6. User Management
+const CUSTOMER_ROLES = ['customer', 'business', 'merchant'];
+const CUSTOMER_SORT_COLUMNS = { name: 'name', created_at: 'created_at', total_orders: 'total_orders', total_spent: 'total_spent' };
+
+// Unions real accounts (users) with repeat guest-checkout customers who never signed up
+// (matched by email, since guest_orders has no user_id for most historical rows) so the
+// admin list reflects everyone who has actually ordered, not just people who registered.
+function customersBaseCTE() {
+  return `
+    WITH registered AS (
+      SELECT
+        u.id::text                          AS id,
+        u.name                              AS name,
+        u.email                             AS email,
+        u.phone_number                      AS phone,
+        u.role                              AS role,
+        COALESCE(u.loyalty_points, 0)       AS loyalty_points,
+        u.created_at                        AS created_at,
+        COUNT(o.id)::int                    AS total_orders,
+        COALESCE(SUM(o.total), 0)::numeric  AS total_spent,
+        MAX(o.placed_at)                    AS last_order_at,
+        FALSE                                AS is_guest
+      FROM users u
+      LEFT JOIN guest_orders o ON o.customer_email = u.email
+      GROUP BY u.id
+    ),
+    guest_only AS (
+      SELECT
+        'guest:' || o.customer_email        AS id,
+        MAX(NULLIF(o.customer_name, ''))    AS name,
+        o.customer_email                    AS email,
+        MAX(NULLIF(o.customer_phone, ''))   AS phone,
+        'guest'                             AS role,
+        0                                    AS loyalty_points,
+        MIN(o.placed_at)                    AS created_at,
+        COUNT(o.id)::int                    AS total_orders,
+        COALESCE(SUM(o.total), 0)::numeric  AS total_spent,
+        MAX(o.placed_at)                    AS last_order_at,
+        TRUE                                 AS is_guest
+      FROM guest_orders o
+      WHERE o.customer_email IS NOT NULL AND o.customer_email <> ''
+        AND NOT EXISTS (SELECT 1 FROM users u2 WHERE u2.email = o.customer_email)
+      GROUP BY o.customer_email
+    ),
+    combined AS (
+      SELECT * FROM registered
+      UNION ALL
+      SELECT * FROM guest_only
+    )
+  `;
+}
+
+function buildCustomersFilter(query) {
+  const { search = '', role = '', dateFrom = '', dateTo = '', minSpent = '' } = query;
+  const where = [];
+  const params = [];
+
+  if (search.trim()) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    where.push(`(LOWER(COALESCE(name,'')) LIKE $${params.length} OR LOWER(email) LIKE $${params.length} OR COALESCE(phone,'') LIKE $${params.length})`);
+  }
+  if (role && role !== 'all') {
+    params.push(role);
+    where.push(`role = $${params.length}`);
+  }
+  if (dateFrom) {
+    params.push(dateFrom);
+    where.push(`created_at >= $${params.length}::date`);
+  }
+  if (dateTo) {
+    params.push(dateTo);
+    where.push(`created_at < ($${params.length}::date + INTERVAL '1 day')`);
+  }
+  if (minSpent) {
+    params.push(parseFloat(minSpent) || 0);
+    where.push(`total_spent >= $${params.length}`);
+  }
+
+  const sortCol = CUSTOMER_SORT_COLUMNS[query.sort] || 'created_at';
+  const dir = query.dir === 'asc' ? 'ASC' : 'DESC';
+
+  return {
+    whereSql: where.length ? `WHERE ${where.join(' AND ')}` : '',
+    orderSql: `ORDER BY ${sortCol} ${dir} NULLS LAST`,
+    params,
+  };
+}
+
 const getAllCustomers = async (req, res) => {
   try {
     const page   = Math.max(1, parseInt(req.query.page)  || 1);
     const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
     const offset = (page - 1) * limit;
-    const search = (req.query.search || '').trim();
 
-    const params = [limit, offset];
-    let whereClause = '';
-    if (search) {
-      params.push(`%${search.toLowerCase()}%`);
-      whereClause = `WHERE LOWER(u.name) LIKE $3 OR LOWER(u.email) LIKE $3 OR u.phone_number LIKE $3`;
-    }
+    const { whereSql, orderSql, params } = buildCustomersFilter(req.query);
+    const cte = customersBaseCTE();
+    const limitParam  = params.length + 1;
+    const offsetParam = params.length + 2;
 
-    const [result, countResult] = await Promise.all([
-      pool.query(`
-        SELECT
-          u.id, u.name, u.email, u.phone_number AS phone, u.role, u.loyalty_points, u.created_at,
-          COUNT(o.id)::int AS total_orders,
-          COALESCE(SUM(o.total), 0)::numeric AS total_spent
-        FROM users u
-        LEFT JOIN guest_orders o ON o.customer_email = u.email
-        ${whereClause}
-        GROUP BY u.id
-        ORDER BY u.created_at DESC
-        LIMIT $1 OFFSET $2
-      `, params),
+    const [dataRes, countRes] = await Promise.all([
       pool.query(
-        search
-          ? `SELECT COUNT(*)::int FROM users WHERE LOWER(name) LIKE $1 OR LOWER(email) LIKE $1 OR phone_number LIKE $1`
-          : `SELECT COUNT(*)::int FROM users`,
-        search ? [`%${search.toLowerCase()}%`] : []
+        `${cte} SELECT * FROM combined ${whereSql} ${orderSql} LIMIT $${limitParam} OFFSET $${offsetParam}`,
+        [...params, limit, offset]
       ),
+      pool.query(`${cte} SELECT COUNT(*)::int AS count FROM combined ${whereSql}`, params),
     ]);
-    res.json({ customers: result.rows, total: countResult.rows[0].count, page, limit });
+
+    res.json({ customers: dataRes.rows, total: countRes.rows[0].count, page, limit });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+// Same filters as getAllCustomers but uncapped (up to a safety ceiling) for CSV export.
+const exportCustomers = async (req, res) => {
+  try {
+    const { whereSql, orderSql, params } = buildCustomersFilter(req.query);
+    const cte = customersBaseCTE();
+    const result = await pool.query(`${cte} SELECT * FROM combined ${whereSql} ${orderSql} LIMIT 5000`, params);
+    res.json({ customers: result.rows, total: result.rows.length });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+// Ranks everyone who ordered within a date range (guest or registered) by spend or order
+// count — answers "who ordered the most between X and Y", independent of signup date.
+const getTopCustomers = async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({ message: 'dateFrom and dateTo are required.' });
+    }
+    const sortCol = req.query.sort === 'orders' ? 'orders_in_range' : 'spent_in_range';
+    const limit   = Math.min(500, Math.max(1, parseInt(req.query.limit) || 50));
+
+    const result = await pool.query(`
+      SELECT
+        COALESCE(u.id::text, 'guest:' || o.customer_email)  AS id,
+        COALESCE(NULLIF(u.name, ''), MAX(o.customer_name))  AS name,
+        o.customer_email                                     AS email,
+        COALESCE(u.phone_number, MAX(o.customer_phone))      AS phone,
+        COALESCE(u.role, 'guest')                            AS role,
+        COUNT(o.id)::int                                     AS orders_in_range,
+        COALESCE(SUM(o.total), 0)::numeric                   AS spent_in_range
+      FROM guest_orders o
+      LEFT JOIN users u ON u.email = o.customer_email
+      WHERE o.placed_at >= $1::date AND o.placed_at < ($2::date + INTERVAL '1 day')
+        AND o.customer_email IS NOT NULL AND o.customer_email <> ''
+      GROUP BY u.id, u.name, o.customer_email, u.phone_number, u.role
+      ORDER BY ${sortCol} DESC
+      LIMIT $3
+    `, [dateFrom, dateTo, limit]);
+
+    res.json({ customers: result.rows, dateFrom, dateTo });
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -327,6 +448,31 @@ const getAllCustomers = async (req, res) => {
 const getCustomerDetails = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (id.startsWith('guest:')) {
+      const email = id.slice('guest:'.length);
+      const ordersRes = await pool.query(`
+        SELECT order_number, delivery_method, payment_method, total, order_status, placed_at
+        FROM guest_orders WHERE customer_email = $1 ORDER BY placed_at DESC LIMIT 50
+      `, [email]);
+      if (ordersRes.rows.length === 0) return res.status(404).json({ message: "Customer not found" });
+      const infoRes = await pool.query(
+        `SELECT customer_name, customer_phone FROM guest_orders WHERE customer_email = $1 AND customer_name <> '' ORDER BY placed_at DESC LIMIT 1`,
+        [email]
+      );
+      return res.json({
+        id, email,
+        name: infoRes.rows[0]?.customer_name || null,
+        phone: infoRes.rows[0]?.customer_phone || null,
+        role: 'guest',
+        loyalty_points: 0,
+        created_at: null,
+        orders: ordersRes.rows,
+        addresses: [],
+        payment_methods: [],
+        is_guest: true,
+      });
+    }
 
     const userRes = await pool.query(`
       SELECT id, name, email, phone_number AS phone, role, loyalty_points, created_at
@@ -364,6 +510,147 @@ const getCustomerDetails = async (req, res) => {
   } catch (error) {
     res.status(500).json(safeError(error));
   }
+};
+
+// Generates a 24h set-password link (same reset_token mechanism as "Forgot Password")
+// so admin-created/imported accounts can be claimed without anyone knowing a password.
+async function sendAccountSetupEmail(user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const expires = new Date(Date.now() + 24 * 3600000);
+  await pool.query('UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3', [tokenHash, expires, user.id]);
+  const frontendUrl = process.env.FRONTEND_URL || 'https://habibihe.com';
+  const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+  return emailService.sendPasswordReset(user.email, resetUrl);
+}
+
+const createCustomer = async (req, res) => {
+  try {
+    const name  = String(req.body.name  || '').trim().slice(0, 255);
+    const email = String(req.body.email || '').trim().toLowerCase().slice(0, 255);
+    const phone = String(req.body.phone || '').trim().slice(0, 20);
+    let role    = String(req.body.role  || 'customer').trim().toLowerCase();
+    if (!CUSTOMER_ROLES.includes(role)) role = 'customer';
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'A valid email is required.' });
+    }
+
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ message: 'A customer with this email already exists.' });
+    }
+
+    const hashed = await bcrypt.hash(crypto.randomUUID(), 12);
+    const result = await pool.query(
+      `INSERT INTO users (name, email, phone_number, password_hash, role, email_verified)
+       VALUES ($1, $2, $3, $4, $5, TRUE)
+       RETURNING id, name, email, phone_number AS phone, role, loyalty_points, created_at`,
+      [name || null, email, phone || null, hashed, role]
+    );
+    const user = result.rows[0];
+    sendAccountSetupEmail(user).catch(err => console.error('[createCustomer] setup email failed:', err.message));
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+const updateCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const name  = String(req.body.name  || '').trim().slice(0, 255);
+    const email = String(req.body.email || '').trim().toLowerCase().slice(0, 255);
+    const phone = String(req.body.phone || '').trim().slice(0, 20);
+    let role    = String(req.body.role  || 'customer').trim().toLowerCase();
+    if (!CUSTOMER_ROLES.includes(role)) role = 'customer';
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'A valid email is required.' });
+    }
+
+    const clash = await pool.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [email, id]);
+    if (clash.rows.length > 0) {
+      return res.status(409).json({ message: 'Another customer already uses this email.' });
+    }
+
+    const result = await pool.query(
+      `UPDATE users SET name = $1, email = $2, phone_number = $3, role = $4, updated_at = NOW()
+       WHERE id = $5
+       RETURNING id, name, email, phone_number AS phone, role, loyalty_points, created_at`,
+      [name || null, email, phone || null, role, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'Customer not found' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+const bulkDeleteCustomers = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'No customer IDs provided.' });
+    }
+    const numericIds = ids.map(i => parseInt(i, 10)).filter(Number.isInteger);
+    if (numericIds.length === 0) {
+      return res.status(400).json({ message: 'No valid customer IDs provided.' });
+    }
+    const result = await pool.query('DELETE FROM users WHERE id = ANY($1) RETURNING id', [numericIds]);
+    res.json({ deleted_count: result.rowCount });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+// Bulk-create customer accounts from an uploaded CSV. Each created row gets a random
+// password and a "set your password" email — mirrors the Staff/Driver bulk-import pattern.
+const bulkImportCustomers = async (req, res) => {
+  const { customers } = req.body;
+  if (!Array.isArray(customers) || customers.length === 0) {
+    return res.status(400).json({ message: 'No customers provided.' });
+  }
+  if (customers.length > 500) {
+    return res.status(400).json({ message: 'Max 500 customers per import.' });
+  }
+
+  const created = [];
+  const skipped = [];
+
+  for (const row of customers) {
+    const name  = String(row.name  || '').trim().slice(0, 255);
+    const email = String(row.email || '').trim().toLowerCase().slice(0, 255);
+    const phone = String(row.phone || '').trim().slice(0, 20);
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      skipped.push({ name, email, phone, reason: 'Missing or invalid email' });
+      continue;
+    }
+
+    try {
+      const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+      if (existing.rows.length > 0) {
+        skipped.push({ name, email, phone, reason: 'Email already registered' });
+        continue;
+      }
+
+      const hashed = await bcrypt.hash(crypto.randomUUID(), 12);
+      const result = await pool.query(
+        `INSERT INTO users (name, email, phone_number, password_hash, role, email_verified)
+         VALUES ($1, $2, $3, $4, 'customer', TRUE)
+         RETURNING id, name, email, phone_number AS phone, role, created_at`,
+        [name || null, email, phone || null, hashed]
+      );
+      const user = result.rows[0];
+      created.push(user);
+      sendAccountSetupEmail(user).catch(err => console.error('[bulkImportCustomers] setup email failed for', email, err.message));
+    } catch (err) {
+      skipped.push({ name, email, phone, reason: err.message });
+    }
+  }
+
+  res.json({ created_count: created.length, skipped_count: skipped.length, created, skipped });
 };
 
 // 7. Logistics & Delivery Tiers
@@ -860,7 +1147,13 @@ module.exports = {
   addItemToOrder,
   getSidebarItems,
   getAllCustomers,
+  exportCustomers,
+  getTopCustomers,
   getCustomerDetails,
+  createCustomer,
+  updateCustomer,
+  bulkDeleteCustomers,
+  bulkImportCustomers,
   getDeliveryTiers,
   updateDeliveryTier,
   updateOrderProvider,

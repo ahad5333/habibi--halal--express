@@ -14,7 +14,13 @@ const {
   addItemToOrder,
   getSidebarItems,
   getAllCustomers,
+  exportCustomers,
+  getTopCustomers,
   getCustomerDetails,
+  createCustomer,
+  updateCustomer,
+  bulkDeleteCustomers,
+  bulkImportCustomers,
   getDeliveryTiers,
   updateDeliveryTier,
   updateOrderProvider,
@@ -80,7 +86,13 @@ router.patch("/orders/:id/provider", updateOrderProvider);
 
 // Customers
 router.get("/customers", getAllCustomers);
+router.get("/customers/export", exportCustomers);
+router.get("/customers/top", getTopCustomers);
+router.post("/customers", createCustomer);
+router.post("/customers/bulk-import", bulkImportCustomers);
+router.post("/customers/bulk-delete", bulkDeleteCustomers);
 router.get("/customers/:id", getCustomerDetails);
+router.patch("/customers/:id", updateCustomer);
 
 // Delivery Tiers
 router.get("/delivery-tiers", getDeliveryTiers);
