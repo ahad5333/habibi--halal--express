@@ -621,6 +621,16 @@ const createTables = async () => {
     // databases -- the controller has always referenced it, but it was missing here,
     // so a fresh install would crash the whole Inventory page on first use.
     await client.query(`ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS menu_item_id INTEGER REFERENCES menus(id) ON DELETE SET NULL`);
+    // Defensive: a prior seed script inserted rows with explicit ids without advancing
+    // the id sequence, so nextval() kept colliding with existing rows and creating a
+    // new item failed with "duplicate key value violates ... inventory_items_pkey"
+    // every time. Re-syncing the sequence to the real max id on every boot is a no-op
+    // once caught up, so it's safe to just always run (skipped on an empty table so a
+    // fresh install still starts its sequence at 1).
+    const invMaxId = await client.query('SELECT MAX(id) AS max_id FROM inventory_items');
+    if (invMaxId.rows[0].max_id) {
+      await client.query(`SELECT setval('inventory_items_id_seq', $1, true)`, [invMaxId.rows[0].max_id]);
+    }
 
     // ── Inventory Restock Log ──────────────────────────────────────
     await client.query(`
