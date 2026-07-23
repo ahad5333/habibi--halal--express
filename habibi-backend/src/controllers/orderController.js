@@ -354,7 +354,7 @@ const createGuestOrder = async (req, res) => {
 
       if (loyalty_points_redeemed > 0 && customer_email) {
         const userRes = await client.query(
-          'SELECT loyalty_points FROM users WHERE email = $1 FOR UPDATE',
+          'SELECT loyalty_points FROM users WHERE LOWER(email) = LOWER($1) FOR UPDATE',
           [customer_email]
         );
         const availablePoints = userRes.rows[0]?.loyalty_points || 0;
@@ -421,7 +421,7 @@ const createGuestOrder = async (req, res) => {
       // Deduct loyalty points inside the same transaction
       if (loyalty_points_redeemed > 0 && customer_email) {
         await client.query(
-          `UPDATE users SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) - $1) WHERE email = $2`,
+          `UPDATE users SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) - $1) WHERE LOWER(email) = LOWER($2)`,
           [loyalty_points_redeemed, customer_email]
         );
       }
@@ -563,7 +563,7 @@ const createGuestOrder = async (req, res) => {
     }
 
     if (customer_email) {
-      pool.query("SELECT id, date_of_birth FROM users WHERE email = $1", [customer_email]).then(async userRes => {
+      pool.query("SELECT id, date_of_birth FROM users WHERE LOWER(email) = LOWER($1)", [customer_email]).then(async userRes => {
         if (userRes.rows.length > 0) {
           const userId = userRes.rows[0].id;
           fcmService.sendPushToUser(userId, 'Order Placed! 🛍️', `Thank you! Order #${order_number} has been placed.`).catch(err => {
@@ -681,7 +681,7 @@ const updateGuestOrderStatus = async (req, res) => {
 
       // 3. FCM push + in-app notification
       if (customer_email) {
-        const userRes = await pool.query("SELECT id FROM users WHERE email = $1", [customer_email]);
+        const userRes = await pool.query("SELECT id FROM users WHERE LOWER(email) = LOWER($1)", [customer_email]);
         if (userRes.rows.length > 0) {
           const userId = userRes.rows[0].id;
           fcmService.sendOrderPushNotification(userId, order_number, status).catch(err => {
@@ -711,7 +711,7 @@ const updateGuestOrderStatus = async (req, res) => {
         const pts = Math.floor(parseFloat(row.total) || 0);
         if (pts > 0) {
           pool.query(
-            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE email = $2`,
+            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
             [pts, customer_email]
           ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
         }
@@ -723,7 +723,7 @@ const updateGuestOrderStatus = async (req, res) => {
           [customer_email]
         ).then(async (countRes) => {
           if (countRes.rows.length !== 1) return; // not their first delivered order
-          const userRes = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [customer_email]);
+          const userRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [customer_email]);
           if (!userRes.rows[0]) return;
           const refereeId = userRes.rows[0].id;
           const refRow = await pool.query(
