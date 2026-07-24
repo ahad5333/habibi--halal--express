@@ -968,9 +968,24 @@ const createTables = async () => {
         updated_at      TIMESTAMPTZ   DEFAULT NOW()
       );
     `);
-    // Add credentials column to existing deployments that lack it
+    // Add columns to existing deployments that predate them — the table was
+    // created before notes/last_sync_at/updated_at existed in this
+    // CREATE TABLE, and CREATE TABLE IF NOT EXISTS is a no-op on a table
+    // that already exists, so those columns were never backfilled. Every
+    // query referencing them (getCredentials, updatePlatformSettings,
+    // triggerCatalogSync, triggerMenuSync) has been failing with
+    // "column does not exist" in production.
     await client.query(`
       ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS credentials JSONB DEFAULT '{}';
+    `);
+    await client.query(`
+      ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS notes TEXT;
+    `);
+    await client.query(`
+      ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS last_sync_at TIMESTAMPTZ;
+    `);
+    await client.query(`
+      ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
     `);
 
     // ── Platform Location Mappings ────────────────────────────────

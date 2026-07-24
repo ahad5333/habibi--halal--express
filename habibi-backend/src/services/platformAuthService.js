@@ -1,11 +1,15 @@
 const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
+const { decryptObject } = require('../utils/encrypt');
 
 // Reads live credentials from platform_settings.credentials column, falling back to env vars.
+// The column is stored encrypted (platformCredentialsController encrypts on save) — without
+// decrypting here, every real API call would send the ciphertext blob as the client_id/secret,
+// so authentication would always fail even after an admin enters valid credentials.
 async function getCreds(platform) {
   try {
     const r = await pool.query('SELECT credentials FROM platform_settings WHERE platform=$1', [platform]);
-    return r.rows[0]?.credentials || {};
+    return decryptObject(r.rows[0]?.credentials || {});
   } catch (_) { return {}; }
 }
 
