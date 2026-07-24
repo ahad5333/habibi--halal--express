@@ -889,6 +889,20 @@ const createTables = async () => {
     `);
     await client.query(`INSERT INTO loyalty_config (id, earn_rate, redeem_rate) VALUES (1, 10, 100) ON CONFLICT (id) DO NOTHING`);
 
+    // ── System Settings (tax rate / service fee rate) ────────────
+    // NULL means "not overridden — fall back to the TAX_RATE/SERVICE_FEE_RATE
+    // env vars", so a fresh deploy behaves identically until an admin
+    // explicitly sets a value via the Settings page.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id                SERIAL PRIMARY KEY,
+        tax_rate          NUMERIC(6,5),
+        service_fee_rate  NUMERIC(6,5),
+        updated_at        TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
+
     // ── Roadie Long-Distance Deliveries ───────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS roadie_deliveries (
@@ -1549,14 +1563,22 @@ const seedDefaults = async () => {
   if (parseInt(psCount.rows[0].count) === 0) {
     await pool.query(`
       INSERT INTO payment_settings (label, provider, is_active) VALUES
-        ('Credit / Debit Card', 'square',  TRUE),
-        ('Apple Pay',           'square',  TRUE),
-        ('Google Pay',          'square',  TRUE),
-        ('PayPal',              'paypal',  FALSE),
-        ('Cash on Delivery',    'cash',    TRUE)
+        ('Credit / Debit Card', 'authorize.net', TRUE),
+        ('Zelle',               'zelle',         TRUE),
+        ('Cash App',            'cashapp',       TRUE),
+        ('PayPal',              'paypal',        TRUE),
+        ('Cash on Delivery',    'cash',          TRUE)
     `);
     console.log("✅ Default payment settings seeded");
   }
+  // One-time correction for databases seeded before the real integration
+  // existed: Square was never actually built (the real card processor is
+  // Authorize.net), and Apple Pay / Google Pay were never wired up as
+  // distinct checkout options — Zelle and Cash App are the real ones
+  // customers actually use, but had no toggleable row at all.
+  await pool.query(`UPDATE payment_settings SET provider = 'authorize.net' WHERE label = 'Credit / Debit Card' AND provider = 'square'`);
+  await pool.query(`UPDATE payment_settings SET label = 'Zelle', provider = 'zelle' WHERE label = 'Apple Pay' AND provider = 'square'`);
+  await pool.query(`UPDATE payment_settings SET label = 'Cash App', provider = 'cashapp' WHERE label = 'Google Pay' AND provider = 'square'`);
 
   // ── Authorize.net merchant accounts ────────────────────────────────────────
   await pool.query(`

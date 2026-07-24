@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
+const { logAudit } = require('./auditController');
 
 const getPaymentSettings = async (req, res) => {
   try {
@@ -53,14 +54,49 @@ const getCheckoutSettings = async (req, res) => {
     }
   } catch (_) { /* fall back to defaults above */ }
 
+  // tax_rate/service_fee_rate: previously env-var-only and shown as
+  // "read-only, edit your server .env" on the Settings page — DB value (if
+  // ever set via that page) now takes precedence, env var is the fallback
+  // until an admin explicitly changes it. NULL means "not overridden yet".
+  let taxRate    = parseFloat(process.env.TAX_RATE)         || 0.08875;
+  let svcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE) || 0.04273;
+  try {
+    const sys = await pool.query(`SELECT tax_rate, service_fee_rate FROM system_settings WHERE id = 1`);
+    if (sys.rows[0]?.tax_rate != null)         taxRate    = parseFloat(sys.rows[0].tax_rate);
+    if (sys.rows[0]?.service_fee_rate != null) svcFeeRate = parseFloat(sys.rows[0].service_fee_rate);
+  } catch (_) { /* fall back to env above */ }
+
   res.json({
-    tax_rate:                parseFloat(process.env.TAX_RATE)                || 0.08875,
-    service_fee_rate:        parseFloat(process.env.SERVICE_FEE_RATE)        || 0.04273,
+    tax_rate:                taxRate,
+    service_fee_rate:        svcFeeRate,
     delivery_fee:            parseFloat(process.env.DELIVERY_FEE)            || 3.99,
     free_delivery_threshold: parseFloat(process.env.FREE_DELIVERY_THRESHOLD) || 50,
     loyalty_earn_rate:       loyaltyEarnRate,
     loyalty_redeem_rate:     loyaltyRedeemRate,
   });
+};
+
+const updateSystemSettings = async (req, res) => {
+  const { tax_rate, service_fee_rate } = req.body;
+  const taxNum = parseFloat(tax_rate);
+  const svcNum = parseFloat(service_fee_rate);
+  if (!(taxNum >= 0 && taxNum < 1)) {
+    return res.status(400).json({ message: 'Tax rate must be a decimal between 0 and 1 (e.g. 0.08875 for 8.875%).' });
+  }
+  if (!(svcNum >= 0 && svcNum < 1)) {
+    return res.status(400).json({ message: 'Service fee rate must be a decimal between 0 and 1 (e.g. 0.04273 for 4.273%).' });
+  }
+  try {
+    await pool.query(
+      `UPDATE system_settings SET tax_rate = $1, service_fee_rate = $2, updated_at = NOW() WHERE id = 1`,
+      [taxNum, svcNum]
+    );
+    logAudit(pool, req.user?.id, req.user?.name, 'update_system_settings', 'setting', 'checkout',
+      { tax_rate: taxNum, service_fee_rate: svcNum }, req.ip);
+    res.json({ tax_rate: taxNum, service_fee_rate: svcNum });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
 };
 
 const getIntegrationStatus = (req, res) => {
@@ -177,6 +213,7 @@ module.exports = {
   updateOfflineHandles,
   getOfflineHandles,
   getCheckoutSettings,
+  updateSystemSettings,
   getIntegrationStatus,
   getSiteSettings,
   updateSiteSettings,

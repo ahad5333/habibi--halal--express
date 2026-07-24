@@ -171,6 +171,19 @@ const createGuestOrder = async (req, res) => {
       if (price < 0) return res.status(400).json({ message: 'Item prices cannot be negative.' });
     }
 
+    // Reject a payment method the admin has disabled via Settings — Payment
+    // Methods there previously had zero real enforcement anywhere; disabling
+    // one was purely cosmetic and a direct API call could still use it. Only
+    // blocks methods that exist AND are explicitly inactive — an unrecognized
+    // method (not yet represented in payment_settings) is left alone.
+    if (payment_method) {
+      const providerKey = payment_method === 'card' ? 'authorize.net' : payment_method;
+      const pmRes = await pool.query(`SELECT is_active FROM payment_settings WHERE provider = $1`, [providerKey]);
+      if (pmRes.rows.length > 0 && !pmRes.rows[0].is_active) {
+        return res.status(400).json({ message: 'This payment method is currently unavailable.' });
+      }
+    }
+
     // Server-side total validation
     const clientTotal    = parseFloat(total)        || 0;
     const clientSubtotal = parseFloat(sub_total)    || 0;
@@ -239,9 +252,18 @@ const createGuestOrder = async (req, res) => {
       } catch (_) { /* non-fatal */ }
     }
 
-    // 4. Server-side tax and service fee validation
-    const serverTaxRate    = parseFloat(process.env.TAX_RATE)          || 0.08875;
-    const serverSvcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE)  || 0.04273;
+    // 4. Server-side tax and service fee validation — reads the same
+    //    DB-first, env-fallback source as GET /api/settings/checkout (which
+    //    the client uses to build clientTax/clientSvcFee), so an admin
+    //    changing the rate via Settings doesn't start rejecting every real
+    //    order until this also picks it up.
+    let serverTaxRate    = parseFloat(process.env.TAX_RATE)          || 0.08875;
+    let serverSvcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE)  || 0.04273;
+    try {
+      const sys = await pool.query(`SELECT tax_rate, service_fee_rate FROM system_settings WHERE id = 1`);
+      if (sys.rows[0]?.tax_rate != null)         serverTaxRate    = parseFloat(sys.rows[0].tax_rate);
+      if (sys.rows[0]?.service_fee_rate != null) serverSvcFeeRate = parseFloat(sys.rows[0].service_fee_rate);
+    } catch (_) { /* fall back to env above */ }
     const serverTax    = Math.round(clientSubtotal * serverTaxRate    * 100) / 100;
     const serverSvcFee = Math.round(clientSubtotal * serverSvcFeeRate * 100) / 100;
     if (clientTax < serverTax - 0.10) {

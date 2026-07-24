@@ -206,12 +206,13 @@ const { refundOrder } = require("../controllers/paymentController");
 router.post("/payments/:orderNumber/refund", refundOrder);
 
 // Payment Method Settings (enable/disable)
-const { getAdminPaymentSettings, updatePaymentSetting, updateOfflineHandles, getOfflineHandles, getIntegrationStatus } = require("../controllers/settingsController");
+const { getAdminPaymentSettings, updatePaymentSetting, updateOfflineHandles, getOfflineHandles, getIntegrationStatus, updateSystemSettings } = require("../controllers/settingsController");
 router.get("/payment-settings", getAdminPaymentSettings);
 router.get("/payment-settings/offline-handles", getOfflineHandles);
 router.patch("/payment-settings/offline-handles", updateOfflineHandles);
 router.patch("/payment-settings/:id", updatePaymentSetting);
 router.get("/integration-status", getIntegrationStatus);
+router.patch("/settings/checkout", updateSystemSettings);
 
 // Coupons
 const couponRoutes = require("./couponRoutes");
