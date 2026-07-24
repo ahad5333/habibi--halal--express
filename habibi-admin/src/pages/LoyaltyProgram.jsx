@@ -84,7 +84,7 @@ export default function LoyaltyProgram() {
           <h1 className="lp-title"><Star size={20} /> Loyalty Program</h1>
           <p className="lp-sub">Manage member points, adjust balances, and configure earn/redeem rates.</p>
         </div>
-        <button className="btn btn-outline lp-cfg-btn" onClick={() => setShowConfig(v => !v)}>
+        <button className="btn btn-secondary lp-cfg-btn" onClick={() => setShowConfig(v => !v)}>
           <Settings size={14} /> {showConfig ? 'Hide' : 'Configure Rates'}
         </button>
       </div>
@@ -166,7 +166,7 @@ export default function LoyaltyProgram() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <button type="submit" className="btn btn-outline" style={{ padding: '0.45rem 0.875rem' }}>
+            <button type="submit" className="btn btn-secondary" style={{ padding: '0.45rem 0.875rem' }}>
               Search
             </button>
           </form>
@@ -206,7 +206,7 @@ export default function LoyaltyProgram() {
                       ${(c.loyalty_points / (stats?.redeem_rate || 100)).toFixed(2)}
                     </td>
                     <td>
-                      <button className="btn btn-outline lp-adj-btn" onClick={() => openAdjust(c)}>
+                      <button className="btn btn-secondary lp-adj-btn" onClick={() => openAdjust(c)}>
                         Adjust
                       </button>
                     </td>
@@ -221,10 +221,10 @@ export default function LoyaltyProgram() {
       {/* ── Adjust Modal ── */}
       {adjust && (
         <div className="modal-overlay" onClick={() => setAdjust(null)}>
-          <div className="modal-box lp-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal lp-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
               <p className="modal-title">Adjust Points — {adjust.name || adjust.email}</p>
-              <button className="modal-close" onClick={() => setAdjust(null)}><X size={16} /></button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setAdjust(null)}><X size={16} /></button>
             </div>
 
             <div className="lp-modal-current">
@@ -271,8 +271,8 @@ export default function LoyaltyProgram() {
             </div>
             {adjErr && <p className="lp-adj-err">{adjErr}</p>}
 
-            <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setAdjust(null)}>Cancel</button>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setAdjust(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={submitAdjust} disabled={adjSaving}>
                 {adjSaving ? 'Saving…' : 'Apply Adjustment'}
               </button>
