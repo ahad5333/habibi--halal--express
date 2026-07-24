@@ -43,18 +43,26 @@ const PLATFORM_META = {
   },
 };
 
-const CHECKLIST = [
-  { done: true,  text: 'Webhook endpoints live and tested' },
-  { done: true,  text: 'Marketplace orders database table ready' },
-  { done: true,  text: 'Order intake dashboard built (Marketplace page)' },
-  { done: true,  text: 'Commission tracking configured per platform' },
-  { done: true,  text: 'Catalog sync engine built' },
-  { done: false, text: 'UberEats partner account approved' },
-  { done: false, text: 'GrubHub merchant account approved' },
-  { done: false, text: 'DoorDash marketplace account approved' },
-  { done: false, text: 'API credentials received and saved to environment' },
-  { done: false, text: 'Menu synced and live on all platforms' },
-];
+// Partner-account approval is an external business process with no signal
+// in our own data, so those three stay manual. The last two used to be
+// hardcoded false forever, even after real credentials were entered and
+// synced — now computed from the same platform data already on this page.
+function buildChecklist(platforms) {
+  const anyCredsSet  = platforms.some(p => p.api_key_set);
+  const allSyncedOnce = platforms.length > 0 && platforms.every(p => p.last_sync_at);
+  return [
+    { done: true,  text: 'Webhook endpoints live and tested' },
+    { done: true,  text: 'Marketplace orders database table ready' },
+    { done: true,  text: 'Order intake dashboard built (Marketplace page)' },
+    { done: true,  text: 'Commission tracking configured per platform' },
+    { done: true,  text: 'Catalog sync engine built' },
+    { done: false, text: 'UberEats partner account approved' },
+    { done: false, text: 'GrubHub merchant account approved' },
+    { done: false, text: 'DoorDash marketplace account approved' },
+    { done: anyCredsSet,   text: 'API credentials received and saved' },
+    { done: allSyncedOnce, text: 'Menu synced at least once on every platform' },
+  ];
+}
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
@@ -235,6 +243,7 @@ export default function Integrations() {
   const totalGross = data.platforms.reduce((s, p) => s + p.gross_revenue, 0);
   const totalNet   = data.platforms.reduce((s, p) => s + p.net_revenue,   0);
   const liveCount  = data.platforms.filter(p => p.is_active).length;
+  const checklist  = buildChecklist(data.platforms);
 
   return (
     <div className="int-page">
@@ -319,7 +328,7 @@ export default function Integrations() {
         <div className="int-panel">
           <h3 className="int-panel-title">Milestone 2 Checklist</h3>
           <div className="int-checklist">
-            {CHECKLIST.map((item, i) => (
+            {checklist.map((item, i) => (
               <div key={i} className={`int-check-row ${item.done ? 'int-check-done' : 'int-check-pending'}`}>
                 {item.done
                   ? <CheckCircle2 size={15} className="int-check-icon-done" />
@@ -330,7 +339,7 @@ export default function Integrations() {
             ))}
           </div>
           <div className="int-checklist-summary">
-            <span className="int-done-count">{CHECKLIST.filter(c => c.done).length}/{CHECKLIST.length}</span>
+            <span className="int-done-count">{checklist.filter(c => c.done).length}/{checklist.length}</span>
             &nbsp;items complete
           </div>
         </div>
