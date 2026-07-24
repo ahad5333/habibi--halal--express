@@ -3,6 +3,7 @@ const safeError    = require('../utils/safeError');
 const platformAuth = require('../services/platformAuthService');
 const { syncMenuToPlatform, getMenuPreview } = require('../services/menuTransformService');
 const { encryptObject, decryptObject } = require('../utils/encrypt');
+const { logAudit } = require('./auditController');
 
 // ── Credentials ─────────────────────────────────────────────────────
 const getCredentials = async (req, res) => {
@@ -52,6 +53,10 @@ const updateCredentials = async (req, res) => {
 
     // Invalidate cached tokens so next request re-authenticates with new creds
     if (platform === 'ubereats') platformAuth.invalidateUberToken();
+
+    // Never log actual credential values — only which fields changed.
+    logAudit(pool, req.user?.id, req.user?.name, 'update_platform_credentials', 'platform_credential', platform,
+      { fields_changed: Object.keys(incoming).filter(k => incoming[k]) }, req.ip);
 
     res.json({ success: true, api_key_set: hasKeys });
   } catch (err) { res.status(500).json(safeError(err)); }

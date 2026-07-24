@@ -759,6 +759,19 @@ const createTables = async () => {
         created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Same naive-TIMESTAMP drift already fixed on several other tables this
+    // project (delivery_assignments, roadie_deliveries, coupons, guest_orders)
+    // — DB session runs under America/New_York, so existing values already
+    // hold correct wall-clock digits and are safe to reinterpret as TZ-aware.
+    // For an accountability log specifically, a correct timestamp is the point.
+    await client.query(`
+      DO $$ BEGIN
+        IF (SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'admin_audit_log' AND column_name = 'created_at') = 'timestamp without time zone' THEN
+          ALTER TABLE admin_audit_log ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'America/New_York';
+        END IF;
+      END $$;
+    `);
 
     // ── Marketplace Orders (UberEats, GrubHub, Caviar) ────────────
     await client.query(`

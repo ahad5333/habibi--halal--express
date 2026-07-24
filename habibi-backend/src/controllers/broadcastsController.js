@@ -3,6 +3,7 @@ const pool = require('../config/db');
 const { sendSMS } = require('../services/smsService');
 const emailService = require('../services/emailService');
 const fcmService = require('../services/fcmService');
+const { logAudit } = require('./auditController');
 
 exports.getBroadcasts = async (req, res) => {
   try {
@@ -178,6 +179,9 @@ exports.sendBroadcast = async (req, res) => {
       `UPDATE broadcasts SET status='sent', sent_at=NOW(), sent_count=$1 WHERE id=$2`,
       [totalSent, broadcast.id]
     );
+
+    logAudit(pool, req.user?.id, req.user?.name, 'send_broadcast', 'broadcast', String(broadcast.id),
+      { title, audience: audience || 'all', channels: channelList, sent_count: totalSent }, req.ip);
 
     res.json({ ...broadcast, status: 'sent', sent_count: totalSent });
   } catch (err) {

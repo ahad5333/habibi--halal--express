@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const safeError = require('../utils/safeError');
 const { chargeCard, refundTransaction } = require('../services/authNetService');
+const { logAudit } = require('./auditController');
 
 // ── Helper — fetch the currently active account ───────────────────────────
 async function getActiveAccount() {
@@ -147,6 +148,9 @@ const createAccount = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [nickname, api_login_id, transaction_key, client_key || null, environment || 'production', isFirst]
     );
+    // Never log transaction_key/client_key — this is a real merchant secret.
+    logAudit(pool, req.user?.id, req.user?.name, 'create_payment_account', 'payment_account', String(result.rows[0].id),
+      { nickname, environment: environment || 'production', auto_activated: isFirst }, req.ip);
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -171,6 +175,9 @@ const updateAccount = async (req, res) => {
         WHERE id = $6`,
       [nickname, api_login_id, transaction_key, client_key, environment, id]
     );
+    // Never log transaction_key/client_key — record only that it changed, not the value.
+    logAudit(pool, req.user?.id, req.user?.name, 'update_payment_account', 'payment_account', String(id),
+      { nickname, environment, transaction_key_changed: !!transaction_key }, req.ip);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -189,6 +196,7 @@ const deleteAccount = async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete the active account — set another account active first.' });
     }
     await pool.query(`DELETE FROM authorize_net_accounts WHERE id = $1`, [id]);
+    logAudit(pool, req.user?.id, req.user?.name, 'delete_payment_account', 'payment_account', String(id), {}, req.ip);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -211,6 +219,7 @@ const setActiveAccount = async (req, res) => {
       return res.status(404).json({ error: 'Account not found.' });
     }
     await client.query('COMMIT');
+    logAudit(pool, req.user?.id, req.user?.name, 'activate_payment_account', 'payment_account', String(id), {}, req.ip);
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');

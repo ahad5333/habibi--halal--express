@@ -3,6 +3,7 @@ const pool      = require("../config/db");
 const crypto    = require("crypto");
 const { refundTransaction } = require('../services/authNetService');
 const { getActiveAccount } = require('./authNetController');
+const { logAudit } = require('./auditController');
 
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
@@ -136,6 +137,9 @@ const refundOrder = async (req, res) => {
     if (io) {
       io.to(`order_${orderNumber}`).emit("order_status_updated", { order_id: orderNumber, status: "refunded" });
     }
+
+    logAudit(pool, req.user?.id, req.user?.name, 'refund_order', 'payment', orderNumber,
+      { refundId, amount: parseFloat(amount) > 0 ? parseFloat(amount) : parseFloat(order.total), payment_method: order.payment_method }, req.ip);
 
     res.json({ success: true, refundId, message: "Refund processed successfully." });
   } catch (err) {
