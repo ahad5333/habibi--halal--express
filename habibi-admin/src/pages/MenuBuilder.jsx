@@ -468,8 +468,12 @@ export default function MenuBuilder() {
   const handleBulkToggle = async (category, enable) => {
     try {
       await adminAPI.toggleMenuAvailability({ category, is_available: enable });
+      // Match the backend's own matching logic (case-insensitive, primary
+      // category OR the secondary categories array) — otherwise items tagged
+      // with this category only via the secondary array show a stale
+      // Active/Inactive badge here until the next full refetch.
       setItems(prev => prev.map(i =>
-        i.category === category ? { ...i, is_available: enable } : i
+        itemCats(i).some(c => c.toLowerCase() === category.toLowerCase()) ? { ...i, is_available: enable } : i
       ));
     } catch (e) { showToast(e.message || 'Action failed.'); }
   };
