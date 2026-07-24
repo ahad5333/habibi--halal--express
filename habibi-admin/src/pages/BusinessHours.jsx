@@ -34,6 +34,7 @@ export default function BusinessHours() {
   const [saving, setSaving]         = useState(false);
   const [toast, setToast]           = useState(null); // { type: 'success'|'error', msg }
   const [isOpenNow, setIsOpenNow]   = useState(null);
+  const [isDefault, setIsDefault]   = useState(false); // true = these are generic placeholders, never actually saved for this location
 
   const locationTitle = locations.find(l => l.id === locationId)?.title || '';
 
@@ -58,6 +59,7 @@ export default function BusinessHours() {
     setLoading(true);
     try {
       const bhData = await adminAPI.getBusinessHours(locId);
+      setIsDefault(!!bhData.is_default);
 
       // Normalise hours — sort by day_of_week, fill in missing days
       const rawHours = Array.isArray(bhData.hours) ? bhData.hours : defaultHours();
@@ -179,6 +181,20 @@ export default function BusinessHours() {
           </div>
         </div>
       </div>
+
+      {/* Warning: nothing has ever been saved for this location — the table
+          below is a generic placeholder, not this location's real hours.
+          Saving without reviewing/correcting it first would overwrite the
+          real hours text customers and "is_open_now" rely on. */}
+      {!loading && locations.length > 0 && isDefault && (
+        <div style={{
+          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+          color: '#d97706', borderRadius: 'var(--radius)', padding: '0.7rem 1rem',
+          fontSize: '0.83rem', marginBottom: '1rem', fontWeight: 500,
+        }}>
+          ⚠ No hours have ever been saved for {locationTitle || 'this location'} — the times shown below are generic placeholders (7:00 AM – 11:00 PM every day), not this location's actual hours. Review and correct every day before clicking Save, or you'll overwrite its real hours with these placeholders.
+        </div>
+      )}
 
       {/* Hours table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
