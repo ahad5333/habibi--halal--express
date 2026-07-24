@@ -88,7 +88,7 @@ const squareWebhook = async (req, res) => {
 const refundOrder = async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const { amount } = req.body; // optional partial amount, defaults to the order total
+    const { amount } = req.body || {}; // optional partial amount, defaults to the order total
 
     const result = await pool.query(
       "SELECT payment_intent_id, total, payment_method, order_status FROM guest_orders WHERE order_number=$1",
