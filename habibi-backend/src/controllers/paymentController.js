@@ -1,6 +1,8 @@
 const safeError = require('../utils/safeError');
 const pool      = require("../config/db");
 const crypto    = require("crypto");
+const { refundTransaction } = require('../services/authNetService');
+const { getActiveAccount } = require('./authNetController');
 
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
@@ -72,14 +74,24 @@ const squareWebhook = async (req, res) => {
   }
 };
 
-// ─── Refund (admin) ─────────────────────────��────────────────────────��───────
+// ─── Refund (admin) ───────────────────────────────────────────────────────────
+// This is the endpoint the admin Payments page's Refund button actually calls
+// (POST /api/admin/payments/:orderNumber/refund). It used to only flip
+// order_status to 'refunded' and return a fake success message — even for
+// card orders, despite the admin UI's own confirmation modal explicitly
+// promising "the refund will be processed automatically via Authorize.net".
+// A second, real implementation (authNetController.refundEndpoint, which
+// actually calls Authorize.net) existed but was only reachable at a
+// different, unused route (POST /api/payments/authnet/refund/:orderNumber)
+// that nothing in any frontend ever calls. Card orders clicked "Refund" here
+// and got told it succeeded while the customer's money never moved.
 const refundOrder = async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const { amount } = req.body; // optional partial amount
+    const { amount } = req.body; // optional partial amount, defaults to the order total
 
     const result = await pool.query(
-      "SELECT payment_intent_id, total, order_status FROM guest_orders WHERE order_number=$1",
+      "SELECT payment_intent_id, total, payment_method, order_status FROM guest_orders WHERE order_number=$1",
       [orderNumber]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Order not found." });
@@ -88,12 +100,35 @@ const refundOrder = async (req, res) => {
 
     if (order.order_status === "refunded") return res.status(400).json({ message: "Order already refunded." });
 
-    // AuthNet refunds are handled by authNetController.refundEndpoint
-    // Cash/offline/PayPal refunds are manual
-    const refundId = "REFUND_MANUAL_" + Date.now();
+    let refundId;
+
+    if (order.payment_intent_id && (order.payment_method || '').toLowerCase() === 'card') {
+      // Real card charge via Authorize.net — actually refund the money.
+      const account = await getActiveAccount();
+      if (!account) {
+        return res.status(503).json({ message: 'Payment processor not configured — cannot process card refund.' });
+      }
+      const refundAmount = parseFloat(amount) > 0 ? parseFloat(amount) : parseFloat(order.total);
+      try {
+        const refunded = await refundTransaction({
+          transactionId:  order.payment_intent_id,
+          amount:         refundAmount,
+          cardLastFour:   '0000',
+          apiLoginId:     account.api_login_id,
+          transactionKey: account.transaction_key,
+          environment:    account.environment,
+        });
+        refundId = refunded.transactionId;
+      } catch (refundErr) {
+        return res.status(502).json({ message: 'Authorize.net refund failed: ' + refundErr.message });
+      }
+    } else {
+      // Cash/Zelle/CashApp/PayPal — no automated refund API, record-keeping only.
+      refundId = "REFUND_MANUAL_" + Date.now();
+    }
 
     await pool.query(
-      "UPDATE guest_orders SET order_status='refunded', updated_at=NOW() WHERE order_number=$1",
+      "UPDATE guest_orders SET order_status='refunded', payment_status='refunded', updated_at=NOW() WHERE order_number=$1",
       [orderNumber]
     );
 

@@ -162,12 +162,12 @@ router.get("/payments", async (req, res) => {
       `),
       pool.query(`
         SELECT
-          COUNT(*)::int                         AS total_orders,
-          COALESCE(SUM(total), 0)::numeric      AS total_revenue,
-          COALESCE(AVG(total), 0)::numeric      AS avg_order_value,
-          COUNT(*) FILTER (WHERE order_status = 'pending')::int    AS pending,
-          COUNT(*) FILTER (WHERE order_status = 'completed')::int  AS completed,
-          COUNT(*) FILTER (WHERE order_status = 'cancelled')::int  AS cancelled
+          COUNT(*)::int                                                                AS total_orders,
+          COALESCE(SUM(total) FILTER (WHERE order_status IN ('delivered','completed')),0)::numeric AS total_revenue,
+          COALESCE(AVG(total) FILTER (WHERE order_status IN ('delivered','completed')),0)::numeric AS avg_order_value,
+          COUNT(*) FILTER (WHERE order_status = 'pending')::int                         AS pending,
+          COUNT(*) FILTER (WHERE order_status IN ('delivered','completed'))::int        AS completed,
+          COUNT(*) FILTER (WHERE order_status = 'cancelled')::int                       AS cancelled
         FROM guest_orders
       `),
       pool.query(`
@@ -176,6 +176,7 @@ router.get("/payments", async (req, res) => {
                COALESCE(SUM(total), 0)::numeric AS revenue
         FROM guest_orders
         WHERE payment_method IS NOT NULL AND payment_method != ''
+          AND order_status IN ('delivered','completed')
         GROUP BY payment_method
         ORDER BY revenue DESC
       `),

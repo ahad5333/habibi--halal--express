@@ -203,4 +203,5 @@ module.exports = {
   updateAccount,
   deleteAccount,
   setActiveAccount,
+  getActiveAccount,
 };
