@@ -749,7 +749,9 @@ const getAdminLocations = async (req, res) => {
       `SELECT id, title, brief_address, exact_address, phone_number,
               working_days_hours, holidays, is_active, accepting_orders,
               delivery_radius_miles, delivery_cost, latitude, longitude,
-              preference_level, image_url, tablet_username, delivery_addresses
+              preference_level, image_url, tablet_username, delivery_addresses,
+              partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
+              self_delivery_enabled AS partner_self
        FROM locations ORDER BY preference_level DESC, id`
     );
     res.json(result.rows);
@@ -767,6 +769,7 @@ const updateAdminLocation = async (req, res) => {
       holidays, preference_level, image_url,
       tablet_username, tablet_password, delivery_addresses,
       exact_address, brief_address, latitude, longitude,
+      partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_self,
     } = req.body;
 
     // Only hash tablet password if a new one was provided
@@ -793,6 +796,9 @@ const updateAdminLocation = async (req, res) => {
            brief_address = COALESCE($16, brief_address),
            latitude = COALESCE($17, latitude),
            longitude = COALESCE($18, longitude),
+           partner_ubereats = $19, partner_doordash = $20,
+           partner_grubhub  = $21, partner_roadie   = $22,
+           self_delivery_enabled = $23,
            updated_at=NOW()
        WHERE id=$13 RETURNING *`,
       [
@@ -810,11 +816,13 @@ const updateAdminLocation = async (req, res) => {
         brief_address || null,
         latitude !== undefined && latitude !== '' ? parseFloat(latitude) : null,
         longitude !== undefined && longitude !== '' ? parseFloat(longitude) : null,
+        !!partner_ubereats, !!partner_doordash, !!partner_grubhub, !!partner_roadie, !!partner_self,
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });
     const row = { ...result.rows[0] };
     delete row.tablet_password_hash; // never expose hash to frontend
+    row.partner_self = row.self_delivery_enabled;
     res.json(row);
   } catch (err) {
     res.status(500).json(safeError(err));

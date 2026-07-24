@@ -838,6 +838,14 @@ const createTables = async () => {
       ALTER TABLE locations ADD COLUMN IF NOT EXISTS accepting_orders BOOLEAN DEFAULT TRUE;
     `);
 
+    // ── Locations: delivery-partner checkboxes on the admin edit form had
+    // no backing columns at all — every save silently discarded them.
+    // self_delivery_enabled already existed for "Self-Delivery" (partner_self).
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_ubereats BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_doordash BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_grubhub  BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_roadie   BOOLEAN DEFAULT FALSE`);
+
     // ── Menus: ensure all required columns exist ──────────────────
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS is_available   BOOLEAN        DEFAULT TRUE`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS is_active      BOOLEAN        DEFAULT TRUE`);
