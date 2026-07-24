@@ -58,14 +58,10 @@ app.use(helmet({
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Rate limiters — active in ALL environments (dev gets a higher ceiling for convenience)
+// authLimiter (register/login) now lives in authRoutes.js, applied per-route
+// instead of blanket across all of /api/auth — see the comment at the
+// /api/auth mount below for why.
 const isDev = process.env.NODE_ENV !== 'production';
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDev ? 200 : 20,
-  message: { error: "Too many attempts, try again in 15 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 const payLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isDev ? 100 : 10,
@@ -186,7 +182,15 @@ app.use("/api/users/me/notifications", notificationsRoutes)  // must be before /
 app.use("/api/users", userRoutes)
 app.use("/api/menus", menuRoutes)
 app.use("/api/byo-ingredients", byoIngredientRoutes)
-app.use("/api/auth", authLimiter, authRoutes)
+// authLimiter now applies per-route inside authRoutes.js (only to
+// register/login) instead of blanket here — GET /api/auth/me is a routine,
+// already-authenticated session check the SPA fires on every page
+// navigation, not a guessable-credential endpoint, so it was silently
+// eating the same 20-req/15-min budget meant to stop brute-force login
+// attempts. Confirmed live: a normal admin session clicking through the
+// sidebar exceeded it, got a 429 on /me, and the frontend treated that as
+// "not logged in" and bounced to the login screen mid-session.
+app.use("/api/auth", authRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderLimiter, orderRoutes);
 app.use("/api/payments", payLimiter, paymentRoutes);

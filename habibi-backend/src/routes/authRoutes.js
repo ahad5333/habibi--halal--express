@@ -6,6 +6,34 @@ const { handleValidation, rules } = require('../middleware/validate');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Applies only to register/login — the routes with a real brute-force
+// attack surface (a guessable password). Previously applied blanket to all
+// of /api/auth, including GET /me, which the SPA calls on every page
+// navigation just to check an already-issued JWT is still valid — that
+// silently shared this same 20-req/15-min budget, so normal admin usage
+// (clicking through more than ~20 pages) could exceed it and, since the
+// frontend treats a failed /me call as "not logged in", got bounced to the
+// login screen mid-session. Confirmed live during a full-app smoke test.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 200 : 20,
+  message: { error: "Too many attempts, try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// GET /me and POST /logout require a valid JWT (via `protect`) before they
+// do anything, so there's no credential-guessing surface to rate-limit
+// against here — this ceiling exists only to stop runaway/malicious
+// polling, not routine SPA usage.
+const meLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 1000 : 300,
+  message: { error: "Too many requests. Please wait a moment." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const smsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isDev ? 50 : 3,
@@ -47,6 +75,7 @@ const protect = require('../middleware/authMiddleware');
 const { revokeToken } = require('../middleware/authMiddleware');
 
 router.post("/register",
+  authLimiter,
   rules.name(),
   // Accept a valid email OR a phone number (user can sign up with either)
   body('email')
@@ -65,6 +94,7 @@ router.post("/register",
 );
 
 router.post("/login",
+  authLimiter,
   body('email').trim().notEmpty().withMessage('Email or phone is required.'),
   body('password').notEmpty().withMessage('Password is required.'),
   handleValidation,
@@ -106,10 +136,10 @@ router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEm
 router.post('/social', body('id_token').notEmpty().withMessage('ID token required.'), handleValidation, socialAuth);
 
 // Return current user info from the httpOnly cookie — used by frontend on page load
-router.get('/me', protect, getMe);
+router.get('/me', meLimiter, protect, getMe);
 
 // Invalidate the calling token and clear the httpOnly cookie
-router.post('/logout', protect, (req, res) => {
+router.post('/logout', meLimiter, protect, (req, res) => {
   const { jti, exp } = req.user || {};
   revokeToken(jti, exp);
   res.clearCookie('auth_token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' });
