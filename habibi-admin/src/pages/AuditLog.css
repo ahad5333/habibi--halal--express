@@ -16,11 +16,11 @@
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   text-transform: capitalize;
 }
-.audit-filter-btn:hover { background: var(--color-surface-2); color: var(--color-text); }
+.audit-filter-btn:hover { background: var(--color-surface-2); color: var(--color-text-main); }
 .audit-filter-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #000;
+  color: #fff;
   font-weight: 600;
 }
 

@@ -7,6 +7,7 @@ import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 const ENTITY_TYPES = [
   '', 'menu_item', 'coupon', 'order', 'user', 'location', 'staff',
   'partner', 'inventory', 'broadcast', 'setting',
+  'payment', 'payment_account', 'platform_credential',
 ];
 
 const PAGE_SIZE = 50;
@@ -15,6 +16,10 @@ function fmt(ts) {
   const d = new Date(ts);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+function humanize(s) {
+  return (s || '').replace(/_/g, ' ');
 }
 
 function actionBadge(action) {
@@ -74,7 +79,7 @@ export default function AuditLog() {
             className={`audit-filter-btn${entityType === t ? ' active' : ''}`}
             onClick={() => handleFilter(t)}
           >
-            {t || 'All'}
+            {t ? t.replace(/_/g, ' ') : 'All'}
           </button>
         ))}
       </div>
@@ -114,10 +119,10 @@ export default function AuditLog() {
                       <td style={{ fontWeight: 600 }}>{r.admin_name || '—'}</td>
                       <td>
                         <span className={`badge ${actionBadge(r.action)}`}>
-                          {r.action}
+                          {humanize(r.action)}
                         </span>
                       </td>
-                      <td className="text-muted">{r.entity_type || '—'}</td>
+                      <td className="text-muted">{r.entity_type ? humanize(r.entity_type) : '—'}</td>
                       <td className="mono text-muted" style={{ fontSize: '0.72rem' }}>{r.entity_id || '—'}</td>
                       <td className="mono text-muted" style={{ fontSize: '0.72rem' }}>{r.ip_address || '—'}</td>
                       <td style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>
