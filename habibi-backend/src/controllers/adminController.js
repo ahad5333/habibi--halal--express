@@ -358,7 +358,7 @@ function customersBaseCTE() {
         COALESCE(u.loyalty_points, 0)       AS loyalty_points,
         u.created_at                        AS created_at,
         COUNT(o.id)::int                    AS total_orders,
-        COALESCE(SUM(o.total), 0)::numeric  AS total_spent,
+        COALESCE(SUM(o.total) FILTER (WHERE o.order_status IN ('delivered', 'completed')), 0)::numeric AS total_spent,
         MAX(o.placed_at)                    AS last_order_at,
         FALSE                                AS is_guest
       FROM users u
@@ -375,7 +375,7 @@ function customersBaseCTE() {
         0                                    AS loyalty_points,
         MIN(o.placed_at)                    AS created_at,
         COUNT(o.id)::int                    AS total_orders,
-        COALESCE(SUM(o.total), 0)::numeric  AS total_spent,
+        COALESCE(SUM(o.total) FILTER (WHERE o.order_status IN ('delivered', 'completed')), 0)::numeric AS total_spent,
         MAX(o.placed_at)                    AS last_order_at,
         TRUE                                 AS is_guest
       FROM guest_orders o
@@ -483,7 +483,7 @@ const getTopCustomers = async (req, res) => {
         COALESCE(u.phone_number, MAX(o.customer_phone))      AS phone,
         COALESCE(u.role, 'guest')                            AS role,
         COUNT(o.id)::int                                     AS orders_in_range,
-        COALESCE(SUM(o.total), 0)::numeric                   AS spent_in_range
+        COALESCE(SUM(o.total) FILTER (WHERE o.order_status IN ('delivered', 'completed')), 0)::numeric AS spent_in_range
       FROM guest_orders o
       LEFT JOIN users u ON u.email = o.customer_email
       WHERE o.placed_at >= $1::date AND o.placed_at < ($2::date + INTERVAL '1 day')

@@ -374,7 +374,7 @@ export default function Customers() {
                         {c.created_at ? fmtDate(c.created_at, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                       </td>
                       <td style={{ textAlign: 'center' }}><span className="badge badge-muted">{c.total_orders ?? 0}</span></td>
-                      <td style={{ fontWeight: 500, color: 'var(--gold)' }}>${parseFloat(c.total_spent || 0).toFixed(2)}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--color-primary)' }}>${parseFloat(c.total_spent || 0).toFixed(2)}</td>
                       <td><span className={`badge ${ROLE_BADGE[c.role] || 'badge-muted'}`}>{c.role}</span></td>
                       <td onClick={e => e.stopPropagation()}>
                         {c.is_guest ? (
@@ -395,9 +395,9 @@ export default function Customers() {
           )}
           {/* Pagination */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
               <button className="btn btn-sm btn-secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Page {page} of {totalPages}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Page {page} of {totalPages}</span>
               <button className="btn btn-sm btn-secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
             </div>
           )}
@@ -436,7 +436,7 @@ export default function Customers() {
                   </div>
                   <div className="cust-stat-box">
                     <p className="cust-stat-label">TOTAL SPENT</p>
-                    <p className="cust-stat-num" style={{ color: 'var(--gold)' }}>${parseFloat((detail || selected).total_spent ?? selected.total_spent ?? 0).toFixed(2)}</p>
+                    <p className="cust-stat-num" style={{ color: 'var(--color-primary)' }}>${parseFloat((detail || selected).total_spent ?? selected.total_spent ?? 0).toFixed(2)}</p>
                   </div>
                   {!(detail || selected).is_guest && (
                     <div className="cust-stat-box">
@@ -505,7 +505,7 @@ export default function Customers() {
                 </div>
               </div>
               {modal === 'add' && (
-                <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                   A "set your password" email will be sent to this address automatically.
                 </p>
               )}
@@ -555,7 +555,7 @@ export default function Customers() {
                   <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
                     ✓ {bulkResult.created_count} customer{bulkResult.created_count !== 1 ? 's' : ''} added
                   </p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     Each new account was emailed a link to set their own password.
                   </p>
                   {bulkResult.skipped_count > 0 && (
@@ -583,7 +583,7 @@ export default function Customers() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
                     Upload a CSV with <code>name</code>, <code>email</code>, and <code>phone</code> columns
                     (header row optional — email is required per row). Each new customer is created with a
                     random password and emailed a link to set their own before first login.
@@ -673,7 +673,7 @@ export default function Customers() {
                               <td style={{ fontWeight: 500 }}>{c.name || '—'}</td>
                               <td className="text-muted">{c.email}</td>
                               <td style={{ textAlign: 'center' }}><span className="badge badge-muted">{c.orders_in_range}</span></td>
-                              <td style={{ fontWeight: 500, color: 'var(--gold)' }}>${parseFloat(c.spent_in_range || 0).toFixed(2)}</td>
+                              <td style={{ fontWeight: 500, color: 'var(--color-primary)' }}>${parseFloat(c.spent_in_range || 0).toFixed(2)}</td>
                               <td><span className={`badge ${ROLE_BADGE[c.role] || 'badge-muted'}`}>{c.role}</span></td>
                             </tr>
                           ))}

@@ -50,8 +50,8 @@
 
 .cust-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
 
-.cust-stat-box { flex: 1; background: var(--surface-2); border-radius: 8px; padding: 10px 14px; text-align: center; }
-.cust-stat-label { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.cust-stat-box { flex: 1; background: var(--color-surface-2); border-radius: 8px; padding: 10px 14px; text-align: center; }
+.cust-stat-label { font-size: 0.65rem; color: var(--color-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 .cust-stat-num { font-size: 1.2rem; font-weight: 700; }
 
 .cust-guest-note {
