@@ -7,7 +7,7 @@ import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 const ENTITY_TYPES = [
   '', 'menu_item', 'coupon', 'order', 'user', 'location', 'staff',
   'partner', 'inventory', 'broadcast', 'setting',
-  'payment', 'payment_account', 'platform_credential',
+  'payment', 'payment_account', 'platform_credential', 'platform_sync',
 ];
 
 const PAGE_SIZE = 50;
