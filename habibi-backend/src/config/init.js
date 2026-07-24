@@ -333,12 +333,31 @@ const createTables = async () => {
         dispatch_fired        BOOLEAN      DEFAULT FALSE,
         order_status          VARCHAR(50)  DEFAULT 'pending',
         items                 JSONB        DEFAULT '[]',
-        placed_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        placed_at             TIMESTAMPTZ DEFAULT NOW(),
+        updated_at            TIMESTAMPTZ DEFAULT NOW()
       );
       -- Add column to existing tables (idempotent)
       ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS dispatch_fired BOOLEAN DEFAULT FALSE;
     `);
+
+    // guest_orders.placed_at/updated_at were declared as naive TIMESTAMP here
+    // from the very start (not drift from a later ALTER — the original design
+    // was wrong), same underlying issue already fixed on delivery_assignments/
+    // roadie_deliveries/coupons this week. Every real INSERT relies on the
+    // column DEFAULT (never sets placed_at explicitly), and the DB session
+    // always runs under America/New_York, so existing naive values correctly
+    // hold true Eastern wall-clock digits — safe to reinterpret them as such.
+    const driftedOrderCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='guest_orders'
+        AND column_name IN ('placed_at','updated_at')
+        AND data_type = 'timestamp without time zone'
+    `);
+    for (const { column_name } of driftedOrderCols.rows) {
+      await client.query(
+        `ALTER TABLE guest_orders ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
 
     // ── Dine-In Tables ────────────────────────────────────────────
     await client.query(`
