@@ -4,12 +4,6 @@ import { adminAPI } from '../services/api';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const LOCATIONS = [
-  { id: 1, label: 'Location 1' },
-  { id: 2, label: 'Location 2' },
-  { id: 3, label: 'Location 3' },
-];
-
 function defaultHours() {
   return Array.from({ length: 7 }, (_, i) => ({
     day_of_week: i,
@@ -27,27 +21,43 @@ function normalizeTime(t) {
 }
 
 export default function BusinessHours() {
-  const [locationId, setLocationId] = useState(1);
+  // Previously a hardcoded ["Location 1", "Location 2", "Location 3"] list —
+  // getLocations() was already being fetched here but its result was never
+  // actually used for anything, so every button showed a generic placeholder
+  // instead of the real location name (Bedford Park & Jerome Ave, etc.)
+  // until you clicked it. Also assumed exactly 3 locations with ids 1-2-3;
+  // now built from whatever locations actually exist.
+  const [locations, setLocations]   = useState([]);
+  const [locationId, setLocationId] = useState(null);
   const [hours, setHours]           = useState(defaultHours());
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
   const [toast, setToast]           = useState(null); // { type: 'success'|'error', msg }
   const [isOpenNow, setIsOpenNow]   = useState(null);
-  const [locationTitle, setLocationTitle] = useState('');
+
+  const locationTitle = locations.find(l => l.id === locationId)?.title || '';
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Fetch the real location list once
+  useEffect(() => {
+    adminAPI.getLocations()
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setLocations(list);
+        if (list.length > 0) setLocationId(list[0].id);
+        else setLoading(false); // nothing to load hours for
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const load = useCallback(async (locId) => {
     setLoading(true);
     try {
-      // Fetch location title from admin locations endpoint
-      const [bhData, locData] = await Promise.all([
-        adminAPI.getBusinessHours(locId),
-        adminAPI.getLocations().catch(() => ({ rows: [] })),
-      ]);
+      const bhData = await adminAPI.getBusinessHours(locId);
 
       // Normalise hours — sort by day_of_week, fill in missing days
       const rawHours = Array.isArray(bhData.hours) ? bhData.hours : defaultHours();
@@ -60,20 +70,13 @@ export default function BusinessHours() {
       });
       setHours(filled);
 
-      // Location title + is_open_now from public endpoint (best-effort)
+      // is_open_now isn't available from the admin locations endpoint — pull
+      // it from the public one (best-effort; title now comes from `locations` above)
       try {
         const pubData = await fetch('/api/business-hours').then(r => r.ok ? r.json() : []);
         const locEntry = Array.isArray(pubData) ? pubData.find(l => l.location_id === locId) : null;
-        if (locEntry) {
-          setLocationTitle(locEntry.title || `Location ${locId}`);
-          setIsOpenNow(locEntry.is_open_now);
-        } else {
-          setLocationTitle(`Location ${locId}`);
-          setIsOpenNow(null);
-        }
+        setIsOpenNow(locEntry ? locEntry.is_open_now : null);
       } catch (_) {
-        // public endpoint may not be available during dev — not fatal
-        setLocationTitle(`Location ${locId}`);
         setIsOpenNow(null);
       }
     } catch (err) {
@@ -85,7 +88,7 @@ export default function BusinessHours() {
   }, []);
 
   useEffect(() => {
-    load(locationId);
+    if (locationId) load(locationId);
   }, [locationId, load]);
 
   const updateRow = (dayIndex, field, value) => {
@@ -147,7 +150,7 @@ export default function BusinessHours() {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || loading}
+            disabled={saving || loading || !locationId}
           >
             {saving
               ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Saving…</>
@@ -164,13 +167,13 @@ export default function BusinessHours() {
             Location
           </span>
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            {LOCATIONS.map(loc => (
+            {locations.map(loc => (
               <button
                 key={loc.id}
                 onClick={() => setLocationId(loc.id)}
                 className={`btn btn-sm ${locationId === loc.id ? 'btn-primary' : 'btn-secondary'}`}
               >
-                {locationTitle && loc.id === locationId ? locationTitle : loc.label}
+                {loc.title}
               </button>
             ))}
           </div>
@@ -182,6 +185,10 @@ export default function BusinessHours() {
         {loading ? (
           <div className="empty" style={{ minHeight: 200 }}>
             <div className="spinner" />
+          </div>
+        ) : locations.length === 0 ? (
+          <div className="empty" style={{ minHeight: 200 }}>
+            <p>No locations configured yet — add one in Locations first.</p>
           </div>
         ) : (
           <div className="table-wrap">
