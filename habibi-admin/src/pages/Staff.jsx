@@ -538,7 +538,7 @@ export default function Staff() {
                   onKeyDown={e => e.key === 'Enter' && savePin()}
                   autoFocus
                 />
-                <p style={{fontSize:'0.75rem',color:'var(--muted)',marginTop:'0.4rem'}}>
+                <p style={{fontSize:'0.75rem',color:'var(--color-text-muted)',marginTop:'0.4rem'}}>
                   Driver will use this PIN to log in at habibihe.com/driver/login
                 </p>
               </div>
@@ -605,7 +605,7 @@ export default function Staff() {
                   <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
                     ✓ {bulkResult.created_count} staff member{bulkResult.created_count !== 1 ? 's' : ''} added
                   </p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     Any delivery role with a phone number was texted a PIN setup link automatically.
                   </p>
                   {bulkResult.skipped_count > 0 && (
@@ -633,7 +633,7 @@ export default function Staff() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
                     Upload a CSV with <code>name</code>, <code>phone</code>, <code>email</code>, and <code>role</code> columns
                     (header row optional — role defaults to "kitchen" if missing or unrecognized). Rows with role
                     "delivery" and a phone are immediately texted a link to set their own PIN, same as adding one at a time.
