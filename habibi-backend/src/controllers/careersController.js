@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const safeError = require('../utils/safeError');
 
 // ── Resume upload storage ──────────────────────────────────────────────────
 const resumeDir = path.join(__dirname, '../../public/uploads/resumes');
