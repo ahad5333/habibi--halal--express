@@ -197,6 +197,17 @@ module.exports = (io) => {
 
       await saveMessage(order_id, sender, text);
       io.to(room).emit("receive_message", { order_id, sender, text, timestamp });
+      // Also notify the admin inbox room directly — an admin only auto-joins
+      // order_<id> once they've opened that specific conversation, so without
+      // this, a customer's first message on an order nobody has opened yet
+      // would never appear in the admin Chat Inbox until a manual refresh.
+      // Separate event name (not receive_message) so an admin who has BOTH
+      // this room and the specific order room joined doesn't get the same
+      // message appended twice to an already-open thread — this event is
+      // list-level only, never touches the open thread's message array.
+      if (sender === "customer") {
+        io.to("admins").emit("new_chat_message", { order_id, sender, text, timestamp });
+      }
       console.log(`[SOCKET] Chat [${room}] ${sender}: ${text}`);
     });
 
