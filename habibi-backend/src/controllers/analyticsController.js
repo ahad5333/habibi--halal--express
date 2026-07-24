@@ -40,8 +40,9 @@ const getRevenueAnalytics = async (req, res) => {
                CASE WHEN jsonb_typeof(items) = 'array' THEN items ELSE '[]'::jsonb END
              ) AS item
         WHERE order_status IN ('delivered', 'completed')
+          ${dateFilter}
         GROUP BY 1 ORDER BY revenue DESC LIMIT 10
-      `),
+      `, dateParams),
     ]);
 
     // Convert by_category array to { category: revenue } object for Admin Analytics chart
@@ -61,19 +62,34 @@ const getRevenueAnalytics = async (req, res) => {
 
 const getCustomerGrowth = async (req, res) => {
   try {
-    // New customers registered this calendar month
-    const [monthRes, totalRes] = await Promise.all([
+    const start = req.query.start || null;
+    const end   = req.query.end   || null;
+
+    // Mirrors getRevenueAnalytics's date-range handling so the "New Customers"
+    // stat reflects the same period as the rest of the Analytics page instead
+    // of always being "this calendar month" regardless of the selected range.
+    const dateFilter = start && end
+      ? `AND created_at::date BETWEEN $1 AND $2`
+      : start
+      ? `AND created_at::date >= $1`
+      : end
+      ? `AND created_at::date <= $1`
+      : `AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`;
+    const dateParams = start && end ? [start, end] : start ? [start] : end ? [end] : [];
+    const period = start || end ? `${start || '…'} to ${end || '…'}` : 'This month';
+
+    const [newRes, totalRes] = await Promise.all([
       pool.query(`
         SELECT COUNT(*)::int AS new_customers
         FROM users
-        WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
-      `),
+        WHERE TRUE ${dateFilter}
+      `, dateParams),
       pool.query(`SELECT COUNT(*)::int AS total FROM users`),
     ]);
     res.json({
-      new_customers: monthRes.rows[0]?.new_customers ?? 0,
+      new_customers: newRes.rows[0]?.new_customers ?? 0,
       total_customers: totalRes.rows[0]?.total ?? 0,
-      period: 'This month',
+      period,
     });
   } catch (error) {
     res.status(500).json(safeError(error));
