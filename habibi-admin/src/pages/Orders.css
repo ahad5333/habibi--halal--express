@@ -93,7 +93,7 @@
 .cancel-picker-title {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-main);
 }
 .cancel-picker-select, .cancel-picker-input { font-size: 0.82rem; }
 .cancel-picker-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }

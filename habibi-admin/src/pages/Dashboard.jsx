@@ -6,13 +6,15 @@ import './Dashboard.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const STATUS_BADGE = {
-  pending:    'badge-warning',
-  confirmed:  'badge-info',
-  preparing:  'badge-warning',
-  on_the_way: 'badge-info',
-  delivered:  'badge-success',
-  completed:  'badge-success',
-  cancelled:  'badge-error',
+  pending:          'badge-warning',
+  accepted:         'badge-info',
+  preparing:        'badge-warning',
+  cooking:          'badge-warning',
+  ready:            'badge-info',
+  out_for_delivery: 'badge-info',
+  delivered:        'badge-success',
+  completed:        'badge-success',
+  cancelled:        'badge-error',
 };
 
 const StatCard = ({ icon, label, value, sub, color }) => (

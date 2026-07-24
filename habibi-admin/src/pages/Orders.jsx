@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { RefreshCw, ChevronDown, Phone, MapPin, Clock, Package, Download, Bell } from 'lucide-react';
+import {
+  unlockAudio, startContinuousRing, stopContinuousRing, playBell,
+  showNewOrderNotification,
+} from '../utils/orderAlerts';
 
 function exportOrdersCsv(orders) {
   const header = ['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Delivery', 'Payment', 'Status', 'Date', 'Gift?', 'Recipient Name', 'Recipient Phone', 'Gift Message'];
@@ -145,6 +149,7 @@ function OrderRow({ order, onUpdate }) {
                         <p style={{fontWeight:500}}>{item.name}</p>
                         {(item.choices||[]).length > 0 && <p className="text-muted" style={{fontSize:'0.72rem'}}>Choice: {item.choices.join(', ')}</p>}
                         {(item.addons||[]).length > 0 && <p className="text-muted" style={{fontSize:'0.72rem'}}>Add-ons: {item.addons.join(', ')}</p>}
+                        {item.note && <p className="text-muted" style={{fontSize:'0.72rem'}}>{item.note}</p>}
                       </div>
                       <div style={{textAlign:'right'}}>
                         <p style={{fontWeight:500}}>×{item.quantity}</p>
@@ -223,6 +228,7 @@ function OrderRow({ order, onUpdate }) {
 }
 
 const TODAY = new Date().toISOString().split('T')[0];
+const PAGE_SIZE = 100;
 
 export default function Orders() {
   const [orders, setOrders]       = useState([]);
@@ -232,25 +238,78 @@ export default function Orders() {
   const [dateTo, setDateTo]       = useState('');
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // How many pages of PAGE_SIZE orders are currently loaded, and whether the
+  // last page came back full (meaning there's likely another page beyond it).
+  // The backend only ever returns the most recent PAGE_SIZE orders unless
+  // asked for more — without this, anything past the first 100 was silently
+  // unreachable from this page once order volume grew past that.
+  const [pagesLoaded, setPagesLoaded] = useState(1);
+  const [hasMore, setHasMore]     = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // New-order alert — same bell/notification mechanism as Live Board, so staff
+  // working from this page (rather than Live Board) still get told about a new
+  // order instead of only finding out on the next silent 30s poll.
+  const [soundOn, setSoundOn]     = useState(() => localStorage.getItem('habibi_sound_on') === '1');
+  const knownIds = useRef(null);
 
-  const fetchOrders = useCallback(async (silent = false) => {
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    return () => stopContinuousRing();
+  }, []);
+
+  const handleEnableSound = () => {
+    unlockAudio();
+    setSoundOn(true);
+    localStorage.setItem('habibi_sound_on', '1');
+    setTimeout(playBell, 100);
+  };
+
+  const fetchOrders = useCallback(async (silent = false, pages = pagesLoaded) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const data = await adminAPI.orders();
-      setOrders(data);
+      const batches = await Promise.all(
+        Array.from({ length: pages }, (_, i) => adminAPI.orders({ page: i + 1, limit: PAGE_SIZE }))
+      );
+      const all = batches.flat();
+      setOrders(all);
+      setHasMore(batches[batches.length - 1].length === PAGE_SIZE);
+
+      const pending = all.filter(o => o.status === 'pending');
+      if (knownIds.current !== null) {
+        const incoming = pending.filter(o => !knownIds.current.has(o.id));
+        if (incoming.length > 0) showNewOrderNotification(incoming.length);
+      }
+      knownIds.current = new Set(pending.map(o => o.id));
+      if (pending.length > 0) startContinuousRing(); else stopContinuousRing();
     } catch (err) {
       console.error('Failed to load orders:', err.message);
     } finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [pagesLoaded]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  // Auto-refresh every 30s
+  // Auto-refresh every 30s — re-fetches however many pages are currently loaded,
+  // so "Load More" doesn't get silently wiped by the next refresh.
   useEffect(() => {
     const t = setInterval(() => fetchOrders(true), 30000);
     return () => clearInterval(t);
   }, [fetchOrders]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const next = pagesLoaded + 1;
+      const data = await adminAPI.orders({ page: next, limit: PAGE_SIZE });
+      setOrders(prev => [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+      setPagesLoaded(next);
+    } catch (err) {
+      console.error('Failed to load more orders:', err.message);
+    } finally { setLoadingMore(false); }
+  };
 
   const handleUpdate = async (id, status, cancellation_reason) => {
     const prev = orders;
@@ -269,7 +328,7 @@ export default function Orders() {
       const q = search.toLowerCase();
       if (!(o.id + o.user_name + o.user_phone + (o.user_email || '')).toLowerCase().includes(q)) return false;
     }
-    if (dateFrom && o.created_at && new Date(o.created_at) < new Date(dateFrom)) return false;
+    if (dateFrom && o.created_at && new Date(o.created_at) < new Date(dateFrom + 'T00:00:00')) return false;
     if (dateTo   && o.created_at && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false;
     return true;
   });
@@ -309,6 +368,14 @@ export default function Orders() {
           <button className="btn btn-secondary btn-icon" onClick={() => fetchOrders(true)} title="Refresh">
             <RefreshCw size={14} className={refreshing ? 'spin-once' : ''} />
           </button>
+          <button
+            className={`btn btn-sm ${soundOn ? 'btn-success' : 'btn-warning'}`}
+            onClick={soundOn ? playBell : handleEnableSound}
+            title={soundOn ? 'Sound enabled — click to test bell' : 'Click to enable new-order bell alerts'}
+            style={{gap:'0.4rem'}}
+          >
+            <Bell size={14}/> {soundOn ? 'Sound On' : 'Enable Sound'}
+          </button>
         </div>
       </div>
 
@@ -343,6 +410,14 @@ export default function Orders() {
           </div>
         )}
       </div>
+
+      {hasMore && !loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+          <button className="btn btn-secondary" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : `Load Older Orders (${orders.length} loaded so far)`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
