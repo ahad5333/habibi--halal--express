@@ -144,7 +144,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
             </div>
 
             <div className="field">
-              <label>Categories <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(select all that apply)</span></label>
+              <label>Categories <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(select all that apply)</span></label>
               <div className="mb-cat-checkboxes">
                 {ALL_CATEGORIES.map(cat => (
                   <label key={cat} className={`mb-cat-checkbox${form.categories.includes(cat) ? ' checked' : ''}`}>
@@ -202,7 +202,7 @@ function MenuModal({ item, categories, onClose, onSave }) {
             </div>
 
             <div className="field">
-              <label>Serving Temperature <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400, fontSize: '0.78rem' }}>(controls visual effect on menu)</span></label>
+              <label>Serving Temperature <span style={{ color: 'var(--color-text-muted)', fontWeight: 400, fontSize: '0.78rem' }}>(controls visual effect on menu)</span></label>
               <div className="mb-temp-row">
                 {[
                   { val: 'hot',    label: '🔥 Hot',    hint: 'Steam / smoke effect' },

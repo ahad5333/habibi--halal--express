@@ -179,7 +179,7 @@ function OrderRow({ order, onUpdate }) {
                   <div className="order-detail-fields">
                     {order.gift_recipient_name  && <div><p className="text-muted">Recipient Name</p><p style={{fontWeight:600}}>{order.gift_recipient_name}</p></div>}
                     {order.gift_recipient_phone && <div><p className="text-muted">Recipient Phone</p><a href={`tel:${order.gift_recipient_phone}`} className="text-primary">{order.gift_recipient_phone}</a></div>}
-                    {order.gift_message         && <div style={{gridColumn:'1/-1'}}><p className="text-muted">Gift Message</p><p style={{fontStyle:'italic',color:'rgba(255,255,255,0.75)'}}>{order.gift_message}</p></div>}
+                    {order.gift_message         && <div style={{gridColumn:'1/-1'}}><p className="text-muted">Gift Message</p><p style={{fontStyle:'italic',color:'var(--color-text-main)'}}>{order.gift_message}</p></div>}
                   </div>
                 </div>
               )}

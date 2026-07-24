@@ -108,7 +108,7 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
 
             {isNew && (
               <div className="field">
-                <label>Key * <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(unique, lowercase, no spaces — e.g. "shrimp")</span></label>
+                <label>Key * <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(unique, lowercase, no spaces — e.g. "shrimp")</span></label>
                 <input className="input" placeholder="e.g. shrimp" value={form.option_key} onChange={e => set('option_key', e.target.value.trim())} required />
               </div>
             )}
@@ -131,7 +131,7 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
             {category === 'base' && (
               <>
                 <div className="field">
-                  <label>Family <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(controls ingredient layout/sizing on this base)</span></label>
+                  <label>Family <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(controls ingredient layout/sizing on this base)</span></label>
                   <select className="input select" value={form.family} onChange={e => set('family', e.target.value)}>
                     <option value="">— none —</option>
                     {BYO_FAMILY_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
@@ -163,7 +163,7 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
             {category === 'protein' && (
               <>
                 <div className="field">
-                  <label>Quantity Type <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(controls the quantity selector shown to customers)</span></label>
+                  <label>Quantity Type <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(controls the quantity selector shown to customers)</span></label>
                   <select className="input select" value={form.qty_type} onChange={e => set('qty_type', e.target.value)}>
                     <option value="">— none —</option>
                     {BYO_QTY_TYPE_OPTIONS.map(q => <option key={q} value={q}>{q}</option>)}
@@ -178,7 +178,7 @@ function ByoIngredientModal({ item, category, onClose, onSave }) {
 
             {(category === 'cheese' || category === 'veg' || category === 'sauce' || category === 'bowl_base' || category === 'bowl_topping' || category === 'bowl_protein' || category === 'bowl_sauce') && (
               <div className="field">
-                <label>Emoji <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>(shown alongside the image)</span></label>
+                <label>Emoji <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(shown alongside the image)</span></label>
                 <input className="input" placeholder="e.g. 🧅" value={form.emoji} onChange={e => set('emoji', e.target.value)} style={{ width: '5rem' }} />
               </div>
             )}
