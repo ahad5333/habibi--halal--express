@@ -197,7 +197,7 @@ export default function Broadcasts() {
       {/* Compose Modal */}
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(false)}>
-          <div className="modal bc-modal-wide" onClick={e => e.stopPropagation()}>
+          <div className={`modal bc-modal-wide ${previewMode && isEmailSelected ? 'bc-modal-split-active' : ''}`} onClick={e => e.stopPropagation()}>
             <div className="modal-hdr">
               <h2 className="modal-title">New Broadcast</h2>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
