@@ -40,6 +40,11 @@ export default function Reviews() {
   const [deleteId, setDeleteId]   = useState(null);
   const [search, setSearch]       = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
+  // Tracked independently of the tab-scoped `reviews` list below — that list
+  // only ever contains whichever status the admin is currently viewing, so a
+  // count derived from it goes to 0 (and hides the badge) the moment they're
+  // not on the "All" tab, even though pending reviews genuinely exist.
+  const [pendingCount, setPendingCount] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,12 +59,21 @@ export default function Reviews() {
     }
   }, [tab]);
 
+  const loadPendingCount = useCallback(async () => {
+    try {
+      const data = await adminAPI.getReviews('pending');
+      setPendingCount(Array.isArray(data) ? data.length : 0);
+    } catch (_) {}
+  }, []);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadPendingCount(); }, [loadPendingCount]);
 
   async function toggle(id, field, current) {
     try {
       const updated = await adminAPI.updateReview(id, { [field]: !current });
       setReviews(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+      if (field === 'is_approved') loadPendingCount();
     } catch (e) {
       alert(e.message);
     }
@@ -85,6 +99,7 @@ export default function Reviews() {
       await adminAPI.deleteReview(deleteId);
       setReviews(prev => prev.filter(r => r.id !== deleteId));
       setDeleteId(null);
+      loadPendingCount();
     } catch (e) {
       alert(e.message);
     }
@@ -94,8 +109,6 @@ export default function Reviews() {
     setReplyText(review.reply || '');
     setReplyModal(review);
   }
-
-  const pendingCount = reviews.filter(r => !r.is_approved).length;
 
   const filteredReviews = useMemo(() => {
     const q = search.trim().toLowerCase();
