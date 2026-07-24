@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI } from '../services/api';
+import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI, settingsAPI } from '../services/api';
 import './Account.css';
 
 const TABS = [
@@ -86,6 +86,8 @@ function ProfileTab({ user, logout, refreshUser }) {
   const [saving, setSaving]         = useState(false);
   const [saveMsg, setSaveMsg]       = useState('');
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [loyaltyEarnRate, setLoyaltyEarnRate]     = useState(10);  // pts per $1 spent
+  const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts needed for $1 off
 
   const [pwOpen, setPwOpen]         = useState(false);
   const [currentPw, setCurrentPw]   = useState('');
@@ -111,6 +113,19 @@ function ProfileTab({ user, logout, refreshUser }) {
       setPhone(user?.phone || '');
     });
   }, [user]);
+
+  // Rates were previously hardcoded here ("10 pts per $1 · 100 pts = $1 off")
+  // instead of reflecting the Loyalty Program admin page's actual configured
+  // rates — fetch the real values so this card can't drift out of sync with
+  // what checkout and the admin panel actually use.
+  useEffect(() => {
+    settingsAPI.getCheckout()
+      .then(s => {
+        if (s?.loyalty_earn_rate > 0)   setLoyaltyEarnRate(s.loyalty_earn_rate);
+        if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate);
+      })
+      .catch(() => {}); // fail open — keep the 10/100 defaults
+  }, []);
 
   const handleSave = async () => {
     setSaving(true); setSaveMsg('');
@@ -220,22 +235,22 @@ function ProfileTab({ user, logout, refreshUser }) {
           <div className="acct-loyalty-icon"><Gift size={18} /></div>
           <div>
             <p className="acct-loyalty-label">Habibi Rewards</p>
-            <p className="acct-loyalty-sub">10 pts per $1 · 100 pts = $1 off</p>
+            <p className="acct-loyalty-sub">{loyaltyEarnRate} pts per $1 · {loyaltyRedeemRate} pts = $1 off</p>
           </div>
           <div className="acct-loyalty-pts">{loyaltyPoints.toLocaleString()}<span> pts</span></div>
         </div>
         <div className="acct-loyalty-bar-track">
           <div
             className="acct-loyalty-bar-fill"
-            style={{ width: `${Math.min((loyaltyPoints % 100) / 100 * 100, 100)}%` }}
+            style={{ width: `${Math.min((loyaltyPoints % loyaltyRedeemRate) / loyaltyRedeemRate * 100, 100)}%` }}
           />
         </div>
         <div className="acct-loyalty-footer">
-          <span className="acct-loyalty-value">${(Math.floor(loyaltyPoints / 100)).toFixed(0)} redeemable</span>
+          <span className="acct-loyalty-value">${(Math.floor(loyaltyPoints / loyaltyRedeemRate)).toFixed(0)} redeemable</span>
           <span className="acct-loyalty-next">
-            {loyaltyPoints % 100 === 0 && loyaltyPoints > 0
+            {loyaltyPoints % loyaltyRedeemRate === 0 && loyaltyPoints > 0
               ? 'Reward available!'
-              : `${100 - (loyaltyPoints % 100)} pts to next $1 off`}
+              : `${loyaltyRedeemRate - (loyaltyPoints % loyaltyRedeemRate)} pts to next $1 off`}
           </span>
         </div>
       </div>

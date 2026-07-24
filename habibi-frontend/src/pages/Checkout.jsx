@@ -4,7 +4,7 @@ import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, Chevro
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI } from '../services/api';
+import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI, settingsAPI } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
@@ -84,6 +84,7 @@ const Checkout = () => {
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
   const [useRewards, setUseRewards]             = useState(false);
+  const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts per $1 — overwritten from the admin-configured rate below
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [storeOpen, setStoreOpen]               = useState(true);
@@ -106,9 +107,10 @@ const Checkout = () => {
   const serviceFee = subtotal * SERVICE_FEE_RATE;
   const tip        = TIP_PCTS[tipIndex] === 'custom' ? (parseFloat(customTip) || 0) : subtotal * TIP_PCTS[tipIndex];
 
-  // Loyalty: 100 pts = $1; only redeem in full-dollar increments
-  const redeemablePts   = Math.floor(loyaltyPoints / 100) * 100; // e.g. 350 pts → 300 redeemable
-  const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / 100 : 0;
+  // Loyalty: pts per $1 comes from the admin-configured redeem rate; only
+  // redeem in full-dollar increments (e.g. rate 100 + 350 pts → 300 redeemable)
+  const redeemablePts   = Math.floor(loyaltyPoints / loyaltyRedeemRate) * loyaltyRedeemRate;
+  const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / loyaltyRedeemRate : 0;
   const total           = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
 
   // Check if store is currently open
@@ -122,6 +124,17 @@ const Checkout = () => {
   useEffect(() => {
     if (searchParams.get('gift') === 'true') setIsGift(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Loyalty redeem rate was previously hardcoded to 100 pts = $1 here,
+  // completely ignoring the Loyalty Program admin page's "Configure Rates"
+  // setting — changing it there had zero real effect on checkout. The
+  // backend now enforces this rate server-side too, so keeping this in sync
+  // also avoids "Discount amount is incorrect" errors for real customers.
+  useEffect(() => {
+    settingsAPI.getCheckout()
+      .then(s => { if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate); })
+      .catch(() => {}); // fail open — keep the 100 default
+  }, []);
 
   // Pre-fill contact details + loyalty points for logged-in users
   useEffect(() => {
