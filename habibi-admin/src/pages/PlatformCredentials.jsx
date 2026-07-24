@@ -330,7 +330,7 @@ export default function PlatformCredentials() {
 
           <div className="cred-env-hint">
             <h3 className="cred-env-title"><Layers size={15}/> Alternatively — use Environment Variables</h3>
-            <p>Add these to your <code>.env</code> file on the server (takes precedence over DB values):</p>
+            <p>Add these to your <code>.env</code> file on the server — used only as a fallback for any field not saved above:</p>
             <div className="cred-env-grid">
               {[
                 { section: 'UberEats', vars: ['UBEREATS_CLIENT_ID', 'UBEREATS_CLIENT_SECRET', 'UBEREATS_WEBHOOK_SECRET'] },
