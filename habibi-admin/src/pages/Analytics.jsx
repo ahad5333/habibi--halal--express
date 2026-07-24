@@ -49,8 +49,14 @@ export default function Analytics() {
         if (pv.status === 'fulfilled') {
           const v = pv.value;
           const all = Array.isArray(v) ? v : (Array.isArray(v?.transactions) ? v.transactions : []);
+          // /api/admin/payments returns placed_at, not created_at — this filter
+          // always matched nothing (an empty '' date compared against any real
+          // start/end always fails), so this page has always shown zero revenue
+          // and zero transactions regardless of real data, since a date range is
+          // active from the very first load.
           const filtered = all.filter(p => {
-            const d = p.created_at ? p.created_at.slice(0, 10) : '';
+            const raw = p.placed_at || p.created_at;
+            const d = raw ? raw.slice(0, 10) : '';
             return (!s || d >= s) && (!e || d <= e);
           });
           setPayments(filtered);
