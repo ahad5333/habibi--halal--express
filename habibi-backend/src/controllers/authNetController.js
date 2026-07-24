@@ -136,10 +136,16 @@ const createAccount = async (req, res) => {
     return res.status(400).json({ error: 'nickname, api_login_id, and transaction_key are required.' });
   }
   try {
+    // Auto-activate the very first account so card payments go live as soon
+    // as credentials are entered, instead of silently staying disabled until
+    // someone remembers to also click "Set Active".
+    const existing = await pool.query(`SELECT 1 FROM authorize_net_accounts LIMIT 1`);
+    const isFirst = existing.rows.length === 0;
+
     const result = await pool.query(
-      `INSERT INTO authorize_net_accounts (nickname, api_login_id, transaction_key, client_key, environment)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [nickname, api_login_id, transaction_key, client_key || null, environment || 'production']
+      `INSERT INTO authorize_net_accounts (nickname, api_login_id, transaction_key, client_key, environment, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [nickname, api_login_id, transaction_key, client_key || null, environment || 'production', isFirst]
     );
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
@@ -151,11 +157,15 @@ const updateAccount = async (req, res) => {
   const { id } = req.params;
   const { nickname, api_login_id, transaction_key, client_key, environment } = req.body;
   try {
+    // The edit form always blanks transaction_key ("leave blank to keep
+    // existing") and submits that blank value unless the admin retypes it —
+    // NULLIF turns that blank string into SQL NULL so COALESCE falls back to
+    // the existing key instead of overwriting it with ''.
     await pool.query(
       `UPDATE authorize_net_accounts
           SET nickname        = COALESCE($1, nickname),
               api_login_id    = COALESCE($2, api_login_id),
-              transaction_key = COALESCE($3, transaction_key),
+              transaction_key = COALESCE(NULLIF($3, ''), transaction_key),
               client_key      = COALESCE($4, client_key),
               environment     = COALESCE($5, environment)
         WHERE id = $6`,
@@ -170,6 +180,14 @@ const updateAccount = async (req, res) => {
 const deleteAccount = async (req, res) => {
   const { id } = req.params;
   try {
+    // The frontend only shows the Delete button for inactive accounts, but
+    // enforce it server-side too — deleting the active account would leave
+    // is_active pointing at nothing and silently disable card payments.
+    const account = await pool.query(`SELECT is_active FROM authorize_net_accounts WHERE id = $1`, [id]);
+    if (!account.rows.length) return res.status(404).json({ error: 'Account not found.' });
+    if (account.rows[0].is_active) {
+      return res.status(400).json({ error: 'Cannot delete the active account — set another account active first.' });
+    }
     await pool.query(`DELETE FROM authorize_net_accounts WHERE id = $1`, [id]);
     res.json({ success: true });
   } catch (err) {
@@ -183,7 +201,15 @@ const setActiveAccount = async (req, res) => {
   try {
     await client.query('BEGIN');
     await client.query(`UPDATE authorize_net_accounts SET is_active = FALSE`);
-    await client.query(`UPDATE authorize_net_accounts SET is_active = TRUE WHERE id = $1`, [id]);
+    const result = await client.query(`UPDATE authorize_net_accounts SET is_active = TRUE WHERE id = $1`, [id]);
+    // Without this check, a stale/invalid id deactivates every account (the
+    // first UPDATE) then matches nothing on the second — committing a state
+    // with NO active account and card payments silently disabled, while
+    // still reporting success.
+    if (result.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Account not found.' });
+    }
     await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
