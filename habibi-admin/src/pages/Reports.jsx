@@ -95,7 +95,7 @@ export default function Reports() {
             <input className="input" type="date" value={end} onChange={e => setEnd(e.target.value)} min={start} max={TODAY} />
           </div>
           <div style={{display:'flex',gap:'0.5rem',alignItems:'flex-end'}}>
-            <button className="btn btn-primary" onClick={run} disabled={loading}>
+            <button className="btn btn-primary" onClick={() => run()} disabled={loading}>
               {loading ? <div className="spinner"/> : <><RefreshCw size={14}/> Run Report</>}
             </button>
             {['7d','30d','90d','ytd'].map(p => (
