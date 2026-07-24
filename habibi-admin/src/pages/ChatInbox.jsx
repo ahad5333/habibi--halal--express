@@ -47,7 +47,7 @@ export default function ChatInbox() {
     inputRef.current?.focus();
   }, []);
 
-  // Socket.IO — join order room to receive live messages
+  // Socket.IO — join order room (open thread) + admins room (inbox-wide) for live messages
   useEffect(() => {
     const socket = io(BASE, {
       transports: ['websocket', 'polling'],
@@ -55,6 +55,16 @@ export default function ChatInbox() {
       reconnectionAttempts: 10,
     });
     socketRef.current = socket;
+
+    // Re-join on every connect, including reconnects after a dropped
+    // connection (WiFi blip, laptop sleep) — and refetch so any messages
+    // that arrived during the gap aren't silently missed. Same pattern as
+    // the customer-side chat resync fix; here it means staff missing live
+    // customer support messages, not just a stale UI.
+    socket.on('connect', () => {
+      socket.emit('join_admin');
+      loadConversations();
+    });
 
     socket.on('receive_message', (msg) => {
       // Update messages if this order is open
@@ -80,8 +90,31 @@ export default function ChatInbox() {
       );
     });
 
-    return () => socket.disconnect();
-  }, []);
+    // Inbox-wide signal (admins room) — a customer's first message on an
+    // order that isn't in the list yet won't match any existing row, so
+    // refetch to pick up the new conversation with full customer details.
+    // For orders already in the list, this arrives alongside receive_message
+    // above (which already updates last_message/unread_count) so it's a
+    // harmless no-op there.
+    socket.on('new_chat_message', (msg) => {
+      setConversations(prev => {
+        const exists = prev.some(c => c.order_number === msg.order_id);
+        if (!exists) loadConversations();
+        return prev;
+      });
+    });
+
+    // Tab was backgrounded (admin switched away) — catch up on anything
+    // missed. Socket.IO can stay "connected" while a backgrounded tab is
+    // throttled by the browser, so this isn't fully covered by 'connect' alone.
+    const onVisible = () => { if (document.visibilityState === 'visible') loadConversations(); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      socket.disconnect();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadConversations]);
 
   // Join the selected order's room
   useEffect(() => {
