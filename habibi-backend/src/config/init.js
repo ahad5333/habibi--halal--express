@@ -479,6 +479,27 @@ const createTables = async () => {
     await client.query(`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS unsubscribe_token VARCHAR(64)`);
     await client.query(`UPDATE newsletter_subscribers SET unsubscribe_token = replace(gen_random_uuid()::text,'-','') WHERE unsubscribe_token IS NULL`);
 
+    // ── SMS Opt-outs ───────────────────────────────────────────────
+    // Registered users have their own receive_sms_updates flag, but guest
+    // checkout customers (guest_orders) have no account row at all, so a
+    // guest who texts STOP had no way to be recorded anywhere. This table
+    // is phone-number-keyed (not account-keyed) so it covers both.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sms_optouts (
+        phone_digits TEXT PRIMARY KEY,
+        opted_out_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    // One-time backfill from existing users who already opted out via the
+    // pre-existing receive_sms_updates flag, so both mechanisms agree.
+    await client.query(`
+      INSERT INTO sms_optouts (phone_digits)
+      SELECT DISTINCT regexp_replace(phone_number, '[^0-9]', '', 'g')
+      FROM users
+      WHERE receive_sms_updates = FALSE AND phone_number IS NOT NULL AND phone_number != ''
+      ON CONFLICT DO NOTHING;
+    `);
+
     // ── Partner Applications ──────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS partner_applications (

@@ -89,6 +89,12 @@ const smsTwilioStop = async (req, res) => {
          WHERE regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g') = $1`,
         [digits]
       ).catch(() => {});
+      // Phone-number-keyed, independent of any account — covers guest
+      // checkout customers too, who have no users/customers row to update.
+      await pool.query(
+        `INSERT INTO sms_optouts (phone_digits) VALUES ($1) ON CONFLICT DO NOTHING`,
+        [digits]
+      ).catch(() => {});
       console.log(`[SMS Opt-out] ${from} opted out via Twilio STOP webhook`);
     }
     // Twilio expects a TwiML response
