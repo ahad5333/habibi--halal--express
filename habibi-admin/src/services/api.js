@@ -145,6 +145,9 @@ export const adminAPI = {
   getSiteSettings:    () => req('/api/settings/site'),
   updateSiteSettings: (body) => req('/api/settings/site', { method: 'PATCH', body: JSON.stringify(body) }),
 
+  getCheckoutSettings:    () => req('/api/settings/checkout'),
+  updateSystemSettings:   (body) => req('/api/admin/settings/checkout', { method: 'PATCH', body: JSON.stringify(body) }),
+
   payments:    () => req('/api/admin/payments'),
   refundOrder: (orderNumber) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST' }),
 

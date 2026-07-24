@@ -131,41 +131,90 @@ function IntegrationsSection() {
 }
 
 function SystemSettingsSection() {
-  const [cfg, setCfg] = useState(null);
-  useEffect(() => {
-    fetch('/api/settings/checkout', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setCfg(d))
-      .catch(() => {});
-  }, []);
+  const [cfg, setCfg]       = useState(null);
+  const [form, setForm]     = useState({ tax_rate: '', service_fee_rate: '' }); // held as percent strings, e.g. "8.875"
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]   = useState(false);
+  const [error, setError]   = useState('');
 
-  const rows = cfg ? [
-    { label: 'Tax Rate',              value: `${(cfg.tax_rate * 100).toFixed(3)}%` },
-    { label: 'Service Fee',           value: `${(cfg.service_fee_rate * 100).toFixed(3)}%` },
-    { label: 'Base Delivery Fee',     value: `$${parseFloat(cfg.delivery_fee).toFixed(2)}` },
-    { label: 'Free Delivery Threshold', value: `$${parseFloat(cfg.free_delivery_threshold).toFixed(2)}` },
-  ] : [];
+  const load = () => {
+    adminAPI.getCheckoutSettings()
+      .then(d => {
+        if (!d) return;
+        setCfg(d);
+        setForm({
+          tax_rate:         (d.tax_rate * 100).toFixed(3),
+          service_fee_rate: (d.service_fee_rate * 100).toFixed(3),
+        });
+      })
+      .catch(() => {});
+  };
+  useEffect(load, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError(''); setSaving(true);
+    try {
+      const tax_rate         = parseFloat(form.tax_rate) / 100;
+      const service_fee_rate = parseFloat(form.service_fee_rate) / 100;
+      if (!(tax_rate >= 0 && tax_rate < 1) || !(service_fee_rate >= 0 && service_fee_rate < 1)) {
+        throw new Error('Enter valid percentages (e.g. 8.875 for 8.875%).');
+      }
+      await adminAPI.updateSystemSettings({ tax_rate, service_fee_rate });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      load();
+    } catch (err) {
+      setError(err.message || 'Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <section className="settings-section">
       <div className="settings-section-hdr">
         <p className="settings-section-title">System Settings</p>
-        <p className="settings-section-sub">Read-only — update TAX_RATE, SERVICE_FEE_RATE, DELIVERY_FEE, FREE_DELIVERY_THRESHOLD in your server .env to change these values.</p>
+        <p className="settings-section-sub">Sales tax rate and service fee percentage applied at checkout — edit here, no server access needed. (Delivery fees are configured below, under Delivery Tiers — that's the system that actually sets what customers pay for delivery.)</p>
       </div>
       {!cfg ? (
         <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
       ) : (
-        <div className="card" style={{padding:'0.75rem 1rem'}}>
-          <table className="table" style={{marginBottom:0}}>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.label}>
-                  <td style={{fontWeight:600,fontSize:'0.85rem',width:220}}>{r.label}</td>
-                  <td className="mono" style={{fontSize:'0.85rem'}}>{r.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{padding:'1.25rem'}}>
+          <form onSubmit={handleSave} style={{display:'flex',flexDirection:'column',gap:'0.875rem',maxWidth:420}}>
+            {error && (
+              <div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#f87171'}}>
+                ⚠ {error}
+              </div>
+            )}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+              <div className="field">
+                <label style={{fontSize:'0.78rem'}}>Tax Rate (%)</label>
+                <input
+                  type="number" step="0.001" min="0" max="99"
+                  className="input"
+                  value={form.tax_rate}
+                  onChange={e => setForm(f => ({ ...f, tax_rate: e.target.value }))}
+                />
+              </div>
+              <div className="field">
+                <label style={{fontSize:'0.78rem'}}>Service Fee (%)</label>
+                <input
+                  type="number" step="0.001" min="0" max="99"
+                  className="input"
+                  value={form.service_fee_rate}
+                  onChange={e => setForm(f => ({ ...f, service_fee_rate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <button type="submit" className={`btn ${saved ? 'btn-secondary' : 'btn-primary'} btn-sm`} disabled={saving} style={{alignSelf:'flex-start',gap:6}}>
+              {saving
+                ? <span className="spinner" style={{width:12,height:12}} />
+                : saved
+                  ? '✓ Saved'
+                  : <><Save size={13} /> Save</>}
+            </button>
+          </form>
         </div>
       )}
     </section>
