@@ -134,7 +134,7 @@ export const adminAPI = {
   updateUrgentStatus: (id, status) => req(`/api/urgent-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   revenue:     (start, end) => req(`/api/admin/analytics/revenue${start||end ? `?start=${start||''}&end=${end||''}` : ''}`),
-  growth:      () => req('/api/admin/analytics/growth'),
+  growth:      (start, end) => req(`/api/admin/analytics/growth${start||end ? `?start=${start||''}&end=${end||''}` : ''}`),
 
   tiers:       () => req('/api/admin/delivery-tiers'),
   updateTier:  (id, body) => req(`/api/admin/delivery-tiers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

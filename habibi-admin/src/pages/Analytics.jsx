@@ -42,7 +42,7 @@ export default function Analytics() {
 
   const load = useCallback((s = start, e = end) => {
     setLoading(true);
-    Promise.allSettled([adminAPI.revenue(s, e), adminAPI.growth(), adminAPI.payments()])
+    Promise.allSettled([adminAPI.revenue(s, e), adminAPI.growth(s, e), adminAPI.payments()])
       .then(([rv, gv, pv]) => {
         if (rv.status === 'fulfilled') setRevenue(rv.value);
         if (gv.status === 'fulfilled') setGrowth(gv.value);
@@ -61,8 +61,14 @@ export default function Analytics() {
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalRevenue = payments.reduce((s, p) => s + parseFloat(p.total || p.amount || 0), 0);
-  const avgOrder = payments.length ? totalRevenue / payments.length : 0;
+  // /api/admin/payments intentionally returns every order regardless of status
+  // (Payments.jsx needs the full list for reconciliation) — but "Total Revenue"
+  // must only count orders that actually completed, or a handful of cancelled
+  // orders silently inflates the headline number.
+  const COMPLETED_STATUSES = new Set(['delivered', 'completed']);
+  const completedPayments = payments.filter(p => COMPLETED_STATUSES.has(p.order_status || p.status));
+  const totalRevenue = completedPayments.reduce((s, p) => s + parseFloat(p.total || p.amount || 0), 0);
+  const avgOrder = completedPayments.length ? totalRevenue / completedPayments.length : 0;
 
   if (loading) return <div className="empty"><div className="spinner" /></div>;
 
@@ -89,9 +95,9 @@ export default function Analytics() {
 
       {/* Stats */}
       <div className="analytics-stats">
-        <StatBox label="Total Revenue" value={`$${totalRevenue.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`} sub="All paid orders" color="var(--color-success)" />
-        <StatBox label="Total Transactions" value={payments.length.toLocaleString()} sub="Completed payments" color="var(--color-info)" />
-        <StatBox label="Average Order Value" value={`$${avgOrder.toFixed(2)}`} sub="Per order" />
+        <StatBox label="Total Revenue" value={`$${totalRevenue.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`} sub="Delivered/completed orders" color="var(--color-success)" />
+        <StatBox label="Total Transactions" value={completedPayments.length.toLocaleString()} sub="Completed payments" color="var(--color-info)" />
+        <StatBox label="Average Order Value" value={`$${avgOrder.toFixed(2)}`} sub="Per completed order" />
         <StatBox label="New Customers" value={growth?.new_customers ?? '—'} sub={growth?.period || 'This month'} color="var(--color-warning)" />
       </div>
 
