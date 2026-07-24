@@ -46,7 +46,9 @@ exports.getRevenueReport = async (req, res) => {
         COALESCE(SUM(tip)          FILTER (WHERE ${COMPLETED}),0)::numeric  AS tips,
         COALESCE(SUM(discount)     FILTER (WHERE ${COMPLETED}),0)::numeric  AS discounts,
         COALESCE(SUM(total),0)::numeric                                    AS gross_revenue,
-        COALESCE(SUM(total) FILTER (WHERE ${COMPLETED}),0)::numeric        AS net_revenue
+        COALESCE(SUM(total) FILTER (WHERE ${COMPLETED}),0)::numeric        AS net_revenue,
+        COUNT(*)              FILTER (WHERE order_status = 'cancelled')::int      AS cancelled_orders,
+        COALESCE(SUM(total)   FILTER (WHERE order_status = 'cancelled'),0)::numeric AS cancelled_amount
        FROM guest_orders
        WHERE ${DATE_BOUNDS}`,
       [s, e]
