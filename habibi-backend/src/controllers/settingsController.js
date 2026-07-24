@@ -39,12 +39,27 @@ const updatePaymentSetting = async (req, res) => {
   }
 };
 
-const getCheckoutSettings = (req, res) => {
+const getCheckoutSettings = async (req, res) => {
+  // loyalty_earn_rate/redeem_rate come from the Loyalty Program admin page's
+  // "Configure Rates" panel — previously the checkout page hardcoded a 100
+  // pts = $1 redemption rate regardless of that setting, so changing it there
+  // had no real effect on what customers could actually redeem.
+  let loyaltyEarnRate = 10, loyaltyRedeemRate = 100;
+  try {
+    const cfg = await pool.query(`SELECT earn_rate, redeem_rate FROM loyalty_config WHERE id = 1`);
+    if (cfg.rows[0]) {
+      loyaltyEarnRate   = parseFloat(cfg.rows[0].earn_rate)   || loyaltyEarnRate;
+      loyaltyRedeemRate = parseFloat(cfg.rows[0].redeem_rate) || loyaltyRedeemRate;
+    }
+  } catch (_) { /* fall back to defaults above */ }
+
   res.json({
     tax_rate:                parseFloat(process.env.TAX_RATE)                || 0.08875,
     service_fee_rate:        parseFloat(process.env.SERVICE_FEE_RATE)        || 0.04273,
     delivery_fee:            parseFloat(process.env.DELIVERY_FEE)            || 3.99,
     free_delivery_threshold: parseFloat(process.env.FREE_DELIVERY_THRESHOLD) || 50,
+    loyalty_earn_rate:       loyaltyEarnRate,
+    loyalty_redeem_rate:     loyaltyRedeemRate,
   });
 };
 

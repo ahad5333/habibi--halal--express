@@ -364,6 +364,25 @@ const createGuestOrder = async (req, res) => {
         }
       }
 
+      // The claimed discount was never checked against what
+      // loyalty_points_redeemed actually justifies — only "total = sum of
+      // parts" was verified above, so a tampered request could claim
+      // loyalty_points_redeemed: 1 alongside an arbitrary discount and pass
+      // every other check. Cap it at what the redeemed points are really
+      // worth, using the real admin-configured redeem_rate (not whatever
+      // rate the client assumed), plus a coupon allowance bounded by the
+      // subtotal itself — a coupon can never discount more than the order.
+      {
+        const cfgRes = await client.query(`SELECT redeem_rate FROM loyalty_config WHERE id = 1`);
+        const redeemRate = parseFloat(cfgRes.rows[0]?.redeem_rate) || 100;
+        const maxLoyaltyDiscount = loyalty_points_redeemed / redeemRate;
+        const couponAllowance = coupon_code ? clientSubtotal : 0;
+        if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
+        }
+      }
+
     // Resolve user_id if the request carries a valid JWT
     let resolved_user_id = req.user?.id || null;
     if (!resolved_user_id && customer_email) {

@@ -272,22 +272,28 @@ const updateOrderStatus = async (req, res) => {
       })();
     }
 
-    // Award loyalty points on delivery (1 pt per $1 spent) and complete any
-    // pending referral on the referee's first delivered order. This is the
-    // real order-status-update path used by both the merchant app and the
-    // admin panel — orderController.js has an equivalent block but on a
-    // route (PUT /api/orders/admin/:id/status) nothing actually calls, so
-    // without this the loyalty-on-delivery bonus and the entire referral
-    // program never fire for any real order.
+    // Award loyalty points on delivery (per the admin-configured earn_rate)
+    // and complete any pending referral on the referee's first delivered
+    // order. This is the real order-status-update path used by both the
+    // merchant app and the admin panel — orderController.js has an
+    // equivalent block but on a route (PUT /api/orders/admin/:id/status)
+    // nothing actually calls, so without this the loyalty-on-delivery bonus
+    // and the entire referral program never fire for any real order.
     const normalizedStatus = status.toLowerCase();
     if (normalizedStatus === 'delivered' && row.previous_status !== 'delivered' && customer_email && row.total) {
-      const pts = Math.floor(parseFloat(row.total) || 0);
-      if (pts > 0) {
-        pool.query(
-          `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
-          [pts, customer_email]
-        ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
-      }
+      // Previously hardcoded to 1 pt per $1 regardless of the Loyalty Program
+      // admin page's "Configure Rates" setting (earn_rate) — that panel had
+      // zero real effect on what customers actually earned.
+      pool.query(`SELECT earn_rate FROM loyalty_config WHERE id = 1`).then(cfgRes => {
+        const earnRate = parseFloat(cfgRes.rows[0]?.earn_rate) || 1;
+        const pts = Math.floor((parseFloat(row.total) || 0) * earnRate);
+        if (pts > 0) {
+          pool.query(
+            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
+            [pts, customer_email]
+          ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
+        }
+      }).catch(err => console.error('[Loyalty] Config lookup failed:', err.message));
 
       pool.query(
         `SELECT id FROM guest_orders WHERE customer_email = $1 AND order_status = 'delivered'`,
@@ -1081,11 +1087,18 @@ const getLoyaltyConfig = async (req, res) => {
 
 const updateLoyaltyConfig = async (req, res) => {
   const { earn_rate, redeem_rate } = req.body;
-  if (!earn_rate || !redeem_rate) return res.status(400).json({ message: 'earn_rate and redeem_rate required' });
+  const earnNum   = parseFloat(earn_rate);
+  const redeemNum = parseFloat(redeem_rate);
+  // A negative or zero redeem_rate would break the checkout discount check
+  // (which divides by it) and a negative earn_rate would deduct points on
+  // delivery instead of awarding them.
+  if (!earn_rate || !redeem_rate || !(earnNum > 0) || !(redeemNum > 0)) {
+    return res.status(400).json({ message: 'earn_rate and redeem_rate are required and must be positive numbers' });
+  }
   try {
     const result = await pool.query(
       `UPDATE loyalty_config SET earn_rate = $1, redeem_rate = $2, updated_at = NOW() WHERE id = 1 RETURNING *`,
-      [parseFloat(earn_rate), parseFloat(redeem_rate)]
+      [earnNum, redeemNum]
     );
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json(safeError(err)); }
