@@ -397,6 +397,10 @@ export const settingsAPI = {
     fetch(`${BASE_URL}/api/settings/checkout`)
       .then(r => r.ok ? r.json() : {})
       .catch(() => ({})),
+  getPayments: () =>
+    fetch(`${BASE_URL}/api/settings/payments`)
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []),
 };
 
 export const partnersAPI = {

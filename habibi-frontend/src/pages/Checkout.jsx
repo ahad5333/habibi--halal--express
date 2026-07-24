@@ -85,6 +85,9 @@ const Checkout = () => {
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
   const [useRewards, setUseRewards]             = useState(false);
   const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts per $1 — overwritten from the admin-configured rate below
+  const [taxRate, setTaxRate]                     = useState(0.08875); // overwritten from Settings below
+  const [serviceFeeRate, setServiceFeeRate]       = useState(0.04273); // overwritten from Settings below
+  const [activePaymentProviders, setActivePaymentProviders] = useState(null); // null = not loaded yet, show everything
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [storeOpen, setStoreOpen]               = useState(true);
@@ -101,10 +104,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const TAX_RATE         = 0.08875;
-  const SERVICE_FEE_RATE = 0.04273;
-  const tax       = subtotal * TAX_RATE;
-  const serviceFee = subtotal * SERVICE_FEE_RATE;
+  const tax       = subtotal * taxRate;
+  const serviceFee = subtotal * serviceFeeRate;
   const tip        = TIP_PCTS[tipIndex] === 'custom' ? (parseFloat(customTip) || 0) : subtotal * TIP_PCTS[tipIndex];
 
   // Loyalty: pts per $1 comes from the admin-configured redeem rate; only
@@ -125,16 +126,44 @@ const Checkout = () => {
     if (searchParams.get('gift') === 'true') setIsGift(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Loyalty redeem rate was previously hardcoded to 100 pts = $1 here,
-  // completely ignoring the Loyalty Program admin page's "Configure Rates"
-  // setting — changing it there had zero real effect on checkout. The
-  // backend now enforces this rate server-side too, so keeping this in sync
-  // also avoids "Discount amount is incorrect" errors for real customers.
+  // Loyalty redeem rate, tax rate, and service fee rate were all previously
+  // hardcoded here regardless of what the Settings/Loyalty admin pages
+  // actually had configured. The backend now enforces the same values
+  // server-side too, so keeping this in sync also avoids "amount is
+  // incorrect" rejections for real customers the moment an admin changes one.
   useEffect(() => {
     settingsAPI.getCheckout()
-      .then(s => { if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate); })
-      .catch(() => {}); // fail open — keep the 100 default
+      .then(s => {
+        if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate);
+        if (s?.tax_rate >= 0)           setTaxRate(s.tax_rate);
+        if (s?.service_fee_rate >= 0)   setServiceFeeRate(s.service_fee_rate);
+      })
+      .catch(() => {}); // fail open — keep the hardcoded defaults
   }, []);
+
+  // The Settings admin page's "Payment Methods" enable/disable toggles had
+  // zero real effect — this page always showed all 5 options regardless.
+  // Card is matched via 'authorize.net' (the real processor) since that's
+  // the provider value stored for it, distinct from its checkout id 'card'.
+  useEffect(() => {
+    settingsAPI.getPayments()
+      .then(list => {
+        if (!Array.isArray(list) || list.length === 0) return; // fail open — keep showing everything
+        const providers = new Set(list.map(p => p.provider));
+        setActivePaymentProviders(providers);
+        // Default selection is 'card' — if it turns out to be disabled,
+        // fall back to the first method that actually is, so a customer
+        // never ends up with a hidden selection that can't be submitted.
+        const isActive = (id) => providers.has(id === 'card' ? 'authorize.net' : id);
+        if (!isActive(paymentMethod)) {
+          const fallback = ['card', ...ALT_PAYMENTS.map(m => m.id)].find(isActive);
+          if (fallback) setPaymentMethod(fallback);
+        }
+      })
+      .catch(() => {}); // fail open
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const isPaymentActive = (id) =>
+    activePaymentProviders === null || activePaymentProviders.has(id === 'card' ? 'authorize.net' : id);
 
   // Pre-fill contact details + loyalty points for logged-in users
   useEffect(() => {
@@ -1188,20 +1217,22 @@ const Checkout = () => {
               <div className="payment-options">
 
                 {/* Card option */}
-                <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
-                  <div className="flex items-center gap-3">
-                    <CreditCard size={18} className="text-primary" />
-                    <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secured by Authorize.net</p></div>
+                {isPaymentActive('card') && (
+                  <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
+                    <div className="flex items-center gap-3">
+                      <CreditCard size={18} className="text-primary" />
+                      <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secured by Authorize.net</p></div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <img src="/images/partners/visa.png" alt="Visa" className="pay-brand-icon" />
+                      {paymentMethod === 'card' && <span className="check-badge">✓</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <img src="/images/partners/visa.png" alt="Visa" className="pay-brand-icon" />
-                    {paymentMethod === 'card' && <span className="check-badge">✓</span>}
-                  </div>
-                </div>
+                )}
 
                 {/* Alt payment buttons */}
                 <div className="payment-alt-grid">
-                  {ALT_PAYMENTS.map(m => (
+                  {ALT_PAYMENTS.filter(m => isPaymentActive(m.id)).map(m => (
                     <button
                       key={m.id}
                       className={`alt-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
