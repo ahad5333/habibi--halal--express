@@ -147,7 +147,7 @@ export default function CateringAdmin() {
                     <Detail label="Phone"        value={q.phone || '—'} />
                     <Detail label="Event Type"   value={q.event_type || '—'} />
                     <Detail label="Service"      value={q.service_type || '—'} style={{textTransform:'capitalize'}} />
-                    <Detail label="Quoted Price" value={fmt(q.quoted_price)} color="#E5B64E" />
+                    <Detail label="Quoted Price" value={fmt(q.quoted_price)} color="#2563eb" />
                     <Detail label="Reference"    value={`#CAT-${String(q.id).padStart(4,'0')}`} mono />
                     {q.notes && <Detail label="Notes" value={q.notes} full />}
                     {q.admin_notes && <Detail label="Admin Notes" value={q.admin_notes} full />}
@@ -164,7 +164,7 @@ export default function CateringAdmin() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
           <div className="card" style={{width:'100%',maxWidth:'460px',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
             <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
-              <Mail size={18} style={{color:'#E5B64E'}} />
+              <Mail size={18} style={{color:'#2563eb'}} />
               <span style={{fontWeight:700,color:'#111827'}}>Send Invoice to {invoiceModal.name}</span>
             </div>
             <p style={{fontSize:'.82rem',color:'#374151',margin:0}}>{invoiceModal.email}</p>
