@@ -87,15 +87,21 @@ exports.getBusinessHours = async (req, res) => {
       [locationId]
     );
 
-    const rows = result.rows.length === 7
-      ? result.rows
-      : defaultHours(locationId);
+    // is_default distinguishes "these are the location's real saved hours"
+    // from "nothing has ever been saved, this is a generic 7am-11pm
+    // placeholder" — without this, the admin page silently showed the
+    // placeholder as if it were real, and clicking Save would overwrite the
+    // location's actual working_days_hours text with the wrong placeholder
+    // hours. Confirmed live: business_hours had zero rows for any location,
+    // so every location was showing fake hours regardless of its real ones.
+    const hasRealRows = result.rows.length === 7;
+    const rows = hasRealRows ? result.rows : defaultHours(locationId);
 
-    res.json({ location_id: locationId, hours: rows });
+    res.json({ location_id: locationId, hours: rows, is_default: !hasRealRows });
   } catch (err) {
     // Table may not exist yet — return defaults gracefully
     if (err.code === '42P01') {
-      return res.json({ location_id: locationId, hours: defaultHours(locationId) });
+      return res.json({ location_id: locationId, hours: defaultHours(locationId), is_default: true });
     }
     res.status(500).json(safeError(err));
   }

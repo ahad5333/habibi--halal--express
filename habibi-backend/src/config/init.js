@@ -903,6 +903,51 @@ const createTables = async () => {
     `);
     await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
 
+    // ── Business Hours ─────────────────────────────────────────────
+    // This table had no CREATE TABLE anywhere in this file — it only exists
+    // on the live server because someone created it manually at some point.
+    // A fresh deploy (disaster recovery, staging, etc.) would have no such
+    // table at all, and the admin Business Hours page's Save button would
+    // 503 with "table not yet created" the first time anyone used it.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS business_hours (
+        id           SERIAL PRIMARY KEY,
+        location_id  INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+        day_of_week  SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+        open_time    TIME NOT NULL DEFAULT '07:00',
+        close_time   TIME NOT NULL DEFAULT '23:00',
+        is_closed    BOOLEAN NOT NULL DEFAULT FALSE,
+        is_24h       BOOLEAN NOT NULL DEFAULT FALSE,
+        UNIQUE (location_id, day_of_week)
+      );
+    `);
+    // One-time seed for the two locations whose real hours are unambiguous
+    // from their existing working_days_hours text (confirmed live: this
+    // table had zero rows for any location, so the admin page was showing
+    // generic 7am-11pm placeholders as if they were every location's real
+    // hours — saving without editing every field first would have silently
+    // overwritten the correct text, e.g. replacing Bedford Park's real
+    // "Open 24 Hours" with "7:00 AM – 11:00 PM"). Left deliberately
+    // unseeded wherever the real per-day breakdown isn't clear from the
+    // existing text (e.g. a location listing only weekday hours could mean
+    // closed weekends, or could mean weekend hours were simply never
+    // documented) — the admin page's "no hours saved yet" warning covers
+    // that case instead of guessing.
+    for (const [title, is24h] of [['Bedford Park & Jerome Ave', true], ['Kingsbridge Road', false]]) {
+      const loc = await client.query(`SELECT id FROM locations WHERE title = $1`, [title]);
+      if (!loc.rows[0]) continue;
+      const existing = await client.query(`SELECT 1 FROM business_hours WHERE location_id = $1 LIMIT 1`, [loc.rows[0].id]);
+      if (existing.rows.length > 0) continue;
+      for (let day = 0; day <= 6; day++) {
+        await client.query(
+          `INSERT INTO business_hours (location_id, day_of_week, open_time, close_time, is_closed, is_24h)
+           VALUES ($1, $2, '07:00', '23:00', FALSE, $3)
+           ON CONFLICT (location_id, day_of_week) DO NOTHING`,
+          [loc.rows[0].id, day, is24h]
+        );
+      }
+    }
+
     // ── Roadie Long-Distance Deliveries ───────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS roadie_deliveries (
