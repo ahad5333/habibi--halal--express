@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin } from 'lucide-react';
+import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Reports.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -127,6 +127,7 @@ export default function Reports() {
             <StatCard label="Discounts Given" value={fmt(r.discounts)} sub="Coupons + offers" icon={Tag} color="#ef4444" />
             <StatCard label="Delivery Fees" value={fmt(r.delivery_fees)} sub="Delivery charges" icon={MapPin} color="#8b5cf6" />
             <StatCard label="Tips" value={fmt(r.tips)} sub="Customer tips" icon={DollarSign} color="#06b6d4" />
+            <StatCard label="Cancelled" value={fmt(r.cancelled_amount)} sub={`${r.cancelled_orders||0} order${r.cancelled_orders===1?'':'s'}`} icon={XCircle} color="#dc2626" />
           </div>
 
           {/* Tab nav */}
@@ -146,7 +147,7 @@ export default function Reports() {
                 </div>
                 <table className="table">
                   <tbody>
-                    {[['Gross Revenue', fmt(r.gross_revenue)], ['Subtotal', fmt(r.subtotal)], ['Tax Collected', fmt(r.tax_collected)], ['Service Fees', fmt(r.service_fees)], ['Delivery Fees', fmt(r.delivery_fees)], ['Tips', fmt(r.tips)], ['Discounts', `-${fmt(r.discounts)}`], ['Net Revenue (Delivered)', fmt(r.net_revenue)], ['Total Orders', r.total_orders||0]].map(([k,v]) => (
+                    {[['Gross Revenue', fmt(r.gross_revenue)], ['Subtotal', fmt(r.subtotal)], ['Tax Collected', fmt(r.tax_collected)], ['Service Fees', fmt(r.service_fees)], ['Delivery Fees', fmt(r.delivery_fees)], ['Tips', fmt(r.tips)], ['Discounts', `-${fmt(r.discounts)}`], ['Net Revenue (Delivered)', fmt(r.net_revenue)], ['Total Orders', r.total_orders||0], [`Cancelled Orders (${r.cancelled_orders||0})`, fmt(r.cancelled_amount)]].map(([k,v]) => (
                       <tr key={k}><td style={{fontWeight:600,width:'50%'}}>{k}</td><td>{v}</td></tr>
                     ))}
                   </tbody>
