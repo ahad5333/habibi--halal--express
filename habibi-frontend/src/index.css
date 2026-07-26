@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@500;600;700&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@500;600;700&family=Inter:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap');
 
 :root {
   --color-bg: #000000;
@@ -21,8 +21,8 @@
   --radius: 8px;
   --radius-lg: 12px;
 
-  --font-heading: 'Outfit', sans-serif;
-  --font-serif: 'Outfit', sans-serif;
+  --font-heading: 'Fraunces', serif;
+  --font-serif: 'Fraunces', serif;
   --font-sans: 'Inter', sans-serif;
 }
 
