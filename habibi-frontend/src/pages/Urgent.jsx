@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Phone, Utensils, PackageX, Stethoscope, ShieldAlert, Clock, CheckCircle, MessageSquare } from 'lucide-react';
-import { contactAPI } from '../services/api';
+import { urgentAPI } from '../services/api';
 import SEO from '../components/SEO';
 import './Urgent.css';
 
@@ -93,15 +93,13 @@ const Urgent = () => {
     setError('');
     setLoading(true);
     try {
-      await contactAPI.submitFeedback({
+      await urgentAPI.submit({
         name,
         phone,
-        subject:  `URGENT: ${type.title}`,
-        message:  `Phone: ${phone}\nOrder #: ${orderNum || 'N/A'}\n\n${message}`,
-        order_number: orderNum || '',
-        urgency:  type.critical ? 'High' : 'Normal',
-        type:     type.id,
-        is_urgent: true,
+        message,
+        order_id:      orderNum || '',
+        reason:        type.label,
+        urgency_level: type.critical ? 'High' : 'Normal',
       });
       setSuccess(true);
     } catch (err) {
