@@ -127,8 +127,11 @@
 }
 
 .navbar-halal-badge {
-  width: 96px;
-  height: 96px;
+  /* Matches .navbar-order-badge-img's desktop size exactly — they diverged
+     here (96px vs 82px) even though every narrower breakpoint already sizes
+     them equal (80px, 68px, etc.), so full desktop was the odd one out. */
+  width: 82px;
+  height: 82px;
   object-fit: contain;
   border-radius: 50%;
   mix-blend-mode: screen;
