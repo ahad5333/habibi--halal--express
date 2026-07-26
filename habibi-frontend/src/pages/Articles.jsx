@@ -19,8 +19,15 @@ function fmtDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+// Article excerpts come from the admin's rich-text editor and can contain
+// real HTML (<p> tags, etc.) — strip it for anywhere excerpt is shown as
+// plain text (card preview, read-time word count, SEO description).
+function stripHtml(html) {
+  return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function readTime(excerpt) {
-  const words = (excerpt || '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+  const words = stripHtml(excerpt).split(/\s+/).filter(Boolean).length;
   return words ? `${Math.max(1, Math.round(words / 40))} min read` : null; // excerpt is short, rough estimate
 }
 
@@ -104,7 +111,7 @@ export default function Articles() {
     dateLabel: fmtDate(a.created_at),
     readTimeLabel: readTime(a.excerpt),
     image: mediaSrc(a.media_url) || '/images/art-of-the-feast.webp',
-    excerpt: a.excerpt,
+    excerpt: stripHtml(a.excerpt),
   }));
 
   const featured = mapped.slice(0, 1);

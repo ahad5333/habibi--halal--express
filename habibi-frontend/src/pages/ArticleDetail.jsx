@@ -19,8 +19,14 @@ function fmtDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+// Excerpts/body come from the admin's rich-text editor and can contain real
+// HTML (<p> tags, etc.) — strip it for anywhere it's shown as plain text.
+function stripHtml(html) {
+  return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function readTime(body) {
-  const words = (body || '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+  const words = stripHtml(body).split(/\s+/).filter(Boolean).length;
   return `${Math.max(1, Math.round(words / 200))} min read`;
 }
 
@@ -91,7 +97,7 @@ export default function ArticleDetail() {
     <div className="article-page">
       <SEO
         title={`${article.title} | Habibi Halal Express`}
-        description={article.subtitle || article.excerpt || ''}
+        description={article.subtitle || stripHtml(article.excerpt) || ''}
       />
 
       <div className="article-progress-track" aria-hidden="true">
