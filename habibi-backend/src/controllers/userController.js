@@ -57,6 +57,21 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// ─── POST /api/users/me/avatar ───────────────────────────────────────────────
+const uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No image file provided.' });
+    const avatarUrl = req.file.path?.startsWith('http') ? req.file.path : `/uploads/avatars/${req.file.filename}`;
+    const result = await pool.query(
+      `UPDATE users SET avatar_url=$1, updated_at=NOW() WHERE id=$2 RETURNING avatar_url`,
+      [avatarUrl, req.user.id]
+    );
+    res.json({ avatar_url: result.rows[0].avatar_url });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ─── PUT /api/users/me/password ──────────────────────────────────────────────
 const changePassword = async (req, res) => {
   try {
@@ -388,7 +403,7 @@ const cancelMyOrder = async (req, res) => {
 };
 
 module.exports = {
-  getProfile, updateProfile, changePassword, deleteAccount,
+  getProfile, updateProfile, uploadAvatar, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,

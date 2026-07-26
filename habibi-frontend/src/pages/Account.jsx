@@ -1,15 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, MapPin, CreditCard, ShoppingBag, LogOut,
   Edit3, Check, X, Plus, Trash2, ChevronRight, ChevronDown,
   Clock, Shield, Star, Lock, AlertTriangle, RefreshCw,
-  Package, Printer, Eye, RotateCcw, Gift, Bell, Heart,
+  Package, Printer, Eye, RotateCcw, Gift, Bell, Heart, Camera,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI, settingsAPI } from '../services/api';
 import './Account.css';
+
+const DIETARY_TAGS = [
+  { key: 'vegetarian',        label: 'Vegetarian' },
+  { key: 'vegan',              label: 'Vegan' },
+  { key: 'gluten_free',        label: 'Gluten-Free' },
+  { key: 'dairy_free',         label: 'Dairy-Free' },
+  { key: 'nut_allergy',        label: 'Nut Allergy' },
+  { key: 'shellfish_allergy',  label: 'Shellfish Allergy' },
+];
 
 const TABS = [
   { id: 'profile',       label: 'Profile',          icon: <User size={16} /> },
@@ -89,6 +98,11 @@ function ProfileTab({ user, logout, refreshUser }) {
   const [loyaltyEarnRate, setLoyaltyEarnRate]     = useState(10);  // pts per $1 spent
   const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts needed for $1 off
   const [loyaltyTier, setLoyaltyTier]     = useState(null);
+  const [avatarUrl, setAvatarUrl]         = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarErr, setAvatarErr]         = useState('');
+  const avatarInputRef = useRef(null);
+  const [dietaryPrefs, setDietaryPrefs]   = useState({});
 
   const [pwOpen, setPwOpen]         = useState(false);
   const [currentPw, setCurrentPw]   = useState('');
@@ -109,6 +123,8 @@ function ProfileTab({ user, logout, refreshUser }) {
       setPhone(p.phone_number || '');
       setDob(p.date_of_birth ? p.date_of_birth.slice(0, 10) : '');
       setLoyaltyPoints(p.loyalty_points || 0);
+      setAvatarUrl(p.avatar_url || '');
+      setDietaryPrefs(p.dietary_prefs || {});
     }).catch(() => {
       setName(user?.name || '');
       setPhone(user?.phone || '');
@@ -137,7 +153,7 @@ function ProfileTab({ user, logout, refreshUser }) {
   const handleSave = async () => {
     setSaving(true); setSaveMsg('');
     try {
-      const updated = await userAPI.updateProfile({ name, phone_number: phone, date_of_birth: dob || null });
+      const updated = await userAPI.updateProfile({ name, phone_number: phone, date_of_birth: dob || null, dietary_prefs: dietaryPrefs });
       refreshUser({ name: updated.name, phone_number: updated.phone_number });
       setEditing(false);
       setSaveMsg('Saved!');
@@ -147,6 +163,29 @@ function ProfileTab({ user, logout, refreshUser }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    setAvatarErr('');
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const data = await userAPI.uploadAvatar(fd);
+      setAvatarUrl(data.avatar_url);
+      refreshUser({ avatar_url: data.avatar_url });
+    } catch (err) {
+      setAvatarErr(err.message || 'Failed to upload photo.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const toggleDietaryPref = (key) => {
+    setDietaryPrefs(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleChangePassword = async (e) => {
@@ -186,7 +225,26 @@ function ProfileTab({ user, logout, refreshUser }) {
       <BirthdayCouponBanner />
       {/* Avatar + name row */}
       <div className="acct-avatar-row">
-        <div className="acct-avatar">{initial}</div>
+        <button
+          type="button"
+          className="acct-avatar acct-avatar-btn"
+          onClick={() => avatarInputRef.current?.click()}
+          disabled={avatarUploading}
+          title="Change profile photo"
+          style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+        >
+          {!avatarUrl && initial}
+          <span className="acct-avatar-overlay">
+            {avatarUploading ? <RefreshCw size={14} className="acct-avatar-spin" /> : <Camera size={14} />}
+          </span>
+        </button>
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          style={{ display: 'none' }}
+          onChange={handleAvatarChange}
+        />
         <div>
           <p className="acct-profile-name">{user?.name || 'Guest'}</p>
           <p className="acct-profile-role">{user?.role === 'admin' ? 'Administrator' : 'Member'}</p>
@@ -196,6 +254,7 @@ function ProfileTab({ user, logout, refreshUser }) {
           {editing ? 'Cancel' : 'Edit'}
         </button>
       </div>
+      {avatarErr && <p className="acct-inline-msg err">{avatarErr}</p>}
 
       {/* Fields */}
       <div className="acct-fields">
@@ -220,6 +279,27 @@ function ProfileTab({ user, logout, refreshUser }) {
           {editing
             ? <input type="date" className="acct-input" value={dob} onChange={e => setDob(e.target.value)} max={new Date().toISOString().slice(0,10)} />
             : <p>{dob ? new Date(dob + 'T00:00:00').toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) : '—'}</p>}
+        </div>
+        <div className="acct-field">
+          <label>Dietary Preferences</label>
+          {editing ? (
+            <div className="acct-dietary-grid">
+              {DIETARY_TAGS.map(tag => (
+                <label key={tag.key} className="acct-dietary-chip">
+                  <input
+                    type="checkbox"
+                    checked={!!dietaryPrefs[tag.key]}
+                    onChange={() => toggleDietaryPref(tag.key)}
+                  />
+                  {tag.label}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p>
+              {DIETARY_TAGS.filter(t => dietaryPrefs[t.key]).map(t => t.label).join(', ') || '—'}
+            </p>
+          )}
         </div>
       </div>
 

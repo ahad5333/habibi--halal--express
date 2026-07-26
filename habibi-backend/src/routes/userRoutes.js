@@ -1,9 +1,10 @@
 const express = require("express");
 const router  = express.Router();
 const protect = require("../middleware/authMiddleware");
+const uploadAvatarMw = require("../middleware/uploadAvatarMiddleware");
 const { handleValidation, rules, body } = require('../middleware/validate');
 const {
-  getProfile, updateProfile, changePassword, deleteAccount,
+  getProfile, updateProfile, uploadAvatar, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
@@ -43,6 +44,8 @@ router.post("/me/device-token",
   handleValidation,
   registerDeviceToken
 );
+
+router.post("/me/avatar", uploadAvatarMw.single("avatar"), uploadAvatar);
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 router.get("/me/orders",  getMyOrders);

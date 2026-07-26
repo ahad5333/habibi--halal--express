@@ -121,6 +121,8 @@
   height: 64px;
   border-radius: 50%;
   background: rgba(229,182,78,0.15);
+  background-size: cover;
+  background-position: center;
   border: 2px solid var(--color-primary);
   color: var(--color-primary);
   font-family: var(--font-serif);
@@ -129,6 +131,72 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.acct-avatar-btn {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.acct-avatar-btn:hover {
+  opacity: 0.85;
+}
+
+.acct-avatar-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.acct-avatar-overlay {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-surface);
+}
+
+.acct-avatar-spin {
+  animation: acct-avatar-spin 0.8s linear infinite;
+}
+
+@keyframes acct-avatar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.acct-dietary-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.acct-dietary-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-text-main);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+}
+
+.acct-dietary-chip input {
+  accent-color: var(--color-primary);
+  cursor: pointer;
 }
 
 .acct-profile-name {

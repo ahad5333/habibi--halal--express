@@ -281,6 +281,18 @@ export const userAPI = {
   /** GET /api/users/me/loyalty */
   getLoyalty: () => request('/api/users/me/loyalty'),
 
+  /** POST /api/users/me/avatar (multipart, field name "avatar") */
+  uploadAvatar: (formData) =>
+    fetch(`${BASE_URL}/api/users/me/avatar`, {
+      method: 'POST',
+      body: formData, // FormData (multipart) — do NOT set Content-Type manually
+      credentials: 'include',
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || `Request failed: ${res.status}`);
+      return data;
+    }),
+
   /** PATCH /api/users/me/orders/:orderNumber/cancel */
   cancelOrder: (orderNumber) =>
     request(`/api/users/me/orders/${encodeURIComponent(orderNumber)}/cancel`, { method: 'PATCH' }),
