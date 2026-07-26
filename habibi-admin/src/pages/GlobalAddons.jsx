@@ -92,7 +92,12 @@ export default function GlobalAddons() {
                 <button
                   type="button"
                   className={`ga-toggle${g.is_active ? ' on' : ''}`}
-                  onClick={e => { e.stopPropagation(); setGroupField(g.id, 'is_active', !g.is_active); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    const nextActive = !g.is_active;
+                    setGroupField(g.id, 'is_active', nextActive);
+                    saveGroup({ ...g, is_active: nextActive });
+                  }}
                   title={g.is_active ? 'Hide this group from all items' : 'Show this group on all items'}
                 >
                   {g.is_active ? 'Active' : 'Hidden'}
