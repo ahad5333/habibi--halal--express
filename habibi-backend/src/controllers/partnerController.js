@@ -71,7 +71,12 @@ const updateApplicationStatus = async (req, res) => {
   const { status, price_tier, notes, payment_methods, credit_balance } = req.body;
 
   const pmethods = Array.isArray(payment_methods) ? JSON.stringify(payment_methods) : (payment_methods ?? null);
-  const balance  = credit_balance !== undefined && credit_balance !== '' ? parseFloat(credit_balance) : null;
+  // Clearing the Credit Balance field in the admin UI sends null/'' here, and
+  // parseFloat(null) is NaN — Postgres numeric columns actually accept the
+  // literal 'NaN' as a value, so without this guard the balance would get
+  // silently corrupted to NaN instead of being left untouched by COALESCE.
+  const parsedBalance = credit_balance !== undefined ? parseFloat(credit_balance) : null;
+  const balance = Number.isFinite(parsedBalance) ? parsedBalance : null;
 
   const client = await pool.connect();
   let app, prevStatus, setupUrl = null, accountCreated = false;
