@@ -136,12 +136,13 @@
   border-radius: 50%;
   mix-blend-mode: screen;
   flex-shrink: 0;
-  pointer-events: none;
   filter: drop-shadow(0 0 8px rgba(229,182,78,0.35));
   transition: transform 0.4s ease-in-out, filter 0.4s ease-in-out;
 }
 
-.navbar-center-badges:hover .navbar-halal-badge {
+/* Self-hover, not the shared .navbar-center-badges parent — otherwise
+   hovering the Order Now badge next to it would light this one up too. */
+.navbar-halal-badge:hover {
   transform: scale(1.16);
   filter: drop-shadow(0 0 16px rgba(229,182,78,0.75)) drop-shadow(0 0 28px rgba(249,115,22,0.4));
 }
