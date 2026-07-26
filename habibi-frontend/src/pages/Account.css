@@ -5,7 +5,7 @@
 .acct-hero {
   position: relative;
   min-height: 260px;
-  background: url('/images/title/main-title.jpg') center/cover no-repeat;
+  background: url('/images/banners/account-hero.webp') center/cover no-repeat;
   display: flex;
   align-items: center;
 }
