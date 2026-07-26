@@ -1315,7 +1315,8 @@
 .referral-code-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-bottom: 0.6rem;
 }
 .referral-code {

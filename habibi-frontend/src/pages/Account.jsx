@@ -4,7 +4,7 @@ import {
   User, MapPin, CreditCard, ShoppingBag, LogOut,
   Edit3, Check, X, Plus, Trash2, ChevronRight, ChevronDown,
   Clock, Shield, Star, Lock, AlertTriangle, RefreshCw,
-  Package, Printer, Eye, RotateCcw, Gift, Bell, Heart, Camera,
+  Package, Printer, Eye, RotateCcw, Gift, Bell, Heart, Camera, Share2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -1270,6 +1270,13 @@ function ReferralTab({ user }) {
     });
   };
 
+  const shareCode = () => {
+    if (!data?.code) return;
+    const shareText = `Use my code ${data.code} at Habibi Halal Express and we both earn rewards! Sign up at ${window.location.origin} and enter it in your account under "Refer a Friend."`;
+    navigator.share({ title: 'Habibi Halal Express Referral', text: shareText, url: window.location.origin })
+      .catch(() => {}); // user cancelled the share sheet — not an error
+  };
+
   const handleApply = async (e) => {
     e.preventDefault();
     if (!applyCode.trim()) return;
@@ -1302,6 +1309,11 @@ function ReferralTab({ user }) {
           <button className="btn btn-outline btn-sm" onClick={copyCode} disabled={!data?.code}>
             {copied ? <><Check size={13} /> Copied!</> : 'Copy Code'}
           </button>
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <button className="btn btn-outline btn-sm" onClick={shareCode} disabled={!data?.code}>
+              <Share2 size={13} /> Share
+            </button>
+          )}
         </div>
         <p className="referral-code-hint">Share this with friends so they can apply it at signup or in their account.</p>
       </div>
