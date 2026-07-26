@@ -170,7 +170,7 @@ const sendPasswordReset = async (email, resetUrl) => {
 const sendEmailVerification = async (email, name, verifyUrl) => {
   if (!email) return { success: false, error: 'No email provided' };
   const html = renderEmail('email-verification', { name: name || 'there', verifyUrl });
-  return sendMailHelper(email, `Verify your email — Habibi Halal Express`, html);
+  return sendMailHelper(email, `Verify your email - Habibi Halal Express`, html);
 };
 
 // Builds newsletter inner-content HTML for use in broadcast campaigns.
@@ -291,7 +291,7 @@ const sendPartnerOrderUpdate = async (email, businessName, orderNumber, status, 
   }, 'base-dark');
   return sendMailHelper(
     email,
-    `Wholesale Order #${orderNumber} — ${copy.label} | Habibi Partner Portal`,
+    `Wholesale Order #${orderNumber} - ${copy.label} | Habibi Partner Portal`,
     html,
   );
 };
@@ -303,7 +303,7 @@ const sendPartnerPasswordReset = async (email, resetUrl) => {
     partnerLoginUrl: `${frontendUrl}/partner/login`,
     frontendUrl,
   }, 'base-dark');
-  return sendMailHelper(email, `Partner Portal — Password Reset | Habibi Wholesale`, html);
+  return sendMailHelper(email, `Partner Portal - Password Reset | Habibi Wholesale`, html);
 };
 
 const sendPartnerApplicationApproved = async (email, { contact_name, business_name, price_tier_label, setupUrl }) => {
@@ -345,7 +345,7 @@ const sendCateringQuoteConfirmation = async (email, name, quote) => {
   });
   return sendMailHelper(
     email,
-    `Catering Inquiry Received — #CAT-${String(quote.id).padStart(4, '0')}`,
+    `Catering Inquiry Received - #CAT-${String(quote.id).padStart(4, '0')}`,
     html,
   );
 };
@@ -368,7 +368,7 @@ const sendCateringAdminAlert = async (adminEmail, quote) => {
   });
   return sendMailHelper(
     adminEmail,
-    `[Catering] New Request from ${quote.name} — ${quote.party_size} guests`,
+    `[Catering] New Request from ${quote.name} - ${quote.party_size} guests`,
     html,
   );
 };
@@ -390,7 +390,7 @@ const sendCateringInvoice = async (email, name, quote, invoiceNotes = '') => {
   });
   return sendMailHelper(
     email,
-    `Catering Invoice #CAT-${String(quote.id).padStart(4, '0')} — $${finalPrice}`,
+    `Catering Invoice #CAT-${String(quote.id).padStart(4, '0')} - $${finalPrice}`,
     html,
   );
 };
@@ -402,7 +402,7 @@ const sendTableReservationConfirmation = async (email, { name, location, date, t
   });
   return sendMailHelper(
     email,
-    `Your table is confirmed — ${date} at ${time} | Habibi Halal Express`,
+    `Your table is confirmed - ${date} at ${time} | Habibi Halal Express`,
     html,
   );
 };
@@ -424,7 +424,7 @@ const sendReviewAdminAlert = async (adminEmail, review) => {
       <p style="margin:0 0 4px;font-size:15px"><strong>${name}</strong> ${orderLabel}</p>
       <p style="margin:0 0 16px;font-size:20px;color:#c9a84c;letter-spacing:2px">${stars}</p>
       ${review.comment ? `<div style="background:#1a1a1a;border-left:3px solid #c9a84c;padding:12px 16px;margin:0 0 20px;border-radius:4px"><p style="margin:0;font-size:14px;color:#ddd">${escapeHtml(review.comment)}</p></div>` : ''}
-      <p style="margin:0;font-size:13px;color:#9ca3af">This review is pending — approve, feature, or reply to it from the admin panel.</p>
+      <p style="margin:0;font-size:13px;color:#9ca3af">This review is pending, approve, feature, or reply to it from the admin panel.</p>
     </div>`;
   return sendMailHelper(adminEmail, `New ${review.rating}-star review from ${name}`, html);
 };
@@ -433,7 +433,7 @@ const sendAdminOTP = async (email, code) => {
   if (!email) return { success: false, error: 'No email provided' };
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
-      <h2 style="color:#c9a84c;margin:0 0 16px">Admin Login — Verification Code</h2>
+      <h2 style="color:#c9a84c;margin:0 0 16px">Admin Login - Verification Code</h2>
       <p style="margin:0 0 24px;font-size:15px">Your one-time login code for Habibi Admin Panel:</p>
       <div style="background:#1a1a1a;border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:24px;text-align:center">
         <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#c9a84c">${code}</span>
@@ -441,7 +441,7 @@ const sendAdminOTP = async (email, code) => {
       <p style="margin:24px 0 0;font-size:13px;color:#9ca3af">This code expires in <strong style="color:#f0ede8">10 minutes</strong>. Do not share it with anyone.</p>
       <p style="margin:8px 0 0;font-size:12px;color:#6b7280">If you did not attempt to log in, change your admin password immediately.</p>
     </div>`;
-  return sendMailHelper(email, 'Admin Login Code — Habibi Halal Express', html);
+  return sendMailHelper(email, 'Admin Login Code - Habibi Halal Express', html);
 };
 
 module.exports = {
