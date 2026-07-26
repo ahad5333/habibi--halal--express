@@ -431,7 +431,10 @@
   .navbar-order-badge-img { width: 52px; height: 52px; }
   /* Hide text labels on mobile — keep icons only to save space */
   .navbar-customize-label { display: none; }
-  .user-greeting { display: none; }
+  /* .user-greeting mobile-hide moved below .user-greeting's base rule —
+     this media query runs before that rule in source order, so a
+     same-specificity override placed here was silently losing the
+     cascade and "Hi, {name}" rendered on mobile anyway. */
   /* Enough gap to breathe but not overflow the right column */
   .navbar-top-right { gap: 0.65rem; }
 }
@@ -572,6 +575,15 @@
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 700;
+}
+
+/* Hide the "Hi, {name}" text on mobile — icons only, to keep the right-side
+   cluster from overflowing into the center Order Now badge's space. Placed
+   here (after the base .user-greeting rule above) so it actually wins the
+   cascade at equal specificity — see removed duplicate near the top of this
+   file for why the same declaration there had no effect. */
+@media (max-width: 768px) {
+  .user-greeting { display: none; }
 }
 
 .user-dropdown-header {
