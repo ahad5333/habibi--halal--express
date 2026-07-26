@@ -75,7 +75,10 @@ export default function ArticlesAdmin() {
       fd.append('is_published', form.is_published);
       fd.append('sort_order',  form.sort_order);
       if (mediaFile) fd.append('media', mediaFile);
-      else if (form.media_url) fd.append('media_url', form.media_url);
+      // Always send media_url (even empty) when no new file is picked, so
+      // clicking the remove button actually clears it on save — the backend
+      // treats an absent field as "unchanged", not "cleared".
+      else fd.append('media_url', form.media_url || '');
 
       const url    = editing ? `${BASE}/api/articles/admin/${editing.id}` : `${BASE}/api/articles/admin`;
       const method = editing ? 'PATCH' : 'POST';
