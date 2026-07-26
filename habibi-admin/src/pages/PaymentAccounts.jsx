@@ -80,7 +80,7 @@ function OfflineHandlesCard() {
             💙 Zelle Email
           </p>
           {editing
-            ? <input className="input" placeholder="e.g. payments@habibihalal.com"
+            ? <input className="input" placeholder="e.g. payments@habibihe.com"
                 value={form.zelle_email}
                 onChange={e => setForm(f => ({ ...f, zelle_email: e.target.value }))} />
             : <p style={{ fontWeight: 600, color: handles.zelle?.email ? '#111' : '#9ca3af' }}>
