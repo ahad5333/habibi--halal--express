@@ -840,7 +840,7 @@ const Menu = () => {
       <div className="menu-content">
 
       {/* ── Category hero — inside content column so items align with sidebar ── */}
-      {activeCategory !== 'grid' && activeCategory !== 'all' && activeCategory !== 'byo' && (
+      {activeCategory !== 'grid' && activeCategory !== 'all' && (
         <div
           className="menu-cat-hero"
           style={{ backgroundImage: `url(${CATEGORY_IMAGES[activeCategory] || CATEGORY_IMAGES.specials})` }}
