@@ -17,7 +17,7 @@ const QUILL_MODULES = {
     ['clean'],
   ],
 };
-const QUILL_FORMATS = ['header','bold','italic','underline','strike','list','bullet','blockquote','link','align'];
+const QUILL_FORMATS = ['header','bold','italic','underline','strike','list','blockquote','link','align'];
 
 const EMPTY = { title: '', subtitle: '', body: '', category: 'General', is_published: true, sort_order: 0, media_url: '' };
 
