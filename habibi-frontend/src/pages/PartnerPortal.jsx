@@ -317,7 +317,7 @@ function InvoiceModal({ order, onClose }) {
           <div className="pp-inv-header">
             <div>
               <p className="pp-inv-brand">Habibi Halal Express, INC.</p>
-              <p className="pp-inv-addr">204 E Mosholu Pkwy S, Bronx, NY 10458</p>
+              <p className="pp-inv-addr">2974 Jerome Ave, Bronx, NY 10468</p>
               <p className="pp-inv-addr">info@habibihe.com</p>
             </div>
             <div className="pp-inv-meta">

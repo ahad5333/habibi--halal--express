@@ -9,9 +9,9 @@ import './OrderTracking.css';
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const API_BASE   = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-// Restaurant fixed coordinates (204 E Mosholu Pkwy S, Bronx NY)
-const RESTAURANT_LAT = 40.8804;
-const RESTAURANT_LNG = -73.8827;
+// Restaurant fixed coordinates (2974 Jerome Ave, Bronx NY)
+const RESTAURANT_LAT = 40.873092;
+const RESTAURANT_LNG = -73.8892829;
 
 const STEPS = [
   { id: 1, key: 'pending',          label: 'Received',   icon: ClipboardList, animClass: 'anim-received'  },
@@ -211,6 +211,16 @@ export default function OrderTracking() {
   const assignmentIdRef      = useRef(null);  // active delivery assignment ID
   const prevDriverLatLngRef  = useRef(null);  // previous GPS position for bearing calc
 
+  // Mirrors of chat state for use inside long-lived callbacks (socket
+  // handlers, visibilitychange) that were bound once and would otherwise
+  // see stale values via closure — refs are always current, no re-bind needed.
+  const chatEmailRef          = useRef('');
+  const chatEmailConfirmedRef = useRef(false);
+  const showChatPanelRef      = useRef(false);
+  chatEmailRef.current = chatEmail;
+  chatEmailConfirmedRef.current = chatEmailConfirmed;
+  showChatPanelRef.current = showChatPanel;
+
   // ── Fetch queue position ──────────────────────────────────
   const fetchQueuePosition = async (num) => {
     try {
@@ -350,6 +360,10 @@ export default function OrderTracking() {
     socket.on('connect', () => {
       setLiveConnected(true);
       socket.emit('join_order', orderNum);
+      // Fires on the initial connect AND every reconnect (e.g. after a phone's
+      // browser suspends the tab/socket in the background). Resync chat so any
+      // reply sent while we were disconnected shows up without a manual reload.
+      if (chatEmailConfirmedRef.current) loadChatHistory(chatEmailRef.current, { silent: true });
     });
     socket.on('disconnect', () => setLiveConnected(false));
     socket.on('connect_error', () => setLiveConnected(false));
@@ -418,6 +432,35 @@ export default function OrderTracking() {
 
     return () => socket.disconnect();
   }, [orderNum]);
+
+  // ── Resync chat when the tab regains focus ─────────────────
+  // Mobile browsers routinely suspend background tabs (screen lock, app
+  // switch), which can silently drop the socket without ever firing a visible
+  // 'disconnect'. When the user comes back, force a resync instead of relying
+  // on the socket alone — this is what actually makes a missed admin reply
+  // "instant" from the customer's perspective instead of requiring a reload.
+  useEffect(() => {
+    if (!orderNum) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && chatEmailConfirmedRef.current) {
+        loadChatHistory(chatEmailRef.current, { silent: true });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [orderNum]);
+
+  // ── Fallback poll while the chat panel is open ──────────────
+  // Belt-and-suspenders on top of the socket + visibility resync above: even
+  // if both miss a beat (flaky network, throttled timers), the reply still
+  // shows up within one poll interval instead of needing a manual reload.
+  useEffect(() => {
+    if (!showChatPanel || !chatEmailConfirmed) return;
+    const interval = setInterval(() => {
+      loadChatHistory(chatEmailRef.current, { silent: true });
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [showChatPanel, chatEmailConfirmed]);
 
   // ── Load Leaflet when order is delivery + confirmed ───────
   useEffect(() => {
@@ -580,9 +623,11 @@ export default function OrderTracking() {
   // Loads history for a known email — used both for the manual "Continue"
   // button and for auto-loading when we already know who's asking (logged-in
   // user, or a guest who confirmed earlier and got remembered for this order).
-  const loadChatHistory = async (email) => {
-    setChatLoading(true);
-    setChatError('');
+  const loadChatHistory = async (email, { silent = false } = {}) => {
+    if (!silent) {
+      setChatLoading(true);
+      setChatError('');
+    }
     try {
       const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(email)}`);
       const data = await res.json();
@@ -601,9 +646,9 @@ export default function OrderTracking() {
       setChatEmailConfirmed(true);
       if (!isLoggedIn) localStorage.setItem(`chat_email_${orderNum}`, email);
     } catch (err) {
-      setChatError(err.message || 'Could not load messages.');
+      if (!silent) setChatError(err.message || 'Could not load messages.');
     } finally {
-      setChatLoading(false);
+      if (!silent) setChatLoading(false);
     }
   };
 

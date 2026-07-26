@@ -332,7 +332,7 @@ function OrderDetailModal({ order, onClose, onReorder }) {
       h2,p.c{text-align:center;margin:4px 0}.d{border-top:1px dashed #555;margin:10px 0}
       .row{display:flex;justify-content:space-between;margin:4px 0}.bold{font-weight:700}.lg{font-size:14px}</style>
       </head><body>
-      <h2>HABIBI HALAL EXPRESS</h2><p class="c">204 E Mosholu Pkwy S, Bronx, NY</p>
+      <h2>HABIBI HALAL EXPRESS</h2><p class="c">2974 Jerome Ave, Bronx, NY</p>
       <div class="d"></div>
       <p class="c">Order #${esc(order.order_number)}</p><p class="c">${esc(dateStr)}</p>
       <p class="c">${order.delivery_method === 'delivery' ? 'Delivery' : 'Pickup'}</p>

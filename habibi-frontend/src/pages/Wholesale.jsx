@@ -138,7 +138,7 @@ const Wholesale = () => {
                 <div className="success-icon">✦</div>
                 <h3 className="font-serif text-2xl mt-4 text-primary">Application Submitted!</h3>
                 <p className="text-muted mt-3">Our partnerships team will review your application and reach out within 3 business days.</p>
-                <p className="text-sm text-muted mt-2">📧 partners@habibihalal.com</p>
+                <p className="text-sm text-muted mt-2">📧 partners@habibihe.com</p>
               </div>
             ) : (
               <>

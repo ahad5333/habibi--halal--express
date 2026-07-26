@@ -266,7 +266,7 @@ const Checkout = () => {
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/dispatch/calculate-fee`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customer_address: address }),
+          body: JSON.stringify({ customer_address: address, location_id: selectedLocation?.id }),
         });
         const data = await res.json();
         if (data.out_of_range) {
@@ -289,7 +289,7 @@ const Checkout = () => {
       }
     }, 800);
     return () => clearTimeout(feeTimerRef.current);
-  }, [address, deliveryMode]);
+  }, [address, deliveryMode, selectedLocation]);
 
   // Google Maps Places Autocomplete (gracefully no-ops if key not configured)
   // Depends on isLoggedIn/isDineIn too: the address <input> this attaches to only

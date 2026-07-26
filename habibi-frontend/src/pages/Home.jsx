@@ -825,8 +825,8 @@ const Home = () => {
                 <span className="location-badge outline">OPEN 24/7</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">Bedford Park &amp; Jerome Ave</h3>
-                <p className="location-address">204 E Mosholu Pkwy S, Bronx, NY 10458</p>
+                <h3 className="location-title">Bedford Park Blvd</h3>
+                <p className="location-address">2974 Jerome Ave, Bronx, NY 10468</p>
                 <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
@@ -840,7 +840,7 @@ const Home = () => {
               <div className="location-info">
                 <h3 className="location-title">Kingsbridge Road</h3>
                 <p className="location-address">2 E Kingsbridge Rd, Bronx, NY 10468</p>
-                <p className="location-hours">Mon–Sun: 7AM – 11PM</p>
+                <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
             </div>
@@ -853,7 +853,7 @@ const Home = () => {
               <div className="location-info">
                 <h3 className="location-title">White Plains Road</h3>
                 <p className="location-address">3971 White Plains Rd, Bronx, NY 10466</p>
-                <p className="location-hours">Mon–Fri: 6AM – 10PM</p>
+                <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
                 <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
               </div>
             </div>
