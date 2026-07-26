@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Mail, ChevronDown, ChevronUp, Users, CalendarDays, Send } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { RefreshCw, Mail, ChevronDown, ChevronUp, Users, CalendarDays, Send, CheckCircle2, XCircle, Bell } from 'lucide-react';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
+import { unlockAudio, playBell, showNewOrderNotification } from '../utils/orderAlerts';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -20,6 +21,7 @@ async function apiFetch(path, opts = {}) {
 
 const STATUS_BADGE = {
   pending:   { cls: 'badge-warning', label: 'Pending' },
+  quoted:    { cls: 'badge-info',    label: 'Quoted' },
   confirmed: { cls: 'badge-success', label: 'Confirmed' },
   cancelled: { cls: 'badge-error',   label: 'Cancelled' },
 };
@@ -37,16 +39,68 @@ export default function CateringAdmin() {
   const [sending, setSending]       = useState(false);
   const [sendErr, setSendErr]       = useState('');
   const [sendOk, setSendOk]         = useState(false);
+  const [soundOn, setSoundOn]       = useState(() => localStorage.getItem('habibi_sound_on') === '1');
+  const [updatingId, setUpdatingId] = useState(null);
+  const knownIds = useRef(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback((silent = false) => {
+    if (!silent) setLoading(true);
     apiFetch('/api/reservations/admin?type=catering')
-      .then(d => setQuotes(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : [])))
+      .then(d => {
+        const list = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
+        setQuotes(list);
+
+        const openQuotes = list.filter(q => q.status === 'pending' || !q.status);
+        if (knownIds.current !== null) {
+          const incoming = openQuotes.filter(q => !knownIds.current.has(q.id));
+          if (incoming.length > 0) {
+            showNewOrderNotification(incoming.length);
+            if (soundOn) playBell();
+          }
+        }
+        knownIds.current = new Set(openQuotes.map(q => q.id));
+      })
       .catch(() => setQuotes([]))
       .finally(() => setLoading(false));
+  }, [soundOn]);
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Catering leads carry a 12–24h promised response time (not a minutes-level
+  // SLA like urgent requests), so a quiet 30s poll + one-time bell on arrival
+  // is enough — no need for the continuous ring used on time-critical pages.
+  useEffect(() => {
+    const t = setInterval(() => load(true), 30000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const handleEnableSound = () => {
+    unlockAudio();
+    setSoundOn(true);
+    localStorage.setItem('habibi_sound_on', '1');
+    setTimeout(playBell, 100);
+  };
+
+  const updateStatus = async (id, status) => {
+    setUpdatingId(id);
+    try {
+      await apiFetch(`/api/reservations/admin/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      load();
+    } catch (err) {
+      alert(`Failed to update quote: ${err.message}`);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const openInvoice = (q) => {
     setInvForm({ quoted_price: q.quoted_price || q.estimated_total || '', admin_notes: q.admin_notes || '' });
@@ -86,7 +140,17 @@ export default function CateringAdmin() {
           <p className="page-title">Catering Quotes</p>
           <p className="page-sub">{pending.length} pending · {confirmed.length} confirmed · {quotes.length} total</p>
         </div>
-        <button className="btn btn-secondary" onClick={load}><RefreshCw size={14} /> Refresh</button>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <button
+            className={`btn btn-sm ${soundOn ? 'btn-success' : 'btn-warning'}`}
+            onClick={soundOn ? playBell : handleEnableSound}
+            title={soundOn ? 'Sound enabled — click to test bell' : 'Click to enable new-quote bell alerts'}
+            style={{gap:'0.4rem'}}
+          >
+            <Bell size={14}/> {soundOn ? 'Sound On' : 'Enable Sound'}
+          </button>
+          <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={14} /> Refresh</button>
+        </div>
       </div>
 
       {loading ? (
@@ -122,7 +186,7 @@ export default function CateringAdmin() {
                         <CalendarDays size={12}/> {fmtDateTime(q.scheduled_date)}
                       </span>
                       <span style={{fontSize:'.78rem',color:'#2563eb',fontWeight:700}}>
-                        Est. {fmt(q.estimated_total)}
+                        {q.quoted_price ? `Quote ${fmt(q.quoted_price)}` : `Est. ${fmt(q.estimated_total)}`}
                       </span>
                     </div>
                   </div>
@@ -136,6 +200,29 @@ export default function CateringAdmin() {
                         <Send size={13}/> Send Invoice
                       </button>
                     )}
+                    {q.status !== 'confirmed' && q.status !== 'cancelled' && (
+                      <button
+                        className="btn btn-success"
+                        style={{fontSize:'.78rem',padding:'.4rem .85rem'}}
+                        disabled={updatingId === q.id}
+                        onClick={e => { e.stopPropagation(); updateStatus(q.id, 'confirmed'); }}
+                      >
+                        <CheckCircle2 size={13}/> Confirm
+                      </button>
+                    )}
+                    {q.status !== 'cancelled' && (
+                      <button
+                        className="btn btn-secondary"
+                        style={{fontSize:'.78rem',padding:'.4rem .85rem',color:'#dc2626'}}
+                        disabled={updatingId === q.id}
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (window.confirm(`Cancel this catering quote for ${q.name}?`)) updateStatus(q.id, 'cancelled');
+                        }}
+                      >
+                        <XCircle size={13}/> Cancel
+                      </button>
+                    )}
                     {isOpen ? <ChevronUp size={16} style={{color:'#6b7280'}}/> : <ChevronDown size={16} style={{color:'#6b7280'}}/>}
                   </div>
                 </div>
@@ -147,6 +234,7 @@ export default function CateringAdmin() {
                     <Detail label="Phone"        value={q.phone || '—'} />
                     <Detail label="Event Type"   value={q.event_type || '—'} />
                     <Detail label="Service"      value={q.service_type || '—'} style={{textTransform:'capitalize'}} />
+                    {q.event_address && <Detail label="Address" value={q.event_address} full />}
                     <Detail label="Quoted Price" value={fmt(q.quoted_price)} color="#2563eb" />
                     <Detail label="Reference"    value={`#CAT-${String(q.id).padStart(4,'0')}`} mono />
                     {q.notes && <Detail label="Notes" value={q.notes} full />}
