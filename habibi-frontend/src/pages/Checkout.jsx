@@ -232,7 +232,7 @@ const Checkout = () => {
   }, []);
   // Fetch delivery fee when address changes (debounced 800 ms)
   useEffect(() => {
-    if (deliveryMode !== 'delivery' || !address.trim()) {
+    if (deliveryMode !== 'delivery' || !address.trim() || !selectedLocation) {
       setDeliveryFee(0);
       setDeliveryDuration('');
       setFeeMsg('');
@@ -404,6 +404,7 @@ const Checkout = () => {
     customer_name:         receiverName || 'Guest',
     customer_phone:        customerPhone,
     customer_email:        customerEmail,
+    location_id:           isDineIn ? null : (selectedLocation?.id || null),
     delivery_method:       isDineIn ? 'dine_in' : deliveryMode,
     delivery_address:      isDineIn
       ? ''
@@ -870,6 +871,31 @@ const Checkout = () => {
                   {deliveryMode === 'delivery' && (
                     <>
                       <div className="form-group mb-4">
+                        <label className="form-label">SELECT RESTAURANT <span style={{ color: '#f87171' }}>*</span></label>
+                        <select
+                          className="form-input form-select"
+                          value={selectedLocation?.id || ''}
+                          onChange={e => {
+                            const loc = locations.find(l => l.id === parseInt(e.target.value, 10));
+                            if (loc) {
+                              setSelectedLocation(loc);
+                              localStorage.setItem('habibi_service_location', JSON.stringify({ id: loc.id, title: loc.title }));
+                            }
+                          }}
+                          required
+                        >
+                          <option value="" disabled>Select a restaurant…</option>
+                          {locations.map(loc => (
+                            <option key={loc.id} value={loc.id}>{loc.title} — {loc.brief_address}</option>
+                          ))}
+                        </select>
+                        {!selectedLocation && (
+                          <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
+                            Choose which restaurant will prepare your delivery
+                          </p>
+                        )}
+                      </div>
+                      <div className="form-group mb-4">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                           <label className="form-label" style={{ margin: 0 }}>DELIVERY ADDRESS</label>
                           {'geolocation' in navigator && (
@@ -1326,7 +1352,8 @@ const Checkout = () => {
             <h3 className="summary-title">Order Summary</h3>
 
             {(() => {
-              const needsAddress = !isDineIn && deliveryMode === 'delivery' && !addressValidated;
+              const needsLocation = !isDineIn && deliveryMode === 'delivery' && !selectedLocation;
+              const needsAddress = !isDineIn && deliveryMode === 'delivery' && !!selectedLocation && !addressValidated;
               return (
                 <>
                   <div className="summary-lines">
@@ -1337,6 +1364,8 @@ const Checkout = () => {
                       <span>{isDineIn ? 'Delivery Fee (Dine-In)' : `Delivery Fee${deliveryMode === 'pickup' ? ' (Pickup)' : ''}`}</span>
                       {isDineIn || deliveryMode === 'pickup' ? (
                         <span className="text-primary font-bold">FREE</span>
+                      ) : needsLocation ? (
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Select restaurant above</span>
                       ) : needsAddress ? (
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Enter address above</span>
                       ) : feeLoading ? (
@@ -1559,8 +1588,8 @@ const Checkout = () => {
                     <button
                       className="btn btn-primary place-order-btn"
                       onClick={handlePlaceOrder}
-                      disabled={placing || items.length === 0 || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!addressValidated || feeLoading))}
-                      title={!storeOpen ? "We're currently closed" : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter a valid delivery address to continue' : undefined}
+                      disabled={placing || items.length === 0 || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
+                      title={!storeOpen ? "We're currently closed" : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant to continue' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter a valid delivery address to continue' : undefined}
                     >
                       {!storeOpen ? "Currently Closed" : ctaLabel()}
                     </button>
@@ -1610,9 +1639,9 @@ const Checkout = () => {
             <button
               className="ck-sticky-btn"
               onClick={handlePlaceOrder}
-              disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!addressValidated || feeLoading))}
+              disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
             >
-              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : placing ? 'Please wait…' : 'Place Order →'}
+              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : placing ? 'Please wait…' : 'Place Order →'}
             </button>
           ) : null}
         </div>

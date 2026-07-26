@@ -376,6 +376,7 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ALTER COLUMN order_status SET DEFAULT 'pending'`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'unpaid'`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);

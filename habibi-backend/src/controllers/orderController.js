@@ -148,6 +148,7 @@ const createGuestOrder = async (req, res) => {
       delivery_state, delivery_instructions, payment_method,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
       coupon_code, expected_time, items,
+      location_id,
       table_id,
       table_number: table_number_raw,
       loyalty_points_redeemed: loyalty_points_raw,
@@ -220,6 +221,11 @@ const createGuestOrder = async (req, res) => {
       .filter(i => !isCustomItem(i))
       .map(i => parseInt(i.id || i.menu_id, 10));
 
+    // Resolve which location this order is tied to. Customer-selected in checkout
+    // (mandatory dropdown) -- only trusted for looking up that location's own
+    // address below, never for bypassing the fee recompute itself.
+    const resolvedLocationId = parseInt(location_id, 10) || null;
+
     // 3. Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
     if (!isDeliveryOrder) {
@@ -232,13 +238,26 @@ const createGuestOrder = async (req, res) => {
       try {
         const addrStr = [delivery_address, delivery_city, delivery_state, delivery_zip]
           .filter(Boolean).join(', ');
-        const dist = await getDistance(RESTAURANT_ADDRESS, addrStr);
+        // Measure from the customer's actually-selected restaurant when given —
+        // otherwise every delivery order was silently measured from one fixed
+        // address regardless of which location the checkout fee quote used,
+        // which could make this server recompute disagree with the quote and
+        // reject a perfectly valid order.
+        let origin = RESTAURANT_ADDRESS;
+        let feeLocationId = await getOriginLocationId();
+        if (resolvedLocationId) {
+          const locRes = await pool.query('SELECT exact_address FROM locations WHERE id=$1', [resolvedLocationId]);
+          if (locRes.rows.length && locRes.rows[0].exact_address) {
+            origin = locRes.rows[0].exact_address;
+            feeLocationId = resolvedLocationId;
+          }
+        }
+        const dist = await getDistance(origin, addrStr);
         if (dist) {
-          const originLocationId = await getOriginLocationId();
           // No per-location radius cutoff — per owner decision (2026-07-27), every
           // address is accepted regardless of distance. getFeeForDistance's own
           // tier table (null beyond 350mi) is the only remaining ceiling.
-          const serverDelFee = await getFeeForDistance(dist.miles, originLocationId);
+          const serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }
@@ -425,8 +444,8 @@ const createGuestOrder = async (req, res) => {
          delivery_state, delivery_instructions, payment_method,
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
-         is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29)
+         is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30)
        RETURNING id`,
       [
         order_number,
@@ -458,6 +477,7 @@ const createGuestOrder = async (req, res) => {
         gift_recipient_phone || null,
         gift_message         || null,
         ['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid',
+        resolvedLocationId,
       ]
     );
 
