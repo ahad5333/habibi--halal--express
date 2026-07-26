@@ -855,7 +855,7 @@
 
 .menu-header-sub {
   color: rgba(255, 255, 255, 0.75);
-  font-family: 'Dancing Script', cursive;
+  font-family: var(--font-heading);
   font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 0.03em;
