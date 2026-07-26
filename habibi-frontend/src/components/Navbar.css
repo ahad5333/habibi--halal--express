@@ -1198,6 +1198,18 @@
   .logo-img { width: auto; max-width: 180px; }
   .navbar-top-inner { padding: 0.65rem 1rem; gap: 0.4rem; }
   .navbar-center-badges { gap: 0.5rem; }
+  /* Below this width the icon cluster (bell/customize/cart/avatar/hamburger)
+     needs more room than an equal 1fr share gives it — its content was
+     measured overflowing left into the center badge's column by as much as
+     64px at 320px wide. The logo already has its own max-width cap per
+     breakpoint, so letting its track size to that (auto) instead of forcing
+     an equal share frees up the difference for the icon cluster (1fr, now
+     the only flexible track — it soaks up whatever's left after logo/badge
+     take just what they need). */
+  .navbar-top-inner { grid-template-columns: auto auto 1fr; }
+  /* Build Your Own is a shortcut, not the only way in — it's still reachable
+     from the hamburger menu's nav list. Dropping it here buys back room. */
+  .navbar-customize-btn { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1220,4 +1232,6 @@
   .navbar-order-badge-img { width: 36px; height: 36px; }
   .navbar-top-right { gap: 0.4rem; }
   .mobile-auth-row { padding: 1rem; gap: 0.5rem; }
+  /* Last bit of margin for the very narrowest phones (~320-359px) */
+  .user-btn { gap: 0.25rem; padding: 0.35rem 0.4rem 0.35rem 0.35rem; }
 }
