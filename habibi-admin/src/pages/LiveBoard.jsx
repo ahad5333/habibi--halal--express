@@ -3,79 +3,16 @@ import { Monitor, RefreshCw, Maximize2, Clock, ChefHat, Truck, CheckCircle2, Bel
 import { adminAPI } from '../services/api';
 import './LiveBoard.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
-
-// ── Bell sound via Web Audio API ─────────────────────────────────────────────
-let _audioCtx   = null;
-let _ringSource = null; // looping BufferSource — stays alive until stopped
-
-function unlockAudio() {
-  try {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch (_) {}
-}
-
-// Build a 1.4s PCM buffer containing the trin-trin pattern.
-// Using a looping BufferSource keeps the AudioContext alive indefinitely.
-function buildRingBuffer() {
-  const sr = _audioCtx.sampleRate;
-  const duration = 1.4;
-  const buf  = _audioCtx.createBuffer(1, Math.floor(sr * duration), sr);
-  const data = buf.getChannelData(0);
-  // Two pairs of short rings: [start, end] in seconds
-  const rings = [[0.02, 0.18], [0.24, 0.40], [0.70, 0.86], [0.92, 1.08]];
-  for (let i = 0; i < data.length; i++) {
-    const t = i / sr;
-    const inRing = rings.some(([s, e]) => t >= s && t < e);
-    if (inRing) {
-      // Slight fade at edges to avoid clicking
-      const nearest = rings.reduce((d, [s, e]) => {
-        if (t >= s && t < e) return Math.min(d, t - s, e - t);
-        return d;
-      }, Infinity);
-      const fade = Math.min(nearest / 0.008, 1);
-      data[i] = fade * 0.4 * Math.sin(2 * Math.PI * 900 * t);
-    } else {
-      data[i] = 0;
-    }
-  }
-  return buf;
-}
-
-function startContinuousRing() {
-  if (!_audioCtx || _ringSource) return;
-  try {
-    if (_audioCtx.state === 'suspended') _audioCtx.resume();
-    _ringSource = _audioCtx.createBufferSource();
-    _ringSource.buffer = buildRingBuffer();
-    _ringSource.loop = true;
-    _ringSource.connect(_audioCtx.destination);
-    _ringSource.start();
-  } catch (_) {}
-}
-
-function stopContinuousRing() {
-  if (_ringSource) {
-    try { _ringSource.stop(); _ringSource.disconnect(); } catch (_) {}
-    _ringSource = null;
-  }
-}
-
-function playBell() { startContinuousRing(); setTimeout(stopContinuousRing, 1400); }
-
-// ── Browser notification ──────────────────────────────────────────────────────
-function showNotification(count) {
-  if (Notification.permission !== 'granted') return;
-  new Notification(`🔔 ${count} New Order${count > 1 ? 's' : ''}!`, {
-    body: 'New order received — open Live Board to accept.',
-    icon: '/images/logos/logo.png',
-    tag:  'habibi-new-order',
-  });
-}
+import {
+  unlockAudio, startContinuousRing, stopContinuousRing, playBell,
+  showNewOrderNotification as showNotification,
+} from '../utils/orderAlerts';
 
 const BOARD_STATUSES = ['pending', 'accepted', 'preparing', 'cooking', 'out_for_delivery', 'delivered'];
 const STATUS_LABEL  = { pending: 'New', accepted: 'Accepted', preparing: 'Preparing', cooking: 'Cooking', out_for_delivery: 'On The Way', delivered: 'Delivered' };
 const STATUS_COLOR  = { pending: 'lv-pending', accepted: 'lv-confirmed', preparing: 'lv-preparing', cooking: 'lv-preparing', out_for_delivery: 'lv-on-the-way', delivered: 'lv-delivered' };
 const STATUS_ICON   = { out_for_delivery: <Truck size={13}/>, delivered: <CheckCircle2 size={13}/> };
+const DELIVERED_CAP = 40;
 
 function elapsed(dateStr) {
   if (!dateStr) return '—';
@@ -90,7 +27,11 @@ function OrderCard({ order, onAdvance, advancing }) {
   const nextLabel  = { pending: 'Accept', accepted: 'Preparing', preparing: 'Cooking', cooking: 'Out for Delivery', out_for_delivery: 'Mark Delivered' };
   const next = nexts[order.status];
   const age = Math.floor((Date.now() - new Date(order.created_at)) / 60000);
-  const isUrgent = age > 20 && order.status !== 'preparing';
+  // Completed orders never need the urgent treatment regardless of how old they
+  // are — without this exclusion, every order that simply took a normal amount
+  // of total time (or is just old delivered history) got the same alarming
+  // red pulse as a genuinely stuck order, making the signal meaningless.
+  const isUrgent = age > 20 && !['preparing', 'delivered', 'cancelled'].includes(order.status);
 
   return (
     <div className={`lv-card ${STATUS_COLOR[order.status]||''} ${isUrgent?'lv-urgent':''}`}>
@@ -176,9 +117,19 @@ export default function LiveBoard() {
   const load = useCallback(async () => {
     try {
       const all = await adminAPI.orders();
-      const all_live        = all.filter(o => BOARD_STATUSES.includes(o.status));
-      const deliveredOrders = all_live.filter(o => o.status === 'delivered').slice(0, 20);
-      const otherOrders     = all_live.filter(o => o.status !== 'delivered');
+      const all_live = all.filter(o => BOARD_STATUSES.includes(o.status));
+      // Delivered orders roll off the board after 24h — full history always
+      // stays in Orders, this is just "today's activity" so the board doesn't
+      // slowly fill up with weeks-old completed orders. DELIVERED_CAP is a
+      // safety net on top of that: even on an exceptionally busy day, we only
+      // ever render the most recent DELIVERED_CAP of them (still sorted
+      // newest-first coming from the API), so the list can't balloon to
+      // hundreds of cards no matter how much volume comes through.
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const deliveredOrders = all_live
+        .filter(o => o.status === 'delivered' && new Date(o.created_at).getTime() >= oneDayAgo)
+        .slice(0, DELIVERED_CAP);
+      const otherOrders = all_live.filter(o => o.status !== 'delivered');
       const live            = [...otherOrders, ...deliveredOrders];
       live.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -227,7 +178,9 @@ export default function LiveBoard() {
     try {
       await adminAPI.updateOrder(id, status);
       load();
-    } catch (_) {}
+    } catch (err) {
+      alert(`Failed to update order ${id}: ${err.message}`);
+    }
     setAdvancing(null);
   };
 
