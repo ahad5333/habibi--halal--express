@@ -138,16 +138,9 @@
   flex-shrink: 0;
   pointer-events: none;
   filter: drop-shadow(0 0 8px rgba(229,182,78,0.35));
-  animation: halal-badge-grow 2.5s ease-in-out infinite;
-}
-
-@keyframes halal-badge-grow {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.12); }
 }
 
 .navbar-center-badges:hover .navbar-halal-badge {
-  animation: none;
   transform: scale(1.16);
   transition: transform 0.25s;
 }
