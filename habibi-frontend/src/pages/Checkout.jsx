@@ -260,7 +260,7 @@ const Checkout = () => {
           setFeeMsg('⚠ This address is outside our delivery area. Please enter a Bronx/NYC address.');
         } else if (data.fee != null) {
           setDeliveryFee(parseFloat(data.fee));
-          if (data.duration) setDeliveryDuration(data.duration);
+          if (data.estimated_delivery_text) setDeliveryDuration(data.estimated_delivery_text);
           // When no Maps key (dev), allow fee API to validate; on prod autocomplete handles it
           if (!import.meta.env.VITE_GOOGLE_MAPS_KEY) setAddressValidated(true);
           setFeeMsg(`📍 ${data.distance_text || ''} — delivery fee applied`);

@@ -21,9 +21,10 @@ async function getDistance(origin, destination) {
 
     const miles = element.distance.value / 1609.34;
     return {
-      miles:    parseFloat(miles.toFixed(2)),
-      text:     element.distance.text,
-      duration: element.duration.text,
+      miles:            parseFloat(miles.toFixed(2)),
+      text:             element.distance.text,
+      duration:         element.duration.text,
+      duration_minutes: element.duration.value / 60,
     };
   } catch {
     return null;
@@ -55,4 +56,13 @@ function providerFromMiles(miles, inHouseRadius = 5) {
   return 'pickup_only';
 }
 
-module.exports = { getDistance, feeFromMiles, providerFromMiles };
+// "37 min" / "1 hr 5 min" — for displaying a minute count back to customers
+function formatMinutes(totalMinutes) {
+  const mins = Math.round(totalMinutes);
+  if (mins < 60) return `${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return rem === 0 ? `${hrs} hr` : `${hrs} hr ${rem} min`;
+}
+
+module.exports = { getDistance, feeFromMiles, providerFromMiles, formatMinutes };

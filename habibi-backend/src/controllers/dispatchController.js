@@ -3,7 +3,7 @@ const path      = require('path');
 const fs        = require('fs');
 const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
-const { getDistance } = require('../utils/googleMaps');
+const { getDistance, formatMinutes } = require('../utils/googleMaps');
 const { getFeeForDistance } = require('../utils/deliveryFee');
 const { sendSMS, toE164 } = require('../services/smsService');
 const { sendPushNotification } = require('../services/fcmService');
@@ -604,10 +604,20 @@ const calculateDeliveryFee = async (req, res) => {
     if (!dist) return res.json({ fee: null, message: 'Could not calculate distance' });
 
     const fee = await getFeeForDistance(dist.miles, location_id || null);
+
+    // Raw driving duration alone understates delivery time — it ignores
+    // kitchen prep entirely, so a customer a few minutes' drive away would
+    // see something like "2 min" as their estimated delivery. Add a flat
+    // prep/handling buffer on top of the drive time for a realistic ETA.
+    const PREP_BUFFER_MINUTES = 15;
+    const estimatedMinutes = dist.duration_minutes + PREP_BUFFER_MINUTES;
+
     res.json({
-      distance_miles: dist.miles,
-      distance_text:  dist.text,
-      duration:       dist.duration,
+      distance_miles:             dist.miles,
+      distance_text:              dist.text,
+      duration:                   dist.duration, // raw drive time only, kept for reference
+      estimated_delivery_minutes: Math.round(estimatedMinutes),
+      estimated_delivery_text:    formatMinutes(estimatedMinutes),
       fee,
       out_of_range: fee === null,
     });
