@@ -15,7 +15,7 @@ function verifyDoorDashSignature(rawBody, signature) {
   } catch { return false; }
 }
 
-const RESTAURANT_ADDRESS  = process.env.RESTAURANT_ADDRESS  || '204 E Mosholu Pkwy S, Bronx, NY 10458';
+const RESTAURANT_ADDRESS  = process.env.RESTAURANT_ADDRESS  || '2974 Jerome Ave, Bronx, NY 10468';
 const RESTAURANT_NAME     = process.env.RESTAURANT_NAME     || 'Habibi Halal Express';
 const RESTAURANT_PHONE    = process.env.RESTAURANT_PHONE    || '+13477033731';
 

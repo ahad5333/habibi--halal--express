@@ -11,8 +11,8 @@ async function getPickupLocation(locationId) {
   }
   // fallback to env vars (single-location mode)
   return {
-    exact_address: process.env.RESTAURANT_ADDRESS || '204 E Mosholu Pkwy S, Bronx, NY 10458',
-    phone_number:  process.env.RESTAURANT_PHONE   || '(718) 367-7878',
+    exact_address: process.env.RESTAURANT_ADDRESS || '2974 Jerome Ave, Bronx, NY 10468',
+    phone_number:  process.env.RESTAURANT_PHONE   || '+17184000443',
   };
 }
 

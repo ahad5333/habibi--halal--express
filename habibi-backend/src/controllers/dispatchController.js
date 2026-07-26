@@ -590,7 +590,7 @@ const calculateDeliveryFee = async (req, res) => {
   if (!customer_address) return res.status(400).json({ message: 'customer_address required' });
 
   try {
-    let origin = process.env.RESTAURANT_ADDRESS || '204 E Mosholu Pkwy S, Bronx, NY 10458';
+    let origin = process.env.RESTAURANT_ADDRESS || '2974 Jerome Ave, Bronx, NY 10468';
     if (location_id) {
       const locResult = await pool.query(
         `SELECT exact_address FROM locations WHERE id=$1`, [location_id]

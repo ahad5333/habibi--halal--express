@@ -93,7 +93,7 @@ const submitReview = async (req, res) => {
        customer_email?.trim() || null, r, comment?.trim() || null]
     );
 
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihalal.com';
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihe.com';
     emailService.sendReviewAdminAlert(adminEmail, {
       id: result.rows[0].id,
       customer_name: customer_name.trim(),

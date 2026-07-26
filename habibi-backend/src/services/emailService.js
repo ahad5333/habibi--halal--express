@@ -7,7 +7,7 @@ const smtpHost   = process.env.SMTP_HOST;
 const smtpPort   = process.env.SMTP_PORT || 587;
 const smtpUser   = process.env.SMTP_USER;
 const smtpPass   = process.env.SMTP_PASS;
-const emailFrom  = process.env.EMAIL_FROM || 'noreply@habibihalal.com';
+const emailFrom  = process.env.EMAIL_FROM || 'noreply@habibihe.com';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // SendGrid HTTP API — avoids SMTP port blocks on VPS hosts

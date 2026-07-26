@@ -58,7 +58,7 @@ const createReservation = async (req, res) => {
     );
 
     // Notify admin
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihalal.com';
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihe.com';
     emailService.sendCateringAdminAlert(adminEmail, quote).catch(err =>
       console.error('[Catering] Admin alert failed:', err.message)
     );
@@ -204,7 +204,7 @@ const createTableReservation = async (req, res) => {
       [name.trim(), email, phone, parseInt(party), date, location, fullNotes]
     );
 
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihalal.com';
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@habibihe.com';
     emailService.sendCateringAdminAlert(adminEmail, {
       ...result.rows[0], name, email, phone, party_size: party,
       scheduled_date: date, event_type: `Table — ${location} @ ${time}`,

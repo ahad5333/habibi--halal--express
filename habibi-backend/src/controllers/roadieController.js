@@ -14,10 +14,10 @@ function verifyRoadieSignature(rawBody, signature) {
 
 const RESTAURANT_NAME    = process.env.RESTAURANT_NAME    || 'Habibi Halal Express';
 const RESTAURANT_PHONE   = process.env.RESTAURANT_PHONE   || '+13477033731';
-const RESTAURANT_STREET  = process.env.RESTAURANT_STREET  || '204 E Mosholu Pkwy S';
+const RESTAURANT_STREET  = process.env.RESTAURANT_STREET  || '2974 Jerome Ave';
 const RESTAURANT_CITY    = process.env.RESTAURANT_CITY    || 'Bronx';
 const RESTAURANT_STATE   = process.env.RESTAURANT_STATE   || 'NY';
-const RESTAURANT_ZIP     = process.env.RESTAURANT_ZIP     || '10458';
+const RESTAURANT_ZIP     = process.env.RESTAURANT_ZIP     || '10468';
 
 // Split a full address string into parts for the Roadie structured address format
 function parseAddress(full) {

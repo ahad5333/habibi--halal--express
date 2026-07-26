@@ -11,7 +11,7 @@ const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
 
-const RESTAURANT_ADDRESS = process.env.RESTAURANT_ADDRESS || '204 E Mosholu Pkwy S, Bronx, NY 10458';
+const RESTAURANT_ADDRESS = process.env.RESTAURANT_ADDRESS || '2974 Jerome Ave, Bronx, NY 10468';
 const RESTAURANT_NAME    = process.env.RESTAURANT_NAME    || 'Habibi Halal Express';
 const RESTAURANT_PHONE   = process.env.RESTAURANT_PHONE   || '+13477033731';
 
@@ -98,10 +98,10 @@ async function autoDispatchRoadie(order_id, order) {
         name:    RESTAURANT_NAME,
         phone:   RESTAURANT_PHONE,
         address: {
-          street1: process.env.RESTAURANT_STREET || '204 E Mosholu Pkwy S',
+          street1: process.env.RESTAURANT_STREET || '2974 Jerome Ave',
           city:    process.env.RESTAURANT_CITY   || 'Bronx',
           state:   process.env.RESTAURANT_STATE  || 'NY',
-          zip:     process.env.RESTAURANT_ZIP    || '10458',
+          zip:     process.env.RESTAURANT_ZIP    || '10468',
         },
         notes: `Pick up at counter. Order #${order.order_number}.`,
       },
