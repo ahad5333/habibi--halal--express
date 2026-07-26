@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@500;600;700&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
   --color-bg: #000000;
@@ -44,7 +44,13 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* overflow-x is already clipped on <html> above — repeating it here forces
+     overflow-y to compute to `auto` on BOTH html and body (per the CSS overflow
+     spec, an axis can't stay `visible` once its sibling axis isn't), creating
+     two competing scroll containers. That's what was breaking every sticky-
+     positioned element (the navbar) site-wide: sticky binds to the nearest
+     scroll container, and with two of them in play it never resolved to the
+     one that actually receives scroll input. */
 }
 
 h1, h2, h3, h4, h5, h6 {

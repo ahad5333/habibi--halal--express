@@ -857,10 +857,10 @@
 
 .menu-header-sub {
   color: rgba(255, 255, 255, 0.75);
-  font-size: 1rem;
-  font-style: italic;
-  font-weight: 300;
-  letter-spacing: 0.08em;
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   line-height: 1.6;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   max-width: 520px;
@@ -1723,7 +1723,7 @@
   }
   .menu-header-halal        { width: 50px; height: 50px; }
   .menu-header-title        { font-size: 3rem; letter-spacing: 0.1em; }
-  .menu-header-sub          { font-size: 0.88rem; }
+  .menu-header-sub          { font-size: 1.15rem; }
   .menu-main-wrap           { padding: 1.25rem 1.25rem 5rem; overflow-x: hidden; }
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
   .menu-card-img-wrap       { height: 150px; }
@@ -1742,7 +1742,7 @@
   .menu-header            { height: 190px; }
   .menu-header-halal      { width: 44px; height: 44px; }
   .menu-header-title      { font-size: 2.4rem; letter-spacing: 0.08em; }
-  .menu-header-sub        { font-size: 0.8rem; padding: 0 1rem; }
+  .menu-header-sub        { font-size: 1.05rem; padding: 0 1rem; }
   .menu-grid-title        { font-size: 1.5rem; }
   .menu-item-row          { grid-template-columns: 1fr 66px; }
   .menu-item-row-img-wrap { width: 66px !important; min-width: 66px !important; height: 50px !important; }
@@ -1775,7 +1775,7 @@
   .menu-header            { height: 170px; }
   .menu-header-halal      { width: 38px; height: 38px; }
   .menu-header-title      { font-size: 2rem; letter-spacing: 0.06em; }
-  .menu-header-sub        { font-size: 0.74rem; }
+  .menu-header-sub        { font-size: 0.95rem; }
   .menu-header-content    { gap: 0.4rem; }
   .menu-item-row          { padding: 0.65rem 0.25rem; margin: 0; gap: 0.5rem; grid-template-columns: 1fr 62px; }
   .menu-item-row-img-wrap { width: 62px !important; min-width: 62px !important; height: 48px !important; }
@@ -1797,7 +1797,7 @@
   .menu-header            { height: 155px; }
   .menu-header-halal      { width: 34px; height: 34px; }
   .menu-header-title      { font-size: 1.75rem; }
-  .menu-header-sub        { font-size: 0.62rem; }
+  .menu-header-sub        { font-size: 0.85rem; }
   .menu-item-row          { gap: 0.4rem; padding: 0.5rem 0.25rem; grid-template-columns: 1fr 56px; }
   .menu-item-row-img-wrap { width: 56px !important; min-width: 56px !important; height: 44px !important; }
   .menu-item-add-btn      { width: 22px; height: 22px; font-size: 1rem; }
