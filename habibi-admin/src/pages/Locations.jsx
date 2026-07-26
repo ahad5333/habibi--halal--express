@@ -5,8 +5,19 @@ import './Locations.css';
 
 const BLANK_NEW_LOCATION = {
   title: '', exact_address: '', brief_address: '', latitude: '', longitude: '',
-  phone_number: '', working_days_hours: '', delivery_radius_miles: 5, preference_level: 1, is_active: true,
+  phone_number: '', working_days_hours: '', delivery_radius_miles: 5, delivery_cost: 0,
+  preference_level: 1, is_active: true,
+  holidays: '', location_note: '', image_url: '',
+  tablet_username: '', tablet_password: '',
+  self_delivery_enabled: false,
+  partner_ubereats: true, partner_doordash: true, partner_grubhub: true,
+  partner_roadie: true, partner_instacart: true, partner_hhe: true,
 };
+
+const PARTNER_OPTIONS = [
+  ['ubereats', 'Uber Eats'], ['doordash', 'DoorDash'], ['grubhub', 'Grubhub'],
+  ['instacart', 'Instacart'], ['roadie', 'Roadie'], ['hhe', 'HHE'],
+];
 
 export default function Locations() {
   const [locations, setLocations] = useState([]);
@@ -42,6 +53,7 @@ export default function Locations() {
       phone_number:          loc.phone_number || '',
       working_days_hours:    loc.working_days_hours || '',
       holidays:              loc.holidays || '',
+      location_note:         loc.location_note || '',
       is_active:             loc.is_active,
       accepting_orders:      loc.accepting_orders !== false,
       delivery_radius_miles: loc.delivery_radius_miles || 5,
@@ -52,7 +64,11 @@ export default function Locations() {
       partner_doordash:  !!(loc.delivery_partners?.includes?.('doordash')  || loc.partner_doordash),
       partner_grubhub:   !!(loc.delivery_partners?.includes?.('grubhub')   || loc.partner_grubhub),
       partner_roadie:    !!(loc.delivery_partners?.includes?.('roadie')    || loc.partner_roadie),
-      partner_self:      !!(loc.delivery_partners?.includes?.('self')      || loc.partner_self),
+      partner_instacart: !!(loc.delivery_partners?.includes?.('instacart') || loc.partner_instacart),
+      partner_hhe:       !!(loc.delivery_partners?.includes?.('hhe')       || loc.partner_hhe),
+      // Self Delivery: separate Yes/No gate (spec item 12), distinct from the
+      // 6 delivery-partner checkboxes above (spec item 13)
+      self_delivery_enabled: !!(loc.delivery_partners?.includes?.('self') || loc.partner_self),
       // tablet access credentials
       tablet_username:   loc.tablet_username || '',
       tablet_password:   '',
@@ -67,6 +83,7 @@ export default function Locations() {
   };
 
   const save = async () => {
+    if (!form.brief_address?.trim()) { alert('Brief Address is required.'); return; }
     setSaving(true);
     try {
       await adminAPI.updateLocation(modal.id, form);
@@ -88,8 +105,10 @@ export default function Locations() {
   const openAdd = () => { setAddForm(BLANK_NEW_LOCATION); setAddErr(''); setAddModal(true); };
 
   const createLoc = async () => {
-    if (!addForm.title.trim()) { setAddErr('Name is required.'); return; }
-    if (!addForm.exact_address.trim()) { setAddErr('Address is required.'); return; }
+    if (!addForm.title.trim()) { setAddErr('Location Title is required.'); return; }
+    if (!addForm.brief_address.trim()) { setAddErr('Brief Address is required.'); return; }
+    if (!addForm.exact_address.trim()) { setAddErr('Exact Address is required.'); return; }
+    if (!addForm.image_url.trim()) { setAddErr('Location Image is required.'); return; }
     if (addForm.latitude === '' || addForm.longitude === '') { setAddErr('Latitude and longitude are required.'); return; }
     setSaving(true);
     setAddErr('');
@@ -221,7 +240,7 @@ export default function Locations() {
                 <input className="input" value={form.exact_address} onChange={e => setForm({...form,exact_address:e.target.value})} placeholder="e.g. 3717 Bedford Park Blvd, Bronx, NY 10467" />
               </div>
               <div className="field">
-                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers, optional)</span></label>
+                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers) *</span></label>
                 <input className="input" value={form.brief_address} onChange={e => setForm({...form,brief_address:e.target.value})} placeholder="Bedford Park, Bronx" />
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
@@ -242,31 +261,41 @@ export default function Locations() {
                 <input className="input" value={form.phone_number} onChange={e => setForm({...form,phone_number:e.target.value})} placeholder="(718) 555-0000" />
               </div>
               <div className="field">
-                <label>Hours</label>
+                <label>Hours <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 2 lines)</span></label>
                 <input className="input" value={form.working_days_hours} onChange={e => setForm({...form,working_days_hours:e.target.value})} placeholder="Mon–Sun: 7AM – 11PM" />
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
-                <div className="field">
-                  <label>Delivery Radius (miles)</label>
-                  <input className="input" type="number" min="0" step="0.5" value={form.delivery_radius_miles} onChange={e => setForm({...form,delivery_radius_miles:e.target.value})} />
-                </div>
-                <div className="field">
-                  <label>Delivery Fee ($)</label>
-                  <input className="input" type="number" min="0" step="0.50" value={form.delivery_cost} onChange={e => setForm({...form,delivery_cost:e.target.value})} />
-                </div>
+              <div className="field">
+                <label>Holidays / Closures <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 3 lines)</span></label>
+                <textarea className="input" rows={3} value={form.holidays} onChange={e => setForm({...form,holidays:e.target.value})} placeholder="e.g. New Year's Day 01/01 6AM–01/02 8AM" />
               </div>
               <div className="field">
-                <label>Holidays / Closures</label>
-                <textarea className="input" rows={2} value={form.holidays} onChange={e => setForm({...form,holidays:e.target.value})} placeholder="e.g. Eid al-Adha, Eid al-Fitr" />
+                <label>Location Note <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 2 lines)</span></label>
+                <textarea className="input" rows={2} value={form.location_note} onChange={e => setForm({...form,location_note:e.target.value})} placeholder="Internal or customer-facing note about this location" />
               </div>
               <div className="field">
                 <label>Preference Level (1 = highest priority)</label>
-                <input className="input" type="number" min="1" max="10" value={form.preference_level} onChange={e => setForm({...form,preference_level:+e.target.value})} />
+                <input className="input" type="number" min="1" max="99" value={form.preference_level} onChange={e => setForm({...form,preference_level:+e.target.value})} />
               </div>
+              <label className="loc-modal-toggle" style={{marginBottom:'0.5rem'}}>
+                <input type="checkbox" checked={!!form.self_delivery_enabled} onChange={e => setForm({...form,self_delivery_enabled:e.target.checked})} />
+                <span>Self Delivery (in-house driver)</span>
+              </label>
+              {form.self_delivery_enabled && (
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+                  <div className="field">
+                    <label>Delivery Radius (miles)</label>
+                    <input className="input" type="number" min="0" step="0.5" value={form.delivery_radius_miles} onChange={e => setForm({...form,delivery_radius_miles:e.target.value})} />
+                  </div>
+                  <div className="field">
+                    <label>Delivery Fee ($)</label>
+                    <input className="input" type="number" min="0" step="0.50" value={form.delivery_cost} onChange={e => setForm({...form,delivery_cost:e.target.value})} />
+                  </div>
+                </div>
+              )}
               <div className="field">
                 <label>Delivery Partners</label>
                 <div className="loc-partners-grid">
-                  {[['ubereats','Uber Eats'],['doordash','DoorDash'],['grubhub','Grubhub'],['roadie','Roadie'],['self','Self-Delivery']].map(([key,label]) => (
+                  {PARTNER_OPTIONS.map(([key,label]) => (
                     <label key={key} className="loc-modal-toggle">
                       <input type="checkbox" checked={!!form[`partner_${key}`]} onChange={e => setForm({...form,[`partner_${key}`]:e.target.checked})} />
                       <span>{label}</span>
@@ -395,8 +424,15 @@ export default function Locations() {
                 <input className="input" value={addForm.exact_address} onChange={e => setAddForm({...addForm,exact_address:e.target.value})} placeholder="123 Main St, Yonkers, NY 10701" />
               </div>
               <div className="field">
-                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers, optional)</span></label>
+                <label>Brief Address <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(shown to customers) *</span></label>
                 <input className="input" value={addForm.brief_address} onChange={e => setAddForm({...addForm,brief_address:e.target.value})} placeholder="Downtown Yonkers" />
+              </div>
+              <div className="field">
+                <label>Location Image *</label>
+                <input className="input" value={addForm.image_url} onChange={e => setAddForm({...addForm,image_url:e.target.value})} placeholder="/images/locations/yonkers.webp" />
+                {addForm.image_url && (
+                  <img src={addForm.image_url} alt="preview" style={{marginTop:'0.4rem',height:60,width:'100%',objectFit:'cover',borderRadius:6,opacity:0.85}} onError={e=>{e.target.style.display='none'}} />
+                )}
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
                 <div className="field">
@@ -416,17 +452,56 @@ export default function Locations() {
                 <input className="input" value={addForm.phone_number} onChange={e => setAddForm({...addForm,phone_number:e.target.value})} placeholder="(718) 555-0000" />
               </div>
               <div className="field">
-                <label>Hours</label>
+                <label>Hours <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 2 lines)</span></label>
                 <input className="input" value={addForm.working_days_hours} onChange={e => setAddForm({...addForm,working_days_hours:e.target.value})} placeholder="Mon–Sun: 7AM – 11PM" />
+              </div>
+              <div className="field">
+                <label>Holidays / Closures <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 3 lines)</span></label>
+                <textarea className="input" rows={3} value={addForm.holidays} onChange={e => setAddForm({...addForm,holidays:e.target.value})} placeholder="e.g. New Year's Day 01/01 6AM–01/02 8AM" />
+              </div>
+              <div className="field">
+                <label>Location Note <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 2 lines)</span></label>
+                <textarea className="input" rows={2} value={addForm.location_note} onChange={e => setAddForm({...addForm,location_note:e.target.value})} placeholder="Internal or customer-facing note about this location" />
+              </div>
+              <div className="field">
+                <label>Preference Level (1 = highest priority)</label>
+                <input className="input" type="number" min="1" max="99" value={addForm.preference_level} onChange={e => setAddForm({...addForm,preference_level:+e.target.value})} />
+              </div>
+              <label className="loc-modal-toggle" style={{marginBottom:'0.5rem'}}>
+                <input type="checkbox" checked={!!addForm.self_delivery_enabled} onChange={e => setAddForm({...addForm,self_delivery_enabled:e.target.checked})} />
+                <span>Self Delivery (in-house driver)</span>
+              </label>
+              {addForm.self_delivery_enabled && (
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
+                  <div className="field">
+                    <label>Delivery Radius (miles)</label>
+                    <input className="input" type="number" min="0" step="0.5" value={addForm.delivery_radius_miles} onChange={e => setAddForm({...addForm,delivery_radius_miles:e.target.value})} />
+                  </div>
+                  <div className="field">
+                    <label>Delivery Fee ($)</label>
+                    <input className="input" type="number" min="0" step="0.50" value={addForm.delivery_cost} onChange={e => setAddForm({...addForm,delivery_cost:e.target.value})} />
+                  </div>
+                </div>
+              )}
+              <div className="field">
+                <label>Delivery Partners</label>
+                <div className="loc-partners-grid">
+                  {PARTNER_OPTIONS.map(([key,label]) => (
+                    <label key={key} className="loc-modal-toggle">
+                      <input type="checkbox" checked={!!addForm[`partner_${key}`]} onChange={e => setAddForm({...addForm,[`partner_${key}`]:e.target.checked})} />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
                 <div className="field">
-                  <label>Delivery Radius (miles)</label>
-                  <input className="input" type="number" min="0" step="0.5" value={addForm.delivery_radius_miles} onChange={e => setAddForm({...addForm,delivery_radius_miles:e.target.value})} />
+                  <label>Tablet Username</label>
+                  <input className="input" value={addForm.tablet_username} onChange={e => setAddForm({...addForm,tablet_username:e.target.value})} placeholder="tablet@location" />
                 </div>
                 <div className="field">
-                  <label>Preference Level (1 = highest)</label>
-                  <input className="input" type="number" min="1" max="10" value={addForm.preference_level} onChange={e => setAddForm({...addForm,preference_level:+e.target.value})} />
+                  <label>Tablet Password</label>
+                  <input className="input" type="password" value={addForm.tablet_password} onChange={e => setAddForm({...addForm,tablet_password:e.target.value})} placeholder="Optional" />
                 </div>
               </div>
               <label className="loc-modal-toggle">
@@ -434,7 +509,7 @@ export default function Locations() {
                 <span>Location is Active</span>
               </label>
               <p className="text-muted" style={{fontSize:'0.72rem',marginTop:'0.75rem'}}>
-                After creating, open the new location's Edit panel to set up tablet login, delivery partners, holidays, and pre-selected delivery addresses.
+                Pre-selected delivery addresses can be added after creating, from the Edit panel.
               </p>
             </div>
             <div className="modal-footer">

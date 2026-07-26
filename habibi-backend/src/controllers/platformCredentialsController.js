@@ -72,7 +72,7 @@ const getLocationMappings = async (req, res) => {
         JOIN locations l ON l.id = plm.location_id
         ORDER BY plm.location_id, plm.platform
       `),
-      pool.query('SELECT id, title, brief_address FROM locations WHERE is_active=true ORDER BY preference_level DESC'),
+      pool.query('SELECT id, title, brief_address FROM locations WHERE is_active=true ORDER BY preference_level ASC'),
       pool.query('SELECT platform, display_name FROM platform_settings ORDER BY id'),
     ]);
     res.json({ mappings: mappings.rows, locations: locations.rows, platforms: platforms.rows });

@@ -27,15 +27,16 @@ const getAllLocations = async (req, res) => {
 
     if (lat && lng && !isNaN(parsedLat) && !isNaN(parsedLng)) {
       query = `
-        SELECT *, 
-        (3959 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance 
-        FROM locations 
-        WHERE is_active = true 
-        ORDER BY distance ASC, preference_level DESC
+        SELECT *,
+        (3959 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance
+        FROM locations
+        WHERE is_active = true
+        ORDER BY distance ASC, preference_level ASC
       `;
       params = [parsedLat, parsedLng];
     } else {
-      query += ' ORDER BY preference_level DESC, title ASC';
+      // Spec: lower preference_level shows first ("1 = highest priority").
+      query += ' ORDER BY preference_level ASC, title ASC';
     }
 
     const result = await pool.query(query, params);
@@ -58,14 +59,56 @@ const getLocationById = async (req, res) => {
 };
 
 const createLocation = async (req, res) => {
-  const { title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours, delivery_radius_miles, is_active, preference_level } = req.body;
+  const {
+    title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours,
+    delivery_radius_miles, delivery_cost, is_active, preference_level,
+    image_url, holidays, location_note, tablet_username, tablet_password,
+    self_delivery_enabled,
+    partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe,
+  } = req.body;
+
+  // Spec-required fields (marked * in the cpanel spec)
+  if (!title?.trim())          return res.status(400).json({ error: 'Location Title is required.' });
+  if (!brief_address?.trim())  return res.status(400).json({ error: 'Brief Address is required.' });
+  if (!exact_address?.trim())  return res.status(400).json({ error: 'Exact Address is required.' });
+  if (!image_url?.trim())      return res.status(400).json({ error: 'Location Image is required.' });
+
   try {
+    if (preference_level !== undefined && preference_level !== null && preference_level !== '') {
+      const dupe = await pool.query('SELECT id FROM locations WHERE preference_level = $1', [parseInt(preference_level, 10)]);
+      if (dupe.rows.length > 0) {
+        return res.status(400).json({ error: `Preference Level ${preference_level} is already used by another location.` });
+      }
+    }
+
+    let tabletPasswordHash = null;
+    if (tablet_password) {
+      const bcrypt = require('bcryptjs');
+      tabletPasswordHash = await bcrypt.hash(tablet_password, 10);
+    }
+
     const result = await pool.query(
-      `INSERT INTO locations (title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours, delivery_radius_miles, is_active, preference_level)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [title, exact_address, brief_address || exact_address, latitude, longitude, phone_number, working_days_hours, delivery_radius_miles, is_active !== false, preference_level || 0]
+      `INSERT INTO locations (
+         title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours,
+         delivery_radius_miles, delivery_cost, is_active, preference_level,
+         image_url, holidays, location_note, tablet_username, tablet_password_hash,
+         self_delivery_enabled,
+         partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+       RETURNING *`,
+      [
+        title, exact_address, brief_address || exact_address, latitude, longitude, phone_number, working_days_hours,
+        delivery_radius_miles || 5, delivery_cost || 0, is_active !== false, preference_level || 0,
+        image_url, holidays || null, location_note || null, tablet_username || null, tabletPasswordHash,
+        !!self_delivery_enabled,
+        partner_ubereats !== false, partner_doordash !== false, partner_grubhub !== false,
+        partner_roadie !== false, partner_instacart !== false, partner_hhe !== false,
+      ]
     );
-    res.status(201).json(result.rows[0]);
+    const row = { ...result.rows[0] };
+    delete row.tablet_password_hash;
+    res.status(201).json(row);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create location' });

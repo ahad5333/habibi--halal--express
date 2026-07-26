@@ -176,7 +176,7 @@ const createTables = async () => {
         location_note          TEXT,
         is_active              BOOLEAN DEFAULT TRUE,
         preference_level       INTEGER DEFAULT 0,
-        self_delivery_enabled  BOOLEAN DEFAULT TRUE,
+        self_delivery_enabled  BOOLEAN DEFAULT FALSE,
         delivery_radius_miles  NUMERIC(8,2) DEFAULT 5.0,
         delivery_cost          NUMERIC(10,2) DEFAULT 0,
         latitude               NUMERIC(10,7),
@@ -841,10 +841,22 @@ const createTables = async () => {
     // ── Locations: delivery-partner checkboxes on the admin edit form had
     // no backing columns at all — every save silently discarded them.
     // self_delivery_enabled already existed for "Self-Delivery" (partner_self).
-    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_ubereats BOOLEAN DEFAULT FALSE`);
-    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_doordash BOOLEAN DEFAULT FALSE`);
-    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_grubhub  BOOLEAN DEFAULT FALSE`);
-    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_roadie   BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_ubereats BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_doordash BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_grubhub  BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_roadie   BOOLEAN DEFAULT TRUE`);
+    // Spec lists 6 delivery-partner checkboxes (all checked by default); only 4
+    // had columns. Instacart/HHE were missing outright, and the 4 above had
+    // defaulted to FALSE instead of the spec'd "all checked by default."
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_instacart BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_hhe       BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ALTER COLUMN partner_ubereats SET DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ALTER COLUMN partner_doordash SET DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ALTER COLUMN partner_grubhub  SET DEFAULT TRUE`);
+    await client.query(`ALTER TABLE locations ALTER COLUMN partner_roadie   SET DEFAULT TRUE`);
+    // Spec says Self Delivery defaults to No (unlike the 6 partner checkboxes,
+    // which default to checked) — only affects locations created from now on.
+    await client.query(`ALTER TABLE locations ALTER COLUMN self_delivery_enabled SET DEFAULT FALSE`);
 
     // ── Menus: ensure all required columns exist ──────────────────
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS is_available   BOOLEAN        DEFAULT TRUE`);
@@ -1363,9 +1375,9 @@ const seedDefaults = async () => {
     // Only 3 real locations — keep in sync with production by hand if it ever changes.
     await pool.query(`
       INSERT INTO locations (title, brief_address, exact_address, phone_number, working_days_hours, is_active, preference_level, delivery_radius_miles, latitude, longitude, image_url) VALUES
-        ('Bedford Park & Jerome Ave', 'Bronx, NY 10458', '204 E Mosholu Pkwy S, Bronx, NY 10458', '(718) 367-7878', 'Open 24 Hours · 365 Days a Year', TRUE, 5, 5.0, 40.8726,    -73.8901,    '/images/locations/bedford-park.webp'),
-        ('Kingsbridge Road',          'Bronx, NY 10468', '2 E Kingsbridge Rd, Bronx, NY 10468',    '(718) 367-7879', 'Mon–Sun: 7AM – 11PM',             TRUE, 4, 4.0, 40.8672738, -73.8972187, '/images/locations/kings-bridge.webp'),
-        ('White Plains Road',         'Bronx, NY 10466', '3971 White Plains Rd, Bronx, NY 10466',  '(718) 367-7880', 'Mon–Fri: 6AM – 10PM',             TRUE, 3, 4.0, 40.887949,  -73.860493,  '/images/locations/white-plains.webp')
+        ('Bedford Park Blvd',  'Bedford Park & Jerome Ave',          '2974 Jerome Ave, Bronx, NY 10468',       '(718) 400-0443', 'Open 24 Hours · 365 Days a Year', TRUE, 1, 5.0, 40.873092,  -73.8892829, '/images/locations/bedford-park.webp'),
+        ('Kingsbridge Road',   'Kings'' Bridge Road & Jerome Ave',   '2 E Kingsbridge Rd, Bronx, NY 10468',    '(718) 400-0443', 'Open 24 Hours · 365 Days a Year', TRUE, 2, 4.0, 40.8672738, -73.8972187, '/images/locations/kings-bridge.webp'),
+        ('White Plains Road',  'White Plains Road and 225th Street', '3971 White Plains Rd, Bronx, NY 10466',  '(718) 400-0443', 'Open 24 Hours · 365 Days a Year', TRUE, 3, 4.0, 40.887949,  -73.860493,  '/images/locations/white-plains.webp')
     `);
     console.log("✅ Default locations seeded");
   } else {

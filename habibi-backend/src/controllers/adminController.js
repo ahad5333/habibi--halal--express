@@ -747,12 +747,13 @@ const getAdminLocations = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, title, brief_address, exact_address, phone_number,
-              working_days_hours, holidays, is_active, accepting_orders,
+              working_days_hours, holidays, location_note, is_active, accepting_orders,
               delivery_radius_miles, delivery_cost, latitude, longitude,
               preference_level, image_url, tablet_username, delivery_addresses,
               partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
+              partner_instacart, partner_hhe,
               self_delivery_enabled AS partner_self
-       FROM locations ORDER BY preference_level DESC, id`
+       FROM locations ORDER BY preference_level ASC, id`
     );
     res.json(result.rows);
   } catch (err) {
@@ -766,11 +767,26 @@ const updateAdminLocation = async (req, res) => {
     const {
       title, phone_number, working_days_hours, is_active, accepting_orders,
       delivery_radius_miles, delivery_cost,
-      holidays, preference_level, image_url,
+      holidays, location_note, preference_level, image_url,
       tablet_username, tablet_password, delivery_addresses,
       exact_address, brief_address, latitude, longitude,
-      partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_self,
+      partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
+      partner_instacart, partner_hhe, self_delivery_enabled,
     } = req.body;
+
+    if (brief_address !== undefined && !brief_address?.trim()) {
+      return res.status(400).json({ error: 'Brief Address is required.' });
+    }
+
+    if (preference_level !== undefined && preference_level !== null && preference_level !== '') {
+      const dupe = await pool.query(
+        'SELECT id FROM locations WHERE preference_level = $1 AND id != $2',
+        [parseInt(preference_level, 10), id]
+      );
+      if (dupe.rows.length > 0) {
+        return res.status(400).json({ error: `Preference Level ${preference_level} is already used by another location.` });
+      }
+    }
 
     // Only hash tablet password if a new one was provided
     let tabletPasswordHash;
@@ -799,6 +815,8 @@ const updateAdminLocation = async (req, res) => {
            partner_ubereats = $19, partner_doordash = $20,
            partner_grubhub  = $21, partner_roadie   = $22,
            self_delivery_enabled = $23,
+           location_note = $24,
+           partner_instacart = $25, partner_hhe = $26,
            updated_at=NOW()
        WHERE id=$13 RETURNING *`,
       [
@@ -816,7 +834,9 @@ const updateAdminLocation = async (req, res) => {
         brief_address || null,
         latitude !== undefined && latitude !== '' ? parseFloat(latitude) : null,
         longitude !== undefined && longitude !== '' ? parseFloat(longitude) : null,
-        !!partner_ubereats, !!partner_doordash, !!partner_grubhub, !!partner_roadie, !!partner_self,
+        !!partner_ubereats, !!partner_doordash, !!partner_grubhub, !!partner_roadie, !!self_delivery_enabled,
+        location_note || null,
+        !!partner_instacart, !!partner_hhe,
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });
