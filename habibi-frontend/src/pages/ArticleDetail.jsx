@@ -139,17 +139,23 @@ export default function ArticleDetail() {
 
         <div className="article-body" ref={bodyRef}>
           <div dangerouslySetInnerHTML={{ __html: article.body || '' }} />
+        </div>
 
-          <div className="article-cta-block">
-            <div className="article-cta-glow" aria-hidden="true" />
-            <ChefHat size={26} className="article-cta-icon" />
-            <p className="article-cta-eyebrow">Ready when you are</p>
-            <h3 className="article-cta-heading">Taste the Habibi Difference</h3>
-            <p className="article-cta-sub">Fresh halal food, made to order, ready at any of our Bronx locations.</p>
-            <div className="article-cta-btns">
-              <Link to="/menu" className="article-cta-btn">Order Now <ArrowRight size={15} /></Link>
-              <Link to="/locations" className="article-cta-btn article-cta-btn--outline">Find a Location</Link>
-            </div>
+        {/* Sibling of .article-body, not a child — this is a promo footer,
+            not article content. It used to be nested inside .article-body,
+            which meant the generic prose styles (.article-body a/p/h2, etc.)
+            leaked onto it (e.g. the Order Now button's text came out orange
+            instead of white) and the reading-progress bar above counted
+            scrolling past this block as part of "reading the article." */}
+        <div className="article-cta-block">
+          <div className="article-cta-glow" aria-hidden="true" />
+          <ChefHat size={26} className="article-cta-icon" />
+          <p className="article-cta-eyebrow">Ready when you are</p>
+          <h3 className="article-cta-heading">Taste the Habibi Difference</h3>
+          <p className="article-cta-sub">Fresh halal food, made to order, ready at any of our Bronx locations.</p>
+          <div className="article-cta-btns">
+            <Link to="/menu" className="article-cta-btn">Order Now <ArrowRight size={15} /></Link>
+            <Link to="/locations" className="article-cta-btn article-cta-btn--outline">Find a Location</Link>
           </div>
         </div>
       </div>
