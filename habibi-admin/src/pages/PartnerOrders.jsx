@@ -249,7 +249,7 @@ export default function PartnerOrders() {
 
                       {isOpen && (
                         <tr>
-                          <td colSpan={9} style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem 1.5rem' }}>
+                          <td colSpan={9} style={{ background: 'var(--color-surface-2)', padding: '1rem 1.5rem' }}>
                             <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                               {/* Items list */}
                               <div>
