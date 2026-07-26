@@ -747,13 +747,11 @@
 }
 
 .menu-header-title {
-  font-family: 'Bebas Neue', var(--font-heading);
+  font-family: var(--font-heading);
   font-size: 4.5rem;
-  font-weight: 400;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  line-height: 1;
+  line-height: 1.1;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
 }
 
@@ -1722,7 +1720,7 @@
     align-items: center;
   }
   .menu-header-halal        { width: 50px; height: 50px; }
-  .menu-header-title        { font-size: 3rem; letter-spacing: 0.1em; }
+  .menu-header-title        { font-size: 3rem; }
   .menu-header-sub          { font-size: 1.15rem; }
   .menu-main-wrap           { padding: 1.25rem 1.25rem 5rem; overflow-x: hidden; }
   .menu-grid                { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.875rem; }
@@ -1741,7 +1739,7 @@
   .menu-card-name         { font-size: 0.82rem; }
   .menu-header            { height: 190px; }
   .menu-header-halal      { width: 44px; height: 44px; }
-  .menu-header-title      { font-size: 2.4rem; letter-spacing: 0.08em; }
+  .menu-header-title      { font-size: 2.4rem; }
   .menu-header-sub        { font-size: 1.05rem; padding: 0 1rem; }
   .menu-grid-title        { font-size: 1.5rem; }
   .menu-item-row          { grid-template-columns: 1fr 66px; }
@@ -1774,7 +1772,7 @@
   .menu-card-add          { padding: 0.35rem 0.65rem; font-size: 0.72rem; }
   .menu-header            { height: 170px; }
   .menu-header-halal      { width: 38px; height: 38px; }
-  .menu-header-title      { font-size: 2rem; letter-spacing: 0.06em; }
+  .menu-header-title      { font-size: 2rem; }
   .menu-header-sub        { font-size: 0.95rem; }
   .menu-header-content    { gap: 0.4rem; }
   .menu-item-row          { padding: 0.65rem 0.25rem; margin: 0; gap: 0.5rem; grid-template-columns: 1fr 62px; }
