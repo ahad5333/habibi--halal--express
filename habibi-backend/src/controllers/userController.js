@@ -9,11 +9,25 @@ const { revokeToken } = require('../middleware/authMiddleware');
 const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs, created_at FROM users WHERE id=$1",
+      "SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs, receive_sms_updates, created_at FROM users WHERE id=$1",
       [req.user.id]
     );
     if (!result.rows[0]) return res.status(404).json({ message: "User not found." });
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+
+    // Email opt-out lives in newsletter_subscribers (email-keyed, shared with
+    // guest checkout and the broadcast sender's CAN-SPAM unsubscribe link) --
+    // no row yet means never explicitly unsubscribed, so default to true.
+    let receive_email_updates = true;
+    if (user.email) {
+      const sub = await pool.query(
+        `SELECT is_subscribed FROM newsletter_subscribers WHERE email = $1`,
+        [user.email]
+      );
+      if (sub.rows[0]) receive_email_updates = sub.rows[0].is_subscribed !== false;
+    }
+
+    res.json({ ...user, receive_email_updates });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -52,6 +66,43 @@ const updateProfile = async (req, res) => {
       [name?.trim() || null, phone_number || null, avatar_url || null, req.user.id, date_of_birth || null, dietaryValue]
     );
     res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ─── PUT /api/users/me/notification-prefs ────────────────────────────────────
+const updateNotificationPrefs = async (req, res) => {
+  try {
+    const { receive_sms_updates, receive_email_updates } = req.body;
+
+    if (receive_sms_updates !== undefined) {
+      await pool.query(
+        `UPDATE users SET receive_sms_updates=$1, updated_at=NOW() WHERE id=$2`,
+        [!!receive_sms_updates, req.user.id]
+      );
+    }
+
+    if (receive_email_updates !== undefined) {
+      const userRes = await pool.query(`SELECT email FROM users WHERE id=$1`, [req.user.id]);
+      const email = userRes.rows[0]?.email;
+      if (email) {
+        // Same table the broadcast sender's unsubscribe link writes to --
+        // flipping it here keeps a single source of truth for email opt-out
+        // rather than a second users-table column that could drift out of sync.
+        await pool.query(
+          `INSERT INTO newsletter_subscribers (email, is_subscribed, unsubscribe_token)
+           VALUES ($1, $2, replace(gen_random_uuid()::text,'-',''))
+           ON CONFLICT (email) DO UPDATE SET is_subscribed=$2`,
+          [email, !!receive_email_updates]
+        );
+      }
+    }
+
+    res.json({
+      receive_sms_updates: receive_sms_updates !== undefined ? !!receive_sms_updates : undefined,
+      receive_email_updates: receive_email_updates !== undefined ? !!receive_email_updates : undefined,
+    });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -403,7 +454,7 @@ const cancelMyOrder = async (req, res) => {
 };
 
 module.exports = {
-  getProfile, updateProfile, uploadAvatar, changePassword, deleteAccount,
+  getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,

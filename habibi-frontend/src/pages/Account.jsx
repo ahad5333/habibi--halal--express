@@ -1117,6 +1117,9 @@ function PushNotificationToggle() {
 function NotificationsTab() {
   const [notifs, setNotifs]     = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [smsOptIn, setSmsOptIn]     = useState(true);
+  const [emailOptIn, setEmailOptIn] = useState(true);
+  const [prefsSaving, setPrefsSaving] = useState('');
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -1129,6 +1132,26 @@ function NotificationsTab() {
   }, []);
 
   useEffect(() => { const cancel = load(); return cancel; }, [load]);
+
+  useEffect(() => {
+    userAPI.getProfile().then(p => {
+      setSmsOptIn(p.receive_sms_updates !== false);
+      setEmailOptIn(p.receive_email_updates !== false);
+    }).catch(() => {});
+  }, []);
+
+  const togglePref = async (key, current, setter) => {
+    const next = !current;
+    setter(next); // optimistic
+    setPrefsSaving(key);
+    try {
+      await userAPI.updateNotificationPrefs({ [key]: next });
+    } catch (err) {
+      setter(current); // revert on failure
+    } finally {
+      setPrefsSaving('');
+    }
+  };
 
   const markRead = async (id) => {
     await notificationsAPI.markRead(id).catch(() => {});
@@ -1154,6 +1177,42 @@ function NotificationsTab() {
           <button className="acct-link-btn" onClick={markAll}>Mark all read</button>
         )}
       </div>
+      {/* Communication preferences */}
+      <div className="acct-comm-prefs">
+        <div className="acct-comm-pref-row">
+          <div>
+            <p className="acct-comm-pref-label">SMS Updates</p>
+            <p className="acct-comm-pref-sub">Order status texts and promotions</p>
+          </div>
+          <button
+            type="button"
+            className={`acct-toggle-switch${smsOptIn ? ' on' : ''}`}
+            role="switch"
+            aria-checked={smsOptIn}
+            disabled={prefsSaving === 'receive_sms_updates'}
+            onClick={() => togglePref('receive_sms_updates', smsOptIn, setSmsOptIn)}
+          >
+            <span className="acct-toggle-knob" />
+          </button>
+        </div>
+        <div className="acct-comm-pref-row">
+          <div>
+            <p className="acct-comm-pref-label">Email Updates</p>
+            <p className="acct-comm-pref-sub">Newsletters, offers, and announcements</p>
+          </div>
+          <button
+            type="button"
+            className={`acct-toggle-switch${emailOptIn ? ' on' : ''}`}
+            role="switch"
+            aria-checked={emailOptIn}
+            disabled={prefsSaving === 'receive_email_updates'}
+            onClick={() => togglePref('receive_email_updates', emailOptIn, setEmailOptIn)}
+          >
+            <span className="acct-toggle-knob" />
+          </button>
+        </div>
+      </div>
+
       {/* Push notification permission toggle */}
       <PushNotificationToggle />
 

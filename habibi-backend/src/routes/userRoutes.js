@@ -4,7 +4,7 @@ const protect = require("../middleware/authMiddleware");
 const uploadAvatarMw = require("../middleware/uploadAvatarMiddleware");
 const { handleValidation, rules, body } = require('../middleware/validate');
 const {
-  getProfile, updateProfile, uploadAvatar, changePassword, deleteAccount,
+  getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
@@ -46,6 +46,13 @@ router.post("/me/device-token",
 );
 
 router.post("/me/avatar", uploadAvatarMw.single("avatar"), uploadAvatar);
+
+router.put("/me/notification-prefs",
+  body('receive_sms_updates').optional().isBoolean().withMessage('receive_sms_updates must be true/false.'),
+  body('receive_email_updates').optional().isBoolean().withMessage('receive_email_updates must be true/false.'),
+  handleValidation,
+  updateNotificationPrefs
+);
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 router.get("/me/orders",  getMyOrders);

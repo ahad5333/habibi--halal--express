@@ -293,6 +293,10 @@ export const userAPI = {
       return data;
     }),
 
+  /** PUT /api/users/me/notification-prefs */
+  updateNotificationPrefs: (data) =>
+    request('/api/users/me/notification-prefs', { method: 'PUT', body: JSON.stringify(data) }),
+
   /** PATCH /api/users/me/orders/:orderNumber/cancel */
   cancelOrder: (orderNumber) =>
     request(`/api/users/me/orders/${encodeURIComponent(orderNumber)}/cancel`, { method: 'PATCH' }),
