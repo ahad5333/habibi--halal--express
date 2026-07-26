@@ -202,7 +202,9 @@
   text-decoration: none;
   flex-shrink: 0;
   position: relative;
-  margin-right: 0.6rem;
+  /* Extra room beyond the row's normal flex gap — client felt this glowing
+     badge crowded the cart/login area next to it on desktop. */
+  margin-right: 1.5rem;
   animation: customize-float 3s ease-in-out infinite;
 }
 
@@ -867,56 +869,22 @@
   opacity: 1;
 }
 
-/* ── Order Express — featured center ─────────────────────── */
-.nav-order-online {
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 0 1rem;
-}
-
+/* ── Order Now — same size/shape as a regular nav item (.nav-item-label
+   handles the box model); this is just a thin color + glow override so it
+   still stands out a little without taking extra space in the row. ── */
 .nav-order-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
-  font-size: 0.76rem;
-  font-weight: 800;
-  color: #ffffff;
-  background: #F97316;
-  border-radius: 50px;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-  border: none;
-  box-shadow: 0 2px 14px rgba(249,115,22,0.45);
+  color: #F97316;
+  animation: nav-order-glow 2.2s ease-in-out infinite;
 }
 
-.nav-order-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #000000;
-  color: #ffffff;
-  flex-shrink: 0;
-  transition: transform 0.25s;
+@keyframes nav-order-glow {
+  0%, 100% { text-shadow: 0 0 6px rgba(249,115,22,0.4), 0 0 14px rgba(229,182,78,0.2); }
+  50%      { text-shadow: 0 0 12px rgba(249,115,22,0.85), 0 0 24px rgba(229,182,78,0.45); }
 }
 
-.nav-order-label:hover,
+.nav-item:hover .nav-order-label,
 .nav-order-online.open .nav-order-label {
-  background: #EA6C00;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 22px rgba(249,115,22,0.65);
-  color: #ffffff;
-}
-
-.nav-order-label:hover .nav-order-arrow {
-  transform: rotate(45deg);
+  color: #ffba70;
 }
 
 /* ── Dropdown panel ──────────────────────────────────────── */

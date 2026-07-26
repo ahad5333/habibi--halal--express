@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, ArrowUpRight, MapPin } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { notificationsAPI, locationsAPI } from '../services/api';
@@ -304,7 +304,12 @@ const Navbar = () => {
 
           {/* Center: Halal badge + Order Now badge */}
           <div className="navbar-center-badges">
-<Link to="/order" className="navbar-order-badge" title="Order Now">
+            <img
+              src="/images/logos/halal-certified-navbar.png"
+              alt="Halal Certified"
+              className="navbar-halal-badge"
+            />
+            <Link to="/order" className="navbar-order-badge" title="Order Now">
               <img
                 src="/images/logos/order-now-badge.webp"
                 alt="Order Now"
@@ -460,15 +465,16 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Center: Order Online */}
+          {/* Center: Order Online — same size/shape as the other nav items,
+              just a distinct glowing color so it still stands out a little */}
           <div
             className={`nav-item nav-order-online${openId === CENTER_ITEM.id ? ' open' : ''}`}
             onMouseEnter={() => setOpenId(CENTER_ITEM.id)}
             onMouseLeave={() => setOpenId(null)}
           >
-            <Link to={CENTER_ITEM.path} className="nav-order-label">
+            <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label">
               ORDER NOW
-              <span className="nav-order-arrow"><ArrowUpRight size={14} /></span>
+              <ChevronDown size={10} className="nav-chevron" />
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
           </div>
