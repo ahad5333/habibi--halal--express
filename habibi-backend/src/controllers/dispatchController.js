@@ -624,13 +624,18 @@ const calculateDeliveryFee = async (req, res) => {
     // kitchen prep entirely, so a customer a few minutes' drive away would
     // see something like "2 min" as their estimated delivery. Add a flat
     // prep/handling buffer on top of the drive time for a realistic ETA.
+    // Prefer the live-traffic duration when Google returns one (heavy traffic
+    // right now correctly pushes the quote up) and fall back to the typical
+    // historical duration otherwise.
     const PREP_BUFFER_MINUTES = 15;
-    const estimatedMinutes = dist.duration_minutes + PREP_BUFFER_MINUTES;
+    const driveMinutes = dist.duration_in_traffic_minutes ?? dist.duration_minutes;
+    const estimatedMinutes = driveMinutes + PREP_BUFFER_MINUTES;
 
     res.json({
       distance_miles:             dist.miles,
       distance_text:              dist.text,
-      duration:                   dist.duration, // raw drive time only, kept for reference
+      duration:                   dist.duration, // typical (no-traffic) drive time, kept for reference
+      duration_in_traffic:        dist.duration_in_traffic, // live-traffic drive time, when available
       estimated_delivery_minutes: Math.round(estimatedMinutes),
       estimated_delivery_text:    formatMinutes(estimatedMinutes),
       fee,

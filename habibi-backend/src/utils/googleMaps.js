@@ -9,6 +9,9 @@ async function getDistance(origin, destination) {
     `?origins=${encodeURIComponent(origin)}` +
     `&destinations=${encodeURIComponent(destination)}` +
     `&units=imperial` +
+    // Traffic-aware duration only comes back for driving mode with a departure_time;
+    // "now" gets Google's live/current-traffic estimate rather than the historical average.
+    `&departure_time=now` +
     `&key=${key}`;
 
   try {
@@ -20,11 +23,16 @@ async function getDistance(origin, destination) {
     if (!element || element.status !== 'OK') return null;
 
     const miles = element.distance.value / 1609.34;
+    // duration_in_traffic isn't always present (e.g. Google has no live data for the
+    // route) -- fall back to the typical/historical duration when it's missing.
+    const trafficDuration = element.duration_in_traffic;
     return {
-      miles:            parseFloat(miles.toFixed(2)),
-      text:             element.distance.text,
-      duration:         element.duration.text,
-      duration_minutes: element.duration.value / 60,
+      miles:                       parseFloat(miles.toFixed(2)),
+      text:                        element.distance.text,
+      duration:                    element.duration.text,
+      duration_minutes:            element.duration.value / 60,
+      duration_in_traffic:         trafficDuration?.text ?? null,
+      duration_in_traffic_minutes: trafficDuration ? trafficDuration.value / 60 : null,
     };
   } catch {
     return null;
