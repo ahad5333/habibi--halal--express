@@ -319,7 +319,10 @@
   text-decoration: none;
   transition: background 0.2s, transform 0.15s, border-color 0.2s;
 }
-.article-cta-btn:hover { background: #b45309; transform: translateY(-1px); }
+/* Explicit color here beats the global a:hover rule (index.css), which
+   otherwise wins on specificity and swaps this to the orange accent color
+   on hover instead of staying white on this solid-orange button. */
+.article-cta-btn:hover { background: #b45309; transform: translateY(-1px); color: #fff; }
 .article-cta-btn--outline {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.25);
