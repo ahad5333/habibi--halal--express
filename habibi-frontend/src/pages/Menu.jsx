@@ -158,7 +158,7 @@ const getItemTemp = (item, resolvedName) => {
 };
 
 const Menu = () => {
-  const { cat: catParam, slug: itemSlug } = useParams();
+  const { cat: catParam } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -220,8 +220,8 @@ const Menu = () => {
   }, []);
   const [modalItemId, setModalItemId] = useState(null);
   // URL to restore when the item modal closes — captured at the moment it opens
-  // so the shareable /menu/item/:slug URL (below) doesn't clobber whatever
-  // category/search view the customer was actually browsing.
+  // so the shareable ?item= URL (below) doesn't clobber whatever category/search
+  // view the customer was actually browsing.
   const prevUrlRef = useRef(null);
   const featCarouselRef = useRef(null);
   const [locAvailMap,  setLocAvailMap]  = useState({});
@@ -468,15 +468,20 @@ const Menu = () => {
 
   const isBYO = item => (item.category || '').toLowerCase().includes('build your own');
 
-  // Opens an item's popup AND updates the URL to its shareable /menu/item/:slug
-  // form (replace, not push, so the back button isn't repurposed as a modal
-  // close button) — this is what makes the popup itself deep-linkable/shareable,
-  // rather than only the separate (and visually weaker) full-page view.
+  // Opens an item's popup AND updates the URL to a shareable ?item=<slug>
+  // query param (replace, not push, so the back button isn't repurposed as a
+  // modal close button). Deliberately a query param and NOT a path segment —
+  // a path segment (e.g. /menu/item/:slug) matches a *different* <Route>,
+  // and React Router remounts this whole page (re-fetching everything, seen
+  // as a "double load") whenever the matched Route changes. A query param
+  // never changes which Route matches, so the popup just opens in place.
   const openItemModal = item => {
     if (isBYO(item)) { setByoItem(item); return; }
     prevUrlRef.current = location.pathname + location.search;
     setModalItemId(item.id);
-    navigate(`/menu/item/${item.slug || item.id}`, { replace: true });
+    const params = new URLSearchParams(location.search);
+    params.set('item', item.slug || item.id);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
   const handleCardClick = item => openItemModal(item);
@@ -493,21 +498,27 @@ const Menu = () => {
   const selectItemInModal = id => {
     setModalItemId(id);
     const found = items.find(i => i.id === id);
-    navigate(`/menu/item/${found?.slug || id}`, { replace: true });
+    const params = new URLSearchParams(location.search);
+    params.set('item', found?.slug || id);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
-  // Deep link landing: /menu/item/:slug opens straight to this item's popup
-  // (or the BYO builder, if this slug happens to be a Build Your Own item)
-  // on top of the normal menu page, once items have loaded.
+  // Deep link landing: ?item=<slug> opens straight to this item's popup (or
+  // the BYO builder, if this slug happens to be a Build Your Own item) on
+  // top of the normal menu page, once items have loaded.
   useEffect(() => {
-    if (!itemSlug || loading || items.length === 0) return;
-    const found = items.find(i => String(i.slug) === itemSlug || String(i.id) === itemSlug);
+    const itemParam = searchParams.get('item');
+    if (!itemParam || loading || items.length === 0) return;
+    const found = items.find(i => String(i.slug) === itemParam || String(i.id) === itemParam);
     if (!found) return;
-    prevUrlRef.current = '/menu';
+    const cleanParams = new URLSearchParams(searchParams);
+    cleanParams.delete('item');
+    const qs = cleanParams.toString();
+    prevUrlRef.current = location.pathname + (qs ? `?${qs}` : '');
     if (isBYO(found)) { setByoItem(found); return; }
     setModalItemId(found.id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemSlug, items, loading]);
+  }, [searchParams.toString(), items, loading]);
 
   const handleAddToCart = (item, qty = 1) => {
     addItem({
