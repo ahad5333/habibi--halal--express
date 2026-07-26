@@ -126,8 +126,12 @@ input, select, textarea { font-family: var(--font-sans); }
 .badge-muted   { background: rgba(255,255,255,0.06); color: var(--color-text-muted); border: 1px solid var(--color-border); }
 
 /* ── Table ── */
-.table-wrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* min-width is what actually makes .table-wrap's overflow-x:auto do anything on
+   a narrow screen — without it, a 100%-width table just gets squeezed column-
+   by-column below its readable size (text silently clipped, nothing to scroll)
+   instead of staying full-size and scrolling horizontally. */
+.table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.82rem; }
 .table th {
   text-align: left; font-size: 0.65rem; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--color-text-muted); font-weight: 600;
