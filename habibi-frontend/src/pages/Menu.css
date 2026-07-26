@@ -814,8 +814,8 @@
   margin-top: 0.4rem;
 }
 .menu-cat-hero-line {
-  flex: 1;
-  max-width: 60px;
+  flex: 0 0 40px;
+  width: 40px;
   height: 1px;
   background: linear-gradient(to right, transparent, #e5b64e);
 }
@@ -845,7 +845,7 @@
   .menu-cat-hero-title { font-size: clamp(1.1rem, 5.5vw, 1.5rem); }
   .menu-cat-hero-tagline { white-space: normal; letter-spacing: 0.12em; font-size: 0.6rem; }
   .menu-cat-hero-divider { gap: 0.4rem; }
-  .menu-cat-hero-line { max-width: 36px; }
+  .menu-cat-hero-line { flex-basis: 26px; width: 26px; }
 }
 @media (max-width: 360px) {
   .menu-cat-hero { height: 220px; margin-bottom: 0.6rem; }
