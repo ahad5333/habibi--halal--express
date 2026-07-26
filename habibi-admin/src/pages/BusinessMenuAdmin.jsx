@@ -335,7 +335,7 @@ export default function BusinessMenuAdmin() {
                           onError={e => { e.target.style.display = 'none'; }}
                         />
                       ) : (
-                        <div style={{ width: 44, height: 44, background: '#1a1a1a', borderRadius: 6 }} />
+                        <div style={{ width: 44, height: 44, background: 'var(--color-surface-2)', borderRadius: 6 }} />
                       )}
                     </td>
                     <td>
@@ -426,7 +426,7 @@ export default function BusinessMenuAdmin() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
                     Upload an Excel (.xlsx/.xls) or CSV file. Column headers are matched
                     automatically regardless of exact wording — e.g. <code>Product Name</code>,
                     <code> Price</code>, <code>Tier 2 Price</code>, <code>Category</code>,{' '}
