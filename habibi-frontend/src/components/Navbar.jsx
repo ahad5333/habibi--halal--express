@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell, MapPin } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { notificationsAPI, locationsAPI } from '../services/api';
+import { notificationsAPI } from '../services/api';
 import './Navbar.css';
 
 const LEFT_ITEMS = [
@@ -195,42 +195,6 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
-  const [serviceLocation, setServiceLocation] = useState(() => {
-    try { const s = localStorage.getItem('habibi_service_location'); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-  const [locOptions, setLocOptions] = useState([]);
-  const [locOpen, setLocOpen] = useState(false);
-  const locRef = useRef(null);
-
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === 'habibi_service_location') {
-        try { setServiceLocation(e.newValue ? JSON.parse(e.newValue) : null); } catch { setServiceLocation(null); }
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    locationsAPI.getAll().then(data => setLocOptions(Array.isArray(data) ? data : [])).catch(() => {});
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (!locOpen) return;
-    const handler = (e) => { if (locRef.current && !locRef.current.contains(e.target)) setLocOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [locOpen]);
-
-  const chooseServiceLocation = (loc) => {
-    const value = { id: loc.id, title: loc.title };
-    localStorage.setItem('habibi_service_location', JSON.stringify(value));
-    setServiceLocation(value);
-    setLocOpen(false);
-  };
-
   useEffect(() => {
     if (!isLoggedIn) { setUnreadCount(0); return; }
     const load = () =>
@@ -365,34 +329,6 @@ const Navbar = () => {
                     <Link to="/account?tab=notifications" className="notif-footer" onClick={() => setBellOpen(false)}>
                       View all notifications
                     </Link>
-                  </div>
-                )}
-              </div>
-            )}
-            {isLoggedIn && serviceLocation && (
-              <div className="navbar-service-location-wrap" ref={locRef}>
-                <button
-                  type="button"
-                  className="navbar-service-location"
-                  title="Choose your location"
-                  onClick={() => setLocOpen(o => !o)}
-                >
-                  <MapPin size={12} />
-                  <span>{serviceLocation.title.split('&')[0].trim()}</span>
-                  <ChevronDown size={11} className={`navbar-service-location-chevron${locOpen ? ' open' : ''}`} />
-                </button>
-                {locOpen && (
-                  <div className="navbar-service-location-menu" role="menu">
-                    {locOptions.map(loc => (
-                      <button
-                        type="button"
-                        key={loc.id}
-                        className={`navbar-service-location-opt${loc.id === serviceLocation.id ? ' active' : ''}`}
-                        onClick={() => chooseServiceLocation(loc)}
-                      >
-                        {loc.title}
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
