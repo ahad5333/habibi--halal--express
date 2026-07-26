@@ -80,6 +80,7 @@ const Checkout = () => {
   const [locationError, setLocationError]       = useState('');
   const [feeLoading, setFeeLoading]             = useState(false);
   const [feeMsg, setFeeMsg]                     = useState('');
+  const [addressOutOfRange, setAddressOutOfRange] = useState(false);
   const [upsellItems, setUpsellItems]           = useState([]);
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
@@ -235,6 +236,7 @@ const Checkout = () => {
       setDeliveryFee(0);
       setDeliveryDuration('');
       setFeeMsg('');
+      setAddressOutOfRange(false);
       // Don't touch addressValidated here — switching to Pickup doesn't
       // invalidate a delivery address the user already confirmed, it's
       // just not relevant to show a fee for while Pickup is selected.
@@ -258,6 +260,7 @@ const Checkout = () => {
       }
     }
     setDeliveryDuration('');
+    setAddressOutOfRange(false);
     clearTimeout(feeTimerRef.current);
     feeTimerRef.current = setTimeout(async () => {
       setFeeLoading(true);
@@ -271,6 +274,7 @@ const Checkout = () => {
         const data = await res.json();
         if (data.out_of_range) {
           setDeliveryFee(0);
+          setAddressOutOfRange(true);
           setFeeMsg('⚠ This address is outside our delivery area. Please enter a Bronx/NYC address.');
         } else if (data.fee != null) {
           setDeliveryFee(parseFloat(data.fee));
@@ -958,7 +962,7 @@ const Checkout = () => {
                       </div>
 
                       {/* Estimated delivery time badge */}
-                      <div className={`eta-badge eta-badge--delivery${feeLoading ? ' eta-badge--loading' : ''}`}>
+                      <div className={`eta-badge eta-badge--delivery${feeLoading ? ' eta-badge--loading' : ''}${addressOutOfRange ? ' eta-badge--warning' : ''}`}>
                         <div className="eta-badge-icon">
                           <Clock size={15} />
                         </div>
@@ -969,6 +973,11 @@ const Checkout = () => {
                             <>
                               <span className="eta-badge-time">{deliveryDuration}</span>
                               <span className="eta-badge-label">estimated delivery</span>
+                            </>
+                          ) : addressOutOfRange ? (
+                            <>
+                              <span className="eta-badge-time" style={{ color: '#f59e0b' }}>⚠</span>
+                              <span className="eta-badge-label" style={{ color: '#f59e0b' }}>outside our delivery area</span>
                             </>
                           ) : (
                             <>
