@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, useRef, lazy, Suspense } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -199,9 +199,23 @@ function InternalGuard({ children, requireAdmin = false }) {
 
 function ScrollToTop() {
   const { pathname } = useLocation();
+  const prevPathname = useRef(pathname);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const prevPath = prevPathname.current;
+    prevPathname.current = pathname;
+
+    // Opening/closing the menu item popup swaps the URL between /menu... and
+    // /menu/item/:slug (for the shareable link), but it isn't a real page
+    // navigation — don't yank the customer's scroll position when that happens.
+    const isMenuModalToggle =
+      prevPath.startsWith('/menu') && pathname.startsWith('/menu') &&
+      (prevPath.startsWith('/menu/item/') || pathname.startsWith('/menu/item/'));
+
+    if (!isMenuModalToggle) {
+      window.scrollTo(0, 0);
+    }
+
     // Set robots meta — noindex for private/functional pages
     const robots = document.querySelector('meta[name="robots"]');
     if (robots) {
