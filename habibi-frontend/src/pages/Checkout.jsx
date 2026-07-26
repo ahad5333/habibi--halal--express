@@ -97,6 +97,7 @@ const Checkout = () => {
   const mapInstanceRef     = useRef(null);
   const mapMarkerRef       = useRef(null);
   const addressConfirmedRef = useRef(false); // true when address set via autocomplete or geolocation
+  const prevAddressRef = useRef(''); // last address this effect actually saw, to tell a real edit from a mode toggle
 
   const { items, addItem, updateQty, removeItem, removeAddon, clearCart, subtotal } = useCart();
   const { isLoggedIn, user } = useAuth();
@@ -233,15 +234,28 @@ const Checkout = () => {
     if (deliveryMode !== 'delivery' || !address.trim()) {
       setDeliveryFee(0);
       setDeliveryDuration('');
-      setAddressValidated(false);
       setFeeMsg('');
+      // Don't touch addressValidated here — switching to Pickup doesn't
+      // invalidate a delivery address the user already confirmed, it's
+      // just not relevant to show a fee for while Pickup is selected.
       return;
     }
-    // Only reset validation if the address change came from manual typing (not autocomplete/geolocation)
-    if (addressConfirmedRef.current) {
-      addressConfirmedRef.current = false;
-    } else {
-      setAddressValidated(false);
+
+    // Toggling deliveryMode back to 'delivery' re-runs this effect even
+    // though address didn't actually change — only run the "was this a
+    // real edit" validation check below when it did, so switching tabs
+    // back and forth doesn't force the user to re-pick their address from
+    // the dropdown again.
+    const addressChanged = address !== prevAddressRef.current;
+    prevAddressRef.current = address;
+
+    if (addressChanged) {
+      // Only reset validation if the address change came from manual typing (not autocomplete/geolocation)
+      if (addressConfirmedRef.current) {
+        addressConfirmedRef.current = false;
+      } else {
+        setAddressValidated(false);
+      }
     }
     setDeliveryDuration('');
     clearTimeout(feeTimerRef.current);
@@ -322,6 +336,18 @@ const Checkout = () => {
 
   // Initialize real Google Maps when a valid address lat/lng is available
   useEffect(() => {
+    if (deliveryMode !== 'delivery') {
+      // The map's container <div> lives inside the delivery-mode-only block
+      // above and unmounts when switching to Pickup. The Google Maps
+      // instance itself (held in a ref, so it survives that unmount) stays
+      // bound to that now-detached node — dropping the refs here means the
+      // check below correctly creates a fresh map on the new container the
+      // next time delivery mode (and this effect) comes back, instead of
+      // panning/zooming an orphaned map nothing can see.
+      mapInstanceRef.current = null;
+      mapMarkerRef.current = null;
+      return;
+    }
     if (!addressLatLng || !mapContainerRef.current) return;
     const init = () => {
       if (!window.google?.maps) return;
@@ -346,7 +372,7 @@ const Checkout = () => {
       });
     };
     if (window.google?.maps) init();
-  }, [addressLatLng]);
+  }, [addressLatLng, deliveryMode]);
 
   // ── Coupon ────────────────────────────────────────────────────────────────
   const handleApplyCoupon = async (codeOverride) => {
