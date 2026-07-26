@@ -162,6 +162,7 @@ export default function Careers() {
               <p>No positions yet. Click "Add Position" to create your first job posting.</p>
             </div>
           ) : (
+            <div className="table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -204,6 +205,7 @@ export default function Careers() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -230,6 +232,7 @@ export default function Careers() {
               <p>No applications {aFilter ? `with status "${aFilter}"` : ''} yet.</p>
             </div>
           ) : (
+            <div className="table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -278,6 +281,7 @@ export default function Careers() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

@@ -116,6 +116,7 @@
 /* Admin Table */
 .admin-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
