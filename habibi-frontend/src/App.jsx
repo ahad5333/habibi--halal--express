@@ -8,7 +8,6 @@ import Footer from './components/Footer';
 // Critical path — eagerly loaded
 import Home from './pages/Home';
 import Menu from './pages/Menu';
-import MenuItemPage from './pages/MenuItemPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Checkout from './pages/Checkout';
@@ -118,7 +117,11 @@ function Layout() {
         }>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/menu/item/:slug" element={<MenuItemPage />} />
+          {/* Shareable deep link — opens the Menu page with this item's popup
+              already open, rather than the separate full-page layout (client
+              found the dedicated page's image/layout quality noticeably worse
+              than the popup, so the popup stays the real UX either way). */}
+          <Route path="/menu/item/:slug" element={<Menu />} />
           <Route path="/menu/:cat?" element={<Menu />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/order-tracking" element={<OrderTracking />} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Minus, Plus, Heart, Star, Flame } from 'lucide-react';
+import { X, Minus, Plus, Heart, Star, Flame, Share2, Check } from 'lucide-react';
 import { menuAPI, favoritesAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -99,6 +99,7 @@ export default function MenuItemModal({
   const [qty,       setQty]       = useState(initialQty  || 1);
   const [isFav,     setIsFav]     = useState(false);
   const [added,     setAdded]     = useState(false);
+  const [copied,    setCopied]    = useState(false);
 
   // Quota-item state (Dozen of Tacos, etc.)
   const [tacoItems,    setTacoItems]    = useState([]);
@@ -317,6 +318,22 @@ export default function MenuItemModal({
     setIsFav(next);
     try { next ? await favoritesAPI.add(item.id) : await favoritesAPI.remove(item.id); }
     catch { setIsFav(!next); }
+  };
+
+  // The host page (Menu.jsx) already keeps window.location synced to this
+  // item's shareable /menu/item/:slug URL for as long as this modal is open,
+  // so sharing/copying is just sharing the current URL — same pattern as
+  // MenuItemPage's existing share button.
+  const handleShare = async () => {
+    const url = window.location.href;
+    const name = cleanName || 'Menu Item';
+    if (navigator.share) {
+      try { await navigator.share({ title: `${name} — Habibi Halal Express`, url }); } catch (_) {}
+    } else {
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
   };
 
   /* ── Add to cart ── */
@@ -549,6 +566,15 @@ export default function MenuItemModal({
                     <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
                   </button>
                 )}
+
+                <button
+                  className={`mim-share-btn${copied ? ' mim-share-btn--copied' : ''}`}
+                  onClick={handleShare}
+                  aria-label="Share this item"
+                >
+                  {copied ? <Check size={15} /> : <Share2 size={15} />}
+                  <span>{copied ? 'Copied!' : 'Share'}</span>
+                </button>
               </>
             )}
           </div>

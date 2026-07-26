@@ -158,7 +158,7 @@ const getItemTemp = (item, resolvedName) => {
 };
 
 const Menu = () => {
-  const { cat: catParam } = useParams();
+  const { cat: catParam, slug: itemSlug } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -219,6 +219,10 @@ const Menu = () => {
     setTimeout(() => document.getElementById('byo-bowl-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
   }, []);
   const [modalItemId, setModalItemId] = useState(null);
+  // URL to restore when the item modal closes — captured at the moment it opens
+  // so the shareable /menu/item/:slug URL (below) doesn't clobber whatever
+  // category/search view the customer was actually browsing.
+  const prevUrlRef = useRef(null);
   const featCarouselRef = useRef(null);
   const [locAvailMap,  setLocAvailMap]  = useState({});
 
@@ -464,10 +468,46 @@ const Menu = () => {
 
   const isBYO = item => (item.category || '').toLowerCase().includes('build your own');
 
-  const handleCardClick = item => {
+  // Opens an item's popup AND updates the URL to its shareable /menu/item/:slug
+  // form (replace, not push, so the back button isn't repurposed as a modal
+  // close button) — this is what makes the popup itself deep-linkable/shareable,
+  // rather than only the separate (and visually weaker) full-page view.
+  const openItemModal = item => {
     if (isBYO(item)) { setByoItem(item); return; }
+    prevUrlRef.current = location.pathname + location.search;
     setModalItemId(item.id);
+    navigate(`/menu/item/${item.slug || item.id}`, { replace: true });
   };
+
+  const handleCardClick = item => openItemModal(item);
+
+  const closeItemModal = () => {
+    setModalItemId(null);
+    navigate(prevUrlRef.current || '/menu', { replace: true });
+  };
+
+  // Switching items from inside an already-open modal (e.g. a "goes well
+  // with" suggestion) — updates the URL to the new item without touching
+  // prevUrlRef, so closing still returns to wherever the modal was originally
+  // opened from, not just this second item's own URL.
+  const selectItemInModal = id => {
+    setModalItemId(id);
+    const found = items.find(i => i.id === id);
+    navigate(`/menu/item/${found?.slug || id}`, { replace: true });
+  };
+
+  // Deep link landing: /menu/item/:slug opens straight to this item's popup
+  // (or the BYO builder, if this slug happens to be a Build Your Own item)
+  // on top of the normal menu page, once items have loaded.
+  useEffect(() => {
+    if (!itemSlug || loading || items.length === 0) return;
+    const found = items.find(i => String(i.slug) === itemSlug || String(i.id) === itemSlug);
+    if (!found) return;
+    prevUrlRef.current = '/menu';
+    if (isBYO(found)) { setByoItem(found); return; }
+    setModalItemId(found.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemSlug, items, loading]);
 
   const handleAddToCart = (item, qty = 1) => {
     addItem({
@@ -582,7 +622,7 @@ const Menu = () => {
             )}
             <button
               className="menu-item-add-btn"
-              onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+              onClick={e => { e.stopPropagation(); openItemModal(item); }}
               aria-label={`Add ${name}`}
             >
               +
@@ -917,7 +957,7 @@ const Menu = () => {
                         <span className="mf-price">${price.toFixed(2)}</span>
                         <button
                           className="mf-cart-btn"
-                          onClick={e => { e.stopPropagation(); setModalItemId(item.id); }}
+                          onClick={e => { e.stopPropagation(); openItemModal(item); }}
                           aria-label={`Add ${name}`}
                         >
                           <ShoppingCart size={15} />
@@ -1175,8 +1215,8 @@ const Menu = () => {
       {modalItemId && (
         <MenuItemModal
           itemId={modalItemId}
-          onClose={() => setModalItemId(null)}
-          onSelectItem={id => setModalItemId(id)}
+          onClose={closeItemModal}
+          onSelectItem={selectItemInModal}
         />
       )}
 
@@ -1184,7 +1224,7 @@ const Menu = () => {
       {byoItem && (
         <BuildYourOwn
           item={byoItem}
-          onClose={() => setByoItem(null)}
+          onClose={() => { setByoItem(null); navigate(prevUrlRef.current || '/menu', { replace: true }); }}
           onAdd={(item, qty) => {
             handleAddToCart(item, qty);
             setByoItem(null);
