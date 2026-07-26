@@ -13,7 +13,7 @@
 .acct-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0.55) 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.25) 100%);
 }
 
 .acct-hero-content {
