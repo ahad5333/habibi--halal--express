@@ -434,25 +434,36 @@ const updateAssignmentStatus = async (req, res) => {
       params
     );
 
-    // When driver picks up → mirror to guest_orders as out_for_delivery
-    if (status === 'picked_up') {
+    // Mirror the driver-facing status to guest_orders.order_status — the
+    // field Dashboard/Orders/Reports/Analytics/Customers all key off of.
+    // Cash-on-delivery deliveries get this via collectCash() instead (which
+    // also has to set payment_status='paid' at the same moment); every other
+    // payment method only ever reaches 'delivered' through this endpoint, so
+    // without mirroring it here those orders stayed stuck at
+    // 'out_for_delivery' in guest_orders forever — invisible to every
+    // revenue/report query in the admin panel even though the delivery
+    // genuinely completed.
+    const orderStatusMirror = status === 'picked_up' ? 'out_for_delivery'
+                             : status === 'delivered' ? 'delivered'
+                             : null;
+    if (orderStatusMirror) {
       const asgn = await pool.query(
         `SELECT order_number FROM delivery_assignments WHERE id=$1`, [id]
       );
       if (asgn.rows[0]?.order_number) {
         await pool.query(
-          `UPDATE guest_orders SET order_status='out_for_delivery' WHERE order_number=$1`,
-          [asgn.rows[0].order_number]
+          `UPDATE guest_orders SET order_status=$1 WHERE order_number=$2`,
+          [orderStatusMirror, asgn.rows[0].order_number]
         );
         const io = req.app.get('io');
         if (io) {
           io.to(`order_${asgn.rows[0].order_number}`).emit('order_status_updated', {
             order_number: asgn.rows[0].order_number,
-            status: 'out_for_delivery',
+            status: orderStatusMirror,
           });
           io.to('admins').emit('order_status_updated', {
             order_number: asgn.rows[0].order_number,
-            status: 'out_for_delivery',
+            status: orderStatusMirror,
           });
         }
       }

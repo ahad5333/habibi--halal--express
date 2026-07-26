@@ -18,7 +18,7 @@
 }
 
 .driver-empty h2 {
-  color: var(--text-main);
+  color: var(--color-text-main);
   margin-top: 15px;
 }
 
@@ -35,7 +35,7 @@
 
 .driver-header h1 {
   font-size: 24px;
-  color: var(--text-main);
+  color: var(--color-text-main);
   margin: 0;
 }
 
@@ -77,7 +77,7 @@
   align-items: flex-start;
   margin-bottom: 20px;
   gap: 15px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .driver-info-item svg {
@@ -94,7 +94,7 @@
 
 .driver-info-item .value {
   font-size: 16px;
-  color: var(--text-main);
+  color: var(--color-text-main);
   margin: 0;
 }
 
