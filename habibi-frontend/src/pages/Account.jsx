@@ -88,6 +88,7 @@ function ProfileTab({ user, logout, refreshUser }) {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [loyaltyEarnRate, setLoyaltyEarnRate]     = useState(10);  // pts per $1 spent
   const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts needed for $1 off
+  const [loyaltyTier, setLoyaltyTier]     = useState(null);
 
   const [pwOpen, setPwOpen]         = useState(false);
   const [currentPw, setCurrentPw]   = useState('');
@@ -125,6 +126,12 @@ function ProfileTab({ user, logout, refreshUser }) {
         if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate);
       })
       .catch(() => {}); // fail open — keep the 10/100 defaults
+  }, []);
+
+  // Tier info (Bronze/Silver/Gold/Platinum) — backend has always computed this,
+  // the card just never surfaced anything beyond the flat point count.
+  useEffect(() => {
+    userAPI.getLoyalty().then(setLoyaltyTier).catch(() => {});
   }, []);
 
   const handleSave = async () => {
@@ -253,6 +260,35 @@ function ProfileTab({ user, logout, refreshUser }) {
               : `${loyaltyRedeemRate - (loyaltyPoints % loyaltyRedeemRate)} pts to next $1 off`}
           </span>
         </div>
+
+        {loyaltyTier && (
+          <div className="acct-tier-section">
+            <div className="acct-tier-top">
+              <span
+                className="acct-tier-badge"
+                style={{
+                  color: loyaltyTier.tier_color,
+                  borderColor: loyaltyTier.tier_color + '55',
+                  background: loyaltyTier.tier_color + '15',
+                }}
+              >
+                {loyaltyTier.tier} Tier
+              </span>
+              <span className="acct-tier-multiplier">{loyaltyTier.tier_multiplier}&times; points</span>
+            </div>
+            <div className="acct-loyalty-bar-track">
+              <div
+                className="acct-loyalty-bar-fill"
+                style={{ width: `${loyaltyTier.progress_pct}%`, background: loyaltyTier.tier_color }}
+              />
+            </div>
+            <p className="acct-tier-next">
+              {loyaltyTier.next_tier_name
+                ? `${loyaltyTier.next_tier_pts_needed.toLocaleString()} pts to ${loyaltyTier.next_tier_name}`
+                : "You've reached the highest tier!"}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Change password */}
