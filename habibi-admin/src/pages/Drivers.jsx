@@ -208,7 +208,7 @@ export default function Drivers() {
       {smsPrompt && (
         <div className="card" style={{ marginBottom: '1rem', borderLeft: '3px solid var(--color-primary)' }}>
           <p style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Driver added!</p>
-          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
             Send {smsPrompt.name} a PIN setup link via SMS to {smsPrompt.phone}?
           </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -387,7 +387,7 @@ export default function Drivers() {
                   onKeyDown={e => e.key === 'Enter' && savePin()}
                   autoFocus
                 />
-                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>
                   Driver logs in at habibihe.com/driver/login
                 </p>
               </div>
@@ -458,7 +458,7 @@ export default function Drivers() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
                     Upload a CSV with <code>name</code> and <code>phone</code> columns (header row optional —
                     without one, the first column is treated as name, the second as phone). Each driver is
                     added without a PIN and immediately sent a text to set their own.
