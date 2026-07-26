@@ -75,14 +75,23 @@ const {
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
-// Accepts admin/driver JWT (Bearer) OR HMAC token in X-Driver-Token header.
+// Accepts admin/driver JWT (httpOnly cookie OR Bearer header) OR HMAC token
+// in X-Driver-Token header. The cookie check matters: every adminAPI.* call
+// from the admin panel (including DeliveryDispatch's "view as driver" link
+// into this same set of routes) authenticates via the auth_token cookie,
+// never a Bearer header — without it, that link 401'd unconditionally,
+// always surfacing "Driver authentication required" no matter how the
+// admin was logged in.
 function driverOrAdmin(req, res, next) {
-  // 1. JWT Bearer token
-  const authHeader = req.headers.authorization || '';
-  if (authHeader.startsWith('Bearer ')) {
+  // 1. JWT — httpOnly cookie (admin panel) or Bearer header (driver app)
+  const cookieToken = req.cookies?.auth_token;
+  const authHeader  = req.headers.authorization || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const jwtToken     = cookieToken || bearerToken;
+  if (jwtToken) {
     try {
       const jwt     = require('jsonwebtoken');
-      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
       if (decoded.role === 'admin' || decoded.role === 'driver' || decoded.role === 'delivery') {
         req.user = decoded;
         return next();
