@@ -14,7 +14,7 @@ function imgSrc(url) {
 }
 
 const BYO_TAB_LABELS = {
-  base: 'Bases', cheese: 'Cheese', veg: 'Veggies', protein: 'Proteins', sauce: 'Sauces',
+  base: 'Bases', cheese: 'Cheese', veg: 'Veggies & Fillings', protein: 'Proteins', sauce: 'Sauces',
   bowl_base: 'Bowl Bases', bowl_topping: 'Bowl Toppings',
   bowl_protein: 'Bowl Proteins', bowl_sauce: 'Bowl Sauces',
 };

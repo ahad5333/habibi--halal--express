@@ -8,8 +8,38 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
-.mb-cats { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.mb-cats { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .mb-search { width: 220px; }
+
+/* Category / BYO-tab filter pills — shared look across Menu Builder's toolbar
+   and BYO Ingredients tabs (borrows Orders.jsx's class name but that page's
+   CSS isn't loaded here, so the rules live in this file instead). */
+.mb-cats .orders-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  font-family: var(--font-sans);
+}
+.mb-cats .orders-filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-main);
+  background: var(--color-surface-hover);
+}
+.mb-cats .orders-filter-btn.active {
+  background: var(--color-primary-dim);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
 
 /* ── Table ── */
 .mb-table-wrap {
