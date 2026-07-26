@@ -129,7 +129,12 @@ function ProfileTab({ user, logout, refreshUser }) {
       setName(user?.name || '');
       setPhone(user?.phone || '');
     });
-  }, [user]);
+  // Only re-fetch when the logged-in account itself changes (login/logout),
+  // not on every refreshUser() merge -- e.g. the avatar upload below calls
+  // refreshUser({avatar_url}) to update the navbar, which was previously
+  // re-running this effect and silently discarding any in-progress unsaved
+  // edits (like just-checked dietary preference boxes) before Save was hit.
+  }, [user?.id]);
 
   // Rates were previously hardcoded here ("10 pts per $1 · 100 pts = $1 off")
   // instead of reflecting the Loyalty Program admin page's actual configured
