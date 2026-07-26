@@ -591,17 +591,32 @@ const calculateDeliveryFee = async (req, res) => {
 
   try {
     let origin = process.env.RESTAURANT_ADDRESS || '2974 Jerome Ave, Bronx, NY 10468';
+    let radiusMiles = 5; // default in-house delivery radius when no location context is given
     if (location_id) {
       const locResult = await pool.query(
-        `SELECT exact_address FROM locations WHERE id=$1`, [location_id]
+        `SELECT exact_address, delivery_radius_miles FROM locations WHERE id=$1`, [location_id]
       );
-      if (locResult.rows.length && locResult.rows[0].exact_address) {
-        origin = locResult.rows[0].exact_address;
+      if (locResult.rows.length) {
+        if (locResult.rows[0].exact_address) origin = locResult.rows[0].exact_address;
+        if (locResult.rows[0].delivery_radius_miles != null) radiusMiles = parseFloat(locResult.rows[0].delivery_radius_miles);
       }
     }
 
     const dist = await getDistance(origin, customer_address);
     if (!dist) return res.json({ fee: null, message: 'Could not calculate distance' });
+
+    // The fee-tier table alone allows fees up to 350mi (built for DoorDash Drive/Roadie
+    // long-range dispatch), but neither is actually configured — only in-house drivers
+    // are, so anything past this location's real delivery_radius_miles is out of range.
+    if (dist.miles > radiusMiles) {
+      return res.json({
+        distance_miles: dist.miles,
+        distance_text:  dist.text,
+        duration:       dist.duration,
+        fee:            null,
+        out_of_range:   true,
+      });
+    }
 
     const fee = await getFeeForDistance(dist.miles, location_id || null);
 

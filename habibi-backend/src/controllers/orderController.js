@@ -33,6 +33,25 @@ async function getOriginLocationId() {
   return _originLocationId;
 }
 
+// Real in-house delivery range for the resolved origin location — the fee-tier table
+// alone allows fees up to 350mi (built for DoorDash Drive/Roadie), but neither is
+// actually configured, so that range is not a real delivery-range cap on its own.
+let _originRadiusMiles;
+async function getOriginRadiusMiles(locationId) {
+  if (_originRadiusMiles !== undefined) return _originRadiusMiles;
+  try {
+    if (locationId) {
+      const r = await pool.query('SELECT delivery_radius_miles FROM locations WHERE id = $1', [locationId]);
+      _originRadiusMiles = r.rows[0]?.delivery_radius_miles != null ? parseFloat(r.rows[0].delivery_radius_miles) : 5;
+    } else {
+      _originRadiusMiles = 5;
+    }
+  } catch {
+    _originRadiusMiles = 5;
+  }
+  return _originRadiusMiles;
+}
+
 async function autoDispatchDoorDash(order_id, order) {
   if (!ddConfigured()) return;
   if ((order.delivery_method || '').toLowerCase() !== 'delivery') return;
@@ -234,7 +253,12 @@ const createGuestOrder = async (req, res) => {
           .filter(Boolean).join(', ');
         const dist = await getDistance(RESTAURANT_ADDRESS, addrStr);
         if (dist) {
-          const serverDelFee = await getFeeForDistance(dist.miles, await getOriginLocationId());
+          const originLocationId = await getOriginLocationId();
+          const radiusMiles = await getOriginRadiusMiles(originLocationId);
+          if (dist.miles > radiusMiles) {
+            return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
+          }
+          const serverDelFee = await getFeeForDistance(dist.miles, originLocationId);
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }
