@@ -287,6 +287,27 @@ const addAddress = async (req, res) => {
   }
 };
 
+// ─── PUT /api/users/me/addresses/:id ──────────────────────────────────────────
+const updateAddress = async (req, res) => {
+  try {
+    const { receiver_name, street_address, second_line, city, state, zip_code, driver_instruction } = req.body;
+    if (!street_address || !city || !state || !zip_code)
+      return res.status(400).json({ message: "Street address, city, state and ZIP are required." });
+
+    const result = await pool.query(
+      `UPDATE addresses
+          SET receiver_name=$1, street_address=$2, second_line=$3, city=$4, state=$5, zip_code=$6, driver_instruction=$7
+        WHERE id=$8 AND user_id=$9
+        RETURNING id, receiver_name, street_address, second_line, city, state, zip_code, driver_instruction, is_default, created_at`,
+      [receiver_name || null, street_address, second_line || null, city, state, zip_code, driver_instruction || null, req.params.id, req.user.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ message: "Address not found." });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ─── PUT /api/users/me/addresses/:id/default ─────────────────────────────────
 const setDefaultAddress = async (req, res) => {
   const client = await pool.connect();
@@ -456,7 +477,7 @@ const cancelMyOrder = async (req, res) => {
 module.exports = {
   getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
-  getAddresses, addAddress, setDefaultAddress, deleteAddress,
+  getAddresses, addAddress, updateAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,
 };

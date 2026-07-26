@@ -800,12 +800,15 @@ function OrdersTab() {
 }
 
 // ── Addresses Tab ─────────────────────────────────────────────────────────────
+const BLANK_ADDR_FORM = { receiver_name: '', street_address: '', second_line: '', city: '', state: 'NY', zip_code: '', driver_instruction: '' };
+
 function AddressesTab() {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [adding, setAdding]       = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving]       = useState(false);
-  const [form, setForm]           = useState({ receiver_name: '', street_address: '', second_line: '', city: '', state: 'NY', zip_code: '', driver_instruction: '' });
+  const [form, setForm]           = useState(BLANK_ADDR_FORM);
   const [err, setErr]             = useState('');
 
   const load = useCallback(() => {
@@ -818,15 +821,42 @@ function AddressesTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const startEdit = (a) => {
+    setForm({
+      receiver_name: a.receiver_name || '',
+      street_address: a.street_address || '',
+      second_line: a.second_line || '',
+      city: a.city || '',
+      state: a.state || 'NY',
+      zip_code: a.zip_code || '',
+      driver_instruction: a.driver_instruction || '',
+    });
+    setEditingId(a.id);
+    setAdding(false);
+    setErr('');
+  };
+
+  const cancelForm = () => {
+    setAdding(false);
+    setEditingId(null);
+    setErr('');
+    setForm(BLANK_ADDR_FORM);
+  };
+
   const handleAdd = async () => {
     if (!form.street_address.trim() || !form.city.trim() || !form.zip_code.trim()) {
       setErr('Street address, city and ZIP are required.'); return;
     }
     setSaving(true); setErr('');
     try {
-      await userAPI.addAddress(form);
+      if (editingId) {
+        await userAPI.updateAddress(editingId, form);
+      } else {
+        await userAPI.addAddress(form);
+      }
       setAdding(false);
-      setForm({ receiver_name: '', street_address: '', second_line: '', city: '', state: 'NY', zip_code: '', driver_instruction: '' });
+      setEditingId(null);
+      setForm(BLANK_ADDR_FORM);
       load();
     } catch (e) {
       setErr(e.message || 'Failed to save address.');
@@ -871,13 +901,17 @@ function AddressesTab() {
             {!a.is_default && (
               <button className="acct-link-btn" onClick={() => handleSetDefault(a.id)}>Set Default</button>
             )}
+            <button className="acct-icon-btn" onClick={() => startEdit(a)}><Edit3 size={14} /></button>
             <button className="acct-icon-btn danger" onClick={() => handleDelete(a.id)}><Trash2 size={14} /></button>
           </div>
         </div>
       ))}
 
-      {adding ? (
+      {(adding || editingId) ? (
         <div className="acct-add-form">
+          <p className="acct-section-title" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+            {editingId ? 'Edit Address' : 'Add New Address'}
+          </p>
           <div className="acct-add-form-row">
             <input className="acct-input" placeholder="Receiver name" value={form.receiver_name} onChange={e => setForm(f => ({ ...f, receiver_name: e.target.value }))} />
           </div>
@@ -892,9 +926,9 @@ function AddressesTab() {
           {err && <p className="acct-inline-msg err">{err}</p>}
           <div className="acct-add-form-btns">
             <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
-              <Check size={14} /> {saving ? 'Saving…' : 'Save Address'}
+              <Check size={14} /> {saving ? 'Saving…' : editingId ? 'Update Address' : 'Save Address'}
             </button>
-            <button className="btn btn-outline" onClick={() => { setAdding(false); setErr(''); }}>Cancel</button>
+            <button className="btn btn-outline" onClick={cancelForm}>Cancel</button>
           </div>
         </div>
       ) : (

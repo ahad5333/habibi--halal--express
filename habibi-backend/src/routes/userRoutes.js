@@ -6,7 +6,7 @@ const { handleValidation, rules, body } = require('../middleware/validate');
 const {
   getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
-  getAddresses, addAddress, setDefaultAddress, deleteAddress,
+  getAddresses, addAddress, updateAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,
 } = require("../controllers/userController");
@@ -72,6 +72,18 @@ router.post("/me/addresses",
   body('driver_instruction').optional({ checkFalsy: true }).isLength({ max: 300 }).withMessage('Instructions too long.'),
   handleValidation,
   addAddress
+);
+
+router.put("/me/addresses/:id",
+  body('street_address').trim().notEmpty().withMessage('Street address is required.').isLength({ max: 200 }).withMessage('Street address too long.'),
+  body('city').trim().notEmpty().withMessage('City is required.').isLength({ max: 100 }).withMessage('City too long.'),
+  body('state').trim().notEmpty().withMessage('State is required.').isLength({ max: 50 }),
+  body('zip_code').trim().notEmpty().withMessage('ZIP code is required.').isLength({ max: 20 }),
+  body('second_line').optional({ checkFalsy: true }).isLength({ max: 100 }).withMessage('Second line too long.'),
+  body('receiver_name').optional({ checkFalsy: true }).trim().isLength({ max: 100 }).withMessage('Receiver name too long.'),
+  body('driver_instruction').optional({ checkFalsy: true }).isLength({ max: 300 }).withMessage('Instructions too long.'),
+  handleValidation,
+  updateAddress
 );
 
 router.put   ("/me/addresses/:id/default", setDefaultAddress);

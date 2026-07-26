@@ -308,6 +308,10 @@ export const userAPI = {
   addAddress: (data) =>
     request('/api/users/me/addresses', { method: 'POST', body: JSON.stringify(data) }),
 
+  /** PUT /api/users/me/addresses/:id */
+  updateAddress: (id, data) =>
+    request(`/api/users/me/addresses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
   /** PUT /api/users/me/addresses/:id/default */
   setDefaultAddress: (id) =>
     request(`/api/users/me/addresses/${id}/default`, { method: 'PUT' }),
