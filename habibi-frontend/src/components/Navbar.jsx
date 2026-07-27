@@ -266,13 +266,21 @@ const Navbar = () => {
             />
           </Link>
 
-          {/* Center: Halal badge */}
+          {/* Center: Halal badge (desktop) / Order Now badge (mobile — see
+              @media max-width:768px, which swaps which one is visible) */}
           <div className="navbar-center-badges">
             <img
               src="/images/logos/halal-certified-nav.webp"
               alt="Halal Certified"
               className="navbar-halal-badge"
             />
+            <Link to="/order" className="navbar-order-badge" title="Order Now">
+              <img
+                src="/images/logos/order-now-badge.webp"
+                alt="Order Now"
+                className="navbar-order-badge-img"
+              />
+            </Link>
           </div>
 
           <div className="navbar-top-right">
