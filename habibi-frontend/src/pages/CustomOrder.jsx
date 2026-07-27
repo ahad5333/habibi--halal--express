@@ -1240,8 +1240,12 @@ export default function CustomOrder() {
   const randomizeOrder = () => {
     const base = basesData[Math.floor(Math.random() * basesData.length)];
 
+    // A meal with zero protein looks broken/incomplete -- if the diet-filtered
+    // pool ever comes up empty, fall back to the full list rather than
+    // leaving the "surprise" with no protein at all.
     const proteinPool = proteinData.filter(p => !isProteinExcluded(p.id));
-    const protein = proteinPool[Math.floor(Math.random() * proteinPool.length)];
+    const proteinChoices = proteinPool.length ? proteinPool : proteinData;
+    const protein = proteinChoices[Math.floor(Math.random() * proteinChoices.length)];
 
     const vegPicks = shuffleArray(vegData).slice(0, 2);
 
