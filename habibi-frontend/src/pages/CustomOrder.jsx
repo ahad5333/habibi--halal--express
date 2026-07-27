@@ -1015,6 +1015,34 @@ const PRESETS = [
       extras: {}, drinks: {},
     },
   },
+  {
+    id: 'mix-platter',
+    label: 'Mix Platter',
+    emoji: '🥘',
+    desc: 'Platter · Mix · Rice · White & Hot Sauce',
+    cfg: {
+      baseId:     '39i',
+      cheese:     { type: 'none', qty: 'regular' },
+      vegetables: { rice: { qty: 'regular' }, lettuce: { qty: 'regular' }, tomatoes: { qty: 'regular' } },
+      proteins:   { mix: { qty: 'regular' } },
+      sauces:     { white: { placement: 'on_food', qty: 'regular', count: 1 }, hot: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
+  {
+    id: 'family-feast',
+    label: 'Family Feast',
+    emoji: '👨‍👩‍👧‍👦',
+    desc: 'Family Tray · Mix · Rice · White & Hot Sauce',
+    cfg: {
+      baseId:     '39j',
+      cheese:     { type: 'none', qty: 'regular' },
+      vegetables: { rice: { qty: 'regular' }, onions: { qty: 'regular' }, peppers: { qty: 'regular' } },
+      proteins:   { mix: { qty: 'regular' } },
+      sauces:     { white: { placement: 'on_food', qty: 'regular', count: 1 }, hot: { placement: 'on_food', qty: 'regular', count: 1 } },
+      extras: {}, drinks: {},
+    },
+  },
 ];
 
 /* ================================================================
