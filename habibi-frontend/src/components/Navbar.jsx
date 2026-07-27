@@ -67,7 +67,7 @@ const LEFT_ITEMS = [
 
 const CENTER_ITEM = {
   id: 'order',
-  label: 'Order Online',
+  label: 'Order Now',
   path: '/order',
   panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fca5a5 100%)', emoji: '🛵', caption: 'Super Express Delivery\nFriendly Online Tracking' },
   sub: [
