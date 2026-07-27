@@ -266,20 +266,13 @@ const Navbar = () => {
             />
           </Link>
 
-          {/* Center: Halal badge + Order Now badge */}
+          {/* Center: Halal badge */}
           <div className="navbar-center-badges">
             <img
               src="/images/logos/halal-certified-nav.webp"
               alt="Halal Certified"
               className="navbar-halal-badge"
             />
-            <Link to="/order" className="navbar-order-badge" title="Order Now">
-              <img
-                src="/images/logos/order-now-badge.webp"
-                alt="Order Now"
-                className="navbar-order-badge-img"
-              />
-            </Link>
           </div>
 
           <div className="navbar-top-right">

@@ -127,9 +127,6 @@
 }
 
 .navbar-halal-badge {
-  /* Matches .navbar-order-badge-img's desktop size exactly — they diverged
-     here (96px vs 82px) even though every narrower breakpoint already sizes
-     them equal (80px, 68px, etc.), so full desktop was the odd one out. */
   width: 82px;
   height: 82px;
   object-fit: contain;
@@ -140,57 +137,9 @@
   transition: transform 0.4s ease-in-out, filter 0.4s ease-in-out;
 }
 
-/* Self-hover, not the shared .navbar-center-badges parent — otherwise
-   hovering the Order Now badge next to it would light this one up too. */
 .navbar-halal-badge:hover {
   transform: scale(1.16);
   filter: drop-shadow(0 0 16px rgba(229,182,78,0.75)) drop-shadow(0 0 28px rgba(249,115,22,0.4));
-}
-
-/* ── ORDER NOW badge (image-based, matches halal badge size) ─
-   The Halal badge is a static certification seal — it should read as a
-   logo. This one is a clickable button to the order page, but styled
-   identically (same circular medallion, same blend-into-background
-   treatment) it gets mistaken for a second logo. Two changes make it
-   read as a button instead: (1) no mix-blend-mode, so its own dark
-   disc stays solid/opaque and visually "sits on top of" the navbar
-   like a raised button cap rather than blending into it, and (2) a
-   continuous pulsing glow (not just on :hover) so it's always visibly
-   "alive," which a static logo never is. */
-.navbar-order-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  text-decoration: none;
-  border-radius: 50%;
-  transition: transform 0.25s ease-out, filter 0.25s ease-out;
-  animation: navbar-order-badge-pulse 2.2s ease-in-out infinite;
-}
-
-@keyframes navbar-order-badge-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(249,115,22,0.45)) drop-shadow(0 0 2px rgba(255,255,255,0.15));
-    transform: scale(1);
-  }
-  50% {
-    filter: drop-shadow(0 0 20px rgba(249,115,22,0.9)) drop-shadow(0 0 34px rgba(229,182,78,0.55));
-    transform: scale(1.045);
-  }
-}
-
-.navbar-order-badge:hover {
-  animation-play-state: paused;
-  transform: scale(1.12);
-  filter: drop-shadow(0 0 20px rgba(249,115,22,0.85)) drop-shadow(0 0 32px rgba(229,182,78,0.5));
-}
-
-.navbar-order-badge-img {
-  width: 82px;
-  height: 82px;
-  border-radius: 50%;
-  object-fit: contain;
-  display: block;
 }
 
 /* ── Right side of top bar ───────────────────────────────── */
@@ -368,10 +317,7 @@
 }
 
 @media (max-width: 768px) {
-  /* Show ORDER NOW badge on mobile — hide halal badge */
-  .navbar-halal-badge { display: none; }
-  .navbar-order-badge { display: flex; }
-  .navbar-order-badge-img { width: 52px; height: 52px; }
+  .navbar-halal-badge { width: 52px; height: 52px; }
   /* Hide text labels on mobile — keep icons only to save space */
   .navbar-customize-label { display: none; }
   /* .user-greeting mobile-hide moved below .user-greeting's base rule —
@@ -826,6 +772,8 @@
   height: 36px;
   object-fit: contain;
   display: block;
+  border-radius: 50%;
+  margin: 2px 0;
   animation: nav-order-logo-glow 2.2s ease-in-out infinite;
 }
 
@@ -1109,12 +1057,11 @@
   .mobile-toggle { display: flex; }
   .auth-btns { display: none; }
   .navbar-halal-badge { width: 80px; height: 80px; }
-  .navbar-order-badge-img { width: 80px; height: 80px; }
 }
 
 /* The icon cluster (bell/customize/cart/avatar/hamburger) needs more room
-   than an equal 1fr share gives it once the center column holds both round
-   badges — measured overflowing left into the center badges' column by as
+   than an equal 1fr share gives it once the center column holds the round
+   badge — measured overflowing left into the center badges' column by as
    much as 117px around 800px wide, resolving only past ~1100px. The logo
    already has its own max-width cap per breakpoint below, so letting its
    track size to that (auto) instead of forcing an equal share frees up the
@@ -1140,7 +1087,6 @@
   .navbar-top-inner { padding: 0.6rem 1rem; gap: 0.5rem; }
   .logo-rule { display: none; }
   .navbar-halal-badge { width: 68px; height: 68px; }
-  .navbar-order-badge-img { width: 68px; height: 68px; }
 }
 
 @media (max-width: 600px) {
@@ -1152,21 +1098,21 @@
 @media (max-width: 480px) {
   .logo-img { width: auto; max-width: 155px; }
   .navbar-top-inner { padding: 0.5rem 0.75rem; gap: 0.3rem; }
-  .navbar-order-badge-img { width: 44px; height: 44px; }
+  .navbar-halal-badge { width: 44px; height: 44px; }
   .navbar-top-right { gap: 0.55rem; }
 }
 
 @media (max-width: 400px) {
   .logo-img { width: auto; max-width: 140px; }
   .navbar-top-inner { padding: 0.45rem 0.65rem; gap: 0.25rem; }
-  .navbar-order-badge-img { width: 40px; height: 40px; }
+  .navbar-halal-badge { width: 40px; height: 40px; }
   .navbar-top-right { gap: 0.45rem; }
 }
 
 @media (max-width: 360px) {
   .logo-img { width: auto; max-width: 125px; }
   .navbar-top-inner { padding: 0.4rem 0.55rem; gap: 0.2rem; }
-  .navbar-order-badge-img { width: 36px; height: 36px; }
+  .navbar-halal-badge { width: 36px; height: 36px; }
   .navbar-top-right { gap: 0.4rem; }
   .mobile-auth-row { padding: 1rem; gap: 0.5rem; }
   /* Last bit of margin for the very narrowest phones (~320-359px) */
