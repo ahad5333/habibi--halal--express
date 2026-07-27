@@ -356,8 +356,6 @@
 }
 
 @media (max-width: 768px) {
-  .navbar-halal-badge { display: none; }
-  .navbar-order-badge { display: flex; }
   .navbar-order-badge-img { width: 52px; height: 52px; }
   /* Hide text labels on mobile — keep icons only to save space */
   .navbar-customize-label { display: none; }
@@ -1099,7 +1097,13 @@
   .navbar-main { display: none; }
   .mobile-toggle { display: flex; }
   .auth-btns { display: none; }
-  .navbar-halal-badge { width: 80px; height: 80px; }
+  /* Show Order Now badge instead of Halal from the same breakpoint the
+     navbar collapses to the hamburger menu -- previously this swap only
+     happened at max-width:768px, so tablet widths (769-1200px) showed
+     the hamburger menu but still had the Halal badge in the top bar. */
+  .navbar-halal-badge { display: none; }
+  .navbar-order-badge { display: flex; }
+  .navbar-order-badge-img { width: 80px; height: 80px; }
 }
 
 /* The icon cluster (bell/customize/cart/avatar/hamburger) needs more room
@@ -1129,7 +1133,7 @@
   .logo-img { width: auto; max-width: 210px; }
   .navbar-top-inner { padding: 0.6rem 1rem; gap: 0.5rem; }
   .logo-rule { display: none; }
-  .navbar-halal-badge { width: 68px; height: 68px; }
+  .navbar-order-badge-img { width: 68px; height: 68px; }
 }
 
 @media (max-width: 600px) {
