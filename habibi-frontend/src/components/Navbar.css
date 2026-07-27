@@ -127,8 +127,8 @@
 }
 
 .navbar-halal-badge {
-  width: 82px;
-  height: 82px;
+  width: 65px;
+  height: 65px;
   object-fit: contain;
   border-radius: 50%;
   mix-blend-mode: screen;
@@ -768,8 +768,8 @@
 }
 
 .nav-order-logo-img {
-  width: 36px;
-  height: 36px;
+  width: 70px;
+  height: 70px;
   object-fit: contain;
   display: block;
   border-radius: 50%;
