@@ -401,15 +401,15 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Center: Order Online — same size/shape as the other nav items,
-              just a distinct glowing color so it still stands out a little */}
+          {/* Center: Order Now — same row height/dropdown behavior as the
+              other nav items, but the logo badge in place of plain text */}
           <div
             className={`nav-item nav-order-online${openId === CENTER_ITEM.id ? ' open' : ''}`}
             onMouseEnter={() => setOpenId(CENTER_ITEM.id)}
             onMouseLeave={() => setOpenId(null)}
           >
-            <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label">
-              ORDER NOW
+            <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label" title="Order Now">
+              <img src="/images/logos/order-now-badge.webp" alt="Order Now" className="nav-order-logo-img" />
               <ChevronDown size={10} className="nav-chevron" />
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
