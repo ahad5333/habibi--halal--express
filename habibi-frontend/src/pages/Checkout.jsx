@@ -371,8 +371,32 @@ const Checkout = () => {
       mapMarkerRef.current = new window.google.maps.Marker({
         position: addressLatLng,
         map: mapInstanceRef.current,
-        title: 'Delivery location',
+        title: 'Delivery location — drag to fine-tune',
         animation: window.google.maps.Animation.DROP,
+        draggable: true,
+      });
+      // Autocomplete/rooftop geocoding is often a little off for apartment
+      // complexes, gated communities, or back entrances -- letting the
+      // customer drag the pin to the actual door and reverse-geocoding that
+      // exact spot back into the address field is the same pattern DoorDash/
+      // Uber Eats use, and feeds the refined address into the existing
+      // text-address pipeline (fee calc, order record, driver handoff)
+      // completely unchanged -- nothing downstream needs to know the address
+      // came from a drag instead of the autocomplete dropdown.
+      mapMarkerRef.current.addListener('dragend', () => {
+        const pos = mapMarkerRef.current.getPosition();
+        const lat = pos.lat(), lng = pos.lng();
+        setAddressLatLng({ lat, lng });
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          addressConfirmedRef.current = true;
+          setAddress(
+            status === 'OK' && results[0]
+              ? results[0].formatted_address
+              : `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          );
+          setAddressValidated(true);
+        });
       });
     };
     if (window.google?.maps) init();
@@ -971,6 +995,11 @@ const Checkout = () => {
                           <div className="map-pin-center"><MapPin size={24} className="text-primary" fill="currentColor" /></div>
                           <p className="text-xs text-muted absolute bottom-2 left-2">SELECT ADDRESS FROM SUGGESTIONS</p>
                         </div>
+                      )}
+                      {addressLatLng && (
+                        <p className="text-xs text-muted mb-4" style={{ marginTop: '-0.75rem' }}>
+                          📍 Drag the pin to fine-tune your exact delivery location
+                        </p>
                       )}
 
                       {/* Apt / Suite / Gate / Floor */}
