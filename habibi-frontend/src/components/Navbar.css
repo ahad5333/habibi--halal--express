@@ -765,7 +765,7 @@
   position: relative;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 9px 1.5rem;
   display: flex;
   align-items: stretch;
   justify-content: space-between;
