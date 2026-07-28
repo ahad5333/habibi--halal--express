@@ -318,16 +318,28 @@
   width: 100%;
   height: 100%;
 }
-/* Layer 0 — base photo: full cover */
-.cart-item-custom-layer:nth-child(1) { object-fit: cover; }
-/* Layer 1 — primary protein: centered, 70% size */
-.cart-item-custom-layer:nth-child(2) { object-fit: contain; transform: scale(0.72) translate(0%, 4%); }
-/* Layer 2 — cheese/veg: offset lower-left */
-.cart-item-custom-layer:nth-child(3) { object-fit: contain; transform: scale(0.5) translate(-34%, 36%); }
-/* Layer 3 — second veg: offset lower-right */
-.cart-item-custom-layer:nth-child(4) { object-fit: contain; transform: scale(0.45) translate(38%, 36%); }
-/* Layer 4 — extra: small top-right hint */
-.cart-item-custom-layer:nth-child(5) { object-fit: contain; transform: scale(0.35) translate(48%, -40%); }
+
+/* Role-tagged layers (current cart items) — each ingredient gets a fixed
+   spot for what it actually IS, not for where it happened to land in the
+   array. An order with two proteins and no cheese shows both proteins and
+   an empty cheese corner, instead of the second protein image getting
+   stretched into the "cheese" position the way plain index-based
+   positioning did. */
+.cart-item-custom-layer--base    { object-fit: cover; }
+.cart-item-custom-layer--protein { object-fit: contain; transform: scale(0.72) translate(0%, 4%); }
+.cart-item-custom-layer--cheese  { object-fit: contain; transform: scale(0.5)  translate(-34%, 36%); }
+.cart-item-custom-layer--veg1    { object-fit: contain; transform: scale(0.45) translate(38%, 36%); }
+.cart-item-custom-layer--protein2 { object-fit: contain; transform: scale(0.35) translate(-48%, -40%); }
+.cart-item-custom-layer--veg2    { object-fit: contain; transform: scale(0.35) translate(48%, -40%); }
+
+/* Legacy layers (custom items added before role tagging shipped, still
+   sitting in someone's cart from localStorage) — fall back to the old
+   position-by-array-index behavior so they don't render as a blank stack. */
+.cart-item-custom-layer--legacy:nth-child(1) { object-fit: cover; }
+.cart-item-custom-layer--legacy:nth-child(2) { object-fit: contain; transform: scale(0.72) translate(0%, 4%); }
+.cart-item-custom-layer--legacy:nth-child(3) { object-fit: contain; transform: scale(0.5) translate(-34%, 36%); }
+.cart-item-custom-layer--legacy:nth-child(4) { object-fit: contain; transform: scale(0.45) translate(38%, 36%); }
+.cart-item-custom-layer--legacy:nth-child(5) { object-fit: contain; transform: scale(0.35) translate(48%, -40%); }
 
 /* BYO bowl layered preview in cart */
 .cart-item-bowl-preview {

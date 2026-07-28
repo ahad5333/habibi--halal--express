@@ -731,9 +731,24 @@ const Checkout = () => {
                             </div>
                           ) : item.customLayers?.length ? (
                             <div className="cart-item-custom-preview">
-                              {item.customLayers.map((src, li) => (
-                                <img key={li} src={src} alt="" className="cart-item-custom-layer" style={{ zIndex: li + 1 }} />
-                              ))}
+                              {item.customLayers.map((layer, li) => {
+                                // Legacy cart items (added before role-tagged layers shipped,
+                                // still sitting in someone's localStorage) are plain src strings
+                                // positioned by array index; new items are {src, role} positioned
+                                // by what the ingredient actually is. Both render fine side by side.
+                                const isLegacy = typeof layer === 'string';
+                                const src = isLegacy ? layer : layer.src;
+                                const roleClass = !isLegacy && layer.role ? ` cart-item-custom-layer--${layer.role}` : '';
+                                return (
+                                  <img
+                                    key={li}
+                                    src={src}
+                                    alt=""
+                                    className={`cart-item-custom-layer${isLegacy ? ' cart-item-custom-layer--legacy' : ''}${roleClass}`}
+                                    style={{ zIndex: li + 1 }}
+                                  />
+                                );
+                              })}
                             </div>
                           ) : (
                             <img

@@ -1543,14 +1543,26 @@ export default function CustomOrder() {
        price = full total (used for subtotal/cart-strip).
        baseItemPrice = base+ingredients only (displayed in checkout).
        addons = sides+drinks shown as indented sub-rows in checkout. */
-    /* Build visual layers for checkout preview:
-       base photo + up to 3 ingredient transparent PNGs */
+    /* Build visual layers for the checkout cart-thumbnail preview: base
+       photo + up to 5 ingredient PNGs, each tagged with what it actually
+       IS (not just its position in this array) -- Checkout.jsx positions
+       each layer by role (protein centered, cheese/veg in their own
+       corners), so e.g. an order with 2 proteins and no cheese doesn't
+       show a protein sitting in the "cheese" spot the way a plain
+       array-index mapping would. */
+    const proteinIds = Object.keys(cfg.proteins);
+    const vegIds     = Object.keys(cfg.vegetables);
+    const roleLayer = (id, src, role) => (id && src ? { src, role } : null);
     const customLayers = [
-      cfg.base.img,
-      ...Object.keys(cfg.proteins).map(id => CO_ING_DB[id]?.src),
-      cfg.cheese.type && cfg.cheese.type !== 'none' ? CO_ING_DB[cfg.cheese.type]?.src : null,
-      ...Object.keys(cfg.vegetables).map(id => CO_ING_DB[id]?.src),
-    ].filter(Boolean).slice(0, 5);
+      { src: cfg.base.img, role: 'base' },
+      roleLayer(proteinIds[0], CO_ING_DB[proteinIds[0]]?.src, 'protein'),
+      roleLayer(proteinIds[1], CO_ING_DB[proteinIds[1]]?.src, 'protein2'),
+      (cfg.cheese.type && cfg.cheese.type !== 'none')
+        ? roleLayer(cfg.cheese.type, CO_ING_DB[cfg.cheese.type]?.src, 'cheese')
+        : null,
+      roleLayer(vegIds[0], CO_ING_DB[vegIds[0]]?.src, 'veg1'),
+      roleLayer(vegIds[1], CO_ING_DB[vegIds[1]]?.src, 'veg2'),
+    ].filter(Boolean);
 
     if (editingCustomCartKey) removeItem(editingCustomCartKey);
 
@@ -1656,8 +1668,13 @@ export default function CustomOrder() {
 
       <div className="co-layout">
 
-        {/* ── Mobile-only canvas (above sections, hidden on desktop) ── */}
-        <div className="co-mobile-canvas-wrap">
+        {/* ── Mobile-only canvas (above sections, hidden on desktop) ──
+            Sticky like the desktop sidebar below -- previously this only
+            appeared once at the top and scrolled away with the rest of the
+            page, so by the time someone was picking sauces or extras there
+            was no visual feedback left at all of what they were building,
+            just the running total in the fixed footer. */}
+        <div className="co-mobile-canvas-wrap" style={{ top: navbarH }}>
           <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} proteinOpts={proteinData} sauceOpts={sauceData} />
         </div>
 

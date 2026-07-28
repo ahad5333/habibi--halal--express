@@ -230,8 +230,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem 1rem 0;
+  padding: 1rem 1rem 0.85rem;
   width: 100%;
+  /* Sticky, same idea as .co-sidebar on desktop -- `top` is set inline from
+     the live-measured navbar height (see navbarH), same value the sidebar
+     uses, so this pins directly under the navbar instead of guessing a
+     fixed offset that breaks whenever the navbar wraps to a second row. */
+  position: sticky;
+  z-index: 40;
+  background: #0a0a0a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 16px -8px rgba(0,0,0,0.5);
 }
 .co-mobile-canvas-wrap .co-canvas {
   width: min(320px, 100%);
