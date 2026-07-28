@@ -827,13 +827,12 @@
   display: block;
   border-radius: 50%;
   margin: 2px 0;
-  animation: nav-order-logo-glow 2.2s ease-in-out infinite;
-  transition: transform 0.6s ease;
+  animation: nav-order-logo-scale 2.2s ease-in-out infinite;
 }
 
-@keyframes nav-order-logo-glow {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(249,115,22,0.5)); }
-  50%      { filter: drop-shadow(0 0 9px rgba(249,115,22,0.9)) drop-shadow(0 0 16px rgba(229,182,78,0.5)); }
+@keyframes nav-order-logo-scale {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
 }
 
 .nav-item:hover .nav-order-label,
@@ -841,11 +840,17 @@
   color: #ffba70;
 }
 
+/* Hover swaps to a one-shot spin animation entirely (rather than mixing
+   with the idle scale animation on the same transform property, which
+   would conflict) -- reverts to the idle breathing scale on hover-out. */
 .nav-item:hover .nav-order-logo-img,
 .nav-order-online.open .nav-order-logo-img {
-  animation-play-state: paused;
-  filter: drop-shadow(0 0 10px rgba(249,115,22,0.95)) drop-shadow(0 0 18px rgba(229,182,78,0.6));
-  transform: rotate(360deg);
+  animation: nav-order-logo-spin 0.6s ease;
+}
+
+@keyframes nav-order-logo-spin {
+  from { transform: scale(1) rotate(0deg); }
+  to   { transform: scale(1) rotate(360deg); }
 }
 
 /* ── Dropdown panel ──────────────────────────────────────── */
