@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -195,6 +195,58 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
+
+  // The Halal/Order Now badge is true-centered on the top bar (see .navbar-center-badges)
+  // to line up exactly with .nav-order-online in the row below. True-centering ignores how
+  // wide the flanking content actually is, though -- the right-side icon cluster grows from
+  // 1 icon (cart) to 3 (bell + cart + avatar) once logged in, and on narrow phones that extra
+  // width reaches past the container's true midpoint, landing the badge on top of the bell.
+  // Recompute the badge's `left` on every layout change so it stays at true-center whenever
+  // there's room, but yields (moves left) just enough to clear the icon cluster when there isn't.
+  const topInnerRef = useRef(null);
+  const logoRef = useRef(null);
+  const centerBadgesRef = useRef(null);
+  const topRightRef = useRef(null);
+  useLayoutEffect(() => {
+    const container = topInnerRef.current;
+    const logo = logoRef.current;
+    const badges = centerBadgesRef.current;
+    const topRight = topRightRef.current;
+    if (!container || !logo || !badges || !topRight) return;
+
+    const GAP = 8; // minimum breathing room between the badge and its neighbors, px
+
+    const reposition = () => {
+      // `left` on an absolutely positioned child is measured from the
+      // container's padding box, but offsetWidth-based math above assumed
+      // the flex children (logo, topRight) sit flush against that same
+      // edge -- they don't, .navbar-top-inner has real left/right padding,
+      // so that undercounted the padding and let the clamp allow a few px
+      // of overlap. Using getBoundingClientRect() throughout instead keeps
+      // everything in one consistent, padding-agnostic coordinate space.
+      const containerRect = container.getBoundingClientRect();
+      const logoRect = logo.getBoundingClientRect();
+      const topRightRect = topRight.getBoundingClientRect();
+      const badgeWidth = badges.offsetWidth;
+
+      const idealLeft = containerRect.width / 2;
+      const minLeft = (logoRect.right - containerRect.left) + GAP + badgeWidth / 2;
+      const maxLeft = (topRightRect.left - containerRect.left) - GAP - badgeWidth / 2;
+      const left = maxLeft < minLeft
+        ? containerRect.width / 2 // no room to avoid overlap either way -- fall back to true-center
+        : Math.min(Math.max(idealLeft, minLeft), maxLeft);
+      badges.style.left = `${left}px`;
+    };
+
+    reposition();
+    const ro = new ResizeObserver(reposition);
+    ro.observe(container);
+    ro.observe(logo);
+    ro.observe(topRight);
+    ro.observe(badges);
+    return () => ro.disconnect();
+  }, [isLoggedIn, unreadCount, totalItems]);
+
   useEffect(() => {
     if (!isLoggedIn) { setUnreadCount(0); return; }
     const load = () =>
@@ -257,8 +309,8 @@ const Navbar = () => {
     <header className="navbar">
       {/* ── Top bar: logo + auth ── */}
       <div className="navbar-top">
-        <div className="navbar-top-inner">
-          <Link to="/" className="navbar-logo">
+        <div className="navbar-top-inner" ref={topInnerRef}>
+          <Link to="/" className="navbar-logo" ref={logoRef}>
             <img
               src="/images/logos/logo-full.jpg"
               alt="Habibi Halal Express"
@@ -268,7 +320,7 @@ const Navbar = () => {
 
           {/* Center: Halal badge (desktop) / Order Now badge (mobile — see
               @media max-width:768px, which swaps which one is visible) */}
-          <div className="navbar-center-badges">
+          <div className="navbar-center-badges" ref={centerBadgesRef}>
             <img
               src="/images/logos/halal-certified-nav.webp"
               alt="Halal Certified"
@@ -283,7 +335,7 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <div className="navbar-top-right">
+          <div className="navbar-top-right" ref={topRightRef}>
             {isLoggedIn && (
               <div className="notif-wrap" ref={bellRef}>
                 <button className="cart-btn-wrap notif-bell-btn" onClick={openBell} aria-label="Notifications">

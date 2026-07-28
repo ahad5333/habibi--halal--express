@@ -135,13 +135,15 @@
   justify-content: center;
   gap: 0.75rem;
   flex-shrink: 0;
-  /* Absolutely positioned to the true center of this row's own container
-     (which shares the exact same max-width:1440px + margin:0 auto as
-     .navbar-main-inner below) rather than centered within the grid's
-     leftover space -- this guarantees it lines up with .nav-order-online
-     in the row below regardless of how much content sits on each side of
-     either row, instead of two independently-centered elements that only
-     roughly happened to align. */
+  /* Absolutely positioned so it can line up with .nav-order-online in the
+     row below (both rows share the same max-width:1440px + margin:0 auto
+     centering) instead of two independently-centered elements that only
+     roughly happened to align. `left` here is just the pre-JS fallback --
+     Navbar.jsx measures the logo and the right-side icon cluster (which
+     grows from 1 icon to 3 once logged in) on every layout change and
+     overrides `left` inline, staying at true-center whenever there's room
+     but yielding left just enough to never overlap either neighbor when
+     there isn't (narrow phones + logged-in state is the tightest case). */
   position: absolute;
   left: 50%;
   top: 50%;
@@ -1182,16 +1184,23 @@
 @media (max-width: 400px) {
   .logo-img { width: auto; max-width: 140px; }
   .navbar-top-inner { padding: 0.45rem 0.65rem; gap: 0.25rem; }
-  .navbar-order-badge-img { width: 40px; height: 40px; }
-  .navbar-top-right { gap: 0.45rem; }
+  .navbar-order-badge-img { width: 34px; height: 34px; }
+  .navbar-top-right { gap: 0.35rem; }
+  /* Logged-in adds a bell + avatar to this same row (guests only get the
+     cart icon) -- at this width even the JS clamp above can't find a spot
+     for the Order Now badge that clears both the logo and a full 3-icon
+     cluster, so the icons themselves need to shrink a bit too. */
+  .cart-btn-wrap svg { width: 18px; height: 18px; }
+  .cart-badge { width: 15px; height: 15px; font-size: 0.52rem; top: -6px; right: -7px; }
 }
 
 @media (max-width: 360px) {
   .logo-img { width: auto; max-width: 125px; }
   .navbar-top-inner { padding: 0.4rem 0.55rem; gap: 0.2rem; }
-  .navbar-order-badge-img { width: 36px; height: 36px; }
-  .navbar-top-right { gap: 0.4rem; }
+  .navbar-order-badge-img { width: 28px; height: 28px; }
+  .navbar-top-right { gap: 0.3rem; }
   .mobile-auth-row { padding: 1rem; gap: 0.5rem; }
   /* Last bit of margin for the very narrowest phones (~320-359px) */
-  .user-btn { gap: 0.25rem; padding: 0.35rem 0.4rem 0.35rem 0.35rem; }
+  .user-btn { gap: 0.25rem; padding: 0.3rem 0.35rem 0.3rem 0.3rem; }
+  .user-avatar { width: 22px; height: 22px; font-size: 0.65rem; }
 }
