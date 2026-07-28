@@ -7,6 +7,7 @@ const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
 const { getDistance, feeFromMiles } = require("../utils/googleMaps");
 const { getFeeForDistance } = require("../utils/deliveryFee");
+const { computeCustomItemPrice } = require("../utils/byoPricing");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -206,9 +207,10 @@ const createGuestOrder = async (req, res) => {
 
     // 2. Collect item IDs for price validation — every regular menu item must carry a
     //    valid menu ID. Custom Build-Your-Own items (id prefixed "custom-") have no
-    //    row in `menus` — their price is computed client-side from selected ingredients
-    //    and is intentionally not re-validated here, same as before this check existed.
-    //    This only closes the gap for genuine menu items missing/spoofing an ID.
+    //    row in `menus` for the item itself, but their price is recomputed below from
+    //    `customCfg` (the raw ingredient selections) against `byo_ingredients` and, for
+    //    any extras/drinks bundled onto them, the same `menus` price lookup as everything
+    //    else — see the BYO price-recompute block inside the transaction.
     const isCustomItem = item => typeof item.id === 'string' && item.id.startsWith('custom-');
     for (const item of items) {
       if (isCustomItem(item)) continue;
@@ -220,6 +222,22 @@ const createGuestOrder = async (req, res) => {
     const itemIds = items
       .filter(i => !isCustomItem(i))
       .map(i => parseInt(i.id || i.menu_id, 10));
+
+    // Custom items can bundle regular menu items (sides/drinks) as addons —
+    // their ids live inside customCfg.extras/customCfg.drinks (id -> qty maps),
+    // not in the item's own `id`. Collect them so the same `menus` lookup query
+    // below already has their real prices on hand.
+    for (const item of items) {
+      if (!isCustomItem(item) || !item.customCfg) continue;
+      for (const key of Object.keys(item.customCfg.extras || {})) {
+        const id = parseInt(key, 10);
+        if (id > 0) itemIds.push(id);
+      }
+      for (const key of Object.keys(item.customCfg.drinks || {})) {
+        const id = parseInt(key, 10);
+        if (id > 0) itemIds.push(id);
+      }
+    }
 
     // Resolve which location this order is tied to. Customer-selected in checkout
     // (mandatory dropdown) -- only trusted for looking up that location's own
@@ -389,6 +407,53 @@ const createGuestOrder = async (req, res) => {
             return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
           }
           recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
+        }
+
+        // Custom BYO items: recompute price from customCfg against DB-sourced
+        // ingredient prices. Previously trusted entirely from the client — for a
+        // cart made up only of custom items, recalcSubtotal never left 0 above,
+        // so the "prices changed" guard below was silently skipped and any total
+        // was accepted. menuPriceMap reuses priceRows, which itemIds was already
+        // widened (above) to include every extras/drinks id referenced inside
+        // customCfg, so no extra round trip is needed for those.
+        const customItems = items.filter(isCustomItem);
+        if (customItems.length > 0) {
+          const ingRows = await client.query(
+            `SELECT option_key, category, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
+          );
+          const mapFor = (cat) => new Map(
+            ingRows.rows
+              .filter(r => r.category === cat)
+              .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type }])
+          );
+          const ingredientMaps = {
+            baseMap:    mapFor('base'),
+            cheeseMap:  mapFor('cheese'),
+            vegMap:     mapFor('veg'),
+            proteinMap: mapFor('protein'),
+            sauceMap:   mapFor('sauce'),
+          };
+          const menuPriceMap = new Map(priceRows.rows.map(r => [r.id, parseFloat(r.price)]));
+
+          for (const item of customItems) {
+            if (!item.customCfg) {
+              await client.query('ROLLBACK');
+              return res.status(400).json({ message: 'Custom item is missing its configuration. Please refresh and try again.' });
+            }
+            let expectedUnit;
+            try {
+              expectedUnit = computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
+            } catch (_) {
+              await client.query('ROLLBACK');
+              return res.status(400).json({ message: 'One or more custom ingredients are no longer available. Please refresh your cart.' });
+            }
+            const clientUnit = parseFloat(item.price || item.unit_price || 0);
+            if (clientUnit < expectedUnit - 0.05) {
+              await client.query('ROLLBACK');
+              return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
+            }
+            recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
+          }
         }
 
         if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.02) {

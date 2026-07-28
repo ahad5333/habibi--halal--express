@@ -451,6 +451,7 @@ const Checkout = () => {
         note:            fullNote,
         selectedChoices: i.selectedChoices || {},
         selectedAddons:  i.selectedAddons  || {},
+        customCfg:       i.customCfg || undefined,
       };
     }),
     ...(getStoredUtm() || {}),
