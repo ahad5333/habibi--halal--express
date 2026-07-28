@@ -20,6 +20,7 @@
 }
 
 .navbar-top-inner {
+  position: relative;
   max-width: 1440px;
   margin: 0 auto;
   padding: 0.5rem 2rem;
@@ -132,12 +133,17 @@
   justify-content: center;
   gap: 0.75rem;
   flex-shrink: 0;
-  /* Grid items default to justify-self:stretch, so without this it fills
-     the entire 1fr middle track and re-centers inside itself -- same net
-     effect as centering on the whole container. This keeps the box sized
-     to its own content so grid centers it within the real leftover gap
-     between the logo and the right-side icon cluster. */
-  justify-self: center;
+  /* Absolutely positioned to the true center of this row's own container
+     (which shares the exact same max-width:1440px + margin:0 auto as
+     .navbar-main-inner below) rather than centered within the grid's
+     leftover space -- this guarantees it lines up with .nav-order-online
+     in the row below regardless of how much content sits on each side of
+     either row, instead of two independently-centered elements that only
+     roughly happened to align. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .navbar-halal-badge {
@@ -756,6 +762,7 @@
 }
 
 .navbar-main-inner {
+  position: relative;
   max-width: 1440px;
   margin: 0 auto;
   padding: 0 1.5rem;
@@ -774,6 +781,21 @@
   position: relative;
   display: flex;
   align-items: stretch;
+}
+
+/* Absolutely positioned to the true center of .navbar-main-inner, same
+   technique as .navbar-center-badges above and for the same reason --
+   guarantees this lines up with the Halal/Order Now badge in the row
+   above at every viewport width, since both rows share identical
+   max-width:1440px + margin:0 auto centering. Removing it from the flex
+   flow doesn't shift the left/right nav groups: justify-content:
+   space-between always pins the first/last items to the row's edges
+   regardless of what (if anything) sits between them. */
+.nav-order-online {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .nav-item-label {
