@@ -842,13 +842,14 @@
   gap: 6px;
 }
 
-.nav-order-logo-img {
-  width: 58px;
-  height: 58px;
-  object-fit: contain;
-  display: block;
-  border-radius: 50%;
-  margin: 2px 0;
+/* Breathing scale pulse lives on the wrapper and the 360deg spin lives
+   on the img as a transition (not a keyframe animation) so that ending
+   the hover smoothly unwinds the rotation back to 0deg instead of
+   snapping -- a transition always animates back from wherever it
+   currently sits when its target value changes. */
+.nav-order-logo-wrap {
+  display: inline-block;
+  line-height: 0;
   animation: nav-order-logo-scale 2.2s ease-in-out infinite;
 }
 
@@ -857,22 +858,25 @@
   50%      { transform: scale(1.08); }
 }
 
+.nav-order-logo-img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  display: block;
+  border-radius: 50%;
+  margin: 2px 0;
+  transform: rotate(0deg);
+  transition: transform 0.6s ease;
+}
+
 .nav-item:hover .nav-order-label,
 .nav-order-online.open .nav-order-label {
   color: #ffba70;
 }
 
-/* Hover swaps to a one-shot spin animation entirely (rather than mixing
-   with the idle scale animation on the same transform property, which
-   would conflict) -- reverts to the idle breathing scale on hover-out. */
 .nav-item:hover .nav-order-logo-img,
 .nav-order-online.open .nav-order-logo-img {
-  animation: nav-order-logo-spin 0.6s ease;
-}
-
-@keyframes nav-order-logo-spin {
-  from { transform: scale(1) rotate(0deg); }
-  to   { transform: scale(1) rotate(360deg); }
+  transform: rotate(360deg);
 }
 
 /* ── Dropdown panel ──────────────────────────────────────── */

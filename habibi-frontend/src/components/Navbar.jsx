@@ -410,7 +410,9 @@ const Navbar = () => {
             onMouseLeave={() => setOpenId(null)}
           >
             <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label" title="Order Now">
-              <img src="/images/logos/order-now-badge.webp" alt="Order Now" className="nav-order-logo-img" />
+              <span className="nav-order-logo-wrap">
+                <img src="/images/logos/order-now-badge.webp" alt="Order Now" className="nav-order-logo-img" />
+              </span>
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
           </div>
