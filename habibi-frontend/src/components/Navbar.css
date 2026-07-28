@@ -24,16 +24,18 @@
   max-width: 1440px;
   margin: 0 auto;
   padding: 0.5rem 2rem;
-  display: grid;
-  /* auto/auto flanks size to actual content (logo, right-side icon cluster)
-     instead of forcing both to equal width regardless of content -- the
-     logo is much wider than the right cluster, so an equal 1fr/1fr split
-     left almost all the slack stranded between the badge and the right
-     cluster specifically (right content is pinned to the far edge via
-     justify-self:end). The middle 1fr now gets only the real leftover
-     space, and .navbar-center-badges' own justify-content:center keeps
-     the badge centered within that actual gap either side. */
-  grid-template-columns: auto 1fr auto;
+  /* Flex + space-between, not grid -- .navbar-center-badges is taken out of
+     flow entirely (position:absolute, centered on this row's own midpoint,
+     same technique as .nav-order-online below it). A 3-column grid's
+     auto-placement only had 2 real in-flow children left once the badge
+     left, so it packed logo+icon-cluster into columns 1 and 2 instead of
+     1 and 3 -- the icon cluster (and its cart/notification badges) landed
+     near the middle of the row instead of the right edge, overlapping the
+     absolutely-positioned badge on narrow/mobile widths. Flex naturally
+     pins the first/last child to opposite edges no matter what (if
+     anything) sits between them in the flow. */
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 1rem;
 }
@@ -371,8 +373,7 @@
   display: flex;
   align-items: center;
   gap: 1.6rem;
-  justify-self: end;
-  min-width: 0; /* let grid column shrink */
+  min-width: 0; /* let flex item shrink below content size */
 }
 
 @media (max-width: 768px) {
@@ -1151,25 +1152,9 @@
   .navbar-order-badge-img { width: 80px; height: 80px; }
 }
 
-/* The icon cluster (bell/customize/cart/avatar/hamburger) needs more room
-   than an equal 1fr share gives it once the center column holds the round
-   badge — measured overflowing left into the center badges' column by as
-   much as 117px around 800px wide, resolving only past ~1100px. The logo
-   already has its own max-width cap per breakpoint below, so letting its
-   track size to that (auto) instead of forcing an equal share frees up the
-   difference for the icon cluster (1fr, now the only flexible track — it
-   soaks up whatever's left after logo/badges take just what they need).
-   Matches this site's own established "mobile nav" boundary (.navbar-main
-   switches to the hamburger menu at max-width:1200px too). */
-@media (max-width: 1150px) {
-  .navbar-top-inner { grid-template-columns: auto auto 1fr; }
-}
-
-/* The grid fix above closes most of the gap, but a handful of real tablet
-   widths (iPad Air/10th-gen portrait ~810-820px, Surface Duo ~912px) still
-   came up a little short. Build Your Own is the biggest single remaining
-   item in the icon cluster and — same as on phones — still fully reachable
-   from the hamburger menu, so drop it here too. */
+/* Build Your Own is the biggest single remaining item in the icon cluster
+   and, on tablet/phone widths, still fully reachable from the hamburger
+   menu, so drop it here to leave more room for the rest of the cluster. */
 @media (max-width: 960px) {
   .navbar-customize-btn { display: none; }
 }
