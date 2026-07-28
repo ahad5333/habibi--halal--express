@@ -155,7 +155,17 @@ const createGuestOrder = async (req, res) => {
       loyalty_points_redeemed: loyalty_points_raw,
       utm_source, utm_medium, utm_campaign, utm_content,
       is_gift, gift_recipient_name, gift_recipient_phone, gift_message,
+      payment_reference,
     } = req.body;
+
+    // Zelle/Cash App have no automated confirmation (unlike card/PayPal, which are
+    // charged and marked paid before this endpoint is even called) -- require the
+    // confirmation # the customer's app showed them after sending, so staff have
+    // something to match against their own Zelle/Cash App activity instead of
+    // guessing by name and amount before marking an order verified.
+    if (['zelle', 'cashapp'].includes((payment_method || '').toLowerCase()) && !String(payment_reference || '').trim()) {
+      return res.status(400).json({ message: 'Payment confirmation number is required for this payment method.' });
+    }
 
     // Generate order number server-side — never trust client-supplied values
     const order_number = `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
@@ -509,8 +519,9 @@ const createGuestOrder = async (req, res) => {
          delivery_state, delivery_instructions, payment_method,
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
-         is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30)
+         is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id,
+         payment_reference)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31)
        RETURNING id`,
       [
         order_number,
@@ -543,6 +554,7 @@ const createGuestOrder = async (req, res) => {
         gift_message         || null,
         ['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid',
         resolvedLocationId,
+        String(payment_reference || '').trim().slice(0, 100) || null,
       ]
     );
 

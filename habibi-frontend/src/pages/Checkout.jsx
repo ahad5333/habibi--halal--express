@@ -399,8 +399,9 @@ const Checkout = () => {
   };
 
   // ── Build order payload ────────────────────────────────────────────────────
-  const buildPayload = (orderNumber) => ({
+  const buildPayload = (orderNumber, paymentReference) => ({
     order_number: orderNumber,
+    payment_reference: paymentReference || null,
     customer_name:         receiverName || 'Guest',
     customer_phone:        customerPhone,
     customer_email:        customerEmail,
@@ -600,11 +601,11 @@ const Checkout = () => {
     setShowOfflineModal(true);
   };
 
-  const handleOfflineConfirm = async () => {
+  const handleOfflineConfirm = async (paymentReference) => {
     setShowOfflineModal(false);
     setPlacing(true); setOrderError('');
     try {
-      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
+      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum, paymentReference));
       await finishOrder(result?.order_number || pendingOrderNum);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');

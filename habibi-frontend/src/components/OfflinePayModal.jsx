@@ -6,6 +6,7 @@ import './OfflinePayModal.css';
 export default function OfflinePayModal({ method, amount, orderNumber, onConfirm, onClose }) {
   const [info, setInfo] = useState({ zelle: {}, cashapp: {} });
   const [copied, setCopied] = useState('');
+  const [reference, setReference] = useState('');
 
   useEffect(() => {
     paymentsAPI.offlineInfo().then(setInfo).catch(() => {});
@@ -78,9 +79,23 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
               <ol className="opm-steps-list">
                 <li>Send <strong>${parseFloat(amount).toFixed(2)}</strong> to the {isZelle ? 'email' : 'CashTag'} above</li>
                 <li>Include your order number <strong>{orderNumber}</strong> in the note</li>
+                <li>Enter the confirmation number {isZelle ? 'Zelle' : 'Cash App'} showed you after sending, below</li>
                 <li>Click &ldquo;I&rsquo;ve Sent Payment&rdquo; below — we&rsquo;ll confirm and start your order</li>
               </ol>
             </div>
+
+            <label className="opm-ref-label" htmlFor="opm-ref-input">
+              {isZelle ? 'Zelle' : 'Cash App'} confirmation number (required)
+            </label>
+            <input
+              id="opm-ref-input"
+              className="opm-ref-input"
+              type="text"
+              placeholder="e.g. confirmation ID, or last 4 digits of the transaction"
+              value={reference}
+              onChange={e => setReference(e.target.value)}
+              maxLength={100}
+            />
           </>
         )}
 
@@ -91,7 +106,11 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
           </div>
         )}
 
-        <button className="opm-confirm-btn" onClick={onConfirm}>
+        <button
+          className="opm-confirm-btn"
+          onClick={() => onConfirm(reference.trim())}
+          disabled={(isZelle || isCash) && !reference.trim()}
+        >
           {method === 'cash' ? 'Place Order — Pay on Delivery' : 'I\'ve Sent Payment — Place Order'}
         </button>
 

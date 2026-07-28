@@ -92,6 +92,7 @@ const getAllOrders = async (req, res) => {
         payment_method: o.payment_method || 'Card',
         payment_status: (o.payment_status || 'unpaid') === 'paid' ? 'Paid'
                        : (o.payment_status === 'refunded' ? 'Refunded' : 'Pending'),
+        payment_reference: o.payment_reference || null,
         status: o.order_status || 'pending',
         driver_instructions: o.delivery_instructions || '',
         notes: '',
@@ -323,6 +324,41 @@ const updateOrderStatus = async (req, res) => {
     }
   } catch (error) {
     console.error("[updateOrderStatus ERROR]", error.message, error.stack);
+    res.status(500).json(safeError(error));
+  }
+};
+
+/* ── Admin: mark an order's payment as verified/unverified ──────────────────
+   Separate from updateOrderStatus on purpose -- that endpoint fires customer-
+   facing SMS/email "your order is now X" notifications on every call, which
+   doesn't make sense for a payment-verification toggle staff might flip back
+   and forth while double-checking their Zelle/Cash App activity against the
+   customer-supplied payment_reference. Only meaningful for Zelle/Cash App --
+   card/PayPal are marked 'paid' automatically at order creation, and cash is
+   verified in person at handoff, not through this. */
+const updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { payment_status } = req.body;
+
+    if (!['paid', 'unpaid'].includes(payment_status)) {
+      return res.status(400).json({ message: 'Invalid payment status.' });
+    }
+
+    const updated = await pool.query(
+      `UPDATE guest_orders SET payment_status = $1, updated_at = NOW()
+       WHERE order_number = $2 OR CAST(id AS TEXT) = $2
+       RETURNING id, order_number, payment_status`,
+      [payment_status, id]
+    );
+    if (!updated.rows[0]) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    logAudit(pool, req.user?.id, req.user?.name, 'update_payment_status', 'order', String(id), { payment_status }, req.ip);
+    res.json({ success: true, payment_status: updated.rows[0].payment_status });
+  } catch (error) {
+    console.error("[updatePaymentStatus ERROR]", error.message);
     res.status(500).json(safeError(error));
   }
 };
@@ -1242,6 +1278,7 @@ module.exports = {
   getAllOrders,
   getAllMenus,
   updateOrderStatus,
+  updatePaymentStatus,
   addItemToOrder,
   getSidebarItems,
   getAllCustomers,

@@ -377,6 +377,10 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'unpaid'`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    // Customer-supplied Zelle/Cash App confirmation # or last-4 digits, captured at checkout
+    // so staff can match the order against their own Zelle/Cash App activity instead of
+    // guessing by name/amount alone before marking payment_status paid.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);

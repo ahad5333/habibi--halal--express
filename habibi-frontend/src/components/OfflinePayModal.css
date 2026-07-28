@@ -160,6 +160,28 @@
   border-radius: 10px;
 }
 
+.opm-ref-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: -0.5rem 0 -0.75rem;
+}
+
+.opm-ref-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: #111827;
+  font-family: inherit;
+}
+.opm-ref-input:focus { outline: none; border-color: #1e3a8a; background: #fff; }
+
 .opm-confirm-btn {
   width: 100%;
   background: #111827;
@@ -174,6 +196,11 @@
   transition: background 0.15s, transform 0.15s;
 }
 .opm-confirm-btn:hover { background: #1f2937; transform: translateY(-1px); }
+.opm-confirm-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .opm-disclaimer {
   font-size: 0.72rem;

@@ -92,17 +92,29 @@ function CancelReasonPicker({ onConfirm, onDismiss }) {
   );
 }
 
-function OrderRow({ order, onUpdate }) {
+const MANUAL_PAYMENT_METHODS = new Set(['zelle', 'cashapp']);
+
+function OrderRow({ order, onUpdate, onUpdatePayment }) {
   const [open, setOpen]         = useState(false);
   const [updating, setUpdating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
   const nexts = NEXT_STEPS[order.status] || [];
+  const needsPaymentVerification = MANUAL_PAYMENT_METHODS.has((order.payment_method || '').toLowerCase());
 
   const handleStatus = async (s, reason) => {
     setUpdating(true);
     try { await onUpdate(order.id, s, reason); }
     catch (_) {}
     finally { setUpdating(false); setCancelling(false); }
+  };
+
+  const handleMarkPayment = async (e, newStatus) => {
+    e.stopPropagation();
+    setMarkingPaid(true);
+    try { await onUpdatePayment(order.id, newStatus); }
+    catch (_) {}
+    finally { setMarkingPaid(false); }
   };
 
   return (
@@ -122,7 +134,17 @@ function OrderRow({ order, onUpdate }) {
         </td>
         <td style={{fontWeight:700, whiteSpace:'nowrap'}}>${parseFloat(order.total_amount||0).toFixed(2)}</td>
         <td>{order.delivery_method}</td>
-        <td>{order.payment_method}</td>
+        <td>
+          {order.payment_method}
+          {needsPaymentVerification && (
+            <span
+              className={`badge ${order.payment_status === 'Paid' ? 'badge-success' : 'badge-warning'}`}
+              style={{ marginLeft: 6, fontSize: '0.65rem' }}
+            >
+              {order.payment_status === 'Paid' ? 'Paid' : 'Unverified'}
+            </span>
+          )}
+        </td>
         <td>
           <span className={`badge ${STATUS_BADGE[order.status] || 'badge-muted'}`}>
             {(order.status||'pending').replace(/_/g,' ')}
@@ -171,6 +193,45 @@ function OrderRow({ order, onUpdate }) {
                   {order.driver_instructions && <div><p className="text-muted">Instructions</p><p>{order.driver_instructions}</p></div>}
                 </div>
               </div>
+
+              {/* Payment verification — Zelle/Cash App only, since those are the
+                  only methods with no automated payment confirmation. */}
+              {needsPaymentVerification && (
+                <div
+                  className="order-detail-section"
+                  style={{
+                    border: `1px solid ${order.payment_status === 'Paid' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.35)'}`,
+                    borderRadius: 8,
+                    background: order.payment_status === 'Paid' ? 'rgba(34,197,94,0.05)' : 'rgba(245,158,11,0.06)',
+                    padding: '0.75rem 1rem',
+                  }}
+                >
+                  <p className="order-detail-label">PAYMENT VERIFICATION — {order.payment_method}</p>
+                  <div className="order-detail-fields">
+                    <div>
+                      <p className="text-muted">Customer-supplied confirmation #</p>
+                      <p style={{ fontWeight: 600 }}>{order.payment_reference || '— none provided —'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted">Status</p>
+                      <p style={{ fontWeight: 600, color: order.payment_status === 'Paid' ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                        {order.payment_status === 'Paid' ? '✓ Verified received' : 'Not yet verified'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="order-action-btns" style={{ marginTop: '0.6rem' }}>
+                    {order.payment_status === 'Paid' ? (
+                      <button className="btn btn-sm btn-secondary" onClick={(e) => handleMarkPayment(e, 'unpaid')} disabled={markingPaid}>
+                        {markingPaid ? <span className="spinner" style={{ width: 12, height: 12 }} /> : 'Mark as Unverified'}
+                      </button>
+                    ) : (
+                      <button className="btn btn-sm btn-primary" onClick={(e) => handleMarkPayment(e, 'paid')} disabled={markingPaid}>
+                        {markingPaid ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '✓ Mark Payment Received'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Gift order info */}
               {order.is_gift && (
@@ -322,6 +383,18 @@ export default function Orders() {
     }
   };
 
+  const handleUpdatePayment = async (id, payment_status) => {
+    const prev = orders;
+    const displayStatus = payment_status === 'paid' ? 'Paid' : 'Pending';
+    setOrders(p => p.map(o => o.id === id ? { ...o, payment_status: displayStatus } : o));
+    try {
+      await adminAPI.updatePaymentStatus(id, payment_status);
+    } catch (err) {
+      setOrders(prev);
+      alert(`Failed to update payment status: ${err.message}`);
+    }
+  };
+
   const visible = orders.filter(o => {
     if (filter !== 'all' && o.status !== filter) return false;
     if (search) {
@@ -403,7 +476,7 @@ export default function Orders() {
               </thead>
               <tbody>
                 {visible.map(o => (
-                  <OrderRow key={o.id} order={o} onUpdate={handleUpdate} />
+                  <OrderRow key={o.id} order={o} onUpdate={handleUpdate} onUpdatePayment={handleUpdatePayment} />
                 ))}
               </tbody>
             </table>

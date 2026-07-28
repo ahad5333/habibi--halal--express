@@ -71,6 +71,7 @@ export const adminAPI = {
   orders:      ({ page, limit } = {}) =>
     req(`/api/admin/orders${page ? `?page=${page}&limit=${limit || 100}` : ''}`),
   updateOrder: (id, status, cancellation_reason) => req(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...(cancellation_reason ? { cancellation_reason } : {}) }) }),
+  updatePaymentStatus: (id, payment_status) => req(`/api/admin/orders/${id}/payment-status`, { method: 'PATCH', body: JSON.stringify({ payment_status }) }),
 
   menus:       () => req('/api/admin/menus'),
   createMenu:  (fd) => upload('/api/admin/menus', fd),

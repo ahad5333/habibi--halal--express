@@ -11,6 +11,7 @@ const {
   getAllOrders,
   getAllMenus,
   updateOrderStatus,
+  updatePaymentStatus,
   addItemToOrder,
   getSidebarItems,
   getAllCustomers,
@@ -67,6 +68,7 @@ router.use(protect);
 // These must come BEFORE router.use(admin) so merchant tokens can reach them.
 router.get("/orders/merchant", merchant, getMerchantOrders);
 router.patch("/orders/:id/status", merchant, updateOrderStatus);
+router.patch("/orders/:id/payment-status", merchant, updatePaymentStatus);
 
 // ── Admin-only routes (admin / superadmin only) ───────────────────────────
 router.use(admin);
