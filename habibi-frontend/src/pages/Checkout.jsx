@@ -11,6 +11,7 @@ import { useDineIn } from '../context/DineInContext';
 import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
 import PayPalButton from '../components/PayPalButton';
+import GooglePayButton from '../components/GooglePayButton';
 import OfflinePayModal from '../components/OfflinePayModal';
 import IngCanvas, { DEFAULT_PROTEIN_OPTS, DEFAULT_SAUCE_OPTS } from '../components/IngCanvas';
 import './Checkout.css';
@@ -19,10 +20,11 @@ const TIP_OPTIONS = ['None', '5%', '10%', '15%', '20%', 'Custom'];
 const TIP_PCTS    = [0, 0.05, 0.1, 0.15, 0.2, 'custom'];
 
 const ALT_PAYMENTS = [
-  { id: 'paypal',  label: 'PayPal',           img: '/images/partners/paypal.png' },
-  { id: 'zelle',   label: 'Zelle',            emoji: '💙' },
-  { id: 'cashapp', label: 'Cash App',         emoji: '💚' },
-  { id: 'cash',    label: 'Cash on Delivery', emoji: '💵' },
+  { id: 'paypal',    label: 'PayPal',           img: '/images/partners/paypal.png' },
+  { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay.png' },
+  { id: 'zelle',     label: 'Zelle',            emoji: '💙' },
+  { id: 'cashapp',   label: 'Cash App',         emoji: '💚' },
+  { id: 'cash',      label: 'Cash on Delivery', emoji: '💵' },
 ];
 
 // Methods that go through an offline/modal flow
@@ -33,8 +35,11 @@ const PROMO_DEALS = [
   { code: 'WELCOME5', emoji: '👋', label: '$5 off — welcome deal', desc: 'New customers', minOrder: 0 },
   { code: 'FREESHIP', emoji: '🚚', label: 'Free delivery', desc: 'Min order $30', minOrder: 30 },
 ];
-// Methods served by PayPal SDK
-const PAYPAL_METHODS  = new Set(['paypal']);
+// Methods that render their own SDK button inline instead of using the
+// shared "Place Order" CTA -- googlepay isn't admin-toggleable like the
+// others (see isPaymentActive bypass below), its visibility is purely
+// eligibility-based (does this browser/device actually support it).
+const PAYPAL_METHODS  = new Set(['paypal', 'googlepay']);
 
 const getFoodPhoto = (itemId) => {
   const n = ((itemId || 1) % 70) + 1;
@@ -769,9 +774,10 @@ const Checkout = () => {
     // AuthNetForm has its own submit button
   };
 
-  const showCardForm = paymentMethod === 'card' && intentReady;
-  const showPayPal   = PAYPAL_METHODS.has(paymentMethod);
-  const showCTABtn   = !PAYPAL_METHODS.has(paymentMethod);
+  const showCardForm  = paymentMethod === 'card' && intentReady;
+  const showPayPal    = paymentMethod === 'paypal';
+  const showGooglePay = paymentMethod === 'googlepay';
+  const showCTABtn    = !PAYPAL_METHODS.has(paymentMethod);
 
   const ctaLabel = () => {
     if (placing) return 'Please wait…';
@@ -1530,7 +1536,7 @@ const Checkout = () => {
 
                 {/* Alt payment buttons */}
                 <div className="payment-alt-grid">
-                  {ALT_PAYMENTS.filter(m => isPaymentActive(m.id)).map(m => (
+                  {ALT_PAYMENTS.filter(m => m.id === 'googlepay' || isPaymentActive(m.id)).map(m => (
                     <button
                       key={m.id}
                       className={`alt-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
@@ -1563,6 +1569,18 @@ const Checkout = () => {
                 {/* PayPal inline buttons */}
                 {showPayPal && (
                   <PayPalButton
+                    amount={total}
+                    orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
+                    onSuccess={handlePayPalSuccess}
+                    onError={(msg) => setOrderError(msg)}
+                    onValidate={validateOrder}
+                  />
+                )}
+
+                {/* Google Pay (via PayPal) -- same capture path as PayPal,
+                    so it reuses handlePayPalSuccess */}
+                {showGooglePay && (
+                  <GooglePayButton
                     amount={total}
                     orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
                     onSuccess={handlePayPalSuccess}

@@ -1,29 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { paypalConfigured, loadPayPalSdk } from '../utils/paypalSdk';
 
-const CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
-const API_BASE  = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function PayPalButton({ amount, orderNumber, onSuccess, onError, onValidate }) {
   const containerRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
 
-  // Load PayPal SDK script once
+  // Load PayPal SDK script once (shared loader -- see paypalSdk.js for why)
   useEffect(() => {
-    if (!CLIENT_ID || CLIENT_ID === 'REPLACE_ME') {
-      setLoaded(false);
-      return;
-    }
-    if (window.paypal) { setSdkReady(true); return; }
-
-    const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&currency=USD&enable-funding=venmo,paylater`;
-    script.async = true;
-    script.onload = () => setSdkReady(true);
-    script.onerror = () => console.error('[PayPal] SDK failed to load');
-    document.body.appendChild(script);
-
-    return () => { /* leave script tag — PayPal requires it to persist */ };
+    if (!paypalConfigured()) { setLoaded(false); return; }
+    loadPayPalSdk()
+      .then(() => setSdkReady(true))
+      .catch(() => console.error('[PayPal] SDK failed to load'));
   }, []);
 
   // Render buttons once SDK is ready
@@ -87,7 +77,7 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError, 
     };
   }, [sdkReady, amount, orderNumber]); // eslint-disable-line
 
-  if (!CLIENT_ID || CLIENT_ID === 'REPLACE_ME') {
+  if (!paypalConfigured()) {
     return (
       <div className="paypal-unconfigured">
         <p>⚙ PayPal not configured — add <code>VITE_PAYPAL_CLIENT_ID</code> to <code>.env</code></p>
