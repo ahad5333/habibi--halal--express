@@ -174,6 +174,36 @@ const Checkout = () => {
       })
       .catch(() => {}); // fail open
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Card additionally requires a real Authorize.net account to be active in
+  // the DB (set via the admin panel) -- the "Payment Methods" toggle above
+  // only controls whether Card is *offered*, not whether it actually works.
+  // Check this eagerly on mount and fail CLOSED (hide Card) rather than
+  // showing it and letting the customer discover it's broken after filling
+  // out the whole form. Self-healing: the moment a real account is
+  // activated in the admin panel, this starts returning apiLoginId and Card
+  // reappears with no code change or redeploy needed.
+  const [cardConfigured, setCardConfigured] = useState(false);
+  useEffect(() => {
+    const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    fetch(`${BASE}/api/payments/authnet/config`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.apiLoginId) {
+          setCardConfigured(true);
+        } else if (paymentMethod === 'card') {
+          const fallback = ALT_PAYMENTS.find(m => isPaymentActive(m.id));
+          if (fallback) setPaymentMethod(fallback.id);
+        }
+      })
+      .catch(() => {
+        if (paymentMethod === 'card') {
+          const fallback = ALT_PAYMENTS.find(m => isPaymentActive(m.id));
+          if (fallback) setPaymentMethod(fallback.id);
+        }
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isPaymentActive = (id) =>
     activePaymentProviders === null || activePaymentProviders.has(id === 'card' ? 'authorize.net' : id);
 
@@ -1482,8 +1512,10 @@ const Checkout = () => {
               <h2 className="checkout-section-title mb-6">Secure Payment</h2>
               <div className="payment-options">
 
-                {/* Card option */}
-                {isPaymentActive('card') && (
+                {/* Card option -- also requires a real Authorize.net account
+                    to be active (see cardConfigured effect above); the
+                    admin "Payment Methods" toggle alone isn't enough */}
+                {isPaymentActive('card') && cardConfigured && (
                   <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
                     <div className="flex items-center gap-3">
                       <CreditCard size={18} className="text-primary" />
