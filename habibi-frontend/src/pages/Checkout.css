@@ -1289,6 +1289,7 @@
   white-space: nowrap;
 }
 .pb-free            { color: #34d399; font-weight: 700; }
+.pb-value-hint      { font-size: 0.78rem; font-weight: 400; color: var(--color-text-muted); white-space: normal; }
 .pb-value--green    { color: #34d399; }
 .pb-row--discount .pb-label { color: #34d399; }
 .pb-divider {

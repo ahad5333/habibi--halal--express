@@ -1545,39 +1545,6 @@ const Checkout = () => {
               const needsAddress = !isDineIn && deliveryMode === 'delivery' && !!selectedLocation && !addressValidated;
               return (
                 <>
-                  <div className="summary-lines">
-                    <div className="summary-line"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                    <div className="summary-line"><span>Tax (8.875%)</span><span>${tax.toFixed(2)}</span></div>
-                    <div className="summary-line"><span>Service Fee (4.273%)</span><span>${serviceFee.toFixed(2)}</span></div>
-                    <div className="summary-line">
-                      <span>{isDineIn ? 'Delivery Fee (Dine-In)' : `Delivery Fee${deliveryMode === 'pickup' ? ' (Pickup)' : ''}`}</span>
-                      {isDineIn || deliveryMode === 'pickup' ? (
-                        <span className="text-primary font-bold">FREE</span>
-                      ) : needsLocation ? (
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Select restaurant above</span>
-                      ) : needsAddress ? (
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Enter address above</span>
-                      ) : feeLoading ? (
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Calculating…</span>
-                      ) : deliveryFee > 0 ? (
-                        <span className="text-primary font-bold">${deliveryFee.toFixed(2)}</span>
-                      ) : (
-                        <span className="text-primary font-bold">FREE</span>
-                      )}
-                    </div>
-                    {feeMsg && <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'var(--color-text-muted)', margin: '-0.25rem 0 0.25rem', lineHeight: 1.4 }}>{feeMsg}</p>}
-                    {couponDiscount > 0 && (
-                      <div className="summary-line" style={{ color: '#34d399' }}>
-                        <span>Coupon ({couponCode})</span><span>−${couponDiscount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {loyaltyDiscount > 0 && (
-                      <div className="summary-line" style={{ color: '#E5B64E' }}>
-                        <span>🏅 Rewards ({redeemablePts} pts)</span><span>−${loyaltyDiscount.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Coupon — collapsible offers panel */}
                   <div className={`coupon-panel${showCouponPanel ? ' coupon-panel--open' : ''}${couponApplied ? ' coupon-panel--applied' : ''}`}>
                     <button className="coupon-panel-hdr" onClick={() => setShowCouponPanel(v => !v)}>
@@ -1702,14 +1669,24 @@ const Checkout = () => {
                     </div>
                     {deliveryMode === 'delivery' && (
                       <div className="pb-row">
-                        <span className="pb-label">
-                          Delivery Fee
-                          {feeLoading && <span className="pb-note"> calculating…</span>}
-                        </span>
+                        <span className="pb-label">Delivery Fee</span>
                         <span className="pb-value">
-                          {feeLoading ? '—' : deliveryFee === 0 ? <span className="pb-free">Free</span> : `$${deliveryFee.toFixed(2)}`}
+                          {needsLocation ? (
+                            <span className="pb-value-hint">Select restaurant above</span>
+                          ) : needsAddress ? (
+                            <span className="pb-value-hint">Enter address above</span>
+                          ) : feeLoading ? (
+                            <span className="pb-value-hint">Calculating…</span>
+                          ) : deliveryFee === 0 ? (
+                            <span className="pb-free">Free</span>
+                          ) : (
+                            `$${deliveryFee.toFixed(2)}`
+                          )}
                         </span>
                       </div>
+                    )}
+                    {deliveryMode === 'delivery' && feeMsg && (
+                      <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'var(--color-text-muted)', margin: '-0.35rem 0 0.35rem', lineHeight: 1.4 }}>{feeMsg}</p>
                     )}
                     <div className="pb-row">
                       <span className="pb-label">Service Fee</span>
