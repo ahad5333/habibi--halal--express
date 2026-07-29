@@ -215,15 +215,23 @@
 /* ── Left sidebar (canvas + price) ──────────────────────────── */
 .co-sidebar {
   display: none;
-  flex-direction: column;
-  gap: 1rem;
   width: 300px;
   flex-shrink: 0;
   position: sticky;
   top: 72px;
+  overflow-y: auto;
 }
-@media (min-width: 860px)  { .co-sidebar { display: flex; } }
+@media (min-width: 860px)  { .co-sidebar { display: block; } }
 @media (min-width: 1100px) { .co-sidebar { width: 320px; } }
+
+/* Actual content layout lives here, not on .co-sidebar -- see the JSX
+   comment above .co-sidebar-inner for why overflow-y and flex-direction
+   can't both live on the same element here. */
+.co-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
 /* ── Mobile canvas strip (visible only below 860px) ─────────── */
 .co-mobile-canvas-wrap {

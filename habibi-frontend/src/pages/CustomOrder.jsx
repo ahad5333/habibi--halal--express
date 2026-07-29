@@ -1679,7 +1679,30 @@ export default function CustomOrder() {
         </div>
 
         {/* ── Left: sticky canvas (desktop sidebar) ── */}
-        <aside className="co-sidebar" style={{ top: navbarH + 12 }}>
+        {/* position:sticky alone doesn't give an element its own scroll region --
+            this sidebar's content (canvas + price breakdown + instructions +
+            Add to Cart + Save + meal-nudge chips) runs ~1150px tall, which is
+            taller than the sticky "window" (viewport height minus the navbar
+            offset) at every common desktop/laptop height, including 1000px+.
+            Without maxHeight+overflowY, Add to Cart and everything below it
+            is completely unreachable while pinned -- the only way to see it
+            was to scroll the whole page past every ingredient section until
+            the sidebar naturally un-stuck at the bottom of its container. */}
+        <aside
+          className="co-sidebar"
+          style={{ top: navbarH + 12, maxHeight: `calc(100vh - ${navbarH + 12}px - 12px)` }}
+        >
+          {/* The flex column + gap that used to live directly on .co-sidebar
+              moved to this inner wrapper. Flex items get an implicit
+              min-height:auto that keeps them from shrinking below their
+              natural content size -- but that protection is switched off
+              for any flex container whose own overflow isn't `visible`.
+              Putting overflow-y:auto on .co-sidebar itself (the flex
+              container) let the canvas silently get crushed down to a few
+              px instead of the sidebar scrolling, since every child became
+              free to shrink to fit. Keeping the scrolling element (aside)
+              and the flex-column element (this div) separate avoids that. */}
+          <div className="co-sidebar-inner">
           <IngCanvas base={cfg.base} cfg={cfg} onReset={handleReset} proteinOpts={proteinData} sauceOpts={sauceData} />
           <div className="co-price-card">
             <span className="co-price-label">Your Total</span>
@@ -1833,6 +1856,7 @@ export default function CustomOrder() {
               </div>
             </div>
           )}
+          </div>
         </aside>
 
         {/* ── Right: configuration groups ── */}
