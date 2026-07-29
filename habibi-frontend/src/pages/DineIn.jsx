@@ -89,7 +89,7 @@ export default function DineIn() {
             <div className="di-step-num">2</div>
             <div>
               <p className="di-step-title">Place Your Order</p>
-              <p className="di-step-sub">Pay by card, PayPal, or cash</p>
+              <p className="di-step-sub">Pay by card, Apple Pay, or cash</p>
             </div>
           </div>
           <div className="di-step">
