@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 const CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 const API_BASE  = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-export default function PayPalButton({ amount, orderNumber, onSuccess, onError }) {
+export default function PayPalButton({ amount, orderNumber, onSuccess, onError, onValidate }) {
   const containerRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
@@ -33,6 +33,17 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError }
 
     window.paypal.Buttons({
       style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+      // Card and offline-payment (Zelle/Cash App/Cash) both validate name,
+      // phone, and (for delivery) a priced address before anything happens
+      // -- PayPal had no equivalent gate at all, so a customer could pay via
+      // PayPal with a blank name/phone/address and no delivery fee ever
+      // calculated, producing a paid but unfulfillable order. onClick fires
+      // before the popup opens, so rejecting here stops it before PayPal is
+      // even involved -- same validateOrder() the other two paths use.
+      onClick: (_data, actions) => {
+        if (onValidate && !onValidate()) return actions.reject();
+        return actions.resolve();
+      },
       createOrder: (_data, actions) =>
         actions.order.create({
           purchase_units: [{
@@ -67,7 +78,10 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError }
         <p>⚙ PayPal not configured — add <code>VITE_PAYPAL_CLIENT_ID</code> to <code>.env</code></p>
         <button
           className="btn btn-primary mt-2"
-          onClick={() => onSuccess({ id: 'PAYPAL_MOCK_' + Date.now(), status: 'COMPLETED', mock: true })}
+          onClick={() => {
+            if (onValidate && !onValidate()) return;
+            onSuccess({ id: 'PAYPAL_MOCK_' + Date.now(), status: 'COMPLETED', mock: true });
+          }}
         >
           Simulate PayPal (Dev)
         </button>

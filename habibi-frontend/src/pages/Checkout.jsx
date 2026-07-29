@@ -1392,6 +1392,7 @@ const Checkout = () => {
                     orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
                     onSuccess={handlePayPalSuccess}
                     onError={(msg) => setOrderError(msg)}
+                    onValidate={validateOrder}
                   />
                 )}
 
