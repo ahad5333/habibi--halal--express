@@ -63,6 +63,13 @@ const Checkout = () => {
   const [couponLoading, setCouponLoading]   = useState(false);
   const [placing, setPlacing]               = useState(false);
   const [orderError, setOrderError]         = useState('');
+  // Set only when payment already succeeded (card charged / PayPal captured)
+  // but saving the order afterward failed -- distinct from a plain
+  // validation/payment error, since here the customer's money has already
+  // moved and "type everything in again" is not an acceptable recovery.
+  const [orderSaveFailure, setOrderSaveFailure] = useState(null); // { reference, retry }
+  const [retrying, setRetrying]             = useState(false);
+  const orderErrorRef = useRef(null);
   const [authNetConfig, setAuthNetConfig]   = useState(null);
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
@@ -494,6 +501,18 @@ const Checkout = () => {
     ...(getStoredUtm() || {}),
   });
 
+  // The error banner lives in the order-summary sidebar, which on mobile sits
+  // *after* the payment section in DOM order (sidebar goes position:static
+  // and stacks below at <=1100px) -- a declined card or a failed order-save
+  // previously just failed silently off-screen with no indication anything
+  // happened. Scroll+focus it into view whenever a new error appears so it's
+  // impossible to miss regardless of where the customer's scroll position was.
+  useEffect(() => {
+    if (!orderError || !orderErrorRef.current) return;
+    orderErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    orderErrorRef.current.focus({ preventScroll: true });
+  }, [orderError]);
+
   const finishOrder = async (orderNumber) => {
     // Snapshot cart before clearing so OrderConfirmation can fire the purchase event
     localStorage.setItem('last_order_track', JSON.stringify({ items, total }));
@@ -635,32 +654,57 @@ const Checkout = () => {
     }
   };
 
-  // Called by AuthNetForm on successful charge
-  const handleAuthNetSuccess = async (transactionId) => {
-    setPlacing(true); setOrderError('');
+  // Shared by every "payment already succeeded, now save the order" handler
+  // below. Card/PayPal money has genuinely moved by the time these run --
+  // if createGuest then fails (network blip, transient server error), the
+  // old behavior was a dead-end "contact support" message with no order
+  // number and no way forward. `reference` is whatever proof-of-payment
+  // exists (Authorize.net transaction ID, PayPal capture ID, or the
+  // customer-supplied Zelle/Cash App confirmation number) -- surfaced so
+  // there's something concrete to act on, and wired as a Retry button that
+  // re-attempts only the save, never re-charges.
+  const attemptSaveOrder = async (payload, reference, failureMessage) => {
+    setPlacing(true); setOrderError(''); setOrderSaveFailure(null);
     try {
-      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
-      await finishOrder(result?.order_number || pendingOrderNum);
+      const result = await ordersAPI.createGuest(payload);
+      setOrderSaveFailure(null);
+      await finishOrder(result?.order_number || payload.order_number);
     } catch (err) {
-      setOrderError(err.message || 'Order could not be saved. Contact support.');
+      setOrderError(
+        `${failureMessage}${err.message ? ` (${err.message})` : ''} ` +
+        `Please tap Retry below, or contact us with reference ${reference} if this keeps happening.`
+      );
+      setOrderSaveFailure({ reference, retry: () => attemptSaveOrder(payload, reference, failureMessage) });
     } finally {
       setPlacing(false);
     }
+  };
+
+  const handleRetrySaveOrder = async () => {
+    if (!orderSaveFailure) return;
+    setRetrying(true);
+    try { await orderSaveFailure.retry(); }
+    finally { setRetrying(false); }
+  };
+
+  // Called by AuthNetForm on successful charge
+  const handleAuthNetSuccess = async (transactionId) => {
+    await attemptSaveOrder(
+      buildPayload(pendingOrderNum),
+      transactionId,
+      'Your card was charged, but we could not save your order.'
+    );
   };
 
   const handleCardError = (msg) => setOrderError(msg || 'Payment failed. Please try again.');
 
   // ── PayPal success ─────────────────────────────────────────────────────────
   const handlePayPalSuccess = async (details) => {
-    setPlacing(true); setOrderError('');
-    try {
-      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum));
-      await finishOrder(result?.order_number || pendingOrderNum);
-    } catch (err) {
-      setOrderError(err.message || 'Order save failed after PayPal payment.');
-    } finally {
-      setPlacing(false);
-    }
+    await attemptSaveOrder(
+      buildPayload(pendingOrderNum),
+      details.id,
+      'Your PayPal payment was captured, but we could not save your order.'
+    );
   };
 
   // ── Offline / Cash / Zelle / CashApp ──────────────────────────────────────
@@ -675,15 +719,11 @@ const Checkout = () => {
 
   const handleOfflineConfirm = async (paymentReference) => {
     setShowOfflineModal(false);
-    setPlacing(true); setOrderError('');
-    try {
-      const result = await ordersAPI.createGuest(buildPayload(pendingOrderNum, paymentReference));
-      await finishOrder(result?.order_number || pendingOrderNum);
-    } catch (err) {
-      setOrderError(err.message || 'Failed to place order. Please try again.');
-    } finally {
-      setPlacing(false);
-    }
+    await attemptSaveOrder(
+      buildPayload(pendingOrderNum, paymentReference),
+      paymentReference || pendingOrderNum,
+      'We could not save your order.'
+    );
   };
 
   // ── Main CTA logic ─────────────────────────────────────────────────────────
@@ -1689,7 +1729,21 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {orderError && <div className="order-error">⚠ {orderError}</div>}
+                  {orderError && (
+                    <div className="order-error" ref={orderErrorRef} role="alert" tabIndex={-1}>
+                      ⚠ {orderError}
+                      {orderSaveFailure && (
+                        <button
+                          type="button"
+                          className="order-error-retry-btn"
+                          onClick={handleRetrySaveOrder}
+                          disabled={retrying}
+                        >
+                          {retrying ? 'Retrying…' : 'Retry'}
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* ── Trust badges ── */}
                   <div className="trust-badges">

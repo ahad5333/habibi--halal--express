@@ -181,7 +181,30 @@
   padding: 0.75rem 1rem;
   font-size: 0.8rem;
   margin-bottom: 1rem;
+  line-height: 1.5;
 }
+/* Programmatically focused (tabIndex=-1 + .focus()) when a new error
+   appears, so it's found immediately regardless of scroll position --
+   this outline is the visible cue for that, not a real interactive
+   element's focus ring. */
+.order-error:focus {
+  outline: 2px solid #f87171;
+  outline-offset: 2px;
+}
+.order-error-retry-btn {
+  display: block;
+  margin-top: 0.6rem;
+  background: #f87171;
+  color: #1a0505;
+  border: none;
+  border-radius: 5px;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.order-error-retry-btn:hover { background: #fca5a5; }
+.order-error-retry-btn:disabled { opacity: 0.6; cursor: default; }
 
 .order-success {
   display: flex;
