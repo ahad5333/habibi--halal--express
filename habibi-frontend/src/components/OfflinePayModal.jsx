@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
 import './OfflinePayModal.css';
@@ -7,10 +7,48 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
   const [info, setInfo] = useState({ zelle: {}, cashapp: {} });
   const [copied, setCopied] = useState('');
   const [reference, setReference] = useState('');
+  const modalRef = useRef(null);
 
   useEffect(() => {
     paymentsAPI.offlineInfo().then(setInfo).catch(() => {});
   }, []);
+
+  // Dialog semantics: this had none previously -- no focus trap, no Escape
+  // to close, no focus restore, so a keyboard user tabbing through it could
+  // tab straight out from behind the overlay into the page underneath.
+  // Move focus in on open, restore it to whatever triggered the modal on
+  // close (the "Continue"/payment-method button), close on Escape, and trap
+  // Tab/Shift+Tab so focus cycles within the dialog instead of escaping it.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    modalRef.current?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !modalRef.current) return;
+      const focusable = modalRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [onClose]);
 
   const copy = (text, key) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -33,8 +71,18 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
 
   return (
     <div className="opm-overlay" onClick={onClose}>
-      <div className="opm-modal" onClick={e => e.stopPropagation()}>
-        <button className="opm-close" onClick={onClose}><X size={18} /></button>
+      <div
+        className="opm-modal"
+        onClick={e => e.stopPropagation()}
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="opm-title"
+        tabIndex={-1}
+      >
+        <button className="opm-close" onClick={onClose} aria-label="Close">
+          <X size={18} />
+        </button>
 
         <div className="opm-header">
           {typeof icon === 'string' && icon.startsWith('/') ? (
@@ -42,7 +90,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
           ) : (
             <span className="opm-brand-emoji">{icon}</span>
           )}
-          <h2 className="opm-title">{title}</h2>
+          <h2 className="opm-title" id="opm-title">{title}</h2>
         </div>
 
         {(isZelle || isCash) && (
@@ -57,6 +105,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
                 className="opm-copy-btn"
                 onClick={() => copy(handle, 'handle')}
                 title="Copy"
+                aria-label={`Copy ${isZelle ? 'email' : 'CashTag'}`}
               >
                 {copied === 'handle' ? <Check size={14} /> : <Copy size={14} />}
               </button>
@@ -69,6 +118,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
                 className="opm-copy-btn"
                 onClick={() => copy(orderNumber, 'memo')}
                 title="Copy order number"
+                aria-label="Copy order number"
               >
                 {copied === 'memo' ? <Check size={14} /> : <Copy size={14} />}
               </button>

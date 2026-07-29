@@ -116,8 +116,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
       </div>
 
       <div className="authnet-field">
-        <label>Cardholder Name</label>
+        <label htmlFor="an-card-name">Cardholder Name</label>
         <input
+          id="an-card-name"
           className="authnet-input"
           placeholder="Name on card"
           value={cardName}
@@ -127,10 +128,11 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
       </div>
 
       <div className="authnet-field">
-        <label>Card Number</label>
+        <label htmlFor="an-card-number">Card Number</label>
         <div className="authnet-card-row">
           <CreditCard size={15} className="authnet-card-icon"/>
           <input
+            id="an-card-number"
             className="authnet-input authnet-card-input"
             placeholder="1234 5678 9012 3456"
             value={cardNumber}
@@ -144,8 +146,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
 
       <div className="authnet-row">
         <div className="authnet-field">
-          <label>Expiry Month</label>
+          <label htmlFor="an-exp-month">Expiry Month</label>
           <input
+            id="an-exp-month"
             className="authnet-input"
             placeholder="MM"
             value={expMonth}
@@ -156,8 +159,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
           />
         </div>
         <div className="authnet-field">
-          <label>Expiry Year</label>
+          <label htmlFor="an-exp-year">Expiry Year</label>
           <input
+            id="an-exp-year"
             className="authnet-input"
             placeholder="YYYY"
             value={expYear}
@@ -168,8 +172,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
           />
         </div>
         <div className="authnet-field">
-          <label>CVV</label>
+          <label htmlFor="an-cvv">CVV</label>
           <input
+            id="an-cvv"
             className="authnet-input"
             placeholder="123"
             value={cvv}

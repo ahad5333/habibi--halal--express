@@ -870,9 +870,9 @@ const Checkout = () => {
                           </div>
                           <div className="cart-item-controls">
                             <div className="qty-control">
-                              <button onClick={() => updateQty(itemKey, item.qty - 1)}>−</button>
+                              <button aria-label={`Decrease quantity of ${item.name}`} onClick={() => updateQty(itemKey, item.qty - 1)}>−</button>
                               <span>{item.qty}</span>
-                              <button onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
+                              <button aria-label={`Increase quantity of ${item.name}`} onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
                             {/* Edit button */}
@@ -882,6 +882,7 @@ const Checkout = () => {
                                   className="cart-edit-btn"
                                   onClick={() => navigate('/menu/byo', { state: { editBowl: { config: item.bowlConfig, cartKey: itemKey } } })}
                                   title="Edit bowl"
+                                  aria-label={`Edit ${item.name}`}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -890,6 +891,7 @@ const Checkout = () => {
                                   className="cart-edit-btn"
                                   onClick={() => navigate('/customize', { state: { editCustom: { cfg: item.customCfg, cartKey: itemKey } } })}
                                   title="Edit custom order"
+                                  aria-label={`Edit ${item.name}`}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -898,6 +900,7 @@ const Checkout = () => {
                                   className="cart-edit-btn"
                                   onClick={() => setEditingItem({ item, itemKey })}
                                   title="Edit item"
+                                  aria-label={`Edit ${item.name}`}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -907,6 +910,7 @@ const Checkout = () => {
                               className="cart-delete-btn"
                               onClick={() => removeItem(itemKey)}
                               title="Remove item"
+                              aria-label={`Remove ${item.name} from cart`}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -925,6 +929,7 @@ const Checkout = () => {
                                 className="cart-addon-remove"
                                 onClick={() => removeAddon(itemKey, idx)}
                                 title="Remove add-on"
+                                aria-label={`Remove ${addon.name}`}
                               >×</button>
                             )}
                           </div>
@@ -998,12 +1003,12 @@ const Checkout = () => {
               {(isDineIn ? (
                 <div className="form-row two-col mb-6">
                   <div className="form-group">
-                    <label className="form-label">YOUR NAME (for the kitchen)</label>
-                    <input type="text" autoComplete="name" className="form-input" placeholder="e.g. Ahmed" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+                    <label className="form-label" htmlFor="ck-dinein-name">YOUR NAME (for the kitchen)</label>
+                    <input id="ck-dinein-name" type="text" autoComplete="name" className="form-input" placeholder="e.g. Ahmed" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">PHONE (optional)</label>
-                    <input type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                    <label className="form-label" htmlFor="ck-dinein-phone">PHONE (optional)</label>
+                    <input id="ck-dinein-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                   </div>
                 </div>
               ) : (
@@ -1015,8 +1020,9 @@ const Checkout = () => {
                   {deliveryMode === 'delivery' && (
                     <>
                       <div className="form-group mb-4">
-                        <label className="form-label">SELECT RESTAURANT <span style={{ color: '#f87171' }}>*</span></label>
+                        <label className="form-label" htmlFor="ck-select-restaurant">SELECT RESTAURANT <span style={{ color: '#f87171' }}>*</span></label>
                         <select
+                          id="ck-select-restaurant"
                           className="form-input form-select"
                           value={selectedLocation?.id || ''}
                           onChange={e => {
@@ -1041,7 +1047,7 @@ const Checkout = () => {
                       </div>
                       <div className="form-group mb-4">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <label className="form-label" style={{ margin: 0 }}>DELIVERY ADDRESS</label>
+                          <label className="form-label" style={{ margin: 0 }} htmlFor="ck-delivery-address">DELIVERY ADDRESS</label>
                           {'geolocation' in navigator && (
                             <button
                               type="button"
@@ -1106,7 +1112,7 @@ const Checkout = () => {
                         )}
                         <div className="address-input-wrapper">
                           <MapPin size={14} className="address-icon text-muted" />
-                          <input ref={addressInputRef} type="text" className="form-input address-input" placeholder="Start typing your address…" value={address} onChange={e => { setAddress(e.target.value); setAddressValidated(false); setAddressLatLng(null); if (mapInstanceRef.current) { mapInstanceRef.current = null; } }} autoComplete="off" />
+                          <input id="ck-delivery-address" ref={addressInputRef} type="text" className="form-input address-input" placeholder="Start typing your address…" value={address} onChange={e => { setAddress(e.target.value); setAddressValidated(false); setAddressLatLng(null); if (mapInstanceRef.current) { mapInstanceRef.current = null; } }} autoComplete="off" />
                         </div>
                         {address.trim() && !addressValidated && !feeLoading && import.meta.env.VITE_GOOGLE_MAPS_KEY && (
                           <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
@@ -1146,8 +1152,9 @@ const Checkout = () => {
 
                       {/* Apt / Suite / Gate / Floor */}
                       <div className="form-group mb-4">
-                        <label className="form-label">APT / SUITE / FLOOR / GATE #</label>
+                        <label className="form-label" htmlFor="ck-apt-unit">APT / SUITE / FLOOR / GATE #</label>
                         <input
+                          id="ck-apt-unit"
                           type="text"
                           className="form-input"
                           placeholder="e.g. Apt 4B, Floor 3, Gate 12"
@@ -1155,7 +1162,7 @@ const Checkout = () => {
                           onChange={e => setAptUnit(e.target.value)}
                           autoComplete="address-line2"
                         />
-                        <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                           Helps your driver find you faster
                         </p>
                       </div>
@@ -1192,22 +1199,22 @@ const Checkout = () => {
 
                       <div className="form-row two-col mb-4">
                         <div className="form-group">
-                          <label className="form-label">RECEIVER NAME</label>
-                          <input type="text" autoComplete="name" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-receiver-name">RECEIVER NAME</label>
+                          <input id="ck-receiver-name" type="text" autoComplete="name" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">US PHONE NUMBER</label>
-                          <input type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
+                          <label className="form-label" htmlFor="ck-phone">US PHONE NUMBER</label>
+                          <input id="ck-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
                         </div>
                       </div>
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
-                          <label className="form-label">EMAIL ADDRESS</label>
-                          <input type="email" autoComplete="email" className="form-input" placeholder="you@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-email">EMAIL ADDRESS</label>
+                          <input id="ck-email" type="email" autoComplete="email" className="form-input" placeholder="you@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">DRIVER INSTRUCTIONS</label>
-                          <input type="text" className="form-input" placeholder="Gate code, floor, etc." value={driverNote} onChange={e => setDriverNote(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-driver-note">DRIVER INSTRUCTIONS</label>
+                          <input id="ck-driver-note" type="text" className="form-input" placeholder="Gate code, floor, etc." value={driverNote} onChange={e => setDriverNote(e.target.value)} />
                         </div>
                       </div>
 
@@ -1233,8 +1240,9 @@ const Checkout = () => {
                           </div>
                           <div className="form-row two-col mb-4">
                             <div className="form-group">
-                              <label className="form-label">RECIPIENT NAME</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-name">RECIPIENT NAME</label>
                               <input
+                                id="ck-gift-recipient-name"
                                 type="text"
                                 className="form-input"
                                 placeholder="Who are you gifting this to?"
@@ -1243,8 +1251,9 @@ const Checkout = () => {
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label">RECIPIENT PHONE</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-phone">RECIPIENT PHONE</label>
                               <input
+                                id="ck-gift-recipient-phone"
                                 type="tel"
                                 className="form-input"
                                 placeholder="(718) 555-0100"
@@ -1255,8 +1264,9 @@ const Checkout = () => {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <label className="form-label" htmlFor="ck-gift-message">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
                             <textarea
+                              id="ck-gift-message"
                               className="form-input gift-message-input"
                               placeholder="Write a personal message for the recipient…"
                               value={giftMessage}
@@ -1273,11 +1283,11 @@ const Checkout = () => {
                   {deliveryMode === 'pickup' && (
                     <>
                       <div className="form-group mb-6">
-                        <label className="form-label">SELECT PICKUP LOCATION</label>
+                        <label className="form-label" id="ck-pickup-location-label">SELECT PICKUP LOCATION</label>
                         {locations.length === 0 ? (
                           <p className="text-muted text-sm" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>Loading pickup locations...</p>
                         ) : (
-                          <div className="pickup-locations-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                          <div role="group" aria-labelledby="ck-pickup-location-label" className="pickup-locations-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
                             {locations.map(loc => {
                               const active = selectedLocation?.id === loc.id;
                               return (
@@ -1314,12 +1324,12 @@ const Checkout = () => {
 
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
-                          <label className="form-label">YOUR NAME</label>
-                          <input type="text" className="form-input" placeholder="e.g. John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-pickup-name">YOUR NAME</label>
+                          <input id="ck-pickup-name" type="text" autoComplete="name" className="form-input" placeholder="e.g. John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">PHONE NUMBER (for notification)</label>
-                          <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-pickup-phone">PHONE NUMBER (for notification)</label>
+                          <input id="ck-pickup-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                         </div>
                       </div>
 
@@ -1345,8 +1355,9 @@ const Checkout = () => {
                           </div>
                           <div className="form-row two-col mb-4">
                             <div className="form-group">
-                              <label className="form-label">RECIPIENT NAME</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-name">RECIPIENT NAME</label>
                               <input
+                                id="ck-gift-recipient-name"
                                 type="text"
                                 className="form-input"
                                 placeholder="Who are you gifting this to?"
@@ -1355,8 +1366,9 @@ const Checkout = () => {
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label">RECIPIENT PHONE</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-phone">RECIPIENT PHONE</label>
                               <input
+                                id="ck-gift-recipient-phone"
                                 type="tel"
                                 className="form-input"
                                 placeholder="(718) 555-0100"
@@ -1367,8 +1379,9 @@ const Checkout = () => {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <label className="form-label" htmlFor="ck-gift-message">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
                             <textarea
+                              id="ck-gift-message"
                               className="form-input gift-message-input"
                               placeholder="Write a personal message for the recipient…"
                               value={giftMessage}
@@ -1400,8 +1413,9 @@ const Checkout = () => {
                 {timing === 'later' && (
                   <div className="form-row two-col mb-6">
                     <div className="form-group">
-                      <label className="form-label">DATE</label>
+                      <label className="form-label" htmlFor="ck-schedule-date">DATE</label>
                       <select
+                        id="ck-schedule-date"
                         className="form-input form-select"
                         value={scheduleDate}
                         onChange={e => setScheduleDate(e.target.value)}
@@ -1411,8 +1425,9 @@ const Checkout = () => {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">TIME (EST)</label>
+                      <label className="form-label" htmlFor="ck-schedule-time">TIME (EST)</label>
                       <select
+                        id="ck-schedule-time"
                         className="form-input form-select"
                         value={scheduleTime}
                         onChange={e => setScheduleTime(e.target.value)}
@@ -1539,18 +1554,18 @@ const Checkout = () => {
                       {isDineIn || deliveryMode === 'pickup' ? (
                         <span className="text-primary font-bold">FREE</span>
                       ) : needsLocation ? (
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Select restaurant above</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Select restaurant above</span>
                       ) : needsAddress ? (
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Enter address above</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Enter address above</span>
                       ) : feeLoading ? (
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>Calculating…</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Calculating…</span>
                       ) : deliveryFee > 0 ? (
                         <span className="text-primary font-bold">${deliveryFee.toFixed(2)}</span>
                       ) : (
                         <span className="text-primary font-bold">FREE</span>
                       )}
                     </div>
-                    {feeMsg && <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'rgba(255,255,255,0.4)', margin: '-0.25rem 0 0.25rem', lineHeight: 1.4 }}>{feeMsg}</p>}
+                    {feeMsg && <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'var(--color-text-muted)', margin: '-0.25rem 0 0.25rem', lineHeight: 1.4 }}>{feeMsg}</p>}
                     {couponDiscount > 0 && (
                       <div className="summary-line" style={{ color: '#34d399' }}>
                         <span>Coupon ({couponCode})</span><span>−${couponDiscount.toFixed(2)}</span>
@@ -1627,8 +1642,8 @@ const Checkout = () => {
                             {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
                           </button>
                         </div>
-                        {couponMsg && <p className="coupon-feedback coupon-feedback--ok">✓ {couponMsg}</p>}
-                        {couponErr && <p className="coupon-feedback coupon-feedback--err">⚠ {couponErr}</p>}
+                        {couponMsg && <p className="coupon-feedback coupon-feedback--ok" role="status">✓ {couponMsg}</p>}
+                        {couponErr && <p className="coupon-feedback coupon-feedback--err" role="alert">⚠ {couponErr}</p>}
                       </div>
                     )}
                   </div>
