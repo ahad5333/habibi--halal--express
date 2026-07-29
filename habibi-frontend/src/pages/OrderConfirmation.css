@@ -87,10 +87,43 @@
 
 /* ── Status tracker ── */
 .orc-tracker {
-  background: #ffffff;
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fdfbf6 100%);
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(17,24,39,0.04), 0 12px 28px -14px rgba(229,182,78,0.25);
+  animation: orc-tracker-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes orc-tracker-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Slow ambient sheen sweeping across the card -- reinforces "this is live" */
+.orc-tracker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(229,182,78,0.07) 50%, transparent 60%);
+  background-size: 250% 250%;
+  animation: orc-sheen 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes orc-sheen {
+  0%   { background-position: 120% 0%; }
+  50%  { background-position: -20% 0%; }
+  100% { background-position: -20% 0%; }
+}
+
+.orc-tracker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 1.75rem;
 }
 
 .orc-tracker-title {
@@ -99,7 +132,35 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #9ca3af;
-  margin: 0 0 1.5rem;
+  margin: 0;
+}
+
+.orc-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #059669;
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+
+.orc-live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+  animation: orc-live-blink 1.8s ease-in-out infinite;
+}
+
+@keyframes orc-live-blink {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); opacity: 1; }
+  50%      { box-shadow: 0 0 0 5px rgba(16,185,129,0);   opacity: 0.6; }
 }
 
 .orc-steps {
@@ -108,66 +169,144 @@
   position: relative;
 }
 
+/* Single continuous track spanning dot-centers (col 1 of 4 centers at
+   12.5%, last at 87.5% -- 100%/8 offsets both edges symmetrically) with
+   an animated fill overlay, instead of one background-flip per segment. */
+.orc-steps-track {
+  position: absolute;
+  top: 22px;
+  left: calc(100% / 8);
+  right: calc(100% / 8);
+  height: 3px;
+  border-radius: 3px;
+  background: #eceef1;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orc-steps-fill {
+  height: 100%;
+  width: var(--orc-progress, 0%);
+  border-radius: 3px;
+  background: linear-gradient(90deg, #E5B64E 0%, #F5CE6E 100%);
+  transition: width 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  position: relative;
+}
+
+/* Traveling glint riding the leading edge of the fill while it's mid-progress */
+.orc-steps-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 18px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9));
+  animation: orc-glint 1.4s ease-in-out infinite;
+}
+
+@keyframes orc-glint {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.9; }
+}
+
 .orc-step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   position: relative;
   text-align: center;
+  z-index: 1;
+  animation: orc-step-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+@keyframes orc-step-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .orc-step-dot {
-  width: 44px; height: 44px;
+  position: relative;
+  width: 48px; height: 48px;
   border-radius: 50%;
   background: #f3f4f6;
   border: 2px solid #e5e7eb;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   z-index: 1;
-  transition: all 0.3s;
+  transition: background 0.35s ease, border-color 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+.orc-step-icon { position: relative; z-index: 2; display: inline-block; }
 
 .orc-step.active .orc-step-dot {
-  background: rgba(229,182,78,0.12);
+  background: linear-gradient(145deg, #FCE9B8, #E5B64E);
   border-color: #E5B64E;
-  animation: orc-pulse 2s infinite;
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px -2px rgba(229,182,78,0.55);
 }
 
-@keyframes orc-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(229,182,78,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(229,182,78,0); }
+.orc-step.active .orc-step-icon { animation: orc-icon-bob 1.6s ease-in-out infinite; }
+
+@keyframes orc-icon-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-2px) rotate(-4deg); }
 }
 
-.orc-step-line {
+/* Sonar-style double ping ring, staggered, radiating from the active dot */
+.orc-ping {
   position: absolute;
-  top: 22px;
-  left: 60%;
-  width: 80%;
-  height: 2px;
-  background: #e5e7eb;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid #E5B64E;
+  opacity: 0;
   z-index: 0;
-  transition: background 0.4s ease;
+  animation: orc-ping-out 2s cubic-bezier(0, 0.4, 0.6, 1) infinite;
 }
-.orc-step-line.line-done { background: #E5B64E; }
+.orc-ping-2 { animation-delay: 1s; }
 
-/* Done step: gold filled dot with checkmark */
-.orc-step.done .orc-step-dot {
-  background: #E5B64E;
-  border-color: #E5B64E;
-  color: #111;
+@keyframes orc-ping-out {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(1.9); opacity: 0; }
 }
+
+/* Done step: gold filled dot, checkmark pops in with a spring bounce */
+.orc-step.done .orc-step-dot {
+  background: linear-gradient(145deg, #F5CE6E, #E5B64E);
+  border-color: #E5B64E;
+  color: #1a1206;
+}
+.orc-step.done .orc-step-icon { animation: orc-check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes orc-check-pop {
+  0%   { transform: scale(0) rotate(-45deg); opacity: 0; }
+  60%  { transform: scale(1.25) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
 .orc-step.done .orc-step-label { color: #374151; }
 
-.orc-step.active ~ .orc-step .orc-step-dot { opacity: 0.4; }
+.orc-step.pending .orc-step-dot { opacity: 0.55; }
+
+/* Final step done: soft celebratory glow instead of a generic finished state */
+.orc-step-celebrate .orc-step-dot {
+  animation: orc-celebrate-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes orc-celebrate-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229,182,78,0.5), 0 4px 14px -2px rgba(229,182,78,0.4); }
+  50%      { box-shadow: 0 0 0 9px rgba(229,182,78,0), 0 4px 14px -2px rgba(229,182,78,0.4); }
+}
 
 .orc-step-label {
   font-size: 0.72rem;
   font-weight: 600;
   color: #374151;
   margin: 0;
+  transition: color 0.3s ease;
 }
 
+.orc-step.active .orc-step-label { color: #92660e; font-weight: 800; }
 .orc-step.pending .orc-step-label { color: #9ca3af; }
 
 .orc-step-desc {
@@ -175,6 +314,17 @@
   color: #9ca3af;
   margin: 0;
   line-height: 1.3;
+  transition: opacity 0.3s ease;
+}
+
+.orc-step.active .orc-step-desc { color: #b45309; opacity: 1; }
+.orc-step.pending .orc-step-desc { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .orc-tracker, .orc-tracker::before, .orc-step, .orc-step-dot,
+  .orc-step-icon, .orc-ping, .orc-live-dot, .orc-steps-fill::after {
+    animation: none !important;
+  }
 }
 
 /* ── Halal badge ── */
@@ -239,8 +389,8 @@
 .orc-btn-secondary:hover { border-color: #9ca3af; color: #111827; }
 
 @media (max-width: 500px) {
-  .orc-steps { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-  .orc-step-line { display: none; }
+  .orc-steps { grid-template-columns: repeat(2, 1fr); gap: 1.25rem 1rem; }
+  .orc-steps-track { display: none; }
   .orc-title { font-size: 1.75rem; }
 }
 

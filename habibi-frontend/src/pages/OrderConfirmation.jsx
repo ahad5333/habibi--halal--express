@@ -191,17 +191,36 @@ export default function OrderConfirmation() {
 
         {/* Status tracker */}
         <div className="orc-tracker">
-          <h3 className="orc-tracker-title">Live Order Status</h3>
-          <div className="orc-steps">
+          <div className="orc-tracker-head">
+            <h3 className="orc-tracker-title">Live Order Status</h3>
+            <span className="orc-live-badge"><span className="orc-live-dot" />Live</span>
+          </div>
+          <div
+            className="orc-steps"
+            style={{ '--orc-progress': `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+          >
+            <div className="orc-steps-track">
+              <div className="orc-steps-fill" />
+            </div>
             {STEPS.map((step, i) => {
               const done   = i < currentStep;
               const active = i === currentStep;
+              const last   = i === STEPS.length - 1;
               return (
-              <div key={step.id} className={`orc-step ${done ? 'done' : active ? 'active' : 'pending'}`}>
+              <div
+                key={step.id}
+                className={`orc-step ${done ? 'done' : active ? 'active' : 'pending'}${done && last ? ' orc-step-celebrate' : ''}`}
+                style={{ '--i': i }}
+              >
                 <div className="orc-step-dot">
-                  <span>{done ? '✓' : step.icon}</span>
+                  {active && (
+                    <>
+                      <span className="orc-ping orc-ping-1" />
+                      <span className="orc-ping orc-ping-2" />
+                    </>
+                  )}
+                  <span className="orc-step-icon">{done ? '✓' : step.icon}</span>
                 </div>
-                {i < STEPS.length - 1 && <div className={`orc-step-line${done ? ' line-done' : ''}`} />}
                 <p className="orc-step-label">{step.label}</p>
                 <p className="orc-step-desc">{step.desc}</p>
               </div>
