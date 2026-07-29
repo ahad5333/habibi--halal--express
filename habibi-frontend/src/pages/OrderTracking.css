@@ -889,6 +889,11 @@
 /* ── Live Map ────────────────────────────────────────────────── */
 .ot-map {
   position: relative;
+  /* Without its own z-index, this box creates no stacking context, so its
+     children's z-index (the live badge was 1500) compared directly against
+     the navbar's (500) at the page level instead of staying scoped inside
+     the map box -- rendered above the sticky navbar on scroll. */
+  z-index: 1;
   height: 240px;
   border-radius: 12px;
   overflow: hidden;
