@@ -33,7 +33,7 @@ const sections = [
   {
     icon: '💳',
     title: '6. Payments',
-    content: `Accepted payment methods may include credit cards, debit cards, Apple Pay, Google Pay, PayPal, Zelle, Cash on Delivery (where available), and other approved payment methods. The Company reserves the right to add, remove, restrict, or modify accepted payment methods at any time. Customers authorize the Company and its payment processors to charge the selected payment method for all authorized purchases.`,
+    content: `Accepted payment methods may include credit cards, debit cards, PayPal, Zelle, Cash App, Cash on Delivery (where available), and other approved payment methods. The Company reserves the right to add, remove, restrict, or modify accepted payment methods at any time. Customers authorize the Company and its payment processors to charge the selected payment method for all authorized purchases.`,
   },
   {
     icon: '↩️',

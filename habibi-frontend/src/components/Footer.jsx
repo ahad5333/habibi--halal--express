@@ -194,8 +194,6 @@ const Footer = () => {
         <div className="footer-payments">
           <span className="payment-label">We Accept:</span>
           <img src="/images/partners/visa.png" alt="Visa" className="payment-logo" title="Visa" />
-          <img src="/images/partners/apple-pay.png" alt="Apple Pay" className="payment-logo" title="Apple Pay" />
-          <img src="/images/partners/google-pay.png" alt="Google Pay" className="payment-logo" title="Google Pay" />
           <img src="/images/partners/paypal.png" alt="PayPal" className="payment-logo" title="PayPal" />
           <span className="payment-badge">Mastercard</span>
           <span className="payment-badge">Amex</span>

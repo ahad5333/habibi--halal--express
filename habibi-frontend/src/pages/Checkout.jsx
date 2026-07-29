@@ -82,6 +82,7 @@ const Checkout = () => {
   const [feeLoading, setFeeLoading]             = useState(false);
   const [feeMsg, setFeeMsg]                     = useState('');
   const [addressOutOfRange, setAddressOutOfRange] = useState(false);
+  const [savedAddresses, setSavedAddresses]     = useState([]);
   const [upsellItems, setUpsellItems]           = useState([]);
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
@@ -185,6 +186,16 @@ const Checkout = () => {
         if (!customerEmail && user?.email) setCustomerEmail(user.email);
       });
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Saved addresses (Account > Saved Addresses) — logged-in users previously had
+  // to retype their address every order despite this already existing for them
+  // to manage on the Account page; this just surfaces it at checkout too.
+  useEffect(() => {
+    if (!isLoggedIn) { setSavedAddresses([]); return; }
+    userAPI.getAddresses()
+      .then(data => setSavedAddresses(Array.isArray(data) ? data : []))
+      .catch(() => setSavedAddresses([]));
+  }, [isLoggedIn]);
 
   // Fetch upsell items once on mount — drinks, juices, sides, salads (up to 12)
   useEffect(() => {
@@ -537,6 +548,42 @@ const Checkout = () => {
       },
       { timeout: 10000, maximumAge: 60000 }
     );
+  };
+
+  // Saved-address quick-pick — forward-geocodes the stored text address into
+  // coordinates (same Geocoder used elsewhere here) so the map/pin and fee
+  // calc are populated exactly the same way as typing + selecting from
+  // autocomplete would, instead of just dropping raw text into the field
+  // and leaving addressValidated false until the user re-touches it.
+  const handleSelectSavedAddress = (saved) => {
+    const fullAddress = [saved.street_address, saved.second_line, saved.city, saved.state, saved.zip_code]
+      .filter(Boolean).join(', ');
+    if (saved.receiver_name) setReceiverName(saved.receiver_name);
+    if (saved.driver_instruction) setDriverNote(saved.driver_instruction);
+
+    const geocode = () => {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: fullAddress }, (results, status) => {
+        addressConfirmedRef.current = true;
+        if (status === 'OK' && results[0]) {
+          setAddress(results[0].formatted_address);
+          setAddressLatLng({
+            lat: results[0].geometry.location.lat(),
+            lng: results[0].geometry.location.lng(),
+          });
+        } else {
+          // Couldn't geocode (e.g. offline) -- still usable, just without the
+          // map preview; the fee-calc effect re-geocodes server-side anyway.
+          setAddress(fullAddress);
+        }
+        setAddressValidated(true);
+      });
+    };
+    if (window.google?.maps) {
+      geocode();
+    } else {
+      setAddress(fullAddress);
+    }
   };
 
   // Auto-detect location if Chrome already has permission granted (like Zepto/Blinkit)
@@ -912,11 +959,11 @@ const Checkout = () => {
                 <div className="form-row two-col mb-6">
                   <div className="form-group">
                     <label className="form-label">YOUR NAME (for the kitchen)</label>
-                    <input type="text" className="form-input" placeholder="e.g. Ahmed" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+                    <input type="text" autoComplete="name" className="form-input" placeholder="e.g. Ahmed" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">PHONE (optional)</label>
-                    <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                    <input type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                   </div>
                 </div>
               ) : (
@@ -974,6 +1021,30 @@ const Checkout = () => {
                         </div>
                         {locationError && (
                           <p style={{ fontSize: '0.72rem', color: '#f87171', marginBottom: '0.4rem' }}>{locationError}</p>
+                        )}
+                        {/* Saved addresses (Account > Saved Addresses) quick-pick */}
+                        {savedAddresses.length > 0 && (
+                          <div className="preset-addr-list">
+                            <p className="preset-addr-hint">Use a saved address:</p>
+                            <div className="preset-addr-chips">
+                              {savedAddresses.map(a => {
+                                const line = [a.street_address, a.second_line, a.city, a.state, a.zip_code].filter(Boolean).join(', ');
+                                return (
+                                  <button
+                                    key={a.id}
+                                    type="button"
+                                    className={`preset-addr-chip${address === line || address.startsWith(a.street_address) ? ' active' : ''}`}
+                                    onClick={() => handleSelectSavedAddress(a)}
+                                    title={line}
+                                  >
+                                    <MapPin size={11} />
+                                    {a.receiver_name ? `${a.receiver_name} — ` : ''}{a.street_address}
+                                    {a.is_default ? ' (Default)' : ''}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                         {/* Pre-selected addresses quick-pick */}
                         {selectedLocation && Array.isArray(selectedLocation.delivery_addresses) && selectedLocation.delivery_addresses.length > 0 && (
@@ -1082,17 +1153,17 @@ const Checkout = () => {
                       <div className="form-row two-col mb-4">
                         <div className="form-group">
                           <label className="form-label">RECEIVER NAME</label>
-                          <input type="text" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+                          <input type="text" autoComplete="name" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
                           <label className="form-label">US PHONE NUMBER</label>
-                          <input type="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
+                          <input type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
                         </div>
                       </div>
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
                           <label className="form-label">EMAIL ADDRESS</label>
-                          <input type="email" className="form-input" placeholder="you@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
+                          <input type="email" autoComplete="email" className="form-input" placeholder="you@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                         </div>
                         <div className="form-group">
                           <label className="form-label">DRIVER INSTRUCTIONS</label>
