@@ -12,6 +12,7 @@ import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
 import PayPalButton from '../components/PayPalButton';
 import OfflinePayModal from '../components/OfflinePayModal';
+import IngCanvas, { DEFAULT_PROTEIN_OPTS, DEFAULT_SAUCE_OPTS } from '../components/IngCanvas';
 import './Checkout.css';
 
 const TIP_OPTIONS = ['None', '5%', '10%', '15%', '20%', 'Custom'];
@@ -728,6 +729,21 @@ const Checkout = () => {
                               {item.bowlLayers.map((src, li) => (
                                 <img key={li} src={src} alt="" className="cart-item-bowl-layer" style={{ zIndex: li + 1 }} />
                               ))}
+                            </div>
+                          ) : item.customCfg?.base ? (
+                            // The real customize-page canvas, reused as-is (not a lookalike
+                            // approximation) so this thumbnail is guaranteed to match exactly --
+                            // .co-canvas is width:100%+aspect-ratio-based, so constraining the
+                            // wrapper's width is enough to shrink the whole thing proportionally,
+                            // no transform:scale needed. .cart-item-canvas-preview in Checkout.css
+                            // hides the name/share footer, which doesn't belong on a cart icon.
+                            <div className="cart-item-canvas-preview">
+                              <IngCanvas
+                                base={item.customCfg.base}
+                                cfg={item.customCfg}
+                                proteinOpts={DEFAULT_PROTEIN_OPTS}
+                                sauceOpts={DEFAULT_SAUCE_OPTS}
+                              />
                             </div>
                           ) : item.customLayers?.length ? (
                             <div className="cart-item-custom-preview">

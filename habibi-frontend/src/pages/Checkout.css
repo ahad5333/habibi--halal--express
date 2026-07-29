@@ -301,6 +301,39 @@
   flex-shrink: 0;
 }
 
+/* Real customize-page canvas (IngCanvas), reused as-is and shrunk down to
+   thumbnail size. .co-canvas is width:100%+aspect-ratio:4/3, so fixing this
+   wrapper's width is all that's needed to scale the whole thing (ingredient
+   positions included, since those are percentage-based) -- no transform:
+   scale hacks. Overrides below tone down styling sized for the ~300px+
+   customize-page canvas (large border-radius, big soft box-shadow) that
+   reads as oversized at 72px, and hide the name/share footer, which is
+   customize-page-only chrome that doesn't belong on a cart icon. */
+.cart-item-canvas-preview {
+  width: 72px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+}
+.cart-item-canvas-preview .co-canvas {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+.cart-item-canvas-preview .co-canvas-info {
+  display: none;
+}
+/* These two are fixed-pixel/rem sized (halal badge padding+font-size, steam
+   particle width/height) rather than percentage-based like the ingredient
+   layers, so they don't shrink proportionally with the canvas the way
+   everything else here does -- at 72px wide the halal badge alone was
+   bigger than the whole thumbnail and completely hid the food underneath. */
+.cart-item-canvas-preview .co-halal-badge,
+.cart-item-canvas-preview .co-canvas-steam {
+  display: none;
+}
+
 /* CustomOrder layered preview in cart */
 .cart-item-custom-preview {
   position: relative;
