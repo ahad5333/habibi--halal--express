@@ -59,14 +59,14 @@
 .ot-queue-label {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #111827;
+  color: #fff;
   margin: 0;
   text-align: center;
 }
 
 .ot-queue-sub {
   font-size: 0.72rem;
-  color: #6b7280;
+  color: rgba(255,255,255,0.5);
   margin: 0;
 }
 
