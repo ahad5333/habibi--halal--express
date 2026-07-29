@@ -31,7 +31,7 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError, 
     if (!sdkReady || !containerRef.current || !window.paypal) return;
     containerRef.current.innerHTML = '';
 
-    window.paypal.Buttons({
+    const buttons = window.paypal.Buttons({
       style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
       // Card and offline-payment (Zelle/Cash App/Cash) both validate name,
       // phone, and (for delivery) a priced address before anything happens
@@ -67,9 +67,24 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError, 
       },
       onError: (err) => onError(err?.message || 'PayPal payment failed.'),
       onCancel: () => onError('PayPal payment was cancelled.'),
-    }).render(containerRef.current);
+    });
 
-    setLoaded(true);
+    let cancelled = false;
+    buttons.render(containerRef.current).then(() => {
+      if (!cancelled) setLoaded(true);
+    }).catch(() => {}); // render() rejects if closed mid-flight (see cleanup) -- not a real error
+
+    // amount/orderNumber change reactively at checkout (tip typed, coupon
+    // applied, delivery fee calculated), re-running this effect. Wiping the
+    // container's innerHTML on the next run while THIS render's async
+    // eligibility check is still in flight is exactly what threw "Detected
+    // container element removed from DOM" -- close() is PayPal's own
+    // teardown, so the SDK cancels its in-flight work cleanly instead of
+    // discovering its target node ripped out from under it.
+    return () => {
+      cancelled = true;
+      buttons.close?.().catch(() => {});
+    };
   }, [sdkReady, amount, orderNumber]); // eslint-disable-line
 
   if (!CLIENT_ID || CLIENT_ID === 'REPLACE_ME') {
