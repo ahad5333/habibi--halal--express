@@ -882,26 +882,12 @@
   padding: 2rem;
   position: sticky;
   top: 100px;
-  /* Content here (summary lines, coupon panel, tip section, duplicate price
-     breakdown, trust badges, Place Order button, terms text, halal seal)
-     comfortably exceeds the sticky window on common desktop heights, worse
-     with the coupon panel open or an error message showing -- without this,
-     Place Order itself can scroll out of reach with no way to get back to
-     it, since the mobile sticky CTA bar this page also has is hidden above
-     1100px. Not a flex container (unlike .co-sidebar, a similar fix
-     elsewhere), so plain overflow-y here doesn't have that fix's flex-
-     shrink-crushes-children pitfall -- no inner-wrapper split needed. */
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #F97316 rgba(255,255,255,0.08);
-}
-.order-summary-card::-webkit-scrollbar { width: 7px; }
-.order-summary-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; margin: 4px 0; }
-.order-summary-card::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #F97316 0%, #E5B64E 100%);
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.2);
+  /* No inner max-height/overflow here on purpose -- an internal scrollbar
+     read as confusing/broken to users. .checkout-layout is a flex row, so
+     its height always auto-sizes to whichever column (this card or the
+     form) is taller; that guarantees this card's bottom (Place Order) is
+     always reachable via ordinary page scroll once sticky releases it,
+     verified with a 15-item cart at multiple viewport heights. */
 }
 
 .summary-title {
