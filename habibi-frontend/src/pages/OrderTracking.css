@@ -261,23 +261,25 @@
   position: relative;
 }
 
-/* Done: slightly dimmed icon — orange bg already signals completion */
+/* Done: slightly dimmed icon — orange bg already signals completion.
+   No grayscale filter -- these are real color emoji now, not monochrome
+   icons, so dimming is opacity-only to keep them looking colorful rather
+   than washed-out white/grey against the bar's #0a0a0a background. */
 .ot-pil-done {
-  font-size: 1.1rem;
-  opacity: 0.8;
-  filter: brightness(1.15);
+  font-size: 1.2rem;
+  opacity: 0.92;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 }
 
-/* Pending: greyed out */
+/* Pending: dimmed via opacity only, color stays intact */
 .ot-pil-pending {
-  opacity: 0.22;
-  filter: grayscale(1);
+  opacity: 0.5;
 }
 
 /* Active: bright + large */
 .ot-pil-active {
-  font-size: 1.55rem;
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  font-size: 1.7rem;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
 }
 
 /* ── Per-step animations ─────────────────────────────────────── */

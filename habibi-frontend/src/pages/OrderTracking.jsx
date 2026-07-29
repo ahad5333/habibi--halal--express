@@ -14,12 +14,12 @@ const RESTAURANT_LAT = 40.873092;
 const RESTAURANT_LNG = -73.8892829;
 
 const STEPS = [
-  { id: 1, key: 'pending',          label: 'Received',   icon: ClipboardList, animClass: 'anim-received'  },
-  { id: 2, key: 'accepted',         label: 'Accepted',   icon: CheckCircle2,  animClass: 'anim-accepted'  },
-  { id: 3, key: 'preparing',        label: 'Preparing',  icon: ChefHat,       animClass: 'anim-preparing' },
-  { id: 4, key: 'out_for_delivery', label: 'On the Way', icon: Scooter,       animClass: 'anim-on-way'   },
-  { id: 5, key: 'nearby',           label: 'Nearby',     icon: MapPin,        animClass: 'anim-nearby'   },
-  { id: 6, key: 'delivered',        label: 'Delivered',  icon: PartyPopper,   animClass: 'anim-delivered' },
+  { id: 1, key: 'pending',          label: 'Received',   emoji: '📋', animClass: 'anim-received'  },
+  { id: 2, key: 'accepted',         label: 'Accepted',   emoji: '✅', animClass: 'anim-accepted'  },
+  { id: 3, key: 'preparing',        label: 'Preparing',  emoji: '👨‍🍳', animClass: 'anim-preparing' },
+  { id: 4, key: 'out_for_delivery', label: 'On the Way', emoji: '🛵', animClass: 'anim-on-way'   },
+  { id: 5, key: 'nearby',           label: 'Nearby',     emoji: '📍', animClass: 'anim-nearby'   },
+  { id: 6, key: 'delivered',        label: 'Delivered',  emoji: '🎉', animClass: 'anim-delivered' },
 ];
 
 const STATUS_STEP = {
@@ -851,11 +851,11 @@ export default function OrderTracking() {
                         className={`ot-pill-seg ${done ? 'seg-done' : ''} ${active ? 'seg-active' : ''} ${!done && !active ? 'seg-pending' : ''}`}
                       >
                         {done ? (
-                          <step.icon className="ot-pill-step-icon ot-pil-done" size={18} color="#fff" strokeWidth={2.25} />
+                          <span className="ot-pill-step-icon ot-pil-done">{step.emoji}</span>
                         ) : active ? (
-                          <step.icon className={`ot-pill-step-icon ot-pil-active ${step.animClass}`} size={25} color="#fff" strokeWidth={2.25} />
+                          <span className={`ot-pill-step-icon ot-pil-active ${step.animClass}`}>{step.emoji}</span>
                         ) : (
-                          <step.icon className="ot-pill-step-icon ot-pil-pending" size={23} color="#fff" strokeWidth={2.25} />
+                          <span className="ot-pill-step-icon ot-pil-pending">{step.emoji}</span>
                         )}
                       </div>
                     );
