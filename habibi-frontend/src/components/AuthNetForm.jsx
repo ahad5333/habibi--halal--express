@@ -6,15 +6,31 @@ const ACCEPT_JS = {
   sandbox:    'https://jstest.authorize.net/v1/Accept.js',
 };
 
+// Prefix ranges per network spec (IIN ranges) -- order matters, Amex/Discover
+// prefixes are more specific than the broad Mastercard/Visa ones.
+const CARD_BRANDS = [
+  { id: 'amex',       label: 'AMEX',       color: '#2E77BC', test: /^3[47]/ },
+  { id: 'discover',   label: 'DISCOVER',   color: '#FF6000', test: /^(6011|65|64[4-9]|622(12[6-9]|1[3-9]\d|[2-8]\d{2}|91[0-9]|92[0-5]))/ },
+  { id: 'mastercard', label: 'MASTERCARD', color: '#EB001B', test: /^(5[1-5]|2(2[2-9][1-9]|[3-6]\d\d|7[01]\d|720))/ },
+  { id: 'visa',       label: 'VISA',       color: '#1A1F71', test: /^4/ },
+];
+function detectCardBrand(rawNumber) {
+  const digits = rawNumber.replace(/\D/g, '');
+  if (digits.length < 2) return null;
+  return CARD_BRANDS.find(b => b.test.test(digits)) || null;
+}
+
 export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, onSuccess, onError }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expMonth,   setExpMonth]   = useState('');
   const [expYear,    setExpYear]    = useState('');
   const [cvv,        setCvv]        = useState('');
   const [cardName,   setCardName]   = useState('');
+  const [billingZip, setBillingZip] = useState('');
   const [processing, setProcessing] = useState(false);
   const [loaded,     setLoaded]     = useState(false);
   const scriptRef = useRef(null);
+  const cardBrand = detectCardBrand(cardNumber);
 
   // Load Accept.js from Authorize.net CDN
   useEffect(() => {
@@ -44,6 +60,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
     if (rawCard.length < 15) { onError?.('Enter a valid card number.'); return; }
     if (!expMonth || !expYear) { onError?.('Enter card expiry date.'); return; }
     if (!cvv || cvv.length < 3) { onError?.('Enter a valid CVV.'); return; }
+    if (!billingZip || billingZip.trim().length < 5) { onError?.('Enter your billing ZIP code.'); return; }
     if (!config?.apiLoginId || !config?.clientKey) {
       onError?.('Payment processor not configured. Contact support.'); return;
     }
@@ -85,6 +102,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
             orderNumber,
             customerName,
             customerPhone,
+            billingZip: billingZip.trim(),
             reason,
             note,
           }),
@@ -133,7 +151,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
           <CreditCard size={15} className="authnet-card-icon"/>
           <input
             id="an-card-number"
-            className="authnet-input authnet-card-input"
+            className={`authnet-input authnet-card-input${cardBrand ? ' authnet-card-input--branded' : ''}`}
             placeholder="1234 5678 9012 3456"
             value={cardNumber}
             onChange={e => setCardNumber(formatCardNumber(e.target.value))}
@@ -141,7 +159,24 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
             autoComplete="cc-number"
             maxLength={19}
           />
+          {cardBrand && (
+            <span className="authnet-card-brand" style={{ color: cardBrand.color }}>{cardBrand.label}</span>
+          )}
         </div>
+      </div>
+
+      <div className="authnet-field">
+        <label htmlFor="an-billing-zip">Billing ZIP Code</label>
+        <input
+          id="an-billing-zip"
+          className="authnet-input"
+          placeholder="10458"
+          value={billingZip}
+          onChange={e => setBillingZip(e.target.value.replace(/[^\d-]/g,'').slice(0,10))}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={10}
+        />
       </div>
 
       <div className="authnet-row">

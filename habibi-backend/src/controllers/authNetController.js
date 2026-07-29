@@ -30,7 +30,7 @@ const getPublicConfig = async (req, res) => {
 
 // ── Public: charge card using opaqueData token from Accept.js ─────────────
 const chargeCardEndpoint = async (req, res) => {
-  const { opaqueData, amount, orderNumber, customerName, customerPhone, reason, note } = req.body;
+  const { opaqueData, amount, orderNumber, customerName, customerPhone, billingZip, reason, note } = req.body;
   if (!opaqueData?.dataDescriptor || !opaqueData?.dataValue) {
     return res.status(400).json({ error: 'Invalid payment token.' });
   }
@@ -48,6 +48,7 @@ const chargeCardEndpoint = async (req, res) => {
       opaqueData,
       amount,
       orderNumber,
+      billingZip,
       apiLoginId:     account.api_login_id,
       transactionKey: account.transaction_key,
       environment:    account.environment,

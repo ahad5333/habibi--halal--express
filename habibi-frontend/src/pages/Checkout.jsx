@@ -54,6 +54,7 @@ const Checkout = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [driverNote, setDriverNote]       = useState('');
+  const [leaveAtDoor, setLeaveAtDoor]     = useState(false);
   const [aptUnit, setAptUnit]             = useState('');
   const [couponCode, setCouponCode]         = useState('');
   const [couponApplied, setCouponApplied]   = useState(false);
@@ -458,7 +459,9 @@ const Checkout = () => {
     delivery_city:         '',
     delivery_zip:          '',
     delivery_state:        'NY',
-    delivery_instructions: driverNote,
+    delivery_instructions: (!isDineIn && deliveryMode === 'delivery' && leaveAtDoor)
+      ? ['Leave at door.', driverNote.trim()].filter(Boolean).join(' ')
+      : driverNote,
     table_number:          isDineIn ? (dineInTable?.table_name || '') : undefined,
     payment_method:        paymentMethod,
     sub_total:    parseFloat(subtotal.toFixed(2)),
@@ -1215,6 +1218,20 @@ const Checkout = () => {
                         <div className="form-group">
                           <label className="form-label" htmlFor="ck-driver-note">DRIVER INSTRUCTIONS</label>
                           <input id="ck-driver-note" type="text" className="form-input" placeholder="Gate code, floor, etc." value={driverNote} onChange={e => setDriverNote(e.target.value)} />
+                        </div>
+                      </div>
+
+                      {/* Leave at door / contactless delivery */}
+                      <div className="gift-order-toggle mb-4" onClick={() => setLeaveAtDoor(v => !v)}>
+                        <div className="gift-toggle-left">
+                          <span className="gift-toggle-icon">🚪</span>
+                          <div>
+                            <p className="gift-toggle-title">Leave at My Door</p>
+                            <p className="gift-toggle-sub">Contactless drop-off — no need to meet the driver</p>
+                          </div>
+                        </div>
+                        <div className={`gift-toggle-switch ${leaveAtDoor ? 'on' : ''}`}>
+                          <div className="gift-toggle-knob" />
                         </div>
                       </div>
 

@@ -3,7 +3,7 @@ const API_ENDPOINTS = {
   sandbox:    'https://apitest.authorize.net/xml/v1/request.api',
 };
 
-async function chargeCard({ opaqueData, amount, orderNumber, apiLoginId, transactionKey, environment = 'production' }) {
+async function chargeCard({ opaqueData, amount, orderNumber, billingZip, apiLoginId, transactionKey, environment = 'production' }) {
   const endpoint = API_ENDPOINTS[environment] || API_ENDPOINTS.production;
 
   const body = {
@@ -23,6 +23,10 @@ async function chargeCard({ opaqueData, amount, orderNumber, apiLoginId, transac
           invoiceNumber: String(orderNumber).slice(0, 20),
           description:   'Habibi Halal Express',
         },
+        // ZIP-only AVS check -- we don't collect full billing street address,
+        // just the ZIP, which is enough for Authorize.net to flag a
+        // ZIP/card mismatch as a fraud signal without adding more fields.
+        ...(billingZip ? { billTo: { zip: String(billingZip).slice(0, 10) } } : {}),
       },
     },
   };

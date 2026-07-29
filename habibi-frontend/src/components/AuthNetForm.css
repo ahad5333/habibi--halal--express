@@ -50,6 +50,15 @@
   pointer-events: none;
 }
 .authnet-card-input { padding-left: 2.25rem; }
+.authnet-card-input--branded { padding-right: 4.75rem; }
+.authnet-card-brand {
+  position: absolute;
+  right: 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+}
 
 .authnet-row {
   display: grid;

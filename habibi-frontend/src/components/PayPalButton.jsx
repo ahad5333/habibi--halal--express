@@ -17,7 +17,7 @@ export default function PayPalButton({ amount, orderNumber, onSuccess, onError, 
     if (window.paypal) { setSdkReady(true); return; }
 
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&currency=USD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&currency=USD&enable-funding=venmo,paylater`;
     script.async = true;
     script.onload = () => setSdkReady(true);
     script.onerror = () => console.error('[PayPal] SDK failed to load');
