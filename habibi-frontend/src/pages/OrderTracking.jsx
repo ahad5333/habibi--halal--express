@@ -179,6 +179,7 @@ export default function OrderTracking() {
   const [leafletReady, setLeafletReady]     = useState(false);
   const [queuePosition, setQueuePosition]   = useState(null); // null = not in queue, 0 = next up, N = N orders ahead
   const [driverInfo, setDriverInfo]         = useState(null); // { name, phone, rating } from dispatch
+  const [proofPhotoUrl, setProofPhotoUrl]   = useState(null); // delivery photo, in-house drivers only
   const [nearbyToast, setNearbyToast]       = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelEmail, setCancelEmail]       = useState('');
@@ -290,6 +291,7 @@ export default function OrderTracking() {
             if (assignment.current_lat && assignment.current_lng) {
               setDriverLatLng({ lat: parseFloat(assignment.current_lat), lng: parseFloat(assignment.current_lng) });
             }
+            if (assignment.proof_photo_url) setProofPhotoUrl(assignment.proof_photo_url);
             // In-house assignment overrides driver name/phone only if no partner driver set
             if ((assignment.driver_name || assignment.driver_phone) && assignment.driver_name !== 'Unassigned') {
               setDriverInfo(prev => prev?.source && prev.source !== 'in_house' ? prev : {
@@ -710,10 +712,10 @@ export default function OrderTracking() {
 
       {/* ── Driver Nearby Toast ── */}
       {nearbyToast && (
-        <div className="ot-nearby-toast">
+        <div className="ot-nearby-toast" role="status" aria-live="assertive">
           <MapPin size={15} />
           <span>Your driver is almost there! Please be ready.</span>
-          <button className="ot-nearby-close" onClick={() => setNearbyToast(false)}>×</button>
+          <button className="ot-nearby-close" onClick={() => setNearbyToast(false)} aria-label="Dismiss">×</button>
         </div>
       )}
 
@@ -728,6 +730,7 @@ export default function OrderTracking() {
             <input
               className="ot-lookup-input"
               placeholder="Enter order number (e.g. HBB-1234567890-ABC123)"
+              aria-label="Order number"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value.toUpperCase())}
             />
@@ -912,8 +915,10 @@ export default function OrderTracking() {
                       <status.icon className="ot-status-emoji" size={44} color={status.color} strokeWidth={2} />
                     )}
                   </div>
-                  <h2 className="ot-hero-title">{status.title}</h2>
-                  <p className="ot-hero-sub">{status.sub}</p>
+                  <div aria-live="polite" aria-atomic="true">
+                    <h2 className="ot-hero-title">{status.title}</h2>
+                    <p className="ot-hero-sub">{status.sub}</p>
+                  </div>
 
                   {/* Queue position — shown only while order is in kitchen queue */}
                   {queuePosition !== null && currentStep <= 3 && (
@@ -933,7 +938,7 @@ export default function OrderTracking() {
                           <span className="ot-queue-more">+{queuePosition - 5}</span>
                         )}
                       </div>
-                      <p className="ot-queue-label">
+                      <p className="ot-queue-label" aria-live="polite">
                         {queuePosition === 0
                           ? "You're next! 🔥 Kitchen is starting your order"
                           : queuePosition === 1
@@ -961,6 +966,13 @@ export default function OrderTracking() {
                           </span>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {isDelivered && proofPhotoUrl && (
+                    <div className="ot-proof-photo">
+                      <p className="ot-proof-label">📸 Delivery Photo</p>
+                      <img src={proofPhotoUrl} alt="Photo taken by your driver at delivery" className="ot-proof-img" />
                     </div>
                   )}
 
@@ -1001,11 +1013,12 @@ export default function OrderTracking() {
                           type="email"
                           className="ot-cancel-email-input"
                           placeholder="you@example.com"
+                          aria-label="Email used at checkout"
                           value={cancelEmail}
                           onChange={e => setCancelEmail(e.target.value)}
                           autoFocus
                         />
-                        {cancelError && <p className="ot-cancel-error">{cancelError}</p>}
+                        {cancelError && <p className="ot-cancel-error" role="alert">{cancelError}</p>}
                         <div className="ot-cancel-actions">
                           <button type="button" className="btn btn-outline" onClick={() => { setShowCancelForm(false); setCancelError(''); }} disabled={cancelling}>
                             Never mind
@@ -1069,9 +1082,9 @@ export default function OrderTracking() {
                   )}
 
                   {!isDeliveryOrder && (
-                    <div className="map-zoom">
-                      <button>+</button>
-                      <button>−</button>
+                    <div className="map-zoom" aria-hidden="true">
+                      <button tabIndex={-1}>+</button>
+                      <button tabIndex={-1}>−</button>
                     </div>
                   )}
                 </div>
@@ -1110,12 +1123,12 @@ export default function OrderTracking() {
                       </div>
                       <div className="ot-driver-actions">
                         {hasCallablePhone
-                          ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call"><Phone size={16} /></a>
-                          : <button className="ot-driver-btn ot-driver-btn-call" disabled title="Not available for this delivery method"><Phone size={16} /></button>
+                          ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call" aria-label="Call your driver"><Phone size={16} /></a>
+                          : <button className="ot-driver-btn ot-driver-btn-call" disabled title="Not available for this delivery method" aria-label="Call driver (not available for this delivery method)"><Phone size={16} /></button>
                         }
                         {hasCallablePhone
-                          ? <a href={`sms:${driverInfo.phone}`} className="ot-driver-btn"><MessageSquare size={16} /></a>
-                          : <button className="ot-driver-btn" disabled title="Not available for this delivery method"><MessageSquare size={16} /></button>
+                          ? <a href={`sms:${driverInfo.phone}`} className="ot-driver-btn" aria-label="Text your driver"><MessageSquare size={16} /></a>
+                          : <button className="ot-driver-btn" disabled title="Not available for this delivery method" aria-label="Text driver (not available for this delivery method)"><MessageSquare size={16} /></button>
                         }
                       </div>
                     </div>
@@ -1152,19 +1165,20 @@ export default function OrderTracking() {
                           type="email"
                           className="ot-cancel-email-input"
                           placeholder="you@example.com"
+                          aria-label="Email used for this order"
                           value={chatEmail}
                           onChange={e => setChatEmail(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleChatEmailSubmit()}
                           autoFocus
                         />
-                        {chatError && <p className="ot-cancel-error">{chatError}</p>}
+                        {chatError && <p className="ot-cancel-error" role="alert">{chatError}</p>}
                         <button type="button" className="ot-chat-confirm-btn" onClick={handleChatEmailSubmit} disabled={chatLoading}>
                           {chatLoading ? 'Loading…' : 'Continue'}
                         </button>
                       </div>
                     ) : (
                       <div className="ot-chat-thread">
-                        <div className="ot-chat-messages">
+                        <div className="ot-chat-messages" aria-live="polite" aria-relevant="additions">
                           {chatMessages.length === 0 && (
                             <p className="ot-chat-empty">No messages yet — send us a note and we'll get back to you.</p>
                           )}
@@ -1185,11 +1199,12 @@ export default function OrderTracking() {
                             type="text"
                             className="ot-chat-input"
                             placeholder="Type a message…"
+                            aria-label="Message"
                             value={chatInput}
                             onChange={e => setChatInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
                           />
-                          <button type="button" className="ot-chat-send-btn" onClick={handleSendChatMessage} disabled={!chatInput.trim()}>
+                          <button type="button" className="ot-chat-send-btn" onClick={handleSendChatMessage} disabled={!chatInput.trim()} aria-label="Send message">
                             <Send size={15} />
                           </button>
                         </div>

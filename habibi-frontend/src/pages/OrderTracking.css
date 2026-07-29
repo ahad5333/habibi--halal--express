@@ -592,6 +592,27 @@
   z-index: 2;
 }
 
+.ot-proof-photo {
+  margin-top: 1rem;
+  position: relative;
+  z-index: 2;
+}
+.ot-proof-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+}
+.ot-proof-img {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  display: block;
+}
+
 /* ── Demo controls ───────────────────────────────────────────── */
 .ot-demo-controls {
   background: rgba(255,255,255,0.02);
