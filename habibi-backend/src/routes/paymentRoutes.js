@@ -14,6 +14,7 @@ const {
 const {
   getPublicConfig,
   chargeCardEndpoint,
+  chargeSavedCardEndpoint,
   refundEndpoint,
 } = require("../controllers/authNetController");
 
@@ -47,5 +48,9 @@ router.post("/authnet/refund/:orderNumber", protect, admin, refundEndpoint);
 // ── Legacy ───────────────────────────────────────────────────────────────────
 router.use(protect);
 router.post("/verify", verifyPayment);
+
+// Charge a saved card — authenticated (via the blanket protect above) so a
+// saved card can only ever be charged by the account that saved it.
+router.post("/authnet/charge-saved", chargeSavedCardEndpoint);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CreditCard, Lock } from 'lucide-react';
+import { savedPaymentsAPI } from '../services/api';
 
 const ACCEPT_JS = {
   production: 'https://js.authorize.net/v1/Accept.js',
@@ -20,13 +21,14 @@ function detectCardBrand(rawNumber) {
   return CARD_BRANDS.find(b => b.test.test(digits)) || null;
 }
 
-export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, onSuccess, onError }) {
+export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expMonth,   setExpMonth]   = useState('');
   const [expYear,    setExpYear]    = useState('');
   const [cvv,        setCvv]        = useState('');
   const [cardName,   setCardName]   = useState('');
   const [billingZip, setBillingZip] = useState('');
+  const [saveCard,   setSaveCard]   = useState(true);
   const [processing, setProcessing] = useState(false);
   const [loaded,     setLoaded]     = useState(false);
   const scriptRef = useRef(null);
@@ -111,6 +113,19 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Payment declined.');
         }
+
+        // Best-effort: vault the card from this now-completed transaction if
+        // the customer opted in. Never let a save failure affect the order
+        // itself -- the charge already succeeded, so onSuccess fires either way.
+        if (showSaveOption && saveCard) {
+          savedPaymentsAPI.saveFromTransaction({
+            transactionId: data.transactionId,
+            brand:  cardBrand?.id || null,
+            last4:  rawCard.slice(-4),
+            expiry: `${expMonth.padStart(2, '0')}/${expYear.length === 2 ? `20${expYear}` : expYear}`,
+          }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
+        }
+
         onSuccess?.(data.transactionId);
       } catch (err) {
         onError?.(err.message || 'Payment failed. Please try again.');
@@ -221,6 +236,17 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
           />
         </div>
       </div>
+
+      {showSaveOption && (
+        <label className="authnet-save-row">
+          <input
+            type="checkbox"
+            checked={saveCard}
+            onChange={e => setSaveCard(e.target.checked)}
+          />
+          Save this card for faster checkout next time
+        </label>
+      )}
 
       <button
         type="submit"

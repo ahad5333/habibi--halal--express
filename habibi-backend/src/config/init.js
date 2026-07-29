@@ -420,11 +420,11 @@ const createTables = async () => {
     `);
 
     // ── Payment Methods ───────────────────────────────────────────
-    // customer_id references customers.id (a separate 1:1 profile table,
-    // linked via customers.user_id), NOT users.id directly — this was out
-    // of sync with the real deployed schema (which uses customer_id/type/
-    // last_four, no expiry column) until this table definition was fixed
-    // to match what paymentMethodController.js actually expects.
+    // customer_id/token were the original (never actually used) columns
+    // from an early stub. Real saved cards are keyed by user_id directly
+    // (same pattern addresses moved to) and vault via Authorize.net's CIM,
+    // which needs BOTH a customer profile id and a payment profile id --
+    // a single opaque token isn't enough to charge a saved card later.
     await client.query(`
       CREATE TABLE IF NOT EXISTS payment_methods (
         id          SERIAL PRIMARY KEY,
@@ -436,6 +436,11 @@ const createTables = async () => {
         created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS authnet_customer_profile_id VARCHAR(50)`);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS authnet_payment_profile_id VARCHAR(50)`);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS expiry VARCHAR(7)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_payment_methods_user_id ON payment_methods(user_id)`);
 
     // ── Quick Payments log ──────────────────────────────────────────
     // Durable record of every charge made through the "Make a Payment" page

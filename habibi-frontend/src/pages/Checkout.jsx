@@ -4,7 +4,7 @@ import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, Chevro
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI, settingsAPI } from '../services/api';
+import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
@@ -96,6 +96,8 @@ const Checkout = () => {
   const [feeMsg, setFeeMsg]                     = useState('');
   const [addressOutOfRange, setAddressOutOfRange] = useState(false);
   const [savedAddresses, setSavedAddresses]     = useState([]);
+  const [savedCards, setSavedCards]             = useState([]);
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState(null); // null = pay with a new card
   const [upsellItems, setUpsellItems]           = useState([]);
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
@@ -239,6 +241,21 @@ const Checkout = () => {
       .then(data => setSavedAddresses(Array.isArray(data) ? data : []))
       .catch(() => setSavedAddresses([]));
   }, [isLoggedIn]);
+
+  // Saved cards — only worth fetching once we know Card itself actually
+  // works (cardConfigured), same reasoning as hiding the raw Card option
+  // when Authorize.net isn't configured.
+  useEffect(() => {
+    if (!isLoggedIn || !cardConfigured) { setSavedCards([]); return; }
+    savedPaymentsAPI.getAll()
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setSavedCards(list);
+        const def = list.find(c => c.is_default);
+        if (def) setSelectedSavedCardId(def.id);
+      })
+      .catch(() => setSavedCards([]));
+  }, [isLoggedIn, cardConfigured]);
 
   // Fetch upsell items once on mount — drinks, juices, sides, salads (up to 12)
   useEffect(() => {
@@ -725,6 +742,32 @@ const Checkout = () => {
     finally { setRetrying(false); }
   };
 
+  // Charge a saved card directly -- no Accept.js, no card form, card data
+  // never passes through us at all since Authorize.net charges by profile id.
+  const handleChargeSavedCard = async (paymentMethodId) => {
+    if (items.length === 0) return;
+    if (!validateOrder()) return;
+    trackBeginCheckout(items, total);
+    setPlacing(true); setOrderError('');
+    const orderNumber = `HAB-${Date.now()}`;
+    setPendingOrderNum(orderNumber);
+
+    let result;
+    try {
+      result = await chargeSavedCard({ paymentMethodId, amount: total, orderNumber });
+    } catch (err) {
+      setOrderError(err.message || 'Payment failed. Please try again.');
+      setPlacing(false);
+      return;
+    }
+
+    await attemptSaveOrder(
+      buildPayload(orderNumber),
+      result.transactionId,
+      'Your card was charged, but we could not save your order.'
+    );
+  };
+
   // Called by AuthNetForm on successful charge
   const handleAuthNetSuccess = async (transactionId) => {
     await attemptSaveOrder(
@@ -767,14 +810,16 @@ const Checkout = () => {
   // ── Main CTA logic ─────────────────────────────────────────────────────────
   const handlePlaceOrder = () => {
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
-    // PayPal is rendered inline — "Place Order" shouldn't fire for it
+    // PayPal/Google Pay are rendered inline — "Place Order" shouldn't fire for them
     if (PAYPAL_METHODS.has(paymentMethod)) return;
-    // card
+    // card, paying with a saved one — charges directly, no card form needed
+    if (paymentMethod === 'card' && selectedSavedCardId) { handleChargeSavedCard(selectedSavedCardId); return; }
+    // card, new — reveal AuthNetForm
     if (!intentReady) { handlePrepareCardPayment(); return; }
     // AuthNetForm has its own submit button
   };
 
-  const showCardForm  = paymentMethod === 'card' && intentReady;
+  const showCardForm  = paymentMethod === 'card' && intentReady && !selectedSavedCardId;
   const showPayPal    = paymentMethod === 'paypal';
   const showGooglePay = paymentMethod === 'googlepay';
   const showCTABtn    = !PAYPAL_METHODS.has(paymentMethod);
@@ -782,6 +827,7 @@ const Checkout = () => {
   const ctaLabel = () => {
     if (placing) return 'Please wait…';
     if (OFFLINE_METHODS.has(paymentMethod)) return 'PLACE YOUR ORDER';
+    if (paymentMethod === 'card' && selectedSavedCardId) return 'PLACE ORDER →';
     if (!intentReady) return 'CONTINUE TO PAYMENT';
     return null; // AuthNetForm has its own submit button
   };
@@ -1534,6 +1580,34 @@ const Checkout = () => {
                   </div>
                 )}
 
+                {/* Saved cards — pick one to charge directly (no card form
+                    at all), or fall through to "Use a new card" below */}
+                {paymentMethod === 'card' && savedCards.length > 0 && (
+                  <div className="saved-cards-list">
+                    {savedCards.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`saved-card-chip ${selectedSavedCardId === c.id ? 'active' : ''}`}
+                        onClick={() => { setSelectedSavedCardId(c.id); setIntentReady(false); }}
+                      >
+                        <CreditCard size={14} />
+                        <span>{(c.brand || 'Card').toUpperCase()} •••• {c.last4}</span>
+                        {c.expiry && <span className="saved-card-expiry">{c.expiry}</span>}
+                        {c.is_default && <span className="saved-card-default-tag">Default</span>}
+                        {selectedSavedCardId === c.id && <span className="check-badge">✓</span>}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`saved-card-chip saved-card-new ${!selectedSavedCardId ? 'active' : ''}`}
+                      onClick={() => { setSelectedSavedCardId(null); setIntentReady(false); }}
+                    >
+                      <Plus size={14} /> Use a new card
+                    </button>
+                  </div>
+                )}
+
                 {/* Alt payment buttons */}
                 <div className="payment-alt-grid">
                   {ALT_PAYMENTS.filter(m => m.id === 'googlepay' || isPaymentActive(m.id)).map(m => (
@@ -1561,6 +1635,7 @@ const Checkout = () => {
                     config={authNetConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}
+                    showSaveOption={isLoggedIn}
                     onSuccess={handleAuthNetSuccess}
                     onError={handleCardError}
                   />

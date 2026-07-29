@@ -3,13 +3,13 @@ const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const {
   getPaymentMethods,
-  addPaymentMethod,
+  saveFromTransaction,
   setDefaultMethod,
   deletePaymentMethod
 } = require("../controllers/paymentMethodController");
 
 router.get("/", protect, getPaymentMethods);
-router.post("/", protect, addPaymentMethod);
+router.post("/save-from-transaction", protect, saveFromTransaction);
 router.put("/:id/default", protect, setDefaultMethod);
 router.delete("/:id", protect, deletePaymentMethod);
 

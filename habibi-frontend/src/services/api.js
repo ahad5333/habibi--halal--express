@@ -327,6 +327,10 @@ export const savedPaymentsAPI = {
   /** GET /api/payment-methods */
   getAll: () => request('/api/payment-methods'),
 
+  /** POST /api/payment-methods/save-from-transaction */
+  saveFromTransaction: (data) =>
+    request('/api/payment-methods/save-from-transaction', { method: 'POST', body: JSON.stringify(data) }),
+
   /** PUT /api/payment-methods/:id/default */
   setDefault: (id) =>
     request(`/api/payment-methods/${id}/default`, { method: 'PUT' }),
@@ -335,6 +339,10 @@ export const savedPaymentsAPI = {
   remove: (id) =>
     request(`/api/payment-methods/${id}`, { method: 'DELETE' }),
 };
+
+// ─── Charge a saved card (checkout, no card form involved) ──────────────────
+export const chargeSavedCard = (data) =>
+  request('/api/payments/authnet/charge-saved', { method: 'POST', body: JSON.stringify(data) });
 
 // ─── Partner Portal ──────────────────────────────────────────────
 

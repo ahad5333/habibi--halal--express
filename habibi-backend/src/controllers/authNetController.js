@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const safeError = require('../utils/safeError');
-const { chargeCard, refundTransaction } = require('../services/authNetService');
+const { chargeCard, refundTransaction, chargeCustomerProfile } = require('../services/authNetService');
 const { logAudit } = require('./auditController');
 
 // ── Helper — fetch the currently active account ───────────────────────────
@@ -74,6 +74,59 @@ const chargeCardEndpoint = async (req, res) => {
       `INSERT INTO quick_payments (order_number, amount, reason, note, customer_name, customer_phone, transaction_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [orderNumber || null, parseFloat(amount), reason || null, note || null, customerName || null, customerPhone || null, result.transactionId]
+    ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
+
+    res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
+  } catch (err) {
+    res.status(402).json({ error: err.message || 'Payment failed.' });
+  }
+};
+
+// ── Authenticated: charge a previously-saved card, no card data involved ──
+const chargeSavedCardEndpoint = async (req, res) => {
+  const { paymentMethodId, amount, orderNumber } = req.body;
+  if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId required.' });
+  if (!amount || parseFloat(amount) <= 0) return res.status(400).json({ error: 'Invalid amount.' });
+
+  try {
+    // Scoped to req.user.id -- a saved card can only ever be charged by the
+    // account that saved it, never by id alone.
+    const cardRes = await pool.query(
+      `SELECT authnet_customer_profile_id, authnet_payment_profile_id
+         FROM payment_methods WHERE id=$1 AND user_id=$2`,
+      [paymentMethodId, req.user.id]
+    );
+    if (!cardRes.rows.length) return res.status(404).json({ error: 'Saved card not found.' });
+    const { authnet_customer_profile_id: customerProfileId, authnet_payment_profile_id: customerPaymentProfileId } = cardRes.rows[0];
+
+    const account = await getActiveAccount();
+    if (!account) return res.status(503).json({ error: 'Payment processor not configured.' });
+
+    const result = await chargeCustomerProfile({
+      customerProfileId,
+      customerPaymentProfileId,
+      amount,
+      orderNumber,
+      apiLoginId:     account.api_login_id,
+      transactionKey: account.transaction_key,
+      environment:    account.environment,
+    });
+
+    if (orderNumber) {
+      await pool.query(
+        `UPDATE guest_orders
+            SET payment_status = 'paid',
+                payment_intent_id = $1,
+                updated_at = NOW()
+          WHERE order_number = $2`,
+        [result.transactionId, orderNumber]
+      );
+    }
+
+    await pool.query(
+      `INSERT INTO quick_payments (order_number, amount, reason, transaction_id)
+       VALUES ($1, $2, $3, $4)`,
+      [orderNumber || null, parseFloat(amount), 'saved_card', result.transactionId]
     ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
 
     res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
@@ -233,6 +286,7 @@ const setActiveAccount = async (req, res) => {
 module.exports = {
   getPublicConfig,
   chargeCardEndpoint,
+  chargeSavedCardEndpoint,
   refundEndpoint,
   listAccounts,
   createAccount,
