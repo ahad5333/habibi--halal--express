@@ -342,7 +342,7 @@ const Contact = () => {
                   </div>
 
                   {/* Email addresses */}
-                  <div className="ct-company-block ct-company-block-full">
+                  <div className="ct-company-block ct-company-block-full" id="email-directory">
                     <p className="ct-company-label"><Mail size={13} /> EMAIL DIRECTORY</p>
                     <div className="ct-email-list">
                       {[
