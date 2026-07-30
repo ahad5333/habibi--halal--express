@@ -164,6 +164,16 @@ const Contact = () => {
     resetForm();
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Deep-link support (e.g. /contact#email-directory) -- the browser's
+  // native on-load hash scroll fires before this page's content has
+  // rendered, so it silently lands on nothing. Do it ourselves once mounted.
+  useEffect(() => {
+    if (!window.location.hash) return;
+    const id = window.location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
   const form = FORM_TYPES.find(f => f.id === activeType) || null;
   const has = (field) => form?.fields.includes(field) || false;
 
