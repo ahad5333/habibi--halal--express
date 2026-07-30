@@ -25,6 +25,32 @@ ssh "$REMOTE" "
 echo "▶ Uploading index.html..."
 scp "${LOCAL_DIST}/index.html" "${REMOTE}:${REMOTE_DIR}/index.html"
 
+# public/images/ (391MB, ~1000 files) is a direct copy into dist/images/ but
+# was never synced by this script at all -- it only ever handled assets/ +
+# index.html, so any newly-added image silently 404'd in production despite
+# building fine locally (found via /images/collab/*.svg). Too large to
+# scp -r wholesale on every deploy, and rsync isn't available on this
+# machine (only on the server) -- so diff local vs. remote file *paths*
+# and upload only what's new. Path-only (not content-hash) is a deliberate
+# fit for this project's convention of giving changed images new filenames
+# (e.g. "-v2", "-fixed") rather than overwriting existing ones in place.
+echo "▶ Syncing new images..."
+LOCAL_IMG_LIST=$(mktemp)
+REMOTE_IMG_LIST=$(mktemp)
+find "${LOCAL_DIST}/images" -type f 2>/dev/null | sed "s|^${LOCAL_DIST}/||" | sort > "$LOCAL_IMG_LIST"
+ssh "$REMOTE" "find '${REMOTE_DIR}/images' -type f 2>/dev/null | sed 's|^${REMOTE_DIR}/||'" | sort > "$REMOTE_IMG_LIST"
+NEW_IMAGES=$(comm -23 "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST")
+if [ -n "$NEW_IMAGES" ]; then
+  echo "$NEW_IMAGES" | while IFS= read -r rel; do
+    ssh "$REMOTE" "mkdir -p \"\$(dirname '${REMOTE_DIR}/${rel}')\""
+    scp "${LOCAL_DIST}/${rel}" "${REMOTE}:${REMOTE_DIR}/${rel}"
+  done
+  echo "  uploaded $(echo "$NEW_IMAGES" | wc -l) new image(s)"
+else
+  echo "  no new images"
+fi
+rm -f "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST"
+
 echo "▶ Cleaning up old assets..."
 ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_old"
 
