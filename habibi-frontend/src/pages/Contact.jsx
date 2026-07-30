@@ -180,6 +180,15 @@ const Contact = () => {
     resetForm();
   };
 
+  // Collaboration cards live in their own section further down the page --
+  // clicking one jumps back up to the inquiry form with the right type (and
+  // partnership category, where one maps cleanly) already selected.
+  const handleCollabClick = (typeId, presetPartnerType) => {
+    handleTypeChange(typeId);
+    if (presetPartnerType) setPartnerType(presetPartnerType);
+    document.getElementById('ct-inquiry-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -233,7 +242,7 @@ const Contact = () => {
       </div>
 
       {/* ── Form section ── */}
-      <section className="section">
+      <section className="section" id="ct-inquiry-form">
         <div className="container ct-layout">
 
           {/* ── Left: form type tabs ── */}
@@ -520,18 +529,29 @@ const Contact = () => {
       {/* ── Collaboration strip ── */}
       <section className="section ct-collab border-t border-border">
         <div className="container">
+          <p className="ct-collab-kicker">LET'S BUILD SOMETHING TOGETHER</p>
+          <h3 className="ct-collab-heading">Ways to Collaborate</h3>
           <div className="ct-collab-grid">
             {[
-              { icon: '🍴', title: 'Restaurant Partnerships', text: 'Join our curated network of Halal excellence.' },
-              { icon: '🚚', title: 'Supply Integrity', text: 'Premium ethically sourced Halal ingredient suppliers.' },
-              { icon: '👥', title: 'Corporate Catering', text: 'White-glove catering for business events at scale.' },
-              { icon: '📱', title: 'Tech Integrations', text: 'API or platform integrations, let\'s build together.' },
-            ].map(card => (
-              <div key={card.title} className="ct-collab-card">
-                <span className="ct-collab-icon">{card.icon}</span>
+              { img: '/images/collab/restaurant.svg', accent: 'gold',   title: 'Restaurant Partnerships', text: 'Join our curated network of Halal excellence.', partnerType: '' },
+              { img: '/images/collab/supply.svg',      accent: 'green', title: 'Supply Integrity',        text: 'Premium ethically sourced Halal ingredient suppliers.', partnerType: 'Food Supplier' },
+              { img: '/images/collab/catering.svg',    accent: 'violet',title: 'Corporate Catering',      text: 'White-glove catering for business events at scale.', partnerType: 'Catering Client' },
+              { img: '/images/collab/tech.svg',        accent: 'blue',  title: 'Tech Integrations',       text: 'API or platform integrations, let\'s build together.', partnerType: 'Tech / Integration' },
+            ].map((card, i) => (
+              <button
+                key={card.title}
+                type="button"
+                className={`ct-collab-card accent-${card.accent}`}
+                style={{ '--i': i }}
+                onClick={() => handleCollabClick('partner', card.partnerType)}
+              >
+                <span className="ct-collab-icon-ring">
+                  <img src={card.img} alt="" className="ct-collab-icon" />
+                </span>
                 <h4 className="ct-collab-title">{card.title}</h4>
                 <p className="ct-collab-text">{card.text}</p>
-              </div>
+                <span className="ct-collab-cta">Get in touch <ChevronRight size={14} /></span>
+              </button>
             ))}
           </div>
         </div>
