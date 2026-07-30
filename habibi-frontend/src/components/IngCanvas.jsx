@@ -29,7 +29,7 @@ const CO_ING_DB = {
   /* ── PROTEINS  z=4 ─────────────────────────────────────────── */
   chicken:          { zone:'protein', src:'/images/byo/ing/chicken-broasted.webp',          z:4, hotDogPos:[{x:50,y:66,w:39}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:41,w:38,rot:-1.8}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
   'lamb-gyro':      { zone:'protein', src:'/images/byo/ing/lamb-gyro.webp',        z:4, hotDogPos:[{x:31,y:50,w:56}], pos:{ familyTray:[{x:50,y:43,w:44}], platter:[{x:50,y:43,w:46}], hero:[{x:50,y:27,w:28}], standard:[{x:50,y:43,w:30}], compact:[{x:50,y:43,w:66}], wrap:[{x:50,y:43,w:74}] } },
-  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:37,w:48}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
+  mix:              { zone:'protein', src:'/images/byo/ing/mix.webp',               z:4, hotDogPos:[{x:50,y:70,w:42}], pos:{ familyTray:[{x:69,y:49,w:68,rot:-1.8,final:true}], platter:[{x:50,y:44,w:44}], hero:[{x:50,y:37,w:48}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
   hotdog:           { zone:'protein', src:'/images/byo/ing/hotdog.webp',            z:4, hotDogPos:[{x:50,y:43,w:74}], pos:{ familyTray:[{x:50,y:44,w:46}], platter:[{x:50,y:44,w:50}], hero:[{x:50,y:43,w:82}], standard:[{x:50,y:43,w:64}], compact:[{x:50,y:43,w:68}], wrap:[{x:50,y:43,w:74}] } },
   bacon:            { zone:'protein', src:'/images/byo/ing/bacon.webp',             z:4, hotDogPos:[{x:42,y:65,w:28,rot:-3.6},{x:58,y:62,w:29,rot:-1.8}], pos:{ familyTray:[{x:36,y:44,w:18},{x:64,y:44,w:18}], platter:[{x:35,y:44,w:24},{x:65,y:44,w:24}], hero:[{x:32,y:40,w:29},{x:68,y:40,w:31}], standard:[{x:36,y:44,w:30},{x:64,y:44,w:30}], compact:[{x:36,y:44,w:30},{x:64,y:44,w:30}], wrap:[{x:34,y:44,w:36},{x:66,y:44,w:36}] } },
   'hot-sausage':    { zone:'protein', src:'/images/byo/ing/hot-sausage.webp',      z:4, showAsideWhen:'hotdog', hotDogPos:[{x:50,y:70,w:49}], pos:{ familyTray:[{x:50,y:44,w:42}], platter:[{x:50,y:44,w:46}], hero:[{x:50,y:40,w:64}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:65}], wrap:[{x:50,y:44,w:72}] } },
@@ -59,10 +59,10 @@ const CO_ING_DB = {
   /* Rice: square yellow basmati for flat trays; platter uses same dense image, bread bases use elongated pile */
   rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',
     srcByFamily: { familyTray:'/images/byo/ing/rice-tray.webp', platter:'/images/byo/ing/rice-tray.webp' },
-    z:2, pos:{ familyTray:[{x:33,y:50,w:50}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
+    z:2, pos:{ familyTray:[{x:34,y:50,w:40,final:true}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
   /* Onions: ~2" slice — fewer, centred for compact round bases */
   onions:   { zone:'veg', src:'/images/byo/ing/onion2.webp',    z:5, hotDogPos:[{x:30,y:44,w:31},{x:44,y:40,w:32}], pos:{
-    familyTray:[{x:16,y:43,w:10},{x:34,y:48,w:10},{x:52,y:42,w:10},{x:73,y:61,w:15},{x:79,y:48,w:18}],
+    familyTray:[{x:48,y:36,w:28,rot:-3.5,final:true},{x:40,y:61,w:24,rot:7,final:true}],
     platter:   [{x:22,y:59,w:12},{x:40,y:64,w:12},{x:58,y:58,w:11},{x:76,y:64,w:11}],
     hero:      [{x:40,y:44,w:29},{x:59,y:45,w:35}],
     standard:  [{x:33,y:44,w:18},{x:72,y:45,w:18},{x:52,y:42,w:18}],
@@ -71,7 +71,7 @@ const CO_ING_DB = {
   } },
   /* Peppers: ~2" slice */
   peppers:  { zone:'veg', src:'/images/byo/ing/pepper.webp',   z:5, hotDogPos:[{x:28,y:64,w:20}], pos:{
-    familyTray:[{x:14,y:49,w:9},{x:30,y:45,w:9},{x:48,y:50,w:9},{x:66,y:45,w:9},{x:82,y:50,w:8}],
+    familyTray:[{x:51,y:49,w:21,rot:-10.5,final:true},{x:70,y:45,w:16,rot:-7,final:true}],
     platter:   [{x:22,y:49,w:10},{x:38,y:45,w:10},{x:54,y:50,w:10},{x:70,y:45,w:9},{x:78,y:50,w:9}],
     hero:      [{x:26,y:46,w:25},{x:77,y:46,w:25}],
     standard:  [{x:30,y:50,w:16},{x:52,y:46,w:15},{x:72,y:51,w:15}],
@@ -168,8 +168,17 @@ const SAUCE_COLORS = {
   blue:    { pool: 'rgba(88,75,155,0.96)',   hi: 'rgba(138,125,198,1.0)'  },
 };
 
-/* ── Remap x AND w into a zone (used for vegetables, rice) ── */
+/* ── Remap x AND w into a zone (used for vegetables, rice) ──
+   pos.final short-circuits every transform in this file (this fn,
+   remapZoneX, clampIngPos, qty w-scaling, and the ingWidthScale/
+   splitBunYShift applied at render time) -- it marks a position as
+   hand-tuned to an exact on-canvas placement (from a real customer's
+   dev-tools measurement of what actually looked right), which the
+   normal zone/qty/family scaling pipeline has no reliable way to
+   reverse into automatically. Final positions render pixel-for-pixel
+   as stored, nothing else. */
 function remapZone(pos, zoneMin, zoneMax) {
+  if (pos.final) return pos;
   const zW = zoneMax - zoneMin;
   const newX = zoneMin + (pos.x / 100) * zW;
   const newW = Math.round(pos.w * zW / 100);
@@ -178,6 +187,7 @@ function remapZone(pos, zoneMin, zoneMax) {
 
 /* ── Remap x only, keep original w (used for proteins) ───── */
 function remapZoneX(pos, zoneMin, zoneMax) {
+  if (pos.final) return pos;
   const zW = zoneMax - zoneMin;
   const newX = zoneMin + (pos.x / 100) * zW;
   return { ...pos, x: Math.round(newX) };
@@ -203,6 +213,7 @@ const BASE_BOUNDS_OVERRIDE = {
 
 /* Clamp a position to stay within zone and respect max ingredient width */
 function clampIngPos(pos, zMin, zMax, maxW) {
+  if (pos.final) return pos;
   const zW   = zMax - zMin;
   const w    = Math.min(pos.w, maxW, Math.round(zW * 0.92));
   const half = w / 2;
@@ -416,9 +427,10 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
 
     const dup = QTY_DUP[sel.qty] || QTY_DUP.regular;
     rawPos.forEach(pos => {
-      const scaledPos = { ...pos, w: Math.round(pos.w * dup.wScale) };
+      const scaledPos = pos.final ? pos : { ...pos, w: Math.round(pos.w * dup.wScale) };
       const cPos = clampIngPos(remapZoneX(scaledPos, PROT_ZONE[0], PROT_ZONE[1]), PROT_ZONE[0], PROT_ZONE[1], bounds.maxW);
       layers.push({ id, def, src, pos: cPos });
+      if (pos.final) return; // hand-placed proteins render once, no qty duplicates
       dup.extra.forEach(off => {
         const offPos = {
           ...cPos,
@@ -451,7 +463,7 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
     /* Veg on split-bun bases (hero/standard/compact) only ever renders via the
        unmasked "peek" path below, which has its own (usually wider) peekMaxW —
        clamping against the regular maxW here left peekMaxW unreachable. */
-    pushItem(id, def, rawPos.map(p => ({ ...p, w: Math.round(p.w * wScale) })), def.src, VEG_ZONE, bounds.peekMaxW ?? bounds.maxW);
+    pushItem(id, def, rawPos.map(p => p.final ? p : { ...p, w: Math.round(p.w * wScale) }), def.src, VEG_ZONE, bounds.peekMaxW ?? bounds.maxW);
   });
 
   /* Rice — only render inside the canvas for flat bases (platter / family tray).
@@ -464,7 +476,7 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
         const wScale = QTY_W_SCALE[cfg.vegetables.rice?.qty] || 1;
         const riceSrc = def.srcByFamily?.[family] || def.src;
         rawPos.forEach(pos => {
-          const scaledPos = { ...pos, w: Math.round(pos.w * wScale) };
+          const scaledPos = pos.final ? pos : { ...pos, w: Math.round(pos.w * wScale) };
           const cPos = clampIngPos(remapZoneX(scaledPos, RICE_ZONE[0], RICE_ZONE[1]), RICE_ZONE[0], RICE_ZONE[1], bounds.maxW);
           layers.push({ id:'rice', def, src: riceSrc, pos: cPos });
         });
@@ -590,19 +602,23 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
                   data-id={id}
                   style={{
                     left: `${pos.x}%`,
-                    top: isHotDog
+                    top: pos.final
                       ? `${pos.y}%`
-                      : `${isSplitBun ? Math.min(pos.y + splitBunYShift, 82) : pos.y}%`,
-                    width: `${isHotDog ? pos.w : bounds.noWiden ? pos.w : def.zone === 'cheese' ? pos.w : Math.round(pos.w * ingWidthScale)}%`,
+                      : isHotDog
+                        ? `${pos.y}%`
+                        : `${isSplitBun ? Math.min(pos.y + splitBunYShift, 82) : pos.y}%`,
+                    width: `${pos.final ? pos.w : isHotDog ? pos.w : bounds.noWiden ? pos.w : def.zone === 'cheese' ? pos.w : Math.round(pos.w * ingWidthScale)}%`,
                     zIndex: def.z || 2,
                     opacity: def.zone === 'cheese' ? cheeseOpacity : 1,
                     '--ing-rot':   pos.rot
                       ? `${pos.rot}deg`
-                      : def.zone === 'protein'
-                        ? `${((i % 5) - 2) * 1.8}deg`   // ±3.6° natural tilt for proteins
-                        : def.zone === 'veg'
-                          ? `${((i % 7) - 3) * 3.5}deg` // ±10.5° scatter tilt for veg
-                          : '0deg',
+                      : pos.final
+                        ? '0deg'
+                        : def.zone === 'protein'
+                          ? `${((i % 5) - 2) * 1.8}deg`   // ±3.6° natural tilt for proteins
+                          : def.zone === 'veg'
+                            ? `${((i % 7) - 3) * 3.5}deg` // ±10.5° scatter tilt for veg
+                            : '0deg',
                     '--ing-z':     def.z || 2,
                     '--ing-depth': (1 + (pos.y - 44) * 0.008).toFixed(3),
                     '--ing-sx':    def.zone === 'veg' ? `${((i % 5) - 2) * 7}px` : '0px',
