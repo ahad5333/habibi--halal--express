@@ -18,22 +18,57 @@ exports.getBroadcasts = async (req, res) => {
 
 exports.sendBroadcast = async (req, res) => {
   try {
-    const { title, message, audience, channels, email_template } = req.body;
+    const { title, message, audience, channels, email_template, scheduled_at } = req.body;
     if (!title || !message) return res.status(400).json({ error: 'Title and message are required' });
     const adminName = req.user?.name || 'Admin';
     const channelList = channels || ['sms'];
 
-    // Insert broadcast record
+    // A future scheduled_at defers sending entirely — the row is just
+    // created and the scheduler cron in app.js picks it up when due. Reusing
+    // the same execution path (executeBroadcast) means a scheduled send goes
+    // out identically to an immediate one, nothing duplicated.
+    const isScheduled = scheduled_at && new Date(scheduled_at).getTime() > Date.now();
+
     const inserted = await pool.query(
-      `INSERT INTO broadcasts (title, message, audience, channels, status, created_by)
-       VALUES ($1,$2,$3,$4,'sending',$5) RETURNING *`,
-      [title, message, audience || 'all', channelList, adminName]
+      `INSERT INTO broadcasts (title, message, audience, channels, email_template, scheduled_at, status, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [title, message, audience || 'all', channelList, email_template || null,
+       isScheduled ? scheduled_at : null, isScheduled ? 'scheduled' : 'sending', adminName]
     );
     const broadcast = inserted.rows[0];
 
-    // Collect phone numbers for SMS
-    let smsSentCount = 0;
-    if (channelList.includes('sms')) {
+    if (isScheduled) {
+      logAudit(pool, req.user?.id, req.user?.name, 'schedule_broadcast', 'broadcast', String(broadcast.id),
+        { title, audience: audience || 'all', channels: channelList, scheduled_at }, req.ip);
+      return res.json(broadcast);
+    }
+
+    const { totalSent } = await executeBroadcast(broadcast);
+
+    await pool.query(
+      `UPDATE broadcasts SET status='sent', sent_at=NOW(), sent_count=$1 WHERE id=$2`,
+      [totalSent, broadcast.id]
+    );
+
+    logAudit(pool, req.user?.id, req.user?.name, 'send_broadcast', 'broadcast', String(broadcast.id),
+      { title, audience: audience || 'all', channels: channelList, sent_count: totalSent }, req.ip);
+
+    res.json({ ...broadcast, status: 'sent', sent_count: totalSent });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// The actual SMS/email/push send — split out from sendBroadcast so the
+// scheduler cron (app.js) can run the exact same logic for a broadcast
+// that was composed earlier, instead of a second, drifting copy of it.
+async function executeBroadcast(broadcast) {
+  const { title, message, audience, channels, email_template } = broadcast;
+  const channelList = channels || ['sms'];
+
+  // Collect phone numbers for SMS
+  let smsSentCount = 0;
+  if (channelList.includes('sms')) {
       // Exclude anyone who has opted out — either a registered user who
       // texted STOP (users.receive_sms_updates), or any number (registered
       // or guest) recorded in sms_optouts by the Twilio STOP webhook. Without
@@ -173,21 +208,9 @@ exports.sendBroadcast = async (req, res) => {
       }
     }
 
-    const totalSent = smsSentCount + emailSentCount + pushSentCount;
-
-    await pool.query(
-      `UPDATE broadcasts SET status='sent', sent_at=NOW(), sent_count=$1 WHERE id=$2`,
-      [totalSent, broadcast.id]
-    );
-
-    logAudit(pool, req.user?.id, req.user?.name, 'send_broadcast', 'broadcast', String(broadcast.id),
-      { title, audience: audience || 'all', channels: channelList, sent_count: totalSent }, req.ip);
-
-    res.json({ ...broadcast, status: 'sent', sent_count: totalSent });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-};
+  const totalSent = smsSentCount + emailSentCount + pushSentCount;
+  return { totalSent, smsSentCount, emailSentCount, pushSentCount };
+}
 
 exports.deleteBroadcast = async (req, res) => {
   try {
@@ -287,3 +310,17 @@ exports.getRecipientCount = async (req, res) => {
     res.status(500).json(safeError(err));
   }
 };
+
+// Uploads a photo for the email banner — reuses the same upload middleware
+// (Cloudinary in production, local disk in dev) as menu/article images.
+exports.uploadBroadcastImage = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    const url = req.file.path?.startsWith('http') ? req.file.path : `/uploads/menus/${req.file.filename}`;
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+module.exports.executeBroadcast = executeBroadcast;

@@ -26,6 +26,27 @@
 }
 .bc-test-send label { display: flex; align-items: center; gap: 0.4rem; }
 
+.bc-schedule-toggle { display: flex; gap: 0.5rem; }
+
+.bc-banner-upload {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  height: 70px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.bc-banner-upload:hover { border-color: var(--color-primary); color: var(--color-text-main); }
+
+.bc-banner-image-preview { display: flex; align-items: center; gap: 0.75rem; }
+.bc-banner-image-preview img {
+  width: 120px; height: 60px; object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
 /* Compose modal */
 .bc-modal-wide { max-width: 520px; transition: max-width 0.15s; }
 .bc-modal-wide.bc-modal-split-active { max-width: 980px; }

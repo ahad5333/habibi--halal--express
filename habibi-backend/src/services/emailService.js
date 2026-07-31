@@ -196,10 +196,10 @@ const liteMarkdownToHtml = (text) => {
 // Builds newsletter inner-content HTML for use in broadcast campaigns.
 // Kept as a utility so broadcastsController can pass it to sendNewsletter.
 const buildNewsletterHTML = (body, template = {}) => {
-  const { banner_type = 'default', hero_text = '', cta_text = '', cta_url = '', footer_note = '' } = template;
+  const { banner_type = 'default', hero_text = '', cta_text = '', cta_url = '', footer_note = '', banner_image_url = '' } = template;
   const { bg: banner_bg, text: banner_text } = BANNER_COLORS[banner_type] || BANNER_COLORS.default;
   return renderBody('newsletter', {
-    hero_text, cta_text, cta_url, footer_note, banner_bg, banner_text,
+    hero_text, cta_text, cta_url, footer_note, banner_bg, banner_text, banner_image_url,
     body_html: liteMarkdownToHtml(body),
   });
 };

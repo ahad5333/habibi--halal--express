@@ -743,6 +743,35 @@ const createTables = async () => {
       );
     `);
 
+    // email_template was never persisted, so "duplicate a past broadcast"
+    // had nothing to restore beyond title/message/audience/channels — added
+    // alongside scheduled_at so a broadcast can be composed now and sent
+    // later by the scheduler cron in app.js.
+    await client.query(`ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS email_template JSONB`);
+    await client.query(`ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ`);
+
+    // The CREATE TABLE above predates this CHECK ever actually reaching
+    // production (confirmed live: no constraint existed on this column at
+    // all, so `status='sending'` — used by sendBroadcast — has been running
+    // completely unenforced). Adding real enforcement now with the full set
+    // of values the code actually uses.
+    await client.query(`ALTER TABLE broadcasts DROP CONSTRAINT IF EXISTS broadcasts_status_check`);
+    await client.query(`ALTER TABLE broadcasts ADD CONSTRAINT broadcasts_status_check CHECK (status IN ('draft','sending','scheduled','sent','failed','cancelled'))`);
+
+    // sent_at/created_at drifted to naive TIMESTAMP — same class of bug as
+    // coupons/delivery_assignments fixed elsewhere in this file.
+    const driftedBroadcastCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='broadcasts'
+        AND column_name IN ('sent_at','created_at')
+        AND data_type = 'timestamp without time zone'
+    `);
+    for (const { column_name } of driftedBroadcastCols.rows) {
+      await client.query(
+        `ALTER TABLE broadcasts ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
+
     // ── Mobile App Push Notification Tokens ────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_device_tokens (

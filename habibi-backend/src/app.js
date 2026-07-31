@@ -384,5 +384,36 @@ cron.schedule('0 4 * * *', async () => {
   }
 });
 
+// ── Scheduled broadcast dispatch ─────────────────────────────────────────────
+// Runs every minute. A broadcast composed with a future "send later" time is
+// inserted as status='scheduled' (see broadcastsController.sendBroadcast) and
+// picked up here once due, reusing the exact same send logic (executeBroadcast)
+// an immediate send uses — so a scheduled campaign never behaves differently
+// from clicking "Send Now" would have.
+const { executeBroadcast } = require('./controllers/broadcastsController');
+
+cron.schedule('* * * * *', async () => {
+  try {
+    const due = await pool.query(
+      `SELECT * FROM broadcasts WHERE status='scheduled' AND scheduled_at <= NOW()`
+    );
+    for (const broadcast of due.rows) {
+      try {
+        const { totalSent } = await executeBroadcast(broadcast);
+        await pool.query(
+          `UPDATE broadcasts SET status='sent', sent_at=NOW(), sent_count=$1 WHERE id=$2`,
+          [totalSent, broadcast.id]
+        );
+        console.log(`[Cron] Scheduled broadcast #${broadcast.id} sent (${totalSent} recipient(s))`);
+      } catch (err) {
+        await pool.query(`UPDATE broadcasts SET status='failed' WHERE id=$1`, [broadcast.id]).catch(() => {});
+        console.error(`[Cron] Scheduled broadcast #${broadcast.id} failed:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[Cron] Scheduled broadcast dispatch error:', err.message);
+  }
+});
+
 module.exports = app;
 

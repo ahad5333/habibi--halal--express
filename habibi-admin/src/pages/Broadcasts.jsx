@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Bell, Send, Trash2, X, Eye, Mail, FlaskConical, Users } from 'lucide-react';
+import { Bell, Send, Trash2, X, Eye, Mail, FlaskConical, Users, Copy, Clock, Image as ImageIcon } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Broadcasts.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
@@ -26,7 +26,7 @@ function liteMarkdownToHtml(text) {
 const BLANK = {
   title: '', message: '', audience: 'all', channels: ['sms'],
   email_template: {
-    subject: '', banner_type: 'default', hero_text: '', cta_text: '', cta_url: '', footer_note: '',
+    subject: '', banner_type: 'default', hero_text: '', cta_text: '', cta_url: '', footer_note: '', banner_image_url: '',
   },
 };
 
@@ -38,7 +38,7 @@ const BANNER_TYPES = [
 ];
 
 function EmailPreview({ title, message, template }) {
-  const { banner_type = 'default', hero_text = '', cta_text = '', cta_url = '', footer_note = '' } = template || {};
+  const { banner_type = 'default', hero_text = '', cta_text = '', cta_url = '', footer_note = '', banner_image_url = '' } = template || {};
   const bt = BANNER_TYPES.find(b => b.value === banner_type) || BANNER_TYPES[0];
 
   return (
@@ -50,6 +50,14 @@ function EmailPreview({ title, message, template }) {
 
       {/* Email body */}
       <div style={{ background: '#fff', padding: '1.5rem' }}>
+        {/* Banner image */}
+        {banner_image_url && (
+          <img
+            src={banner_image_url}
+            alt=""
+            style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 6, marginBottom: '1.25rem' }}
+          />
+        )}
         {/* Banner */}
         {hero_text && (
           <div style={{ background: bt.bg, padding: '1.25rem 1.5rem', borderRadius: 6, marginBottom: '1.25rem', textAlign: 'center' }}>
@@ -102,8 +110,24 @@ export default function Broadcasts() {
   const [testResult, setTestResult] = useState(null);
   const [counts, setCounts]         = useState(null);
   const [countsLoading, setCountsLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState('now'); // 'now' | 'later'
+  const [scheduledAt, setScheduledAt] = useState('');
 
   const isEmailSelected = form.channels.includes('email');
+
+  const openModal = (prefill) => {
+    setForm(prefill ? {
+      title: prefill.title || '',
+      message: prefill.message || '',
+      audience: prefill.audience || 'all',
+      channels: prefill.channels || ['sms'],
+      email_template: { ...BLANK.email_template, ...(prefill.email_template || {}) },
+    } : BLANK);
+    setScheduleMode('now'); setScheduledAt('');
+    setResult(null); setTestResult(null); setTestEmail(''); setPreview(false);
+    setModal(true);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -144,6 +168,7 @@ export default function Broadcasts() {
 
   const send = async () => {
     if (!form.title.trim() || !form.message.trim()) return;
+    if (scheduleMode === 'later' && !scheduledAt) return;
     setSending(true); setResult(null);
     try {
       const payload = {
@@ -152,9 +177,12 @@ export default function Broadcasts() {
         audience: form.audience,
         channels: form.channels,
         ...(isEmailSelected ? { email_template: form.email_template } : {}),
+        ...(scheduleMode === 'later' ? { scheduled_at: new Date(scheduledAt).toISOString() } : {}),
       };
       const res = await adminAPI.sendBroadcast(payload);
-      setResult(`✓ Sent to ${res.sent_count} recipient${res.sent_count !== 1 ? 's' : ''}`);
+      setResult(res.status === 'scheduled'
+        ? `✓ Scheduled for ${new Date(res.scheduled_at).toLocaleString()}`
+        : `✓ Sent to ${res.sent_count} recipient${res.sent_count !== 1 ? 's' : ''}`);
       setModal(false); setForm(BLANK); load();
     } catch (e) {
       setResult(`Error: ${e.message}`);
@@ -171,6 +199,20 @@ export default function Broadcasts() {
   const setTmpl = (key, val) =>
     setForm(f => ({ ...f, email_template: { ...f.email_template, [key]: val } }));
 
+  const uploadImage = async (file) => {
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const { url } = await adminAPI.uploadBroadcastImage(fd);
+      setTmpl('banner_image_url', url);
+    } catch (e) {
+      alert('Image upload failed: ' + e.message);
+    }
+    setUploadingImage(false);
+  };
+
   return (
     <div>
       <div className="page-hdr">
@@ -178,7 +220,7 @@ export default function Broadcasts() {
           <h1 className="page-title">Notification Broadcasts</h1>
           <p className="page-sub">Send SMS, email, or push messages to customers</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setModal(true); setForm(BLANK); setResult(null); setPreview(false); }}>
+        <button className="btn btn-primary" onClick={() => openModal(null)}>
           <Send size={15} /> New Broadcast
         </button>
       </div>
@@ -210,7 +252,7 @@ export default function Broadcasts() {
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Title</th><th>Message</th><th>Audience</th><th>Channels</th><th>Recipients</th><th>Status</th><th>Sent At</th><th /></tr>
+                <tr><th>Title</th><th>Message</th><th>Audience</th><th>Channels</th><th>Recipients</th><th>Status</th><th>Sent / Scheduled</th><th /></tr>
               </thead>
               <tbody>
                 {broadcasts.map(b => (
@@ -229,15 +271,22 @@ export default function Broadcasts() {
                     </td>
                     <td style={{ fontWeight: 600 }}>{b.sent_count}</td>
                     <td>
-                      <span className={`badge ${b.status === 'sent' ? 'badge-success' : b.status === 'failed' ? 'badge-error' : 'badge-muted'}`}>{b.status}</span>
+                      <span className={`badge ${b.status === 'sent' ? 'badge-success' : b.status === 'failed' ? 'badge-error' : b.status === 'scheduled' ? 'badge-info' : 'badge-muted'}`}>{b.status}</span>
                     </td>
                     <td className="text-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
-                      {b.sent_at ? fmtDateTime(b.sent_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {b.status === 'scheduled' && b.scheduled_at
+                        ? <><Clock size={11} style={{ verticalAlign: -1 }} /> {fmtDateTime(b.scheduled_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</>
+                        : b.sent_at ? fmtDateTime(b.sent_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
                     <td>
-                      <button className="btn btn-danger btn-sm btn-icon" onClick={() => { if (confirm('Delete this broadcast record?')) { adminAPI.deleteBroadcast(b.id).then(load); } }}>
-                        <Trash2 size={13} />
-                      </button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button className="btn btn-secondary btn-sm btn-icon" title="Duplicate as new broadcast" onClick={() => openModal(b)}>
+                          <Copy size={13} />
+                        </button>
+                        <button className="btn btn-danger btn-sm btn-icon" title={b.status === 'scheduled' ? 'Cancel this scheduled broadcast' : 'Delete this broadcast record'} onClick={() => { if (confirm(b.status === 'scheduled' ? 'Cancel this scheduled broadcast? It will not be sent.' : 'Delete this broadcast record?')) { adminAPI.deleteBroadcast(b.id).then(load); } }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -318,6 +367,24 @@ export default function Broadcasts() {
                   )}
                 </div>
 
+                <div className="field">
+                  <label><Clock size={13} /> When to Send</label>
+                  <div className="bc-schedule-toggle">
+                    <button type="button" className={`btn btn-sm ${scheduleMode === 'now' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setScheduleMode('now')}>Send Now</button>
+                    <button type="button" className={`btn btn-sm ${scheduleMode === 'later' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setScheduleMode('later')}>Schedule for Later</button>
+                  </div>
+                  {scheduleMode === 'later' && (
+                    <input
+                      type="datetime-local"
+                      className="input"
+                      style={{ marginTop: '0.5rem' }}
+                      value={scheduledAt}
+                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                      onChange={e => setScheduledAt(e.target.value)}
+                    />
+                  )}
+                </div>
+
                 {/* ── Email Template Section ── */}
                 {isEmailSelected && (
                   <div className="bc-email-template">
@@ -326,6 +393,23 @@ export default function Broadcasts() {
                     <div className="field">
                       <label>Email Subject <span className="text-muted">(overrides title for email only)</span></label>
                       <input className="input" value={form.email_template.subject} onChange={e => setTmpl('subject', e.target.value)} placeholder={form.title || 'e.g. 🔥 Weekend Special — 20% Off Platters!'} />
+                    </div>
+
+                    <div className="field">
+                      <label><ImageIcon size={13} /> Banner Photo <span className="text-muted">(optional — shows above the banner color)</span></label>
+                      {form.email_template.banner_image_url ? (
+                        <div className="bc-banner-image-preview">
+                          <img src={form.email_template.banner_image_url} alt="" />
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setTmpl('banner_image_url', '')}>
+                            <X size={12} /> Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="bc-banner-upload">
+                          {uploadingImage ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><ImageIcon size={16} /> Click to upload a photo</>}
+                          <input type="file" accept="image/*" hidden disabled={uploadingImage} onChange={e => uploadImage(e.target.files[0])} />
+                        </label>
+                      )}
                     </div>
 
                     <div className="field">
@@ -422,9 +506,13 @@ export default function Broadcasts() {
               <button
                 className="btn btn-primary"
                 onClick={send}
-                disabled={sending || !form.title.trim() || !form.message.trim() || form.channels.length === 0}
+                disabled={sending || !form.title.trim() || !form.message.trim() || form.channels.length === 0 || (scheduleMode === 'later' && !scheduledAt)}
               >
-                {sending ? <div className="spinner" /> : <><Send size={14} /> Send Now</>}
+                {sending
+                  ? <div className="spinner" />
+                  : scheduleMode === 'later'
+                    ? <><Clock size={14} /> Schedule Broadcast</>
+                    : <><Send size={14} /> Send Now</>}
               </button>
             </div>
           </div>

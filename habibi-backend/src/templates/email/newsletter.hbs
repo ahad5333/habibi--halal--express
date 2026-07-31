@@ -1,5 +1,9 @@
+{{#if banner_image_url}}
+<img src="{{banner_image_url}}" alt="" width="100%" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:8px 8px 0 0;margin:-1.5rem -1.5rem 1.5rem">
+{{/if}}
+
 {{#if hero_text}}
-<div style="background:{{banner_bg}};padding:1.75rem 2rem;text-align:center;border-radius:8px 8px 0 0;margin:-1.5rem -1.5rem 1.5rem">
+<div style="background:{{banner_bg}};padding:1.75rem 2rem;text-align:center;{{#unless banner_image_url}}border-radius:8px 8px 0 0;margin:-1.5rem -1.5rem 1.5rem{{else}}margin:0 -1.5rem 1.5rem{{/unless}}">
   <p style="color:{{banner_text}};font-size:1.3rem;font-weight:800;margin:0;line-height:1.3">{{hero_text}}</p>
 </div>
 {{/if}}
