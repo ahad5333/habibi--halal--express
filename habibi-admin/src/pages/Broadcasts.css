@@ -14,6 +14,18 @@
 .bc-channel-opt { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; }
 .bc-channel-opt input { width: 16px; height: 16px; accent-color: var(--color-primary); }
 
+.bc-recipient-count {
+  display: flex; align-items: center; gap: 0.35rem;
+  font-size: 0.74rem; color: var(--color-text-muted);
+  margin-top: 0.6rem;
+}
+
+.bc-test-send {
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
+}
+.bc-test-send label { display: flex; align-items: center; gap: 0.4rem; }
+
 /* Compose modal */
 .bc-modal-wide { max-width: 520px; transition: max-width 0.15s; }
 .bc-modal-wide.bc-modal-split-active { max-width: 980px; }

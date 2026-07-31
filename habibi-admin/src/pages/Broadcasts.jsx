@@ -1,8 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Bell, Send, Trash2, X, Eye, Mail } from 'lucide-react';
+import { Bell, Send, Trash2, X, Eye, Mail, FlaskConical, Users } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Broadcasts.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
+
+// Mirrors the backend's liteMarkdownToHtml (emailService.js) so the preview
+// matches what actually gets sent. Deliberately not full markdown — just
+// **bold**, "- " bullet lists, and [text](url) links, in WhatsApp-familiar
+// syntax since that's what a non-technical admin already knows.
+function liteMarkdownToHtml(text) {
+  if (!text) return '';
+  let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#1e3a8a;text-decoration:underline">$1</a>');
+  escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return escaped.split(/\n{2,}/).map(block => {
+    const lines = block.split('\n');
+    if (lines.every(l => /^- /.test(l.trim()) || l.trim() === '')) {
+      const items = lines.filter(l => l.trim()).map(l => `<li style="margin-bottom:4px">${l.trim().replace(/^- /, '')}</li>`).join('');
+      return `<ul style="margin:0 0 14px;padding-left:20px">${items}</ul>`;
+    }
+    return `<p style="margin:0 0 14px">${lines.join('<br>')}</p>`;
+  }).join('');
+}
 
 const BLANK = {
   title: '', message: '', audience: 'all', channels: ['sms'],
@@ -39,11 +58,10 @@ function EmailPreview({ title, message, template }) {
         )}
 
         {/* Body text */}
-        <div style={{ color: '#1e293b', lineHeight: 1.75, fontSize: 15 }}>
-          {(message || '').split('\n').map((line, i) => (
-            <span key={i}>{line}{i < message.split('\n').length - 1 && <br />}</span>
-          ))}
-        </div>
+        <div
+          style={{ color: '#1e293b', lineHeight: 1.75, fontSize: 15 }}
+          dangerouslySetInnerHTML={{ __html: liteMarkdownToHtml(message || '') }}
+        />
 
         {/* CTA button */}
         {cta_text && cta_url && (
@@ -79,6 +97,11 @@ export default function Broadcasts() {
   const [form, setForm]             = useState(BLANK);
   const [sending, setSending]       = useState(false);
   const [result, setResult]         = useState(null);
+  const [testEmail, setTestEmail]   = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [counts, setCounts]         = useState(null);
+  const [countsLoading, setCountsLoading] = useState(false);
 
   const isEmailSelected = form.channels.includes('email');
 
@@ -88,6 +111,36 @@ export default function Broadcasts() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+
+  // Recipient count — refetches whenever audience or channel selection
+  // changes, so the admin sees real reach before sending, not a guess.
+  useEffect(() => {
+    if (!modal || form.channels.length === 0) { setCounts(null); return; }
+    let cancelled = false;
+    setCountsLoading(true);
+    adminAPI.getBroadcastRecipientCount(form.audience, form.channels)
+      .then(res => { if (!cancelled) setCounts(res); })
+      .catch(() => { if (!cancelled) setCounts(null); })
+      .finally(() => { if (!cancelled) setCountsLoading(false); });
+    return () => { cancelled = true; };
+  }, [modal, form.audience, form.channels]);
+
+  const sendTest = async () => {
+    if (!testEmail.trim() || !form.message.trim()) return;
+    setSendingTest(true); setTestResult(null);
+    try {
+      await adminAPI.sendTestBroadcast({
+        title: form.title,
+        message: form.message,
+        email_template: form.email_template,
+        test_email: testEmail.trim(),
+      });
+      setTestResult({ ok: true, text: `✓ Test sent to ${testEmail.trim()}` });
+    } catch (e) {
+      setTestResult({ ok: false, text: `Error: ${e.message}` });
+    }
+    setSendingTest(false);
+  };
 
   const send = async () => {
     if (!form.title.trim() || !form.message.trim()) return;
@@ -226,6 +279,9 @@ export default function Broadcasts() {
                   <label>Message *<span className="text-muted" style={{ fontSize: '0.7rem', marginLeft: 6 }}>(SMS body + email body text)</span></label>
                   <textarea className="input textarea" rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="e.g. Get 20% off all platters this weekend. Use code WEEKEND20 at checkout." />
                   <p className="bc-char-count">{form.message.length} chars · {Math.ceil(form.message.length / 160)} SMS segment{Math.ceil(form.message.length / 160) !== 1 ? 's' : ''}</p>
+                  <p className="text-muted" style={{ fontSize: '0.7rem', marginTop: 4 }}>
+                    Formatting (email only): <code>**bold**</code> · start a line with <code>- </code> for a bullet list · <code>[link text](https://...)</code> for a link
+                  </p>
                 </div>
 
                 <div className="field">
@@ -252,6 +308,14 @@ export default function Broadcasts() {
                       </label>
                     ))}
                   </div>
+                  {form.channels.length > 0 && (
+                    <p className="bc-recipient-count">
+                      <Users size={12} />
+                      {countsLoading ? 'Counting recipients…' : counts
+                        ? 'Will reach ' + form.channels.map(ch => `${counts[ch] ?? 0} ${ch}`).join(' · ')
+                        : ''}
+                    </p>
+                  )}
                 </div>
 
                 {/* ── Email Template Section ── */}
@@ -301,6 +365,34 @@ export default function Broadcasts() {
                     <div className="field">
                       <label>Footer Note <span className="text-muted">(fine print — optional)</span></label>
                       <input className="input" value={form.email_template.footer_note} onChange={e => setTmpl('footer_note', e.target.value)} placeholder="e.g. Offer valid through Sunday. One use per customer." />
+                    </div>
+
+                    <div className="field bc-test-send">
+                      <label><FlaskConical size={13} /> Send Yourself a Test</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                          className="input"
+                          type="email"
+                          value={testEmail}
+                          onChange={e => setTestEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          style={{ flex: 1 }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={sendTest}
+                          disabled={sendingTest || !testEmail.trim() || !form.message.trim()}
+                        >
+                          {sendingTest ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Send Test'}
+                        </button>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.7rem', marginTop: 4 }}>
+                        Sends this exact email to just this address — never touches real customers, no matter what audience is selected above.
+                      </p>
+                      {testResult && (
+                        <p className={testResult.ok ? 'text-success' : 'text-error'} style={{ fontSize: '0.78rem', marginTop: 4 }}>{testResult.text}</p>
+                      )}
                     </div>
                   </div>
                 )}

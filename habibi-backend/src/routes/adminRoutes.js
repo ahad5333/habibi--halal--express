@@ -363,9 +363,11 @@ router.get("/careers/applications",               getApplications);
 router.patch("/careers/applications/:id/status",  updateJobAppStatus);
 
 // Broadcasts
-const { getBroadcasts, sendBroadcast, deleteBroadcast } = require("../controllers/broadcastsController");
+const { getBroadcasts, sendBroadcast, deleteBroadcast, sendTestBroadcast, getRecipientCount } = require("../controllers/broadcastsController");
 router.get("/broadcasts", getBroadcasts);
 router.post("/broadcasts", sendBroadcast);
+router.post("/broadcasts/test", sendTestBroadcast);
+router.get("/broadcasts/recipient-count", getRecipientCount);
 router.delete("/broadcasts/:id", deleteBroadcast);
 
 // Platform Integrations (Milestone 2)

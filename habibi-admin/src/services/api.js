@@ -194,6 +194,9 @@ export const adminAPI = {
   // Broadcasts
   getBroadcasts:   () => req('/api/admin/broadcasts'),
   sendBroadcast:   (body) => req('/api/admin/broadcasts', { method: 'POST', body: JSON.stringify(body) }),
+  sendTestBroadcast: (body) => req('/api/admin/broadcasts/test', { method: 'POST', body: JSON.stringify(body) }),
+  getBroadcastRecipientCount: (audience, channels) =>
+    req(`/api/admin/broadcasts/recipient-count?audience=${encodeURIComponent(audience)}&channels=${encodeURIComponent(channels.join(','))}`),
   deleteBroadcast: (id) => req(`/api/admin/broadcasts/${id}`, { method: 'DELETE' }),
 
   // Audit log

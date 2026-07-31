@@ -197,3 +197,93 @@ exports.deleteBroadcast = async (req, res) => {
     res.status(500).json(safeError(err));
   }
 };
+
+// Sends the email exactly as it would go out, but to one address only —
+// bypasses the audience/DB recipient lookup entirely so this can never touch
+// the real customer/subscriber list, no matter what audience is selected in
+// the form.
+exports.sendTestBroadcast = async (req, res) => {
+  try {
+    const { title, message, email_template, test_email } = req.body;
+    if (!test_email) return res.status(400).json({ error: 'Test email address is required' });
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    const subject = (email_template?.subject || '').trim() || title || 'Test Broadcast';
+    const result = await emailService.sendNewsletter(
+      [{ email: test_email, unsubscribeToken: 'test-preview' }],
+      subject,
+      message,
+      email_template || {}
+    );
+    if (!result.success) return res.status(500).json({ error: 'Failed to send test email' });
+    res.json({ success: true, sent_to: test_email });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// Counts how many people a broadcast would actually reach per channel,
+// without sending anything — mirrors the exact same audience queries
+// sendBroadcast uses so the number shown to the admin is never a guess.
+exports.getRecipientCount = async (req, res) => {
+  try {
+    const audience = req.query.audience || 'all';
+    const channels = (req.query.channels || '').split(',').filter(Boolean);
+    const counts = {};
+
+    if (channels.includes('sms')) {
+      const OPTOUT_FILTER = `NOT EXISTS (
+        SELECT 1 FROM sms_optouts o WHERE o.phone_digits = regexp_replace(combined.phone, '[^0-9]', '', 'g')
+      )`;
+      if (audience === 'subscribers') {
+        counts.sms = 0;
+      } else if (audience === 'customers') {
+        const r = await pool.query(
+          `SELECT COUNT(*) FROM (
+             SELECT DISTINCT phone_number AS phone FROM users
+             WHERE role='customer' AND phone_number IS NOT NULL AND phone_number != '' AND receive_sms_updates IS NOT FALSE
+           ) combined WHERE ${OPTOUT_FILTER}`
+        );
+        counts.sms = parseInt(r.rows[0].count, 10);
+      } else {
+        const r = await pool.query(
+          `SELECT COUNT(*) FROM (
+             SELECT DISTINCT phone_number AS phone FROM users WHERE phone_number IS NOT NULL AND phone_number != '' AND receive_sms_updates IS NOT FALSE
+             UNION
+             SELECT DISTINCT customer_phone AS phone FROM guest_orders WHERE customer_phone IS NOT NULL AND customer_phone != ''
+           ) combined WHERE ${OPTOUT_FILTER}`
+        );
+        counts.sms = parseInt(r.rows[0].count, 10);
+      }
+    }
+
+    if (channels.includes('email')) {
+      let r;
+      if (audience === 'subscribers') {
+        r = await pool.query(`SELECT COUNT(*) FROM newsletter_subscribers WHERE email IS NOT NULL AND email != '' AND is_subscribed IS NOT FALSE`);
+      } else if (audience === 'customers') {
+        r = await pool.query(`SELECT COUNT(DISTINCT email) FROM users WHERE role='customer' AND email IS NOT NULL AND email != ''`);
+      } else {
+        r = await pool.query(
+          `SELECT COUNT(*) FROM (
+             SELECT DISTINCT email FROM (
+               SELECT email FROM users WHERE email IS NOT NULL AND email != ''
+               UNION
+               SELECT customer_email AS email FROM guest_orders WHERE customer_email IS NOT NULL AND customer_email != ''
+             ) x
+           ) y`
+        );
+      }
+      counts.email = parseInt(r.rows[0].count, 10);
+    }
+
+    if (channels.includes('push')) {
+      const r = await pool.query(`SELECT COUNT(DISTINCT device_token) FROM user_device_tokens WHERE device_token IS NOT NULL AND device_token != ''`);
+      counts.push = parseInt(r.rows[0].count, 10);
+    }
+
+    res.json(counts);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};

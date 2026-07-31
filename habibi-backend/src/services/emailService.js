@@ -173,6 +173,26 @@ const sendEmailVerification = async (email, name, verifyUrl) => {
   return sendMailHelper(email, `Verify your email - Habibi Halal Express`, html);
 };
 
+// Lightweight formatting for broadcast message bodies — deliberately not a
+// full markdown parser, just the 3 things admins actually asked for: bold,
+// bullet lists, and links. Syntax mirrors WhatsApp/Slack-style **bold** since
+// that's already familiar to whoever is writing these (non-technical admin).
+const liteMarkdownToHtml = (text) => {
+  if (!text) return '';
+  let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#1e3a8a;text-decoration:underline">$1</a>');
+  escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  return escaped.split(/\n{2,}/).map(block => {
+    const lines = block.split('\n');
+    if (lines.every(l => /^- /.test(l.trim()) || l.trim() === '')) {
+      const items = lines.filter(l => l.trim()).map(l => `<li style="margin-bottom:4px">${l.trim().replace(/^- /, '')}</li>`).join('');
+      return `<ul style="margin:0 0 14px;padding-left:20px">${items}</ul>`;
+    }
+    return `<p style="margin:0 0 14px">${lines.join('<br>')}</p>`;
+  }).join('');
+};
+
 // Builds newsletter inner-content HTML for use in broadcast campaigns.
 // Kept as a utility so broadcastsController can pass it to sendNewsletter.
 const buildNewsletterHTML = (body, template = {}) => {
@@ -180,7 +200,7 @@ const buildNewsletterHTML = (body, template = {}) => {
   const { bg: banner_bg, text: banner_text } = BANNER_COLORS[banner_type] || BANNER_COLORS.default;
   return renderBody('newsletter', {
     hero_text, cta_text, cta_url, footer_note, banner_bg, banner_text,
-    body_html: body.replace(/\n/g, '<br>'),
+    body_html: liteMarkdownToHtml(body),
   });
 };
 
