@@ -58,6 +58,17 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
   const cardRef      = useRef(null);   // the mounted Square `card` element instance
   const containerRef = useRef(null);
   const mountedRef    = useRef(false); // StrictMode/re-render guard, one mount per config
+  // tokenize() can take a while (it's also where a 3D Secure challenge
+  // happens) -- if the customer switches to a different payment method
+  // while it's still pending, this component unmounts, but the in-flight
+  // promise still resolves and would otherwise call onError on the parent
+  // and re-show an error the customer already moved past. Guards the two
+  // async continuations below (after tokenize() and after the charge
+  // fetch); the synchronous validation errors above don't need it since
+  // they fire in the same tick as the click, before any unmount could
+  // happen.
+  const unmountedRef  = useRef(false);
+  useEffect(() => () => { unmountedRef.current = true; }, []);
 
   useEffect(() => {
     if (!config?.applicationId || !config?.locationId || mountedRef.current) return;
@@ -144,6 +155,7 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
         amount: parseFloat(amount || 0).toFixed(2),
         currencyCode: 'USD',
       });
+      if (unmountedRef.current) return; // customer already switched away
       if (result.status !== 'OK') {
         const msg = result.errors?.[0]?.message || 'Card error. Check your details.';
         onError?.(msg);
@@ -192,9 +204,21 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
         }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
       }
 
+      // Always fires, even if the customer has since switched to a
+      // different payment method -- real money already moved by this point
+      // (the charge fetch above succeeded), so the order must still be
+      // saved regardless of what the UI currently shows.
       onSuccess?.(data.transactionId);
     } catch (err) {
-      onError?.(err.message || 'Payment failed. Please try again.');
+      // Unlike the tokenize()-stage guard above, this catch only runs
+      // after a real charge attempt was sent -- if it failed/declined, no
+      // money moved, so it's safe to just log it instead of surfacing a
+      // confusing error for a payment method the customer already left.
+      if (unmountedRef.current) {
+        console.error('[SquareCardForm] charge failed after customer switched payment methods:', err.message);
+      } else {
+        onError?.(err.message || 'Payment failed. Please try again.');
+      }
       setProcessing(false);
     }
   };

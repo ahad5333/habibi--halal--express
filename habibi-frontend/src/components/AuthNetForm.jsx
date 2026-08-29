@@ -33,6 +33,11 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
   const [loaded,     setLoaded]     = useState(false);
   const scriptRef = useRef(null);
   const cardBrand = detectCardBrand(cardNumber);
+  // See SquareCardForm.jsx's unmountedRef for why this exists -- prevents a
+  // stale error from an abandoned card attempt reappearing after the
+  // customer has already switched to a different payment method.
+  const unmountedRef = useRef(false);
+  useEffect(() => () => { unmountedRef.current = true; }, []);
 
   // Load Accept.js from Authorize.net CDN
   useEffect(() => {
@@ -85,6 +90,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
     };
 
     window.Accept.dispatchData(secureData, async (response) => {
+      if (unmountedRef.current) return; // customer already switched away
       if (response.messages.resultCode === 'Error') {
         const msg = response.messages.message?.[0]?.text || 'Card error. Check your details.';
         onError?.(msg);
@@ -126,9 +132,15 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
           }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
         }
 
+        // Always fires even if the customer has since switched payment
+        // methods -- see SquareCardForm.jsx's identical comment for why.
         onSuccess?.(data.transactionId);
       } catch (err) {
-        onError?.(err.message || 'Payment failed. Please try again.');
+        if (unmountedRef.current) {
+          console.error('[AuthNetForm] charge failed after customer switched payment methods:', err.message);
+        } else {
+          onError?.(err.message || 'Payment failed. Please try again.');
+        }
         setProcessing(false);
       }
     });

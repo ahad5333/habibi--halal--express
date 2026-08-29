@@ -34,6 +34,11 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
   const [cardHidden, setCardHidden] = useState(true);
   const cloverRef     = useRef(null); // the `new Clover(...)` instance
   const mountedRef     = useRef(false);
+  // See SquareCardForm.jsx's unmountedRef for why this exists -- prevents a
+  // stale error from an abandoned card attempt reappearing after the
+  // customer has already switched to a different payment method.
+  const unmountedRef   = useRef(false);
+  useEffect(() => () => { unmountedRef.current = true; }, []);
   const numberContainerRef = useRef(null);
   const dateContainerRef   = useRef(null);
   const cvvContainerRef    = useRef(null);
@@ -87,6 +92,7 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
 
     try {
       const result = await cloverRef.current.createToken();
+      if (unmountedRef.current) return; // customer already switched away
       if (result.errors) {
         const msg = Object.values(result.errors)[0] || 'Card error. Check your details.';
         onError?.(msg);
@@ -138,9 +144,15 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
         }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
       }
 
+      // Always fires even if the customer has since switched payment
+      // methods -- see SquareCardForm.jsx's identical comment for why.
       onSuccess?.(data.transactionId);
     } catch (err) {
-      onError?.(err.message || 'Payment failed. Please try again.');
+      if (unmountedRef.current) {
+        console.error('[CloverCardForm] charge failed after customer switched payment methods:', err.message);
+      } else {
+        onError?.(err.message || 'Payment failed. Please try again.');
+      }
       setProcessing(false);
     }
   };

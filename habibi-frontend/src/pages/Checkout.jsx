@@ -1751,6 +1751,11 @@ const Checkout = () => {
                     className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`}
                     onClick={() => {
                       setPaymentMethod('card');
+                      // Clear any error left over from a previous payment
+                      // attempt (e.g. a failed card tokenization) -- switching
+                      // methods should feel like a clean start, not carry a
+                      // stale error banner that no longer applies.
+                      setOrderError('');
                       // No saved cards to pick from -- reveal the new-card form
                       // immediately instead of requiring a separate "Continue to
                       // Payment" click. handlePrepareCardPayment() already runs
@@ -1784,7 +1789,7 @@ const Checkout = () => {
                         key={c.id}
                         type="button"
                         className={`saved-card-chip ${selectedSavedCardId === c.id ? 'active' : ''}`}
-                        onClick={() => { setSelectedSavedCardId(c.id); setIntentReady(false); }}
+                        onClick={() => { setSelectedSavedCardId(c.id); setIntentReady(false); setOrderError(''); }}
                       >
                         <CreditCard size={14} />
                         <span>{(c.brand || 'Card').toUpperCase()} •••• {c.last4}</span>
@@ -1812,6 +1817,11 @@ const Checkout = () => {
                       onClick={() => {
                         setPaymentMethod(m.id);
                         setIntentReady(false);
+                        // Same reasoning as the Card tile above -- a leftover
+                        // error from a previous method (e.g. a failed card
+                        // charge) shouldn't still be showing once the
+                        // customer has moved on to a different one.
+                        setOrderError('');
                         if (PAYPAL_METHODS.has(m.id)) setPendingOrderNum(`HAB-${Date.now()}`);
                       }}
                     >
