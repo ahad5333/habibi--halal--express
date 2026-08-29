@@ -5,12 +5,14 @@ const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
 const { getDistance, formatMinutes } = require('../utils/googleMaps');
 const { getFeeForDistance } = require('../utils/deliveryFee');
+const { getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { sendSMS, toE164 } = require('../services/smsService');
 const { sendPushNotification } = require('../services/fcmService');
+const { getDriverSecretSalt } = require('../utils/driverSecret');
 
 // Generate HMAC token for a driver — used in SMS links and X-Driver-Token header
 function driverToken(driver_id) {
-  const salt = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
+  const salt = getDriverSecretSalt();
   return crypto.createHmac('sha256', salt).update(String(driver_id)).digest('hex');
 }
 
@@ -132,6 +134,12 @@ const respondToAssignment = async (req, res) => {
     return res.status(400).json({ message: 'response must be accepted or rejected' });
   }
   try {
+    if (!req.isAdmin) {
+      const owner = await pool.query(`SELECT driver_id FROM delivery_assignments WHERE id=$1`, [id]);
+      if (!owner.rows.length || owner.rows[0].driver_id !== req.driverId) {
+        return res.status(404).json({ message: 'Assignment not found or not yours' });
+      }
+    }
     if (response === 'rejected') {
       await pool.query(
         `UPDATE delivery_assignments
@@ -185,17 +193,22 @@ const updateDriverGPS = async (req, res) => {
   if (!lat || !lng) return res.status(400).json({ message: 'lat and lng required' });
 
   try {
-    // Append to GPS trail and update current position
-    await pool.query(
+    // Append to GPS trail and update current position — scoped to the
+    // verified driver (req.driverId) unless the caller is an admin, so one
+    // driver's app can't overwrite another driver's live location/status.
+    const result = await pool.query(
       `UPDATE delivery_assignments
          SET current_lat=$1,
              current_lng=$2,
              last_location_update=NOW(),
              status='en_route',
              gps_trail = COALESCE(gps_trail, '[]'::jsonb) || jsonb_build_object('lat',$4::text,'lng',$5::text,'ts',NOW()::text)
-       WHERE id=$3`,
-      [lat, lng, assignment_id, lat, lng]
+       WHERE id=$3 ${req.isAdmin ? '' : 'AND driver_id=$6'}`,
+      req.isAdmin ? [lat, lng, assignment_id, lat, lng] : [lat, lng, assignment_id, lat, lng, req.driverId]
     );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Assignment not found or not yours' });
+    }
 
     const io = req.app.get('io');
     if (io) {
@@ -425,6 +438,12 @@ const updateAssignmentStatus = async (req, res) => {
   if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
 
   try {
+    if (!req.isAdmin) {
+      const owner = await pool.query(`SELECT driver_id FROM delivery_assignments WHERE id=$1`, [id]);
+      if (!owner.rows.length || owner.rows[0].driver_id !== req.driverId) {
+        return res.status(404).json({ message: 'Assignment not found or not yours' });
+      }
+    }
     const extra = status === 'delivered' ? `, delivered_at=NOW()` : '';
     const noteSet = note ? `, delivery_note=$2` : '';
     const params = note ? [status, note, id] : [status, id];
@@ -495,14 +514,39 @@ const updateAssignmentStatus = async (req, res) => {
 };
 
 // ── Driver: upload proof of delivery photo ──────────────────────────
+// Server-controlled extension mapping — never trust the client's originalname
+// for this, an attacker could otherwise get any extension written to a public path.
+const PROOF_IMAGE_EXTENSIONS = {
+  'image/jpeg': '.jpg',
+  'image/png':  '.png',
+  'image/webp': '.webp',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
+};
+
 const uploadProof = async (req, res) => {
   const { assignment_id } = req.params;
-  const { driver_id, note } = req.body;
+  const { note } = req.body;
 
   if (!req.file) return res.status(400).json({ message: 'No photo uploaded' });
 
   try {
-    const photoUrl = `/uploads/proofs/${req.file.filename}`;
+    if (!req.isAdmin) {
+      const owner = await pool.query(`SELECT driver_id FROM delivery_assignments WHERE id=$1`, [assignment_id]);
+      if (!owner.rows.length || owner.rows[0].driver_id !== req.driverId) {
+        return res.status(404).json({ message: 'Assignment not found or not yours' });
+      }
+    }
+
+    // Only now — after auth AND ownership have both been verified — does
+    // anything get written to the public uploads directory.
+    const ext      = PROOF_IMAGE_EXTENSIONS[req.file.mimetype] || '.jpg';
+    const filename = `proof_${assignment_id}_${Date.now()}${ext}`;
+    const destDir  = path.join(__dirname, '../../public/uploads/proofs');
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.writeFileSync(path.join(destDir, filename), req.file.buffer);
+
+    const photoUrl = `/uploads/proofs/${filename}`;
     await pool.query(
       `UPDATE delivery_assignments
          SET proof_photo_url=$1, proof_note=$2
@@ -586,7 +630,7 @@ const getAssignmentForOrder = async (req, res) => {
 
 // ── Calculate delivery fee via Google Maps Distance Matrix ──────────
 const calculateDeliveryFee = async (req, res) => {
-  const { customer_address, location_id } = req.body;
+  const { customer_address, location_id, subtotal } = req.body;
   if (!customer_address) return res.status(400).json({ message: 'customer_address required' });
 
   try {
@@ -606,7 +650,19 @@ const calculateDeliveryFee = async (req, res) => {
     // No per-location radius cutoff — per owner decision (2026-07-27), every
     // address gets a fee/ETA quote regardless of distance. getFeeForDistance's
     // own tier table (null beyond 350mi) is the only remaining ceiling.
-    const fee = await getFeeForDistance(dist.miles, location_id || null);
+    let fee = await getFeeForDistance(dist.miles, location_id || null);
+
+    // free_delivery_threshold was previously dormant -- exposed as a public
+    // setting but never actually checked anywhere. A qualifying subtotal now
+    // genuinely waives the fee instead of just implying it would.
+    let freeDeliveryApplied = false;
+    if (fee !== null && parseFloat(subtotal) > 0) {
+      const threshold = await getFreeDeliveryThreshold();
+      if (parseFloat(subtotal) >= threshold) {
+        fee = 0;
+        freeDeliveryApplied = true;
+      }
+    }
 
     // Raw driving duration alone understates delivery time — it ignores
     // kitchen prep entirely, so a customer a few minutes' drive away would
@@ -627,6 +683,7 @@ const calculateDeliveryFee = async (req, res) => {
       estimated_delivery_minutes: Math.round(estimatedMinutes),
       estimated_delivery_text:    formatMinutes(estimatedMinutes),
       fee,
+      free_delivery_applied: freeDeliveryApplied,
       out_of_range: fee === null,
     });
   } catch (err) {

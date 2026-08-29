@@ -1,6 +1,7 @@
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { logAudit } = require('./auditController');
+const { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold } = require('../utils/systemSettings');
 
 const getPaymentSettings = async (req, res) => {
   try {
@@ -54,30 +55,26 @@ const getCheckoutSettings = async (req, res) => {
     }
   } catch (_) { /* fall back to defaults above */ }
 
-  // tax_rate/service_fee_rate: previously env-var-only and shown as
-  // "read-only, edit your server .env" on the Settings page — DB value (if
-  // ever set via that page) now takes precedence, env var is the fallback
-  // until an admin explicitly changes it. NULL means "not overridden yet".
-  let taxRate    = parseFloat(process.env.TAX_RATE)         || 0.08875;
-  let svcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE) || 0.04273;
-  try {
-    const sys = await pool.query(`SELECT tax_rate, service_fee_rate FROM system_settings WHERE id = 1`);
-    if (sys.rows[0]?.tax_rate != null)         taxRate    = parseFloat(sys.rows[0].tax_rate);
-    if (sys.rows[0]?.service_fee_rate != null) svcFeeRate = parseFloat(sys.rows[0].service_fee_rate);
-  } catch (_) { /* fall back to env above */ }
+  // tax_rate/service_fee_rate/free_delivery_threshold: previously env-var-only
+  // (tax/service fee even shown as "read-only, edit your server .env" on the
+  // Settings page) — DB value (if ever set via that page) now takes
+  // precedence, env var is the fallback until an admin explicitly changes it.
+  const [taxRate, svcFeeRate, freeDeliveryThreshold] = await Promise.all([
+    getTaxRate(), getServiceFeeRate(), getFreeDeliveryThreshold(),
+  ]);
 
   res.json({
     tax_rate:                taxRate,
     service_fee_rate:        svcFeeRate,
-    delivery_fee:            parseFloat(process.env.DELIVERY_FEE)            || 3.99,
-    free_delivery_threshold: parseFloat(process.env.FREE_DELIVERY_THRESHOLD) || 50,
+    delivery_fee:            parseFloat(process.env.DELIVERY_FEE) || 3.99,
+    free_delivery_threshold: freeDeliveryThreshold,
     loyalty_earn_rate:       loyaltyEarnRate,
     loyalty_redeem_rate:     loyaltyRedeemRate,
   });
 };
 
 const updateSystemSettings = async (req, res) => {
-  const { tax_rate, service_fee_rate } = req.body;
+  const { tax_rate, service_fee_rate, free_delivery_threshold } = req.body;
   const taxNum = parseFloat(tax_rate);
   const svcNum = parseFloat(service_fee_rate);
   if (!(taxNum >= 0 && taxNum < 1)) {
@@ -86,14 +83,28 @@ const updateSystemSettings = async (req, res) => {
   if (!(svcNum >= 0 && svcNum < 1)) {
     return res.status(400).json({ message: 'Service fee rate must be a decimal between 0 and 1 (e.g. 0.04273 for 4.273%).' });
   }
+  // Optional -- omit/blank to leave the free-delivery threshold on whatever
+  // it's currently set to (DB override or env fallback) rather than forcing
+  // every tax/service-fee save to also touch it.
+  let thresholdNum;
+  if (free_delivery_threshold !== undefined && free_delivery_threshold !== '') {
+    thresholdNum = parseFloat(free_delivery_threshold);
+    if (!(thresholdNum >= 0)) {
+      return res.status(400).json({ message: 'Free delivery threshold must be a non-negative dollar amount.' });
+    }
+  }
   try {
     await pool.query(
-      `UPDATE system_settings SET tax_rate = $1, service_fee_rate = $2, updated_at = NOW() WHERE id = 1`,
-      [taxNum, svcNum]
+      `UPDATE system_settings
+          SET tax_rate = $1, service_fee_rate = $2,
+              free_delivery_threshold = COALESCE($3, free_delivery_threshold),
+              updated_at = NOW()
+        WHERE id = 1`,
+      [taxNum, svcNum, thresholdNum ?? null]
     );
     logAudit(pool, req.user?.id, req.user?.name, 'update_system_settings', 'setting', 'checkout',
-      { tax_rate: taxNum, service_fee_rate: svcNum }, req.ip);
-    res.json({ tax_rate: taxNum, service_fee_rate: svcNum });
+      { tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum }, req.ip);
+    res.json({ tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

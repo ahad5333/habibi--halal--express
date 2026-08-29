@@ -248,6 +248,13 @@ const createTables = async () => {
         ADD COLUMN IF NOT EXISTS is_gluten_free BOOLEAN DEFAULT FALSE;
     `);
 
+    // menuController.js's getAll/getById query and filter by this column
+    // (falls back to it whenever the id param isn't numeric), but no CREATE
+    // or ALTER anywhere ever added it -- worked in production only because
+    // that table predates this code. A genuinely fresh bootstrap 500'd on
+    // "column slug does not exist" the moment /api/menus was hit.
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS slug VARCHAR(255)`);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS carts (
         id         SERIAL PRIMARY KEY,
@@ -1012,6 +1019,7 @@ const createTables = async () => {
       );
     `);
     await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS free_delivery_threshold NUMERIC(8,2)`);
 
     // ── Business Hours ─────────────────────────────────────────────
     // This table had no CREATE TABLE anywhere in this file — it only exists

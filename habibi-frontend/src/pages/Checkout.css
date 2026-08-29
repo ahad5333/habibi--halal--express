@@ -1713,6 +1713,35 @@
   border-radius: 16px;
 }
 
+/* Free delivery progress bar -- sits above the upsell row so adding one of
+   the suggested items visibly moves it toward "unlocked". */
+.free-delivery-bar {
+  margin-bottom: 0.85rem;
+}
+.free-delivery-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+.free-delivery-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #E5B64E, #f3d27e);
+  transition: width 0.4s ease;
+}
+.free-delivery-bar-text {
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+}
+.free-delivery-bar-text strong { color: #E5B64E; font-weight: 800; }
+.free-delivery-bar--unlocked .free-delivery-bar-fill { background: linear-gradient(90deg, #34d399, #6ee7b7); }
+.free-delivery-bar--unlocked .free-delivery-bar-text { color: #34d399; font-weight: 700; }
+.free-delivery-bar--unlocked .free-delivery-bar-text strong { color: #34d399; }
+
 .upsell-header {
   display: flex;
   align-items: center;
@@ -1774,7 +1803,7 @@
 .upsell-track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 3 * 0.65rem) / 4);
+  grid-auto-columns: calc((100% - 2 * 0.65rem) / 3.2);
   gap: 0.65rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -1784,8 +1813,15 @@
   padding-bottom: 0.25rem;
   width: 100%;
   box-sizing: border-box;
+  cursor: grab;
+  user-select: none;
 }
 .upsell-track::-webkit-scrollbar { display: none; }
+.upsell-track:active { cursor: grabbing; }
+/* Smooth scroll-behavior fights direct scrollLeft writes during an active
+   drag (adds lag/inertia) -- turn it off only while dragging so the arrow
+   buttons keep their smooth animation but the drag itself feels instant. */
+.upsell-track[data-dragging="1"] { scroll-behavior: auto; }
 
 /* Card */
 .upsell-card {
@@ -1805,6 +1841,7 @@
 .upsell-card:hover {
   border-color: rgba(229,182,78,0.45);
   box-shadow: 0 0 0 1px rgba(229,182,78,0.15), 0 4px 16px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
 }
 .upsell-card--added {
   opacity: 0.55;
@@ -1827,7 +1864,7 @@
 
 .upsell-img-wrap {
   width: 100%;
-  height: 90px;
+  height: 104px;
   border-radius: 8px;
   overflow: hidden;
   background: #1e1e1e;
@@ -1878,16 +1915,47 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.upsell-add-btn:hover:not(:disabled) {
+.upsell-add-btn:hover {
   background: #E5B64E;
   border-color: #E5B64E;
   color: #0a0a0a;
 }
-.upsell-add-btn--added {
+.upsell-add-btn:active { animation: upsell-add-pulse 0.25s ease; }
+@keyframes upsell-add-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* Quantity stepper -- shown in place of the Add button once an item's in
+   the cart, same visual language as MenuItemModal's .mim-stepper. */
+.upsell-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: rgba(52,211,153,0.08);
-  border-color: rgba(52,211,153,0.3);
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.upsell-stepper button {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
   color: #34d399;
-  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+.upsell-stepper button:hover { background: rgba(52,211,153,0.18); }
+.upsell-stepper span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #34d399;
 }
 
 /* Tablet — 3 cards */

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -120,6 +120,7 @@ const Checkout = () => {
   const [loyaltyRedeemRate, setLoyaltyRedeemRate] = useState(100); // pts per $1 — overwritten from the admin-configured rate below
   const [taxRate, setTaxRate]                     = useState(0.08875); // overwritten from Settings below
   const [serviceFeeRate, setServiceFeeRate]       = useState(0.04273); // overwritten from Settings below
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0); // overwritten from Settings below; 0 = not configured, don't show the bar
   const [activePaymentProviders, setActivePaymentProviders] = useState(null); // null = not loaded yet, show everything
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -148,6 +149,57 @@ const Checkout = () => {
   const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / loyaltyRedeemRate : 0;
   const total           = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
 
+  // Free-delivery gap stays live -- the progress bar must reflect real-time
+  // progress as the cart changes.
+  const freeDeliveryGap = freeDeliveryThreshold > 0 ? Math.max(0, freeDeliveryThreshold - subtotal) : 0;
+
+  const upsellBucketOf = (catStr) => {
+    const c = (catStr || '').toLowerCase();
+    if (c.includes('drink'))    return 'drinks';
+    if (c.includes('side') || c.includes('appetizer') || c.includes('snack')) return 'sides';
+    if (c.includes('platter'))  return 'platter';
+    return 'other';
+  };
+
+  // Cart-aware upsell ordering: surface categories the cart doesn't have much
+  // of yet first (e.g. lead with sides if there are none), instead of always
+  // showing the same fixed drinks->juices->sides->salads order regardless of
+  // what's already in the cart. Collapsed to 3 buckets (not the 4 the fetch
+  // uses) because cart items only carry `tag` = their menu category string
+  // (e.g. "Drinks"), not the name-based drink-vs-juice split the fetch effect
+  // uses -- that finer distinction isn't recoverable from cart data alone.
+  //
+  // The order is frozen the first time upsellItems loads (via this ref),
+  // not recomputed live off `items`/`subtotal` on every render -- otherwise
+  // tapping Add on a card changes that item's bucket count, the whole row
+  // re-sorts immediately, and the card the customer just tapped slides away
+  // mid-interaction (confirmed while testing: a second tap could land on a
+  // different item than intended). Still genuinely cart-aware for whatever
+  // was already in the cart when the customer reached checkout -- it just
+  // doesn't keep reshuffling underneath them as they shop the upsell row.
+  const upsellSortSnapshotRef = useRef(null);
+  if (upsellItems.length > 0 && !upsellSortSnapshotRef.current) {
+    upsellSortSnapshotRef.current = {
+      cartBucketCounts: items.reduce((acc, i) => {
+        const b = upsellBucketOf(i.tag);
+        acc[b] = (acc[b] || 0) + (i.qty || 1);
+        return acc;
+      }, {}),
+      gapAtLoad: freeDeliveryGap,
+    };
+  }
+  const { cartBucketCounts: frozenBucketCounts, gapAtLoad } = upsellSortSnapshotRef.current || { cartBucketCounts: {}, gapAtLoad: 0 };
+  const sortedUpsellItems = [...upsellItems].sort((a, b) => {
+    const bucketDiff = (frozenBucketCounts[upsellBucketOf(a.category)] || 0) - (frozenBucketCounts[upsellBucketOf(b.category)] || 0);
+    if (bucketDiff !== 0) return bucketDiff;
+    if (gapAtLoad > 0) {
+      const da = Math.abs(parseFloat(a.price || 0) - gapAtLoad);
+      const db = Math.abs(parseFloat(b.price || 0) - gapAtLoad);
+      if (da !== db) return da - db;
+    }
+    return 0;
+  });
+
   // Check if store is currently open
   useEffect(() => {
     locationsAPI.getStatus()
@@ -168,9 +220,10 @@ const Checkout = () => {
   useEffect(() => {
     settingsAPI.getCheckout()
       .then(s => {
-        if (s?.loyalty_redeem_rate > 0) setLoyaltyRedeemRate(s.loyalty_redeem_rate);
-        if (s?.tax_rate >= 0)           setTaxRate(s.tax_rate);
-        if (s?.service_fee_rate >= 0)   setServiceFeeRate(s.service_fee_rate);
+        if (s?.loyalty_redeem_rate > 0)       setLoyaltyRedeemRate(s.loyalty_redeem_rate);
+        if (s?.tax_rate >= 0)                 setTaxRate(s.tax_rate);
+        if (s?.service_fee_rate >= 0)         setServiceFeeRate(s.service_fee_rate);
+        if (s?.free_delivery_threshold > 0)   setFreeDeliveryThreshold(s.free_delivery_threshold);
       })
       .catch(() => {}); // fail open — keep the hardcoded defaults
   }, []);
@@ -359,7 +412,7 @@ const Checkout = () => {
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/dispatch/calculate-fee`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customer_address: address, location_id: selectedLocation?.id }),
+          body: JSON.stringify({ customer_address: address, location_id: selectedLocation?.id, subtotal }),
         });
         const data = await res.json();
         if (data.out_of_range) {
@@ -383,7 +436,9 @@ const Checkout = () => {
       }
     }, 800);
     return () => clearTimeout(feeTimerRef.current);
-  }, [address, deliveryMode, selectedLocation]);
+    // subtotal is included so crossing the free-delivery threshold (e.g. via
+    // an upsell add) re-quotes the fee without needing to touch the address.
+  }, [address, deliveryMode, selectedLocation, subtotal]);
 
   // Google Maps Places Autocomplete (gracefully no-ops if key not configured)
   // Depends on isLoggedIn/isDineIn too: the address <input> this attaches to only
@@ -1074,6 +1129,21 @@ const Checkout = () => {
             {/* Upsell — "Complete Your Meal" */}
             {upsellItems.length > 0 && items.length > 0 && (
               <div className="checkout-section upsell-section">
+                {freeDeliveryThreshold > 0 && !isDineIn && deliveryMode === 'delivery' && (
+                  <div className={`free-delivery-bar${freeDeliveryGap === 0 ? ' free-delivery-bar--unlocked' : ''}`}>
+                    <div className="free-delivery-bar-track">
+                      <div
+                        className="free-delivery-bar-fill"
+                        style={{ width: `${Math.min(100, (subtotal / freeDeliveryThreshold) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="free-delivery-bar-text">
+                      {freeDeliveryGap === 0
+                        ? '🎉 You’ve unlocked FREE delivery!'
+                        : <>Add <strong>${freeDeliveryGap.toFixed(2)}</strong> more for <strong>FREE delivery</strong> 🚚</>}
+                    </p>
+                  </div>
+                )}
                 <div className="upsell-header">
                   <div className="upsell-header-left">
                     <span className="upsell-fire">🔥</span>
@@ -1085,13 +1155,31 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="upsell-clip">
-                  <div className="upsell-track" ref={upsellRef}>
-                    {upsellItems.map(u => {
+                  <div
+                    className="upsell-track"
+                    ref={upsellRef}
+                    onPointerDown={e => {
+                      const el = upsellRef.current;
+                      if (!el) return;
+                      el.dataset.dragging = '1';
+                      el.dataset.startX = e.clientX;
+                      el.dataset.startScroll = el.scrollLeft;
+                    }}
+                    onPointerMove={e => {
+                      const el = upsellRef.current;
+                      if (!el || el.dataset.dragging !== '1') return;
+                      el.scrollLeft = Number(el.dataset.startScroll) - (e.clientX - Number(el.dataset.startX));
+                    }}
+                    onPointerUp={() => { const el = upsellRef.current; if (el) el.dataset.dragging = '0'; }}
+                    onPointerLeave={() => { const el = upsellRef.current; if (el) el.dataset.dragging = '0'; }}
+                  >
+                    {sortedUpsellItems.map(u => {
                       const imgSrc = u.image || u.image_url || getFoodPhoto(u.id);
-                      const alreadyIn = !!items.find(i => i.id === u.id);
+                      const cartItem = items.find(i => i.id === u.id);
+                      const cartQty = cartItem?.qty || 0;
                       const cat = (u.category || 'Add-on');
                       return (
-                        <div key={u.id} className={`upsell-card${alreadyIn ? ' upsell-card--added' : ''}`}>
+                        <div key={u.id} className={`upsell-card${cartQty > 0 ? ' upsell-card--added' : ''}`}>
                           <div className="upsell-cat-chip">{cat}</div>
                           <div className="upsell-img-wrap">
                             <img
@@ -1103,13 +1191,20 @@ const Checkout = () => {
                           </div>
                           <p className="upsell-name">{u.name || u.title}</p>
                           <p className="upsell-price">${parseFloat(u.price || 0).toFixed(2)}</p>
-                          <button
-                            className={`upsell-add-btn${alreadyIn ? ' upsell-add-btn--added' : ''}`}
-                            disabled={alreadyIn}
-                            onClick={() => !alreadyIn && addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: cat, note: '', qty: 1 })}
-                          >
-                            {alreadyIn ? '✓ Added' : <><Plus size={12} /> Add</>}
-                          </button>
+                          {cartQty > 0 ? (
+                            <div className="upsell-stepper">
+                              <button aria-label="Decrease quantity" onClick={() => updateQty(u.id, cartQty - 1)}><Minus size={12} /></button>
+                              <span>{cartQty}</span>
+                              <button aria-label="Increase quantity" onClick={() => updateQty(u.id, cartQty + 1)}><Plus size={12} /></button>
+                            </div>
+                          ) : (
+                            <button
+                              className="upsell-add-btn"
+                              onClick={() => addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: cat, note: '', qty: 1 })}
+                            >
+                              <Plus size={12} /> Add
+                            </button>
+                          )}
                         </div>
                       );
                     })}

@@ -7,6 +7,7 @@ const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
 const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMaps");
 const { getFeeForDistance } = require("../utils/deliveryFee");
+const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
@@ -302,9 +303,17 @@ const createGuestOrder = async (req, res) => {
           // No per-location radius cutoff — per owner decision (2026-07-27), every
           // address is accepted regardless of distance. getFeeForDistance's own
           // tier table (null beyond 350mi) is the only remaining ceiling.
-          const serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
+          let serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
+          }
+          // Mirrors the same waiver dispatchController's /calculate-fee quote
+          // already applied — recomputed server-side so a tampered client
+          // can't claim $0 without actually qualifying, and a real qualifying
+          // order isn't rejected for reporting the (correctly) waived fee.
+          const freeDeliveryThreshold = await getFreeDeliveryThreshold();
+          if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
+            serverDelFee = 0;
           }
           if (clientDelFee < serverDelFee - 0.10) {
             return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });

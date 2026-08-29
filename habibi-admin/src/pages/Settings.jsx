@@ -132,7 +132,7 @@ function IntegrationsSection() {
 
 function SystemSettingsSection() {
   const [cfg, setCfg]       = useState(null);
-  const [form, setForm]     = useState({ tax_rate: '', service_fee_rate: '' }); // held as percent strings, e.g. "8.875"
+  const [form, setForm]     = useState({ tax_rate: '', service_fee_rate: '', free_delivery_threshold: '' }); // tax/service held as percent strings, e.g. "8.875"
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [error, setError]   = useState('');
@@ -143,8 +143,9 @@ function SystemSettingsSection() {
         if (!d) return;
         setCfg(d);
         setForm({
-          tax_rate:         (d.tax_rate * 100).toFixed(3),
-          service_fee_rate: (d.service_fee_rate * 100).toFixed(3),
+          tax_rate:                (d.tax_rate * 100).toFixed(3),
+          service_fee_rate:        (d.service_fee_rate * 100).toFixed(3),
+          free_delivery_threshold: parseFloat(d.free_delivery_threshold || 0).toFixed(2),
         });
       })
       .catch(() => {});
@@ -157,10 +158,14 @@ function SystemSettingsSection() {
     try {
       const tax_rate         = parseFloat(form.tax_rate) / 100;
       const service_fee_rate = parseFloat(form.service_fee_rate) / 100;
+      const free_delivery_threshold = parseFloat(form.free_delivery_threshold);
       if (!(tax_rate >= 0 && tax_rate < 1) || !(service_fee_rate >= 0 && service_fee_rate < 1)) {
         throw new Error('Enter valid percentages (e.g. 8.875 for 8.875%).');
       }
-      await adminAPI.updateSystemSettings({ tax_rate, service_fee_rate });
+      if (!(free_delivery_threshold >= 0)) {
+        throw new Error('Enter a valid free-delivery threshold dollar amount.');
+      }
+      await adminAPI.updateSystemSettings({ tax_rate, service_fee_rate, free_delivery_threshold });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       load();
@@ -175,7 +180,7 @@ function SystemSettingsSection() {
     <section className="settings-section">
       <div className="settings-section-hdr">
         <p className="settings-section-title">System Settings</p>
-        <p className="settings-section-sub">Sales tax rate and service fee percentage applied at checkout — edit here, no server access needed. (Delivery fees are configured below, under Delivery Tiers — that's the system that actually sets what customers pay for delivery.)</p>
+        <p className="settings-section-sub">Sales tax rate, service fee percentage, and the free-delivery spending threshold applied at checkout — edit here, no server access needed. (Delivery fee amounts themselves are configured below, under Delivery Tiers — this threshold just waives that fee once a customer's subtotal reaches it.)</p>
       </div>
       {!cfg ? (
         <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
@@ -206,6 +211,18 @@ function SystemSettingsSection() {
                   onChange={e => setForm(f => ({ ...f, service_fee_rate: e.target.value }))}
                 />
               </div>
+            </div>
+            <div className="field">
+              <label style={{fontSize:'0.78rem'}}>Free Delivery Threshold ($)</label>
+              <input
+                type="number" step="0.01" min="0"
+                className="input"
+                value={form.free_delivery_threshold}
+                onChange={e => setForm(f => ({ ...f, free_delivery_threshold: e.target.value }))}
+              />
+              <p style={{fontSize:'0.7rem',color:'var(--color-text-muted)',marginTop:'0.25rem'}}>
+                Orders with a subtotal at or above this amount get delivery for free.
+              </p>
             </div>
             <button type="submit" className={`btn ${saved ? 'btn-secondary' : 'btn-primary'} btn-sm`} disabled={saving} style={{alignSelf:'flex-start',gap:6}}>
               {saving
