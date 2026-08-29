@@ -2979,8 +2979,12 @@
        height grew (measured: <1px shift after a 130px taller box) --
        flex-start + an explicit margin-top on .hero-content below is a
        direct, predictable way to control exactly how much poster shows
-       above the card instead of depending on flex-end's exact behavior. */
-    min-height: clamp(520px, 138vw, 590px);
+       above the card instead of depending on flex-end's exact behavior.
+       Deliberately shorter than the card's own bottom edge (~483px down)
+       so the card's lower portion spills past the poster into the dark
+       section below, per client request -- the top offset (228px of
+       visible poster above the card) is unchanged. */
+    min-height: clamp(400px, 107vw, 430px);
     padding: 3.25rem 0.75rem 2rem;
     align-items: center;
     justify-content: flex-start;
@@ -2996,16 +3000,13 @@
   .floating-item { display: none; }
 
   /* Single authoritative hero-content rule — applies identically to every phone.
-     margin-bottom was -11rem to compensate for .hero-top-dark being barely
-     taller than this card, pulling .hero-bottom-light way up to close the
-     gap the card's own overflow left below the (short) box. Now that the
-     box is genuinely tall enough to contain the card, this only needs to
-     close whatever small gap remains -- see the matching padding-top cut on
-     .hero-bottom-light below, which was the other half of that compensation. */
+     margin-bottom pulls .hero-bottom-light up to close the gap the card's
+     own deliberate overflow leaves below the (intentionally shorter) box
+     above -- see the matching padding-top cut on .hero-bottom-light below. */
   .hero-content {
     width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
-    margin: 11rem auto 0;
+    margin: 11rem auto -3.5rem;
     padding: 0.875rem 1rem;
     border-radius: 14px;
     text-align: center;
