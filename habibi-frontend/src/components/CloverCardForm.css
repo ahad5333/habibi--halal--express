@@ -7,4 +7,11 @@
      renders its own iframe inside once each element.mount() resolves. */
   min-height: 44px;
   padding: 0.5rem 0.75rem;
+  transition: filter 0.15s ease;
+}
+
+.clover-card-container.card-privacy-blur {
+  /* Same iframe-element blur as SquareCardForm.css's .card-privacy-blur --
+     see its comment for why this is a filter, not real masking. */
+  filter: blur(6px);
 }

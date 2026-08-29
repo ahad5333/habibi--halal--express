@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 import { savedPaymentsAPI } from '../services/api';
 
 const CLOVER_JS = {
@@ -29,6 +29,9 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
   const [saveCard,   setSaveCard]   = useState(true);
   const [processing, setProcessing] = useState(false);
   const [cardReady,  setCardReady]  = useState(false);
+  // Blurred by default -- see SquareCardForm.jsx's cardHidden for why (no
+  // masking hook in either SDK, so this blurs the iframe elements instead).
+  const [cardHidden, setCardHidden] = useState(true);
   const cloverRef     = useRef(null); // the `new Clover(...)` instance
   const mountedRef     = useRef(false);
   const numberContainerRef = useRef(null);
@@ -170,26 +173,37 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
       </div>
 
       <div className="authnet-field">
-        <label>Card Number</label>
+        <div className="card-details-label-row">
+          <label>Card Number</label>
+          <button
+            type="button"
+            className="card-privacy-toggle"
+            onClick={() => setCardHidden(h => !h)}
+            aria-label={cardHidden ? 'Show card details' : 'Hide card details'}
+          >
+            {cardHidden ? <><Eye size={13}/> Show</> : <><EyeOff size={13}/> Hide</>}
+          </button>
+        </div>
         {/* Clover mounts its own hosted (iframe) fields into these
             containers -- the outer boxes are our own styling. */}
-        <div className="authnet-input clover-card-container" ref={numberContainerRef} />
+        <div className={`authnet-input clover-card-container${cardHidden ? ' card-privacy-blur' : ''}`} ref={numberContainerRef} />
       </div>
 
       <div className="authnet-row">
         <div className="authnet-field">
           <label>Expiry</label>
-          <div className="authnet-input clover-card-container" ref={dateContainerRef} />
+          <div className={`authnet-input clover-card-container${cardHidden ? ' card-privacy-blur' : ''}`} ref={dateContainerRef} />
         </div>
         <div className="authnet-field">
           <label>CVV</label>
-          <div className="authnet-input clover-card-container" ref={cvvContainerRef} />
+          <div className={`authnet-input clover-card-container${cardHidden ? ' card-privacy-blur' : ''}`} ref={cvvContainerRef} />
         </div>
         <div className="authnet-field">
           <label>ZIP Code</label>
-          <div className="authnet-input clover-card-container" ref={zipContainerRef} />
+          <div className={`authnet-input clover-card-container${cardHidden ? ' card-privacy-blur' : ''}`} ref={zipContainerRef} />
         </div>
       </div>
+      {cardHidden && <p className="card-privacy-note">Blurred for privacy — tap "Show" to check what you typed.</p>}
 
       {showSaveOption && (
         <label className="authnet-save-row">

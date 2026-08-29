@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 import { savedPaymentsAPI } from '../services/api';
 
 const SQUARE_JS = {
@@ -47,6 +47,14 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
   const [saveCard,   setSaveCard]   = useState(true);
   const [processing, setProcessing] = useState(false);
   const [cardReady,  setCardReady]  = useState(false);
+  // Blurred by default -- protects against someone reading the card number
+  // off the screen (shoulder-surfing) in a public place. Square's hosted
+  // iframe has no built-in character-masking option (checked their SDK
+  // reference, same conclusion as the autofill-color investigation), so
+  // this is a CSS blur on the iframe element itself rather than real
+  // masking -- it doesn't block typing, only visibility, and the customer
+  // can toggle it off to double check what they typed before paying.
+  const [cardHidden, setCardHidden] = useState(true);
   const cardRef      = useRef(null);   // the mounted Square `card` element instance
   const containerRef = useRef(null);
   const mountedRef    = useRef(false); // StrictMode/re-render guard, one mount per config
@@ -206,10 +214,21 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
       </div>
 
       <div className="authnet-field">
-        <label>Card Details</label>
+        <div className="card-details-label-row">
+          <label>Card Details</label>
+          <button
+            type="button"
+            className="card-privacy-toggle"
+            onClick={() => setCardHidden(h => !h)}
+            aria-label={cardHidden ? 'Show card details' : 'Hide card details'}
+          >
+            {cardHidden ? <><Eye size={13}/> Show</> : <><EyeOff size={13}/> Hide</>}
+          </button>
+        </div>
         {/* Square mounts its own hosted (iframe) fields into this container --
             the outer box is our own styling so it reads as part of the page. */}
-        <div className="authnet-input square-card-container" ref={containerRef} />
+        <div className={`authnet-input square-card-container${cardHidden ? ' card-privacy-blur' : ''}`} ref={containerRef} />
+        {cardHidden && <p className="card-privacy-note">Blurred for privacy — tap "Show" to check what you typed.</p>}
       </div>
 
       <div className="authnet-field">

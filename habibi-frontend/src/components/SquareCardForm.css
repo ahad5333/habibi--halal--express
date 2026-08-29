@@ -9,3 +9,43 @@
   min-height: 44px;
   padding: 0.5rem 0.75rem;
 }
+
+.square-card-container.card-privacy-blur {
+  /* A CSS filter on the iframe *element* -- this doesn't touch anything
+     inside Square's cross-origin document, it just blurs the rendered
+     pixels, so typing/tokenization keep working normally while the
+     digits are unreadable on screen. */
+  filter: blur(6px);
+}
+
+.square-card-container {
+  transition: filter 0.15s ease;
+}
+
+.card-details-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-privacy-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0;
+}
+.card-privacy-toggle:hover { color: #E5B64E; }
+
+.card-privacy-note {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+  margin: 0.35rem 0 0;
+}
