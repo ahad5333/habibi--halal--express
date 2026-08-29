@@ -126,7 +126,6 @@
   padding: 0.3rem 0.5rem 0.3rem 4.2rem;
   font-size: 0.75rem;
   color: rgba(255,255,255,0.5);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 
 .cart-addon-name {
@@ -300,19 +299,32 @@
 .cart-items {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  /* No uniform `gap` here on purpose — an item and its own add-on rows
+     need to sit close together, while separate cart entries need clear
+     breathing room. Spacing is set per-row below instead. */
 }
 
 .cart-item {
   display: flex;
   gap: 1.25rem;
   align-items: flex-start;
+  padding-bottom: 0.4rem;
+}
+
+/* The row that ends a "main item + its add-ons" group — the item itself
+   when it has no add-ons, or its last add-on row when it does — gets the
+   divider and the larger gap before the next cart entry. Item + add-on
+   rows are flat siblings in the DOM (one React.Fragment per cart entry),
+   so "what's the next sibling" is enough to tell a group boundary from a
+   same-item add-on. */
+.cart-item:has(+ .cart-item),
+.cart-addon-row:has(+ .cart-item) {
   padding-bottom: 1.5rem;
+  margin-bottom: 1.1rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .cart-item:last-child {
-  border-bottom: none;
   padding-bottom: 0;
 }
 
@@ -1371,6 +1383,11 @@
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
 }
 .trust-badge-emoji {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.3rem;
   line-height: 1;
   flex-shrink: 0;
@@ -1614,7 +1631,7 @@
 
   /* Cart items: image + name row 1, controls row 2 */
   .cart-items { width: 100%; min-width: 0; }
-  .cart-item { flex-wrap: wrap; gap: 0.625rem; padding-bottom: 0.875rem; min-width: 0; width: 100%; }
+  .cart-item { flex-wrap: wrap; gap: 0.625rem; min-width: 0; width: 100%; }
   .cart-item-img { width: 52px; height: 52px; flex-shrink: 0; }
   .cart-item-info { flex: 1; min-width: 0; overflow: hidden; }
   .cart-item-name { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

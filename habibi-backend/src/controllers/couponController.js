@@ -179,13 +179,17 @@ const validateCoupon = async (req, res) => {
     // Cap discount at order amount
     discount = Math.min(discount, parseFloat(amount));
 
+    // A custom admin-set message (coupon.description) always wins over the
+    // auto-generated discount-type message when present.
+    const customMessage = (coupon.description || '').trim();
+
     res.json({
       valid: true,
       discount: parseFloat(discount.toFixed(2)),
       is_free_delivery: isFreeDelivery,
       code: coupon.code,
       discount_type: coupon.discount_type,
-      message: message || `Coupon applied — you saved $${discount.toFixed(2)}! 🎉`
+      message: customMessage || message || `Coupon applied — you saved $${discount.toFixed(2)}! 🎉`
     });
 
   } catch (error) {

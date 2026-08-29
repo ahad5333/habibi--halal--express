@@ -14,7 +14,7 @@ const DISCOUNT_TYPES = [
   { value: 'free_item_from_category', label: 'Free Item from Category',      needsValue: false, needsCategory: true,  needsCap: false },
 ];
 
-const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'', max_discount:'', is_first_order_only:false };
+const EMPTY = { code:'', discount_type:'percentage', discount_value:'', min_order:'', max_uses:'', valid_from:'', expires_at:'', customer_email:'', location_id:'', free_item_category:'', max_discount:'', is_first_order_only:false, description:'' };
 
 function CouponModal({ onClose, onCreate, onUpdate, editData }) {
   const isEdit = !!editData;
@@ -31,6 +31,7 @@ function CouponModal({ onClose, onCreate, onUpdate, editData }) {
     free_item_category: editData.free_item_category || '',
     max_discount: editData.max_discount || '',
     is_first_order_only: !!editData.is_first_order_only,
+    description: editData.description || '',
   } : { ...EMPTY });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -69,6 +70,10 @@ function CouponModal({ onClose, onCreate, onUpdate, editData }) {
             <div className="field">
               <label>Coupon Code *</label>
               <input className="input" style={{textTransform:'uppercase',letterSpacing:'0.1em'}} placeholder="HABIBI20" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required disabled={isEdit} />
+            </div>
+            <div className="field">
+              <label>Message to Customer <span style={{ color: 'var(--color-text-dim)' }}>(optional — shown at checkout when applied; defaults to an auto-generated message based on the discount type below)</span></label>
+              <input className="input" placeholder="e.g. Happy Ramadan! Enjoy 20% off your order." value={form.description} onChange={e => set('description', e.target.value)} maxLength={150} />
             </div>
             <div className="coupon-row">
               <div className="field">

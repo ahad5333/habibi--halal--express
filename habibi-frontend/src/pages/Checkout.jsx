@@ -30,11 +30,6 @@ const ALT_PAYMENTS = [
 // Methods that go through an offline/modal flow
 const OFFLINE_METHODS = new Set(['cash', 'zelle', 'cashapp']);
 
-const PROMO_DEALS = [
-  { code: 'HABIBI10', emoji: '🎉', label: '10% off your order', desc: 'Min order $20', minOrder: 20 },
-  { code: 'WELCOME5', emoji: '👋', label: '$5 off — welcome deal', desc: 'New customers', minOrder: 0 },
-  { code: 'FREESHIP', emoji: '🚚', label: 'Free delivery', desc: 'Min order $30', minOrder: 30 },
-];
 // Methods that render their own SDK button inline instead of using the
 // shared "Place Order" CTA -- googlepay isn't admin-toggleable like the
 // others (see isPaymentActive bypass below), its visibility is purely
@@ -46,14 +41,30 @@ const getFoodPhoto = (itemId) => {
   return `/images/menu/${n}.jpg`;
 };
 
+// Local YYYY-MM-DD (not UTC — toISOString() would shift the date near midnight)
+const toDateStr = (d) => {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const scheduleDateLabel = (dateStr) => {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  if (dateStr === toDateStr(today)) return 'Today';
+  if (dateStr === toDateStr(tomorrow)) return 'Tomorrow';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+};
+
 const Checkout = () => {
   const [deliveryMode, setDeliveryMode]   = useState('delivery');
   const [timing, setTiming]               = useState('asap');
-  const [scheduleDate, setScheduleDate]   = useState('today');
+  const [scheduleDate, setScheduleDate]   = useState(() => toDateStr(new Date()));
   const [scheduleTime, setScheduleTime]   = useState('19:30');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [tipIndex, setTipIndex]           = useState(2);
   const [customTip, setCustomTip]         = useState('');
+  const [extraHelpNeeded, setExtraHelpNeeded] = useState(false);
+  const [extraHelpNote, setExtraHelpNote] = useState('');
   const [address, setAddress]             = useState('');
   const [receiverName, setReceiverName]   = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -119,7 +130,7 @@ const Checkout = () => {
 
   const { items, addItem, updateQty, removeItem, removeAddon, clearCart, subtotal } = useCart();
   const { isLoggedIn, user } = useAuth();
-  const { isDineIn, table: dineInTable } = useDineIn();
+  const { isDineIn, table: dineInTable, clearTable } = useDineIn();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -511,9 +522,11 @@ const Checkout = () => {
     delivery_city:         '',
     delivery_zip:          '',
     delivery_state:        'NY',
-    delivery_instructions: (!isDineIn && deliveryMode === 'delivery' && leaveAtDoor)
-      ? ['Leave at door.', driverNote.trim()].filter(Boolean).join(' ')
-      : driverNote,
+    delivery_instructions: [
+      (!isDineIn && deliveryMode === 'delivery' && leaveAtDoor) ? 'Leave at door.' : '',
+      (extraHelpNeeded && extraHelpNote.trim()) ? `Extra help needed: ${extraHelpNote.trim()}` : '',
+      driverNote.trim(),
+    ].filter(Boolean).join(' '),
     table_number:          isDineIn ? (dineInTable?.table_name || '') : undefined,
     payment_method:        paymentMethod,
     sub_total:    parseFloat(subtotal.toFixed(2)),
@@ -531,7 +544,7 @@ const Checkout = () => {
     gift_message:        isGift ? giftMessage : null,
     expected_time: timing === 'asap'
       ? 'ASAP'
-      : `${scheduleDate === 'today' ? 'Today' : 'Tomorrow'} at ${scheduleTime}`,
+      : `${scheduleDateLabel(scheduleDate)} at ${scheduleTime}`,
     items: items.map(i => {
       const choiceNote = (i.choiceLabels || []).join(' | ');
       const addonsNote = (i.addons || [])
@@ -577,6 +590,11 @@ const Checkout = () => {
     const extraParam  = isDineIn
       ? `&table=${encodeURIComponent(dineInTable?.table_name || 'Your Table')}`
       : (address ? `&address=${encodeURIComponent(address)}` : '');
+    // Dine-in mode was otherwise never cleared anywhere in the app — scanning a
+    // table QR code once would permanently lock this browser into dine-in
+    // checkout (no delivery/pickup option) for every future visit, including
+    // unrelated delivery orders placed weeks later from home.
+    if (isDineIn) clearTable();
     navigate(`/order-confirmation?order=${orderNumber}&method=${methodParam}${extraParam}`);
   };
 
@@ -850,7 +868,10 @@ const Checkout = () => {
           </div>
         )}
 
-        {/* Dine-in mode banner */}
+        {/* Dine-in mode banner — scanning a table QR code has no other exit
+            point anywhere in the app, so without this link a customer who
+            scanned by mistake (or wants delivery/pickup instead) would be
+            stuck in dine-in mode on this browser indefinitely. */}
         {isDineIn && (
           <div className="dine-in-banner">
             <span className="dine-in-banner-icon">🍽️</span>
@@ -858,6 +879,13 @@ const Checkout = () => {
               <p className="dine-in-banner-title">Dine-In Order, {dineInTable?.table_name || 'Your Table'}</p>
               <p className="dine-in-banner-sub">Food will be brought to your table · No delivery fee</p>
             </div>
+            <button
+              type="button"
+              onClick={clearTable}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', textDecoration: 'underline', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Not at this table?
+            </button>
           </div>
         )}
 
@@ -1513,15 +1541,15 @@ const Checkout = () => {
                   <div className="form-row two-col mb-6">
                     <div className="form-group">
                       <label className="form-label" htmlFor="ck-schedule-date">DATE</label>
-                      <select
+                      <input
+                        type="date"
                         id="ck-schedule-date"
-                        className="form-input form-select"
+                        className="form-input"
                         value={scheduleDate}
-                        onChange={e => setScheduleDate(e.target.value)}
-                      >
-                        <option value="today">Today</option>
-                        <option value="tomorrow">Tomorrow</option>
-                      </select>
+                        min={toDateStr(new Date())}
+                        max={toDateStr((() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return d; })())}
+                        onChange={e => e.target.value && setScheduleDate(e.target.value)}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="ck-schedule-time">TIME (EST)</label>
@@ -1535,14 +1563,15 @@ const Checkout = () => {
                           const slots = [];
                           const minLead = 45;
                           const now = new Date();
+                          const isToday = scheduleDate === toDateStr(now);
                           const earliest = new Date(now.getTime() + minLead * 60000);
                           // Round up to next 30-min boundary
                           const m = earliest.getMinutes();
                           if (m > 0 && m <= 30) earliest.setMinutes(30, 0, 0);
                           else if (m > 30) { earliest.setHours(earliest.getHours() + 1, 0, 0, 0); }
-                          for (let h = scheduleDate === 'today' ? earliest.getHours() : 11; h < 23; h++) {
+                          for (let h = isToday ? earliest.getHours() : 11; h < 23; h++) {
                             for (const min of [0, 30]) {
-                              if (scheduleDate === 'today' && h === earliest.getHours() && min < earliest.getMinutes()) continue;
+                              if (isToday && h === earliest.getHours() && min < earliest.getMinutes()) continue;
                               const hh = h > 12 ? h - 12 : h === 0 ? 12 : h;
                               const ampm = h >= 12 ? 'PM' : 'AM';
                               const val = `${String(h).padStart(2,'0')}:${min === 0 ? '00' : '30'}`;
@@ -1702,36 +1731,6 @@ const Checkout = () => {
 
                     {showCouponPanel && (
                       <div className="coupon-panel-body">
-                        {/* Quick-apply deals */}
-                        <div className="coupon-deals">
-                          {PROMO_DEALS.map(deal => {
-                            const eligible = subtotal >= deal.minOrder;
-                            const thisApplied = couponApplied && couponCode === deal.code;
-                            return (
-                              <div key={deal.code} className={`coupon-deal-card${!eligible ? ' coupon-deal-card--locked' : ''}${thisApplied ? ' coupon-deal-card--applied' : ''}`}>
-                                <span className="coupon-deal-emoji">{deal.emoji}</span>
-                                <div className="coupon-deal-info">
-                                  <p className="coupon-deal-label">{deal.label}</p>
-                                  <p className="coupon-deal-desc">
-                                    {deal.desc}
-                                    {!eligible && deal.minOrder > 0 && ` · add $${(deal.minOrder - subtotal).toFixed(2)} more`}
-                                  </p>
-                                </div>
-                                <button
-                                  className={`coupon-deal-apply${thisApplied ? ' applied' : ''}`}
-                                  disabled={!eligible || thisApplied || couponLoading}
-                                  onClick={() => handleApplyCoupon(deal.code)}
-                                >
-                                  {couponLoading && couponCode === deal.code ? '…' : thisApplied ? '✓' : 'Apply'}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Manual code divider */}
-                        <div className="coupon-or-divider"><span>or enter a code</span></div>
-
                         {/* Manual code input */}
                         <div className="coupon-row">
                           <div className="coupon-input-wrap">
@@ -1800,6 +1799,21 @@ const Checkout = () => {
                           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', flex: 1, minWidth: 0 }}
                         />
                       </div>
+                    )}
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={extraHelpNeeded} onChange={e => setExtraHelpNeeded(e.target.checked)} />
+                      Extra Help is needed
+                    </label>
+                    {extraHelpNeeded && (
+                      <textarea
+                        placeholder="Please explain here"
+                        value={extraHelpNote}
+                        onChange={e => setExtraHelpNote(e.target.value)}
+                        maxLength={300}
+                        rows={2}
+                        style={{ marginTop: '0.5rem', width: '100%', resize: 'vertical', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.5rem 0.65rem', color: '#fff', fontSize: '0.85rem', fontFamily: 'inherit' }}
+                      />
                     )}
                   </div>
 

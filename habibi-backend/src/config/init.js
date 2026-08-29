@@ -49,34 +49,6 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_partner             BOOLEAN DEFAULT FALSE`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_id             INTEGER`);
 
-    // ── Coupons: safe migration columns ───────────────────────────
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title               VARCHAR(255)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS description         TEXT`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_from          TIMESTAMPTZ`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_until         TIMESTAMPTZ`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email      VARCHAR(255)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id         INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS free_item_category  VARCHAR(100)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_type      VARCHAR(50)`);
-    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_value     NUMERIC(10,2)`);
-
-    // valid_from/valid_until/expiry_date drifted to naive TIMESTAMP (or DATE for
-    // expiry_date) on some deployments instead of TIMESTAMPTZ — same class of bug
-    // fixed on delivery_assignments/roadie_deliveries above. A naive value read
-    // back gets mislabeled as UTC, so a coupon set to expire "Aug 1" would
-    // actually cut off ~4-5 hours early in America/New_York.
-    const driftedCouponCols = await client.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name='coupons'
-        AND column_name IN ('valid_from','valid_until','expiry_date')
-        AND data_type IN ('timestamp without time zone','date')
-    `);
-    for (const { column_name } of driftedCouponCols.rows) {
-      await client.query(
-        `ALTER TABLE coupons ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
-      );
-    }
-
     // ── Partner applications: add payment_methods + credit_balance ──
     await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
     await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS credit_balance  NUMERIC(10,2) DEFAULT 0`);
@@ -419,6 +391,40 @@ const createTables = async () => {
       );
     `);
 
+    // ── Coupons: safe migration columns ───────────────────────────
+    // Moved here (was previously placed right after the "users" table,
+    // before "coupons" itself — or "locations", which the location_id FK
+    // below needs — was created; on a brand-new empty database that made
+    // createTables() fail immediately with "relation coupons does not
+    // exist", since these ALTERs ran inside the same transaction as every
+    // CREATE TABLE before them and rolled the whole thing back.
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS title               VARCHAR(255)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS description         TEXT`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_from          TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS valid_until         TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS customer_email      VARCHAR(255)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS location_id         INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS free_item_category  VARCHAR(100)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_type      VARCHAR(50)`);
+    await client.query(`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS condition_value     NUMERIC(10,2)`);
+
+    // valid_from/valid_until/expiry_date drifted to naive TIMESTAMP (or DATE for
+    // expiry_date) on some deployments instead of TIMESTAMPTZ — same class of bug
+    // fixed on delivery_assignments/roadie_deliveries elsewhere. A naive value read
+    // back gets mislabeled as UTC, so a coupon set to expire "Aug 1" would
+    // actually cut off ~4-5 hours early in America/New_York.
+    const driftedCouponCols = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='coupons'
+        AND column_name IN ('valid_from','valid_until','expiry_date')
+        AND data_type IN ('timestamp without time zone','date')
+    `);
+    for (const { column_name } of driftedCouponCols.rows) {
+      await client.query(
+        `ALTER TABLE coupons ALTER COLUMN ${column_name} TYPE TIMESTAMPTZ USING ${column_name} AT TIME ZONE 'America/New_York'`
+      );
+    }
+
     // ── Payment Methods ───────────────────────────────────────────
     // customer_id/token were the original (never actually used) columns
     // from an early stub. Real saved cards are keyed by user_id directly
@@ -558,13 +564,21 @@ const createTables = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS payment_settings (
         id          SERIAL PRIMARY KEY,
-        label       VARCHAR(100) NOT NULL,
         provider    VARCHAR(50),
         is_active   BOOLEAN DEFAULT TRUE,
         config      JSONB DEFAULT '{}',
         created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // CREATE TABLE IF NOT EXISTS is a no-op on a table that already exists
+    // from an older schema version — a payment_settings table created before
+    // these columns existed would otherwise crash every startup at the
+    // seedDefaults queries below (they assume all of these are there).
+    await client.query(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS label      VARCHAR(100)`);
+    await client.query(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS provider   VARCHAR(50)`);
+    await client.query(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS is_active  BOOLEAN DEFAULT TRUE`);
+    await client.query(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS config     JSONB DEFAULT '{}'`);
+    await client.query(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
 
     // ── Reservations / Catering Quotes ────────────────────────────
     await client.query(`
@@ -1698,6 +1712,10 @@ const seedDefaults = async () => {
       created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // transaction_key is now stored AES-256-GCM encrypted (hex-encoded iv:tag:data),
+  // which is meaningfully longer than the raw ~16-char plaintext key — VARCHAR(100)
+  // was tight enough to risk truncation/rejection on longer keys.
+  await pool.query(`ALTER TABLE authorize_net_accounts ALTER COLUMN transaction_key TYPE VARCHAR(512)`);
 
   // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);
