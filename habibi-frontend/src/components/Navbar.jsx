@@ -196,13 +196,14 @@ const Navbar = () => {
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
 
-  // The Halal/Order Now badge is true-centered on the top bar (see .navbar-center-badges)
-  // to line up exactly with .nav-order-online in the row below. True-centering ignores how
-  // wide the flanking content actually is, though -- the right-side icon cluster grows from
-  // 1 icon (cart) to 3 (bell + cart + avatar) once logged in, and on narrow phones that extra
-  // width reaches past the container's true midpoint, landing the badge on top of the bell.
-  // Recompute the badge's `left` on every layout change so it stays at true-center whenever
-  // there's room, but yields (moves left) just enough to clear the icon cluster when there isn't.
+  // The Halal/Order Now badge sits centered in the visible gap between the logo and the
+  // right-side icon cluster, not on the row's own midpoint -- the logo (155-280px) is far
+  // wider than the icon cluster (one cart icon logged out, up to bell+cart+avatar logged
+  // in), so centering on the row's true midpoint instead of the gap's midpoint left the
+  // badge visibly closer to the logo with a big empty gap before the icons (most obvious
+  // logged-out, where the icon cluster is at its narrowest). Recompute on every layout
+  // change so it stays centered in that gap, clamped so it never overlaps either neighbor
+  // once the icon cluster grows wide enough (logged in, narrow phones) to eat the room.
   const topInnerRef = useRef(null);
   const logoRef = useRef(null);
   const centerBadgesRef = useRef(null);
@@ -229,12 +230,12 @@ const Navbar = () => {
       const topRightRect = topRight.getBoundingClientRect();
       const badgeWidth = badges.offsetWidth;
 
-      const idealLeft = containerRect.width / 2;
+      const gapMidpoint = ((logoRect.right + topRightRect.left) / 2) - containerRect.left;
       const minLeft = (logoRect.right - containerRect.left) + GAP + badgeWidth / 2;
       const maxLeft = (topRightRect.left - containerRect.left) - GAP - badgeWidth / 2;
       const left = maxLeft < minLeft
-        ? containerRect.width / 2 // no room to avoid overlap either way -- fall back to true-center
-        : Math.min(Math.max(idealLeft, minLeft), maxLeft);
+        ? gapMidpoint // no room to avoid overlap either way -- still the best-effort center
+        : Math.min(Math.max(gapMidpoint, minLeft), maxLeft);
       badges.style.left = `${left}px`;
     };
 
