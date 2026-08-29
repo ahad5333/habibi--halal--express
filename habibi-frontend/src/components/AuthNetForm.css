@@ -38,6 +38,21 @@
 .authnet-input:focus { border-color: #E5B64E; }
 .authnet-input::placeholder { color: rgba(255,255,255,0.25); }
 
+/* Same dark-theme autofill fix as .form-input in Checkout.css (see its
+   comment for why the inset-box-shadow trick is needed) -- covers the
+   cardholder name field here, which a browser can autofill from a saved
+   card just like it autofills the card number itself. */
+.authnet-input:-webkit-autofill,
+.authnet-input:-webkit-autofill:hover,
+.authnet-input:-webkit-autofill:focus,
+.authnet-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0d0d0d inset !important;
+  box-shadow: 0 0 0px 1000px #0d0d0d inset !important;
+  caret-color: #fff;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .authnet-card-row {
   position: relative;
   display: flex;

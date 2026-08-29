@@ -1585,6 +1585,26 @@
   color: var(--color-text-muted);
 }
 
+/* Browsers force their own autofill background (usually a light
+   yellow/white) that our own text color can't override -- on this dark
+   theme that renders as invisible white-on-near-white text once a browser
+   autofills a saved name/address/phone into one of these fields. The
+   'inset box-shadow the size of the field' trick is the standard way to
+   paint over that forced background since -webkit-autofill styling can
+   only be fought with more !important background layers, not overridden
+   directly; the long transition delay stops the forced color from
+   flashing back in on blur. */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-text-main) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-bg) inset !important;
+  box-shadow: 0 0 0px 1000px var(--color-bg) inset !important;
+  caret-color: var(--color-text-main);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .form-select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
