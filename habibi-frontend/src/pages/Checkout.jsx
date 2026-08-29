@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
+import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, X, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -1119,19 +1119,21 @@ const Checkout = () => {
                         {addons.map((addon, idx) => (
                           <div key={`${itemKey}-addon-${idx}`} className="cart-addon-row">
                             <span className="cart-addon-name">+ {addon.name}{addon.qty > 1 ? ` ×${addon.qty}` : ''}</span>
-                            <span className="cart-addon-price">
-                              {parseFloat(addon.price) > 0
-                                ? `$${(addon.price * (addon.qty || 1) * item.qty).toFixed(2)}`
-                                : 'Free'}
-                            </span>
-                            {parseFloat(addon.price) > 0 && (
-                              <button
-                                className="cart-addon-remove"
-                                onClick={() => removeAddon(itemKey, idx)}
-                                title="Remove add-on"
-                                aria-label={`Remove ${addon.name}`}
-                              >×</button>
-                            )}
+                            <div className="cart-addon-right">
+                              <span className="cart-addon-price">
+                                {parseFloat(addon.price) > 0
+                                  ? `$${(addon.price * (addon.qty || 1) * item.qty).toFixed(2)}`
+                                  : 'Free'}
+                              </span>
+                              {parseFloat(addon.price) > 0 && (
+                                <button
+                                  className="cart-addon-remove"
+                                  onClick={() => removeAddon(itemKey, idx)}
+                                  title="Remove add-on"
+                                  aria-label={`Remove ${addon.name}`}
+                                ><X size={12} /></button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </React.Fragment>
