@@ -1365,6 +1365,16 @@
   border-radius: 12px;
   padding: 0.7rem 0.25rem;
   margin-bottom: 1rem;
+  /* This row's actual rendered width depends on which layout column it's
+     in, not the viewport -- on desktop .order-summary-card is only flex:1
+     inside a flex:2/flex:1 row, so even a normal 1366-1440px laptop screen
+     gives it ~320-400px, narrower than most phones. A @media breakpoint
+     checks viewport width and never fires there, which is exactly why the
+     short-label swap below only worked on mobile and not desktop. A
+     container query checks this box's own width instead, so it self-adapts
+     in both layouts. */
+  container-type: inline-size;
+  container-name: trust-badges;
 }
 .trust-badge {
   display: flex;
@@ -1428,11 +1438,12 @@
   background: rgba(255,255,255,0.07);
   flex-shrink: 0;
 }
-/* Three full badges (icon + label + subtext) don't fit on most phone-width
-   screens -- 390px missed real devices at 393/402/428px logical width
-   (iPhone 14/15/Plus etc.), which is exactly why this kept overflowing on
-   real phones despite looking fine in a 390px devtools/test viewport. */
-@media (max-width: 480px) {
+/* Keyed off this row's own rendered width (see container-type above), not
+   the viewport -- covers both the mobile single-column layout (where the
+   card is full viewport width) and the desktop two-column layout (where
+   it's a narrow flex:1 sidebar) with one rule instead of guessing separate
+   breakpoints for each. */
+@container trust-badges (max-width: 460px) {
   .trust-badge-sub { display: none; }
   .trust-badge-label { font-size: 0.65rem; }
   .tbl-full { display: none; }
