@@ -41,11 +41,40 @@ find "${LOCAL_DIST}/images" -type f 2>/dev/null | sed "s|^${LOCAL_DIST}/||" | so
 ssh "$REMOTE" "find '${REMOTE_DIR}/images' -type f 2>/dev/null | sed 's|^${REMOTE_DIR}/||'" | sort > "$REMOTE_IMG_LIST"
 NEW_IMAGES=$(comm -23 "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST")
 if [ -n "$NEW_IMAGES" ]; then
-  echo "$NEW_IMAGES" | while IFS= read -r rel; do
-    ssh "$REMOTE" "mkdir -p \"\$(dirname '${REMOTE_DIR}/${rel}')\""
-    scp "${LOCAL_DIST}/${rel}" "${REMOTE}:${REMOTE_DIR}/${rel}"
-  done
-  echo "  uploaded $(echo "$NEW_IMAGES" | wc -l) new image(s)"
+  # `ssh`/`scp` inside this loop must have stdin redirected from /dev/null --
+  # ssh reads its own stdin by default, and without this it silently steals
+  # bytes from the very pipe `read -r rel` is consuming, causing lines (i.e.
+  # whole images) to be randomly skipped with no error whenever more than
+  # one new image is uploaded in the same deploy.
+  #
+  # Piping into the while loop (`echo "$NEW_IMAGES" | while ...`) runs the
+  # loop in a subshell -- with `set -e` active, one transient ssh/scp
+  # failure (e.g. a dropped connection) silently kills that subshell mid-
+  # loop, abandoning every image after the failed one with NO error and NO
+  # indication anything was skipped. The final count below was also always
+  # just the *intended* list length, not actual successes, so a partial
+  # failure like this reported "uploaded 4 new image(s)" even when only 1
+  # actually made it to the server (found 2026-08-30: 3 of 4 new payment
+  # logos silently 404'd in production despite this exact message).
+  # A here-string (`<<<`) keeps the loop in the current shell instead of a
+  # subshell, and wrapping each upload in its own `if` stops a single
+  # failure from tripping `set -e` -- so one bad upload is reported and
+  # skipped, not allowed to silently swallow every image queued after it.
+  UPLOAD_OK=0
+  UPLOAD_FAILED=0
+  while IFS= read -r rel; do
+    if ssh "$REMOTE" "mkdir -p \"\$(dirname '${REMOTE_DIR}/${rel}')\"" < /dev/null \
+       && scp "${LOCAL_DIST}/${rel}" "${REMOTE}:${REMOTE_DIR}/${rel}" < /dev/null; then
+      UPLOAD_OK=$((UPLOAD_OK + 1))
+    else
+      UPLOAD_FAILED=$((UPLOAD_FAILED + 1))
+      echo "  ⚠ FAILED to upload: $rel"
+    fi
+  done <<< "$NEW_IMAGES"
+  echo "  uploaded $UPLOAD_OK new image(s)"
+  if [ "$UPLOAD_FAILED" -gt 0 ]; then
+    echo "  ⚠ $UPLOAD_FAILED image(s) failed -- re-run deploy.sh to retry, or upload manually"
+  fi
 else
   echo "  no new images"
 fi
