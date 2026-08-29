@@ -3,6 +3,8 @@ const safeError = require('../utils/safeError');
 const { logAudit } = require('./auditController');
 const { encryptObject, decryptObject, decrypt } = require('../utils/encrypt');
 const { deactivateAllCardProcessors } = require('../services/cardProcessorRegistry');
+const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
+const squareService = require('../services/squareService');
 
 // Non-secret fields per provider — safe to send back to the browser as-is.
 // Everything else in `credentials` is a real secret and must never leave
@@ -56,6 +58,69 @@ const getPublicCardConfig = async (req, res) => {
     res.json(config);
   } catch (err) {
     res.status(500).json(safeError(err));
+  }
+};
+
+// ── Public: charge card using a Square/Clover tokenized source ───────────
+// Authorize.net keeps using its own dedicated /authnet/charge endpoint
+// (AuthNetForm.jsx posts there directly) -- this one is for whichever of
+// the two newer processors is currently active.
+const chargeCardEndpoint = async (req, res) => {
+  const { sourceId, amount: clientAmount, orderNumber, customerName, customerPhone, reason, note } = req.body;
+  if (!sourceId) {
+    return res.status(400).json({ error: 'Invalid payment token.' });
+  }
+
+  try {
+    // Charge amount comes from the order's own server-side total when an
+    // orderNumber is given — never trust a client-supplied amount for a real order.
+    const { amount } = await resolveChargeAmount(orderNumber, clientAmount);
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount.' });
+    }
+
+    const active = await getActiveCardProcessor();
+    if (!active || active.provider === 'authorize_net') {
+      return res.status(503).json({ error: 'Payment processor not configured.' });
+    }
+
+    let result;
+    if (active.provider === 'square') {
+      result = await squareService.chargeCard({
+        sourceId,
+        amount,
+        orderNumber,
+        accessToken: active.account.credentials.accessToken,
+        locationId:  active.account.credentials.locationId,
+        environment: active.account.environment,
+      });
+    } else {
+      return res.status(503).json({ error: 'Clover charging is not available yet.' });
+    }
+
+    if (orderNumber) {
+      await pool.query(
+        `UPDATE guest_orders
+            SET payment_status = 'paid',
+                payment_intent_id = $1,
+                payment_processor = $2,
+                updated_at = NOW()
+          WHERE order_number = $3`,
+        [result.transactionId, active.provider, orderNumber]
+      );
+    }
+
+    // Durable record of the charge itself — independent of whether it's
+    // tied to a real order, same pattern as authNetController's chargeCardEndpoint.
+    await pool.query(
+      `INSERT INTO quick_payments (order_number, amount, reason, note, customer_name, customer_phone, transaction_id, payment_processor)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [orderNumber || null, parseFloat(amount), reason || null, note || null, customerName || null, customerPhone || null, result.transactionId, active.provider]
+    ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
+
+    res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
+  } catch (err) {
+    res.status(err.statusCode || 402).json({ error: err.message || 'Payment failed.' });
   }
 };
 
@@ -212,6 +277,7 @@ const setActiveAccount = async (req, res) => {
 module.exports = {
   getActiveCardProcessor,
   getPublicCardConfig,
+  chargeCardEndpoint,
   listAccounts,
   createAccount,
   updateAccount,

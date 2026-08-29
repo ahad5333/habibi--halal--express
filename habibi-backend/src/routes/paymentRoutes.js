@@ -19,6 +19,7 @@ const {
 } = require("../controllers/authNetController");
 const {
   getPublicCardConfig,
+  chargeCardEndpoint: chargeCardProcessorEndpoint,
 } = require("../controllers/cardProcessorController");
 
 // ── Public ──────────────────────────────────────────────────────────────────
@@ -49,6 +50,9 @@ router.post("/authnet/charge", chargeCardEndpoint);
 // the frontend uses `provider` in the response to decide which card-form
 // component to mount.
 router.get("/card/config", getPublicCardConfig);
+// Charge using a Square/Clover tokenized source (Authorize.net keeps using
+// its own /authnet/charge, posted to directly by AuthNetForm.jsx).
+router.post("/card/charge", chargeCardProcessorEndpoint);
 
 // ── Admin only ───────────────────────────────────────────────────────────────
 router.post("/refund/:orderNumber", protect, admin, refundOrder);

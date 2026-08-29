@@ -299,6 +299,10 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_guest_orders_deleted_at ON guest_orders(deleted_at) WHERE deleted_at IS NOT NULL`);
 
+    // Which processor actually charged this order -- same reasoning as
+    // quick_payments.payment_processor above.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_processor VARCHAR(20)`);
+
     // guest_orders.placed_at/updated_at were declared as naive TIMESTAMP here
     // from the very start (not drift from a later ALTER — the original design
     // was wrong), same underlying issue already fixed on delivery_assignments/
@@ -452,6 +456,10 @@ const createTables = async () => {
         created_at     TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    // Which processor actually took the money -- needed so a later refund
+    // (possibly after the admin has since switched the active processor)
+    // goes back to the right one instead of whichever is active right now.
+    await client.query(`ALTER TABLE quick_payments ADD COLUMN IF NOT EXISTS payment_processor VARCHAR(20)`);
 
     // ── Urgent Requests ───────────────────────────────────────────
     await client.query(`

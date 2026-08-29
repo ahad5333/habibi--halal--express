@@ -10,6 +10,8 @@ import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
 import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
+import SquareCardForm from '../components/SquareCardForm';
+import '../components/SquareCardForm.css';
 import PayPalButton from '../components/PayPalButton';
 import GooglePayButton from '../components/GooglePayButton';
 import OfflinePayModal from '../components/OfflinePayModal';
@@ -87,7 +89,6 @@ const Checkout = () => {
   const [orderSaveFailure, setOrderSaveFailure] = useState(null); // { reference, retry }
   const [retrying, setRetrying]             = useState(false);
   const orderErrorRef = useRef(null);
-  const [authNetConfig, setAuthNetConfig]   = useState(null);
   const [intentReady, setIntentReady]       = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [editingItem,  setEditingItem]          = useState(null); // { item, itemKey } for re-edit modal
@@ -173,8 +174,9 @@ const Checkout = () => {
 
   // The Settings admin page's "Payment Methods" enable/disable toggles had
   // zero real effect — this page always showed all 5 options regardless.
-  // Card is matched via 'authorize.net' (the real processor) since that's
-  // the provider value stored for it, distinct from its checkout id 'card'.
+  // payment_settings.provider is 'card' directly (processor-agnostic —
+  // Authorize.net/Square/Clover are all just "Card" at this layer; see
+  // cardConfigured below for which one, if any, actually works).
   useEffect(() => {
     settingsAPI.getPayments()
       .then(list => {
@@ -184,7 +186,7 @@ const Checkout = () => {
         // Default selection is 'card' — if it turns out to be disabled,
         // fall back to the first method that actually is, so a customer
         // never ends up with a hidden selection that can't be submitted.
-        const isActive = (id) => providers.has(id === 'card' ? 'authorize.net' : id);
+        const isActive = (id) => providers.has(id);
         if (!isActive(paymentMethod)) {
           const fallback = ['card', ...ALT_PAYMENTS.map(m => m.id)].find(isActive);
           if (fallback) setPaymentMethod(fallback);
@@ -193,22 +195,24 @@ const Checkout = () => {
       .catch(() => {}); // fail open
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Card additionally requires a real Authorize.net account to be active in
-  // the DB (set via the admin panel) -- the "Payment Methods" toggle above
-  // only controls whether Card is *offered*, not whether it actually works.
+  // Card additionally requires a real processor account to be active in the
+  // DB (set via the admin panel) -- the "Payment Methods" toggle above only
+  // controls whether Card is *offered*, not whether it actually works, or
+  // which processor (Authorize.net/Square/Clover) is behind it.
   // Check this eagerly on mount and fail CLOSED (hide Card) rather than
   // showing it and letting the customer discover it's broken after filling
   // out the whole form. Self-healing: the moment a real account is
-  // activated in the admin panel, this starts returning apiLoginId and Card
+  // activated in the admin panel, this starts returning a provider and Card
   // reappears with no code change or redeploy needed.
-  const [cardConfigured, setCardConfigured] = useState(false);
+  const [activeCardConfig, setActiveCardConfig] = useState(null);
+  const cardConfigured = !!activeCardConfig;
   useEffect(() => {
     const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    fetch(`${BASE}/api/payments/authnet/config`)
+    fetch(`${BASE}/api/payments/card/config`)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data?.apiLoginId) {
-          setCardConfigured(true);
+        if (data?.provider) {
+          setActiveCardConfig(data);
         } else if (paymentMethod === 'card') {
           const fallback = ALT_PAYMENTS.find(m => isPaymentActive(m.id));
           if (fallback) setPaymentMethod(fallback.id);
@@ -223,7 +227,7 @@ const Checkout = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPaymentActive = (id) =>
-    activePaymentProviders === null || activePaymentProviders.has(id === 'card' ? 'authorize.net' : id);
+    activePaymentProviders === null || activePaymentProviders.has(id);
 
   // Pre-fill contact details + loyalty points for logged-in users
   useEffect(() => {
@@ -705,7 +709,7 @@ const Checkout = () => {
     return true;
   };
 
-  // ── Card: fetch Authorize.net config then show card form ─────────────────
+  // ── Card: re-check the active processor's config, then show its card form ──
   const handlePrepareCardPayment = async () => {
     if (items.length === 0) return;
     if (!validateOrder()) return;
@@ -714,11 +718,13 @@ const Checkout = () => {
     try {
       const orderNumber = `HAB-${Date.now()}`;
       setPendingOrderNum(orderNumber);
+      // Re-fetch rather than trusting the on-mount check — the active
+      // processor could have changed in the admin panel since page load.
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const res  = await fetch(`${BASE}/api/payments/authnet/config`);
+      const res  = await fetch(`${BASE}/api/payments/card/config`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Payment setup failed.');
-      setAuthNetConfig(data);
+      setActiveCardConfig(data);
       setIntentReady(true);
     } catch (err) {
       setOrderError(err.message || 'Failed to initiate payment.');
@@ -1600,7 +1606,10 @@ const Checkout = () => {
                   <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
                     <div className="flex items-center gap-3">
                       <CreditCard size={18} className="text-primary" />
-                      <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secured by Authorize.net</p></div>
+                      {/* Deliberately processor-agnostic — the admin can switch
+                          which merchant account is behind "Card" at any time,
+                          and the customer should never see which one it is. */}
+                      <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secure &amp; encrypted checkout</p></div>
                     </div>
                     <div className="flex items-center gap-2">
                       <img src="/images/partners/visa.png" alt="Visa" className="pay-brand-icon" />
@@ -1658,13 +1667,25 @@ const Checkout = () => {
                   ))}
                 </div>
 
-                {/* Authorize.net card form */}
-                {showCardForm && (
+                {/* Card form — which component mounts depends entirely on
+                    which processor is active in the admin panel; the
+                    customer never sees a difference either way. */}
+                {showCardForm && activeCardConfig?.provider === 'authorize_net' && (
                   <AuthNetForm
-                    config={authNetConfig}
+                    config={activeCardConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}
                     showSaveOption={isLoggedIn}
+                    onSuccess={handleAuthNetSuccess}
+                    onError={handleCardError}
+                  />
+                )}
+                {showCardForm && activeCardConfig?.provider === 'square' && (
+                  <SquareCardForm
+                    config={activeCardConfig}
+                    amount={total}
+                    orderNumber={pendingOrderNum}
+                    showSaveOption={false /* card-on-file saving lands in a later phase */}
                     onSuccess={handleAuthNetSuccess}
                     onError={handleCardError}
                   />

@@ -144,8 +144,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
 
   return (
     <form className="authnet-form" onSubmit={handleSubmit} noValidate>
+      {/* Deliberately processor-agnostic — see SquareCardForm.jsx for why. */}
       <div className="authnet-secure-badge">
-        <Lock size={12}/> Secured by Authorize.net
+        <Lock size={12}/> Secure &amp; Encrypted
       </div>
 
       <div className="authnet-field">

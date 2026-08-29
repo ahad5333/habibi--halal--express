@@ -1,0 +1,11 @@
+/* Reuses AuthNetForm.css's .authnet-* classes for everything except the
+   Square-specific mount point below -- Checkout.jsx/Payment.jsx already
+   import AuthNetForm.css, which is why this file only adds what's new. */
+
+.square-card-container {
+  /* .authnet-input supplies the border/background/radius; Square's SDK
+     renders its own iframe inside once card.attach() resolves, so this
+     just needs enough height to not visibly collapse before that happens. */
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+}
