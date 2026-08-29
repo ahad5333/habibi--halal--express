@@ -155,9 +155,10 @@ const Checkout = () => {
 
   const upsellBucketOf = (catStr) => {
     const c = (catStr || '').toLowerCase();
-    if (c.includes('drink'))    return 'drinks';
-    if (c.includes('side') || c.includes('appetizer') || c.includes('snack')) return 'sides';
-    if (c.includes('platter'))  return 'platter';
+    if (c.includes('drink'))   return 'drinks';
+    if (c.includes('extra'))   return 'extras';
+    if (c.includes('special')) return 'specials';
+    if (c.includes('platter')) return 'platter';
     return 'other';
   };
 
@@ -328,7 +329,13 @@ const Checkout = () => {
       .catch(() => setSavedCards([]));
   }, [isLoggedIn, cardConfigured]);
 
-  // Fetch upsell items once on mount — drinks, juices, sides, salads (up to 12)
+  // Fetch upsell items once on mount. Was filtering for category names
+  // ("side"/"appetizer"/"snack") that don't actually exist in the real menu
+  // -- the real category is "Extras" (22 items), so that whole bucket was
+  // silently returning nothing live. Rebuilt against the real category set
+  // (Drinks/Extras/Habibi Specials/Platter) with higher caps -- deliberately
+  // still excludes Bergers/Breakfast/Sandwich/Family Tray/Tacos, since those
+  // read as competing full meals rather than a "complete your meal" add-on.
   useEffect(() => {
     menuAPI.getAll()
       .then(data => {
@@ -338,23 +345,26 @@ const Checkout = () => {
 
         const drinks = all
           .filter(i => getCat(i).includes('drink') && !getName(i).includes('juice'))
-          .slice(0, 4);
+          .slice(0, 6);
         const juices = all
           .filter(i => getCat(i).includes('drink') && getName(i).includes('juice'))
-          .slice(0, 3);
-        const sides = all
-          .filter(i => getCat(i).includes('side') || getCat(i).includes('appetizer') || getCat(i).includes('snack'))
-          .slice(0, 3);
+          .slice(0, 4);
+        const extras = all
+          .filter(i => getCat(i).includes('extra'))
+          .slice(0, 6);
+        const specials = all
+          .filter(i => getCat(i).includes('special'))
+          .slice(0, 4);
         const salads = all
           .filter(i => getCat(i).includes('platter') && getName(i).includes('salad'))
           .slice(0, 2);
 
-        // Deduplicate by id and cap at 12
+        // Deduplicate by id and cap at 20
         const seen = new Set();
-        const merged = [...drinks, ...juices, ...sides, ...salads].filter(i => {
+        const merged = [...drinks, ...juices, ...extras, ...specials, ...salads].filter(i => {
           if (seen.has(i.id)) return false;
           seen.add(i.id); return true;
-        }).slice(0, 12);
+        }).slice(0, 20);
 
         setUpsellItems(merged);
       })
@@ -1178,9 +1188,10 @@ const Checkout = () => {
                       const cartItem = items.find(i => i.id === u.id);
                       const cartQty = cartItem?.qty || 0;
                       const cat = (u.category || 'Add-on');
+                      const isSpecial = cat.toLowerCase().includes('special');
                       return (
-                        <div key={u.id} className={`upsell-card${cartQty > 0 ? ' upsell-card--added' : ''}`}>
-                          <div className="upsell-cat-chip">{cat}</div>
+                        <div key={u.id} className={`upsell-card${cartQty > 0 ? ' upsell-card--added' : ''}${isSpecial ? ' upsell-card--special' : ''}`}>
+                          <div className={`upsell-cat-chip${isSpecial ? ' upsell-cat-chip--special' : ''}`}>{isSpecial ? <>✨ {cat}</> : cat}</div>
                           <div className="upsell-img-wrap">
                             <img
                               src={imgSrc}
@@ -1190,7 +1201,7 @@ const Checkout = () => {
                             />
                           </div>
                           <p className="upsell-name">{u.name || u.title}</p>
-                          <p className="upsell-price">${parseFloat(u.price || 0).toFixed(2)}</p>
+                          <p className="upsell-price"><span className="upsell-price-pill">${parseFloat(u.price || 0).toFixed(2)}</span></p>
                           {cartQty > 0 ? (
                             <div className="upsell-stepper">
                               <button aria-label="Decrease quantity" onClick={() => updateQty(u.id, cartQty - 1)}><Minus size={12} /></button>
