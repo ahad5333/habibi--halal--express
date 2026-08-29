@@ -79,6 +79,10 @@ export default function MenuItemModal({
   initialUniversalSel = null,
   initialNote      = '',
   initialQty       = 1,
+  // When provided, the built cart-line item(s) are handed to this callback instead of going
+  // straight into the shopping cart (used by Group Order, which stores its own item list).
+  onAddOverride    = null,
+  addLabel         = 'Add to Cart',
 }) {
   const { addItem, removeItem } = useCart();
   const { isLoggedIn } = useAuth();
@@ -338,6 +342,11 @@ export default function MenuItemModal({
 
   /* ── Add to cart ── */
   const handleAdd = () => {
+    // When onAddOverride is set, collect every cart-line this click would normally create
+    // and hand them off as a batch instead of writing to the shopping cart.
+    const itemsToEmit = [];
+    const emit = (payload) => { if (onAddOverride) itemsToEmit.push(payload); else addItem(payload); };
+
     // Quota item (Dozen of Tacos, etc.)
     if (quotaRequired > 0) {
       if (quotaTotal !== quotaRequired) {
@@ -358,7 +367,7 @@ export default function MenuItemModal({
         .filter(([, q]) => q > 0)
         .map(([name, qty]) => ({ name: `Extra ${name}`, price: 5.99, qty }));
 
-      addItem({
+      emit({
         id:            item.id,
         name:          cleanName,
         price:         unitPrice,
@@ -371,6 +380,7 @@ export default function MenuItemModal({
         selectedChoices: {},
         selectedAddons:  {},
       });
+      if (onAddOverride) onAddOverride(itemsToEmit);
       setAdded(true);
       setTimeout(() => { setAdded(false); onClose(); }, 1400);
       return;
@@ -384,6 +394,29 @@ export default function MenuItemModal({
         if (!opt || opt.title === cleanName) return null;
         return cg.title ? `${cg.title}: ${opt.title}` : opt.title;
       }).filter(Boolean);
+
+    // Fuzzy title match: exact → substring → content-keyword overlap (ignoring stop words).
+    // Shared by every "promote this add-on to its own cart line" path below (Make it a
+    // Meal!/Add a Drink DB groups, and More Meat) so they all resolve a real product
+    // photo the same way, falling back gracefully when no real product matches.
+    const STOP = new Set(['add','extra','with','of','and','the','a','an','your','my','our','as','many','you','want','pieces','piece','same','plain']);
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const contentWords = s => norm(s).split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
+    const fuzzyFind = (pool, n) => {
+      const nNorm = norm(n);
+      const nContent = new Set(contentWords(n));
+      return pool.find(m => norm(m.title) === nNorm)
+        || pool.find(m => nNorm.includes(norm(m.title)) && norm(m.title).length > 3)
+        || pool.find(m => norm(m.title).includes(nNorm) && nNorm.length > 3)
+        || (() => {
+            let best = null, bestScore = 0;
+            pool.forEach(m => {
+              const score = contentWords(m.title).filter(w => nContent.has(w)).length;
+              if (score > bestScore) { bestScore = score; best = m; }
+            });
+            return bestScore >= 1 ? best : null;
+          })();
+    };
 
     // Process DB addon selections — detect global Make it a Meal!(9002) / Add a Drink(9003)
     // groups and route them to separate cart items instead of sub-addon rows
@@ -401,27 +434,6 @@ export default function MenuItemModal({
 
       const lookup = agId === 9002 ? extrasLookup : agId === 9003 ? drinksLookup : null;
       if (lookup) {
-        // Fuzzy title match: exact → substring → content-keyword overlap (ignoring stop words)
-        // First tries the category-specific lookup, then falls back to all items for image resolution
-        const STOP = new Set(['add','extra','with','of','and','the','a','an','your','my','our','as','many','you','want','pieces','piece','same','plain']);
-        const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-        const contentWords = s => norm(s).split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
-        const fuzzyFind = (pool, n) => {
-          const nNorm = norm(n);
-          const nContent = new Set(contentWords(n));
-          return pool.find(m => norm(m.title) === nNorm)
-            || pool.find(m => nNorm.includes(norm(m.title)) && norm(m.title).length > 3)
-            || pool.find(m => norm(m.title).includes(nNorm) && nNorm.length > 3)
-            || (() => {
-                let best = null, bestScore = 0;
-                pool.forEach(m => {
-                  const score = contentWords(m.title).filter(w => nContent.has(w)).length;
-                  if (score > bestScore) { bestScore = score; best = m; }
-                });
-                return bestScore >= 1 ? best : null;
-              })();
-        };
-        const optNorm = norm(name);
         // Try Extras/Drinks lookup first; broaden to all items for image if not found
         let menuItem = fuzzyFind(lookup, name) || fuzzyFind(broadLookup, name);
 
@@ -447,10 +459,17 @@ export default function MenuItemModal({
       }
     });
 
-    // Sauce & More Meat stay as sub-row addons; Make it a Meal! / Add a Drink become separate cart items
-    const sauceAndMeatAddons = [];
+    // Sauces stay as sub-row addons (a photo of "0.5oz white sauce" isn't a meaningful
+    // "own picture" the way a protein portion is, and no delivery platform shows one).
+    // More Meat, Make it a Meal!, and Add a Drink all become separate cart items --
+    // More Meat used to stay a sub-row addon too, but its options (Extra Fish Fillet,
+    // Extra Grilled Chicken, etc.) are real enough add-ons that the client wanted them
+    // to read the same way Meal/Drink already do, with their own line and photo.
+    const sauceAddons = [];
     const mealDrinkCartItems = [];
+    const moreMeatCartItems = [];
     let mealDrinkCost = 0;
+    let moreMeatCost = 0;
 
     Object.entries(universalSel).filter(([, q]) => q > 0).forEach(([optId, q]) => {
       let mealOpt = null;
@@ -474,14 +493,34 @@ export default function MenuItemModal({
           selectedChoices: {},
           selectedAddons:  {},
         });
-      } else {
-        let name = '', price = 0;
-        [UNIVERSAL_SAUCES, UNIVERSAL_MORE_MEAT].forEach(ug => {
-          const f = ug.options?.find(o => o.id === optId);
-          if (f) { name = f.title; price = parseFloat(f.price || 0); }
-        });
-        if (name) sauceAndMeatAddons.push({ name, price, qty: q });
+        return;
       }
+
+      const meatOpt = UNIVERSAL_MORE_MEAT.options?.find(o => o.id === optId);
+      if (meatOpt) {
+        const price = parseFloat(meatOpt.price || 0);
+        const menuItem = fuzzyFind(broadLookup, meatOpt.title);
+        moreMeatCost += price * q;
+        moreMeatCartItems.push({
+          id:            menuItem?.menuId ?? optId,
+          cartKey:       `moremeat-${optId}`,
+          name:          menuItem?.title ?? meatOpt.title,
+          price:         parseFloat(menuItem?.price ?? price),
+          baseItemPrice: parseFloat(menuItem?.price ?? price),
+          addons:        [],
+          img:           menuItem?.img || fallbackImg(menuItem?.menuId ?? optId),
+          tag:           menuItem?.category || 'Extras',
+          note:          '',
+          choiceLabels:  [],
+          qty:           q,
+          selectedChoices: {},
+          selectedAddons:  {},
+        });
+        return;
+      }
+
+      const sauceOpt = UNIVERSAL_SAUCES.options?.find(o => o.id === optId);
+      if (sauceOpt) sauceAddons.push({ name: sauceOpt.title, price: parseFloat(sauceOpt.price || 0), qty: q });
     });
 
     // cartKey distinguishes same item ordered with different choices
@@ -494,13 +533,13 @@ export default function MenuItemModal({
 
     const parentKey = cartKey ?? item.id;
 
-    addItem({
+    emit({
       id:            item.id,
       cartKey,
       name:          cleanName,
-      price:         unitPrice - mealDrinkCost - addonMealCost,
+      price:         unitPrice - mealDrinkCost - addonMealCost - moreMeatCost,
       baseItemPrice: basePrice + choiceExtra,
-      addons:        [...addonsList, ...sauceAndMeatAddons],
+      addons:        [...addonsList, ...sauceAddons],
       img:           item.image || item.image_url || categoryFallback(item),
       tag:           item.category || 'Item',
       note:          note.trim(),
@@ -512,10 +551,13 @@ export default function MenuItemModal({
     });
 
     // Universal Make it a Meal! / Add a Drink → separate cart entries (tagged with parentCartKey)
-    mealDrinkCartItems.forEach(mi => addItem({ ...mi, parentCartKey: parentKey }));
+    mealDrinkCartItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
+    // Universal More Meat → separate cart entries, same treatment as Meal/Drink
+    moreMeatCartItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
     // DB global group Make it a Meal!(9002) / Add a Drink(9003) → separate cart entries
-    addonMealItems.forEach(mi => addItem({ ...mi, parentCartKey: parentKey }));
+    addonMealItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
 
+    if (onAddOverride) onAddOverride(itemsToEmit);
     setAdded(true);
     setTimeout(() => { setAdded(false); onClose(); }, 1400);
   };
@@ -755,10 +797,10 @@ export default function MenuItemModal({
                     disabled={added}
                   >
                     {added
-                      ? '✓ Added to Cart!'
+                      ? `✓ ${addLabel === 'Add to Cart' ? 'Added to Cart' : addLabel}!`
                       : quotaTotal !== quotaRequired
                       ? `Select ${quotaRequired} tacos (${quotaTotal}/${quotaRequired})`
-                      : `Add to Cart · $${(basePrice + moreTacosExtra).toFixed(2)}`
+                      : `${addLabel} · $${(basePrice + moreTacosExtra).toFixed(2)}`
                     }
                   </button>
                 </div>
@@ -963,10 +1005,10 @@ export default function MenuItemModal({
                     disabled={missingRequired || added}
                   >
                     {added
-                      ? (editCartKey ? '✓ Cart Updated!' : '✓ Added to Cart!')
+                      ? (editCartKey ? '✓ Cart Updated!' : `✓ ${addLabel === 'Add to Cart' ? 'Added to Cart' : addLabel}!`)
                       : editCartKey
                       ? `Update Cart · $${total.toFixed(2)}`
-                      : `Add to Cart · $${total.toFixed(2)}`}
+                      : `${addLabel} · $${total.toFixed(2)}`}
                   </button>
                 </div>
               </>
