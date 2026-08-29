@@ -51,16 +51,31 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
     const initCard = async () => {
       try {
         const payments = window.Square.payments(config.applicationId, config.locationId);
+        // `postalCode: false` used to be here to suppress Square's own
+        // built-in ZIP prompt (this form collects billing ZIP itself,
+        // separately styled to match AuthNetForm's layout) -- but the real
+        // Square SDK doesn't support a boolean postalCode option at all. It
+        // expects postalCode to be a string (a prefill value) or omitted
+        // entirely; passing false threw "InvalidOptionError: Invalid type
+        // 'postalCode'... Expected 'string'" INSIDE this try/catch on every
+        // single card form load, silently surfacing as "Failed to load
+        // payment form" with no indication the real cause was a bad option,
+        // not a network/config problem. Square decides on its own whether
+        // to show an internal postal-code prompt based on the card's
+        // issuing country -- there's no documented way to force it off, so
+        // just omit the option instead of passing an invalid value.
         const card = await payments.card({
           style: SQUARE_CARD_STYLE,
-          // We collect billing ZIP ourselves in a separately-styled field
-          // (matches AuthNetForm's layout) rather than Square's built-in one.
-          postalCode: false,
         });
         await card.attach(containerRef.current);
         cardRef.current = card;
         setCardReady(true);
       } catch (err) {
+        // The user-facing message is deliberately generic, but log the real
+        // cause -- an invalid options bug here previously took real
+        // investigation to root-cause specifically because the console
+        // never showed anything beyond the generic message.
+        console.error('[SquareCardForm] card init failed:', err?.name, err?.message);
         onError?.('Failed to load payment form. Please refresh.');
       }
     };

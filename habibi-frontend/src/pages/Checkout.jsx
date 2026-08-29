@@ -25,10 +25,10 @@ const TIP_PCTS    = [0, 0.05, 0.1, 0.15, 0.2, 'custom'];
 
 const ALT_PAYMENTS = [
   { id: 'paypal',    label: 'PayPal',           img: '/images/partners/paypal.png' },
-  { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay.png' },
-  { id: 'zelle',     label: 'Zelle',            emoji: '💙' },
-  { id: 'cashapp',   label: 'Cash App',         emoji: '💚' },
-  { id: 'cash',      label: 'Cash on Delivery', emoji: '💵' },
+  { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay-v2.png' },
+  { id: 'zelle',     label: 'Zelle',            img: '/images/partners/zelle.png' },
+  { id: 'cashapp',   label: 'Cash App',         img: '/images/partners/cashapp.png' },
+  { id: 'cash',      label: 'Cash on Delivery', img: '/images/partners/cash-on-delivery.png' },
 ];
 
 // Methods that go through an offline/modal flow
