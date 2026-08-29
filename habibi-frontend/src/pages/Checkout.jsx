@@ -12,6 +12,8 @@ import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
 import SquareCardForm from '../components/SquareCardForm';
 import '../components/SquareCardForm.css';
+import CloverCardForm from '../components/CloverCardForm';
+import '../components/CloverCardForm.css';
 import PayPalButton from '../components/PayPalButton';
 import GooglePayButton from '../components/GooglePayButton';
 import OfflinePayModal from '../components/OfflinePayModal';
@@ -1682,6 +1684,16 @@ const Checkout = () => {
                 )}
                 {showCardForm && activeCardConfig?.provider === 'square' && (
                   <SquareCardForm
+                    config={activeCardConfig}
+                    amount={total}
+                    orderNumber={pendingOrderNum}
+                    showSaveOption={false /* card-on-file saving lands in a later phase */}
+                    onSuccess={handleAuthNetSuccess}
+                    onError={handleCardError}
+                  />
+                )}
+                {showCardForm && activeCardConfig?.provider === 'clover' && (
+                  <CloverCardForm
                     config={activeCardConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}

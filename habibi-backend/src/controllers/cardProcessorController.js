@@ -5,6 +5,7 @@ const { encryptObject, decryptObject, decrypt } = require('../utils/encrypt');
 const { deactivateAllCardProcessors } = require('../services/cardProcessorRegistry');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const squareService = require('../services/squareService');
+const cloverService = require('../services/cloverService');
 
 // Non-secret fields per provider — safe to send back to the browser as-is.
 // Everything else in `credentials` is a real secret and must never leave
@@ -94,8 +95,16 @@ const chargeCardEndpoint = async (req, res) => {
         locationId:  active.account.credentials.locationId,
         environment: active.account.environment,
       });
+    } else if (active.provider === 'clover') {
+      result = await cloverService.chargeCard({
+        sourceToken:  sourceId,
+        amount,
+        orderNumber,
+        privateToken: active.account.credentials.privateToken,
+        environment:  active.account.environment,
+      });
     } else {
-      return res.status(503).json({ error: 'Clover charging is not available yet.' });
+      return res.status(503).json({ error: 'Payment processor not configured.' });
     }
 
     if (orderNumber) {

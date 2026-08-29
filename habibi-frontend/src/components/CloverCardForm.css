@@ -1,0 +1,10 @@
+/* Reuses AuthNetForm.css's .authnet-* classes for everything except the
+   Clover-specific mount points below -- Checkout.jsx already imports
+   AuthNetForm.css, which is why this file only adds what's new. */
+
+.clover-card-container {
+  /* .authnet-input supplies the border/background/radius; Clover's SDK
+     renders its own iframe inside once each element.mount() resolves. */
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+}
