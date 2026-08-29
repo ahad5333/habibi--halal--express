@@ -9,26 +9,36 @@ const SQUARE_JS = {
 
 // Square's card element is a small hosted iframe -- it does its own PCI-safe
 // tokenization, so unlike AuthNetForm.jsx's plain <input>s, we don't get
-// full control over every pixel. This is the closest match to the site's
-// dark theme + gold focus accent that Square's supported style hooks allow
-// (see the payments plan's PCI/styling tradeoff note for why).
+// full control over every pixel.
+//
+// This box is deliberately LIGHT-themed, not matched to the site's dark
+// theme, even though everything else on this page is dark. Reason: when a
+// customer's browser autofills a saved card into this field, the browser
+// forces its OWN background color on the input (a pale white/blue) that
+// Square's style API has no hook to override -- confirmed against Square's
+// official CardOptions/CardClassSelectors reference, which only exposes
+// focus/error/placeholder selectors, nothing for autofill state. White text
+// on our normal dark background would go invisible the instant that forced
+// pale background appears. Starting the box light-themed means the
+// browser's forced autofill color is already close to what we chose on
+// purpose, so autofill never creates a sudden unreadable state.
 const SQUARE_CARD_STYLE = {
   input: {
-    color:            '#ffffff',
+    color:            '#1a1a1a',
     fontSize:         '14px',
     fontFamily:       'inherit',
-    backgroundColor:  'transparent',
+    backgroundColor:  '#ffffff',
   },
-  'input::placeholder': { color: 'rgba(255,255,255,0.25)' },
+  'input::placeholder': { color: 'rgba(0,0,0,0.35)' },
   '.input-container': {
-    borderColor:  'rgba(255,255,255,0.12)',
+    borderColor:  'rgba(0,0,0,0.15)',
     borderRadius: '8px',
     borderWidth:  '1px',
   },
   '.input-container.is-focus': { borderColor: '#E5B64E' },
   '.input-container.is-error': { borderColor: '#ff5252' },
-  '.message-text': { color: '#ff5252' },
-  '.message-icon': { color: '#ff5252' },
+  '.message-text': { color: '#c0392b' },
+  '.message-icon': { color: '#c0392b' },
 };
 
 export default function SquareCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {

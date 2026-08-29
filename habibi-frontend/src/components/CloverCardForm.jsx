@@ -9,12 +9,19 @@ const CLOVER_JS = {
 
 // Clover's documented style hooks are narrower than Square's (just `body`
 // and `input`, no confirmed focus/invalid states) -- this is the verified
-// subset, not a guess. Same PCI/styling tradeoff as SquareCardForm: near-
-// identical to the site's theme, not pixel-identical, because real card
-// data lives inside Clover's own hosted iframes.
+// subset, not a guess.
+//
+// Light-themed for the same reason as SquareCardForm's SQUARE_CARD_STYLE:
+// a browser autofilling a saved card forces its own pale background on the
+// input with no style hook to override it, so white-on-dark text would go
+// invisible the moment that happens. Starting light avoids the mismatch.
+// backgroundColor here is unverified against a live Clover account (not
+// yet activated -- see project notes) but appears in Clover's own iframe
+// customization examples; re-check this renders correctly once real
+// Clover credentials are live.
 const CLOVER_ELEMENT_STYLE = {
   body:  { fontFamily: 'inherit', fontSize: '14px' },
-  input: { fontFamily: 'inherit', fontSize: '14px', color: '#ffffff' },
+  input: { fontFamily: 'inherit', fontSize: '14px', color: '#1a1a1a', backgroundColor: '#ffffff' },
 };
 
 export default function CloverCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {
