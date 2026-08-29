@@ -126,8 +126,23 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
     setProcessing(true);
 
     try {
+      // Square's tokenize() validates whatever object you pass it as a full
+      // "verificationDetails" payload -- passing billingContact alone (the
+      // old code) triggered "verificationDetails.intent is required", then
+      // (once fixed) the same for customerInitiated/sellerKeyedIn, then
+      // amount/currencyCode -- confirmed against the real production SDK by
+      // adding fields one at a time until zero verificationDetails errors
+      // remained. intent 'CHARGE' (not STORE) because this call charges the
+      // card; customerInitiated/sellerKeyedIn reflect that the customer is
+      // typing their own card into this checkout page, not staff keying one
+      // in on their behalf.
       const result = await cardRef.current.tokenize({
         billingContact: { postalCode: billingZip.trim(), givenName: cardName || undefined },
+        intent: 'CHARGE',
+        customerInitiated: true,
+        sellerKeyedIn: false,
+        amount: parseFloat(amount || 0).toFixed(2),
+        currencyCode: 'USD',
       });
       if (result.status !== 'OK') {
         const msg = result.errors?.[0]?.message || 'Card error. Check your details.';
