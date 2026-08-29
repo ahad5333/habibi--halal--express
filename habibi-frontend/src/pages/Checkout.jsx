@@ -1687,7 +1687,7 @@ const Checkout = () => {
                     config={activeCardConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}
-                    showSaveOption={false /* card-on-file saving lands in a later phase */}
+                    showSaveOption={isLoggedIn}
                     onSuccess={handleAuthNetSuccess}
                     onError={handleCardError}
                   />
@@ -1697,7 +1697,7 @@ const Checkout = () => {
                     config={activeCardConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}
-                    showSaveOption={false /* card-on-file saving lands in a later phase */}
+                    showSaveOption={isLoggedIn}
                     onSuccess={handleAuthNetSuccess}
                     onError={handleCardError}
                   />

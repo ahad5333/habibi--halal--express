@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Lock } from 'lucide-react';
+import { savedPaymentsAPI } from '../services/api';
 
 const SQUARE_JS = {
   production: 'https://web.squarecdn.com/v1/square.js',
@@ -121,8 +122,28 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
         throw new Error(data.error || 'Payment declined.');
       }
 
-      // Card-on-file saving comes in a later phase -- showSaveOption/saveCard
-      // are accepted here (same prop contract as AuthNetForm) but not yet wired.
+      // Best-effort: vault the card if the customer opted in. Square's
+      // tokens are single-use just like Accept.js's opaque data, so the
+      // token that just paid for the order can't also be used to save the
+      // card -- tokenize a second time (the card element is still mounted)
+      // to get a fresh one for vaulting. Never let a save failure affect
+      // the order itself -- the charge already succeeded either way.
+      if (showSaveOption && saveCard) {
+        cardRef.current.tokenize().then(saveResult => {
+          if (saveResult.status !== 'OK') return;
+          const cardDetails = saveResult.details?.card || {};
+          return savedPaymentsAPI.saveFromTransaction({
+            provider:    'square',
+            sourceToken: saveResult.token,
+            brand:       cardDetails.brand ? cardDetails.brand.toLowerCase() : null,
+            last4:       cardDetails.last4 || null,
+            expiry:      (cardDetails.expMonth && cardDetails.expYear)
+                           ? `${String(cardDetails.expMonth).padStart(2, '0')}/${cardDetails.expYear}`
+                           : null,
+          });
+        }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
+      }
+
       onSuccess?.(data.transactionId);
     } catch (err) {
       onError?.(err.message || 'Payment failed. Please try again.');

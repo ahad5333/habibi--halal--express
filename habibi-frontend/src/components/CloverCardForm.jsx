@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Lock } from 'lucide-react';
+import { savedPaymentsAPI } from '../services/api';
 
 const CLOVER_JS = {
   production: 'https://checkout.clover.com/sdk.js',
@@ -102,8 +103,31 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
         throw new Error(data.error || 'Payment declined.');
       }
 
-      // Card-on-file saving comes in a later phase -- showSaveOption/saveCard
-      // are accepted here (same prop contract as the other card forms) but not yet wired.
+      // Best-effort: vault the card if the customer opted in. Clover's
+      // tokens are single-use like the other processors', so tokenize a
+      // second time (elements are still mounted) rather than reusing the
+      // one that already paid for the order. Never let a save failure
+      // affect the order itself -- the charge already succeeded either way.
+      // NOTE: exact metadata field names on the token result (brand/last4)
+      // aren't confirmed against a real Clover response yet -- these are
+      // the documented card-token fields, with a safe fallback to null
+      // (the card still saves and works, just without a brand/last4 badge)
+      // if the actual shape differs. Verify against a real save once
+      // credentials are live.
+      if (showSaveOption && saveCard) {
+        cloverRef.current.createToken().then(saveResult => {
+          if (saveResult.errors) return;
+          const card = saveResult.card || {};
+          return savedPaymentsAPI.saveFromTransaction({
+            provider:    'clover',
+            sourceToken: saveResult.token,
+            brand:       card.brand ? card.brand.toLowerCase() : null,
+            last4:       card.last4 || null,
+            expiry:      card.exp_month && card.exp_year ? `${String(card.exp_month).padStart(2, '0')}/${card.exp_year}` : null,
+          });
+        }).catch(err => console.error('[SavedCard] Could not save card for next time:', err.message));
+      }
+
       onSuccess?.(data.transactionId);
     } catch (err) {
       onError?.(err.message || 'Payment failed. Please try again.');

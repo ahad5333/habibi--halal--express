@@ -438,6 +438,16 @@ const createTables = async () => {
     await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS authnet_payment_profile_id VARCHAR(50)`);
     await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS expiry VARCHAR(7)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_payment_methods_user_id ON payment_methods(user_id)`);
+    // Square/Clover card-on-file references -- existing authnet_* columns
+    // are untouched and stay in use only when processor='authorize_net'.
+    // A saved card always charges through the processor that originally
+    // saved it (see cardProcessorController.chargeSavedCardEndpoint), so
+    // this needs to be remembered per-card, not read from "whichever
+    // processor happens to be active right now".
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS processor VARCHAR(20) DEFAULT 'authorize_net'`);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS processor_customer_ref VARCHAR(100)`);
+    await client.query(`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS processor_card_ref VARCHAR(100)`);
+    await client.query(`UPDATE payment_methods SET processor = 'authorize_net' WHERE processor IS NULL`);
 
     // ── Quick Payments log ──────────────────────────────────────────
     // Durable record of every charge made through the "Make a Payment" page

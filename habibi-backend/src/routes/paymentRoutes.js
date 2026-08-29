@@ -20,6 +20,7 @@ const {
 const {
   getPublicCardConfig,
   chargeCardEndpoint: chargeCardProcessorEndpoint,
+  chargeSavedCardEndpoint: chargeSavedCardProcessorEndpoint,
 } = require("../controllers/cardProcessorController");
 
 // ── Public ──────────────────────────────────────────────────────────────────
@@ -65,5 +66,10 @@ router.post("/verify", verifyPayment);
 // Charge a saved card — authenticated (via the blanket protect above) so a
 // saved card can only ever be charged by the account that saved it.
 router.post("/authnet/charge-saved", chargeSavedCardEndpoint);
+// Processor-agnostic version — dispatches per-card based on
+// payment_methods.processor, covering Square/Clover saved cards too.
+// This is what the frontend now calls; the authnet-specific route above
+// stays reachable but unused going forward.
+router.post("/card/charge-saved", chargeSavedCardProcessorEndpoint);
 
 module.exports = router;

@@ -6,6 +6,7 @@ const { deactivateAllCardProcessors } = require('../services/cardProcessorRegist
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
+const { chargeCustomerProfile } = require('../services/authNetService');
 
 // Non-secret fields per provider — safe to send back to the browser as-is.
 // Everything else in `credentials` is a real secret and must never leave
@@ -36,6 +37,27 @@ async function getActiveCardProcessor() {
   }
 
   return null;
+}
+
+// ── Helper — fetch credentials for a SPECIFIC provider, active or not ────
+// Saved cards must keep working against whichever processor originally
+// saved them even after the admin switches the active one (see
+// chargeSavedCardEndpoint / paymentMethodController's delete flow) — this
+// is the "any account for this provider" lookup that makes that possible,
+// as opposed to getActiveCardProcessor()'s "whichever is active" lookup.
+async function getCardProcessorAccountByProvider(provider) {
+  if (provider === 'authorize_net') {
+    const res = await pool.query(`SELECT * FROM authorize_net_accounts ORDER BY is_active DESC, created_at DESC LIMIT 1`);
+    const account = res.rows[0];
+    if (account?.transaction_key) account.transaction_key = decrypt(account.transaction_key);
+    return account || null;
+  }
+  const res = await pool.query(
+    `SELECT * FROM card_processor_accounts WHERE provider = $1 ORDER BY is_active DESC, created_at DESC LIMIT 1`,
+    [provider]
+  );
+  const row = res.rows[0];
+  return row ? { ...row, credentials: decryptObject(row.credentials || {}) } : null;
 }
 
 // ── Public: which processor (if any) is live, and its non-secret config ──
@@ -125,6 +147,91 @@ const chargeCardEndpoint = async (req, res) => {
       `INSERT INTO quick_payments (order_number, amount, reason, note, customer_name, customer_phone, transaction_id, payment_processor)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [orderNumber || null, parseFloat(amount), reason || null, note || null, customerName || null, customerPhone || null, result.transactionId, active.provider]
+    ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
+
+    res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
+  } catch (err) {
+    res.status(err.statusCode || 402).json({ error: err.message || 'Payment failed.' });
+  }
+};
+
+// ── Authenticated: charge a previously-saved card, any processor ─────────
+// A saved card always charges through the processor that originally saved
+// it (payment_methods.processor), not whatever's currently active in the
+// admin panel -- otherwise switching processors would silently break every
+// saved card from the old one.
+const chargeSavedCardEndpoint = async (req, res) => {
+  const { paymentMethodId, amount: clientAmount, orderNumber } = req.body;
+  if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId required.' });
+
+  try {
+    // Scoped to req.user.id -- a saved card can only ever be charged by the
+    // account that saved it, never by id alone.
+    const cardRes = await pool.query(
+      `SELECT processor, authnet_customer_profile_id, authnet_payment_profile_id, processor_customer_ref, processor_card_ref
+         FROM payment_methods WHERE id=$1 AND user_id=$2`,
+      [paymentMethodId, req.user.id]
+    );
+    if (!cardRes.rows.length) return res.status(404).json({ error: 'Saved card not found.' });
+    const card = cardRes.rows[0];
+    const provider = card.processor || 'authorize_net';
+
+    const { amount } = await resolveChargeAmount(orderNumber, clientAmount);
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount.' });
+    }
+
+    const account = await getCardProcessorAccountByProvider(provider);
+    if (!account) {
+      return res.status(503).json({ error: "This saved card's payment processor is no longer available — please add a new card." });
+    }
+
+    let result;
+    if (provider === 'authorize_net') {
+      result = await chargeCustomerProfile({
+        customerProfileId:        card.authnet_customer_profile_id,
+        customerPaymentProfileId: card.authnet_payment_profile_id,
+        amount, orderNumber,
+        apiLoginId:     account.api_login_id,
+        transactionKey: account.transaction_key,
+        environment:    account.environment,
+      });
+    } else if (provider === 'square') {
+      result = await squareService.chargeCustomerCard({
+        customerId: card.processor_customer_ref,
+        cardId:     card.processor_card_ref,
+        amount, orderNumber,
+        accessToken: account.credentials.accessToken,
+        locationId:  account.credentials.locationId,
+        environment: account.environment,
+      });
+    } else if (provider === 'clover') {
+      result = await cloverService.chargeCustomerCard({
+        cardToken: card.processor_card_ref,
+        amount, orderNumber,
+        privateToken: account.credentials.privateToken,
+        environment:  account.environment,
+      });
+    } else {
+      return res.status(400).json({ error: 'Unknown payment processor.' });
+    }
+
+    if (orderNumber) {
+      await pool.query(
+        `UPDATE guest_orders
+            SET payment_status = 'paid',
+                payment_intent_id = $1,
+                payment_processor = $2,
+                updated_at = NOW()
+          WHERE order_number = $3`,
+        [result.transactionId, provider, orderNumber]
+      );
+    }
+
+    await pool.query(
+      `INSERT INTO quick_payments (order_number, amount, reason, transaction_id, payment_processor)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [orderNumber || null, parseFloat(amount), 'saved_card', result.transactionId, provider]
     ).catch(err => console.error('[QuickPay] Failed to log payment record:', err.message));
 
     res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
@@ -285,8 +392,10 @@ const setActiveAccount = async (req, res) => {
 
 module.exports = {
   getActiveCardProcessor,
+  getCardProcessorAccountByProvider,
   getPublicCardConfig,
   chargeCardEndpoint,
+  chargeSavedCardEndpoint,
   listAccounts,
   createAccount,
   updateAccount,

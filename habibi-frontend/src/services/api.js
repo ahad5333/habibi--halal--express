@@ -341,8 +341,11 @@ export const savedPaymentsAPI = {
 };
 
 // ─── Charge a saved card (checkout, no card form involved) ──────────────────
+// Processor-agnostic — the backend looks up which processor actually saved
+// this specific card and dispatches there, regardless of which processor
+// is currently active in the admin panel.
 export const chargeSavedCard = (data) =>
-  request('/api/payments/authnet/charge-saved', { method: 'POST', body: JSON.stringify(data) });
+  request('/api/payments/card/charge-saved', { method: 'POST', body: JSON.stringify(data) });
 
 // ─── Partner Portal ──────────────────────────────────────────────
 
