@@ -34,6 +34,16 @@
 
 html {
   overflow-x: hidden;
+  /* `overflow-x: hidden` alone doesn't stop iOS Safari's elastic rubber-band
+     overscroll from dragging the viewport a little past the right edge --
+     Safari can compute a wider layout-overflow (scrollWidth) than what's
+     actually painted for transform-animated content (the marquees on the
+     home page, in particular) even though nothing visibly overflows, and a
+     stray horizontal swipe/bounce briefly reveals the page background where
+     content doesn't reach. overscroll-behavior-x is the targeted fix for
+     that -- it disables the bounce on this axis specifically, where nothing
+     is meant to scroll anyway. */
+  overscroll-behavior-x: none;
   scroll-behavior: smooth;
 }
 
