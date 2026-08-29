@@ -2984,7 +2984,11 @@
        so the card's lower portion spills past the poster into the dark
        section below, per client request -- the top offset (228px of
        visible poster above the card) is unchanged. */
-    min-height: clamp(400px, 107vw, 430px);
+    /* Kept low on purpose -- content (padding + margin-top + card height +
+       negative margin-bottom) always computes taller than this floor, so
+       this never actually binds and the card's on-poster/below-poster
+       split stays purely margin-driven and consistent across widths. */
+    min-height: clamp(300px, 60vw, 350px);
     padding: 3.25rem 0.75rem 2rem;
     align-items: center;
     justify-content: flex-start;
@@ -3006,7 +3010,7 @@
   .hero-content {
     width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
-    margin: 13rem auto -3.5rem;
+    margin: 13rem auto -10rem;
     padding: 0.875rem 1rem;
     border-radius: 14px;
     text-align: center;
@@ -3232,7 +3236,14 @@
 /* ── Hero bottom light ── */
 @media (max-width: 768px) {
   .hero-bottom-light {
-    padding-top: 2.5rem;
+    /* Bumped up from 2.5rem -- with the hero card now set to sit half on/
+       half off the poster (see .hero-content's margin-top/-bottom in the
+       hero-section media query above), this is the rule that actually
+       renders (a second, later .hero-bottom-light block in this same
+       max-width:768px breakpoint wins the cascade over an earlier one),
+       and 2.5rem measured out to the title text sitting flush against the
+       card with no clearance at all. */
+    padding-top: 4rem;
     padding-bottom: 3rem;
   }
   .hero-bottom-title-exact {
