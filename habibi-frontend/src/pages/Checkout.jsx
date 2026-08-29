@@ -1819,7 +1819,11 @@ const Checkout = () => {
                         ? <img src={m.img} alt={m.label} className="alt-pay-icon" onError={e => e.target.style.display='none'} />
                         : <span className="alt-pay-emoji">{m.emoji}</span>
                       }
-                      <span>{m.label}</span>
+                      {/* PayPal's own logo already includes the "PayPal"
+                          wordmark -- a separate text label next to it was
+                          redundant. Other logos here are icon-only marks
+                          without their name baked in, so they still need it. */}
+                      {m.id !== 'paypal' && <span>{m.label}</span>}
                     </button>
                   ))}
                 </div>
