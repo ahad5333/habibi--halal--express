@@ -1741,7 +1741,20 @@ const Checkout = () => {
                     to be active (see cardConfigured effect above); the
                     admin "Payment Methods" toggle alone isn't enough */}
                 {isPaymentActive('card') && cardConfigured && (
-                  <div className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => { setPaymentMethod('card'); setIntentReady(false); }}>
+                  <div
+                    className={`payment-option ${paymentMethod === 'card' ? 'active' : ''}`}
+                    onClick={() => {
+                      setPaymentMethod('card');
+                      // No saved cards to pick from -- reveal the new-card form
+                      // immediately instead of requiring a separate "Continue to
+                      // Payment" click. handlePrepareCardPayment() already runs
+                      // validateOrder() first, so it safely no-ops (surfacing a
+                      // clear, scrolled-to error) if delivery details aren't
+                      // filled in yet, same safety net the old two-click flow had.
+                      if (savedCards.length > 0) setIntentReady(false);
+                      else handlePrepareCardPayment();
+                    }}
+                  >
                     <div className="flex items-center gap-3">
                       <CreditCard size={18} className="text-primary" />
                       {/* Deliberately processor-agnostic — the admin can switch
@@ -1777,7 +1790,7 @@ const Checkout = () => {
                     <button
                       type="button"
                       className={`saved-card-chip saved-card-new ${!selectedSavedCardId ? 'active' : ''}`}
-                      onClick={() => { setSelectedSavedCardId(null); setIntentReady(false); }}
+                      onClick={() => { setSelectedSavedCardId(null); handlePrepareCardPayment(); }}
                     >
                       <Plus size={14} /> Use a new card
                     </button>
