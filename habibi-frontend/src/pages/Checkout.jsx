@@ -76,6 +76,7 @@ const Checkout = () => {
   const [driverNote, setDriverNote]       = useState('');
   const [leaveAtDoor, setLeaveAtDoor]     = useState(false);
   const [aptUnit, setAptUnit]             = useState('');
+  const [businessName, setBusinessName]   = useState('');
   const [couponCode, setCouponCode]         = useState('');
   const [couponApplied, setCouponApplied]   = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -533,6 +534,12 @@ const Checkout = () => {
       (extraHelpNeeded && extraHelpNote.trim()) ? `Extra help needed: ${extraHelpNote.trim()}` : '',
       driverNote.trim(),
     ].filter(Boolean).join(' '),
+    leave_at_door:     (!isDineIn && deliveryMode === 'delivery') ? leaveAtDoor : false,
+    apt_unit:          aptUnit.trim(),
+    driver_note:       driverNote.trim(),
+    extra_help_needed: extraHelpNeeded,
+    extra_help_note:   extraHelpNeeded ? extraHelpNote.trim() : '',
+    business_name:     businessName.trim(),
     table_number:          isDineIn ? (dineInTable?.table_name || '') : undefined,
     payment_method:        paymentMethod,
     sub_total:    parseFloat(subtotal.toFixed(2)),
@@ -551,6 +558,8 @@ const Checkout = () => {
     expected_time: timing === 'asap'
       ? 'ASAP'
       : `${scheduleDateLabel(scheduleDate)} at ${scheduleTime}`,
+    scheduled_date: timing === 'asap' ? null : scheduleDate,
+    scheduled_time: timing === 'asap' ? null : scheduleTime,
     items: items.map(i => {
       const choiceNote = (i.choiceLabels || []).join(' | ');
       const addonsNote = (i.addons || [])
@@ -1286,6 +1295,20 @@ const Checkout = () => {
                         <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                           Helps your driver find you faster
                         </p>
+                      </div>
+
+                      {/* Business name (optional) */}
+                      <div className="form-group mb-4">
+                        <label className="form-label" htmlFor="ck-business-name">BUSINESS NAME (OPTIONAL)</label>
+                        <input
+                          id="ck-business-name"
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Acme Corp"
+                          value={businessName}
+                          onChange={e => setBusinessName(e.target.value)}
+                          autoComplete="organization"
+                        />
                       </div>
 
                       {/* Estimated delivery time badge */}

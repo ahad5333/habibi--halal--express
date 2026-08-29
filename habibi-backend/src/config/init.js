@@ -128,6 +128,11 @@ const createTables = async () => {
     // ── Locations: add pre-selected delivery addresses ─────────────
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_addresses JSONB DEFAULT '[]'`);
 
+    // Custom per-location text Roadie sends the driver as the first half of
+    // its "what do you need to know for pickup?" message (second half is
+    // auto-generated: "Please ask for order #...").
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS roadie_pickup_message VARCHAR(500) DEFAULT ''`);
+
     // ── Categories ────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -302,6 +307,22 @@ const createTables = async () => {
     // Which processor actually charged this order -- same reasoning as
     // quick_payments.payment_processor above.
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_processor VARCHAR(20)`);
+
+    // Discrete fields for the Roadie dispatch message-construction logic --
+    // these used to only exist smushed into delivery_address/delivery_instructions
+    // text, which every other consumer (kitchen display, dispatch SMS, admin
+    // Orders view) still reads in that combined form, so those stay untouched.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS leave_at_door     BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS apt_unit          VARCHAR(50) DEFAULT ''`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS driver_note       VARCHAR(255) DEFAULT ''`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS extra_help_needed BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS extra_help_note   TEXT DEFAULT ''`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS business_name     VARCHAR(255) DEFAULT ''`);
+    // Machine-parseable counterpart to expected_time (which is a free-text
+    // display label like "Tomorrow at 19:30") -- Roadie's pickup-time logic
+    // needs real date/time values, not a label meant for humans.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS scheduled_date    DATE`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS scheduled_time    VARCHAR(5)`);
 
     // guest_orders.placed_at/updated_at were declared as naive TIMESTAMP here
     // from the very start (not drift from a later ALTER — the original design

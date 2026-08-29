@@ -5,7 +5,7 @@ const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance, feeFromMiles } = require("../utils/googleMaps");
+const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMaps");
 const { getFeeForDistance } = require("../utils/deliveryFee");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const emailService = require("../services/emailService");
@@ -156,6 +156,8 @@ const createGuestOrder = async (req, res) => {
       utm_source, utm_medium, utm_campaign, utm_content,
       is_gift, gift_recipient_name, gift_recipient_phone, gift_message,
       payment_reference,
+      leave_at_door, apt_unit, driver_note, extra_help_needed, extra_help_note, business_name,
+      scheduled_date, scheduled_time,
     } = req.body;
 
     // Zelle/Cash App have no automated confirmation (unlike card/PayPal, which are
@@ -281,7 +283,22 @@ const createGuestOrder = async (req, res) => {
           }
         }
         const dist = await getDistance(origin, addrStr);
-        if (dist) {
+        if (dist?.unavailable) {
+          // Maps service itself isn't reachable/configured — not evidence the
+          // address is bad, so fail open with the same minimum fee floor as
+          // before (prevents a $0 delivery fee, nothing stronger available).
+          const minFee = feeFromMiles(0) ?? 2.99;
+          if (clientDelFee < minFee - 0.10) {
+            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          }
+        } else if (!dist) {
+          // Maps IS reachable and configured, but couldn't find or route to
+          // this specific address at all — this is what used to silently fall
+          // through to the minimum-fee-floor check below, letting orders with
+          // bogus/unresolvable addresses (e.g. gibberish, or genuinely
+          // non-existent addresses) through as long as the client sent >=$2.99.
+          return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
+        } else {
           // No per-location radius cutoff — per owner decision (2026-07-27), every
           // address is accepted regardless of distance. getFeeForDistance's own
           // tier table (null beyond 350mi) is the only remaining ceiling.
@@ -292,12 +309,17 @@ const createGuestOrder = async (req, res) => {
           if (clientDelFee < serverDelFee - 0.10) {
             return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
           }
-        } else {
-          // Maps unavailable or address unresolvable — enforce minimum fee floor so
-          // a deliberately non-geocodable address cannot be used to submit $0 delivery fee.
-          const minFee = feeFromMiles(0) ?? 2.99;
-          if (clientDelFee < minFee - 0.10) {
-            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+
+          // Distance alone doesn't rule out a real, road-reachable address just
+          // across the US border (e.g. Canada/Mexico within a few hundred
+          // miles) — the owner's "no mileage cap" decision was about not
+          // rejecting far-but-domestic addresses, not about delivering
+          // internationally. Only acts on an actual country mismatch; a null
+          // result (couldn't determine) fails open rather than blocking a
+          // real US order over a transient geocoding hiccup.
+          const country = await geocodeCountry(addrStr);
+          if (country && country !== 'US') {
+            return res.status(400).json({ message: "We're sorry, we can only deliver within the United States." });
           }
         }
       } catch (_) { /* non-fatal */ }
@@ -520,8 +542,9 @@ const createGuestOrder = async (req, res) => {
          sub_total, tax, service_fee, delivery_fee, tip, discount, total,
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
          is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id,
-         payment_reference)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31)
+         payment_reference, leave_at_door, apt_unit, driver_note, extra_help_needed, extra_help_note, business_name,
+         scheduled_date, scheduled_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39)
        RETURNING id`,
       [
         order_number,
@@ -555,6 +578,14 @@ const createGuestOrder = async (req, res) => {
         ['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid',
         resolvedLocationId,
         String(payment_reference || '').trim().slice(0, 100) || null,
+        leave_at_door === true || leave_at_door === 'true',
+        String(apt_unit || '').slice(0, 50),
+        String(driver_note || '').slice(0, 255),
+        extra_help_needed === true || extra_help_needed === 'true',
+        String(extra_help_note || ''),
+        String(business_name || '').slice(0, 255),
+        scheduled_date || null,
+        scheduled_time || null,
       ]
     );
 

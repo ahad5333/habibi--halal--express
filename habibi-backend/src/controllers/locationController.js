@@ -62,7 +62,7 @@ const createLocation = async (req, res) => {
   const {
     title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours,
     delivery_radius_miles, delivery_cost, is_active, preference_level,
-    image_url, holidays, location_note, tablet_username, tablet_password,
+    image_url, holidays, location_note, roadie_pickup_message, tablet_username, tablet_password,
     self_delivery_enabled,
     partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe,
   } = req.body;
@@ -91,16 +91,16 @@ const createLocation = async (req, res) => {
       `INSERT INTO locations (
          title, exact_address, brief_address, latitude, longitude, phone_number, working_days_hours,
          delivery_radius_miles, delivery_cost, is_active, preference_level,
-         image_url, holidays, location_note, tablet_username, tablet_password_hash,
+         image_url, holidays, location_note, roadie_pickup_message, tablet_username, tablet_password_hash,
          self_delivery_enabled,
          partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe
        )
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
        RETURNING *`,
       [
         title, exact_address, brief_address || exact_address, latitude, longitude, phone_number, working_days_hours,
         delivery_radius_miles || 5, delivery_cost || 0, is_active !== false, preference_level || 0,
-        image_url, holidays || null, location_note || null, tablet_username || null, tabletPasswordHash,
+        image_url, holidays || null, location_note || null, roadie_pickup_message || '', tablet_username || null, tabletPasswordHash,
         !!self_delivery_enabled,
         partner_ubereats !== false, partner_doordash !== false, partner_grubhub !== false,
         partner_roadie !== false, partner_instacart !== false, partner_hhe !== false,

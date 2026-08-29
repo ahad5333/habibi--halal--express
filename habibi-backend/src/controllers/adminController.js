@@ -96,7 +96,7 @@ const getAllOrders = async (req, res) => {
         status: o.order_status || 'pending',
         driver_instructions: o.delivery_instructions || '',
         notes: '',
-        cancellation_reason: '',
+        cancellation_reason: o.cancellation_reason || '',
         is_gift: o.is_gift || false,
         gift_recipient_name:  o.gift_recipient_name  || null,
         gift_recipient_phone: o.gift_recipient_phone || null,
@@ -687,7 +687,35 @@ const bulkDeleteCustomers = async (req, res) => {
     if (numericIds.length === 0) {
       return res.status(400).json({ message: 'No valid customer IDs provided.' });
     }
-    const result = await pool.query('DELETE FROM users WHERE id = ANY($1) AND role = ANY($2) RETURNING id', [numericIds, CUSTOMER_ROLES]);
+    // Was a hard DELETE — guest_orders.user_id and reviews.user_id are FK
+    // NO ACTION (not CASCADE), so deleting any customer who ever placed an
+    // order or left a review while logged in failed outright with a
+    // constraint-violation 500, deleting nobody in the batch at all. Worse,
+    // customers WITHOUT orders/reviews *would* hard-delete, silently
+    // cascading away their saved addresses, payment methods, and even their
+    // OWN referral history for people THEY referred (referrals.referrer_id
+    // is CASCADE) — unrecoverable, no confirmation. Anonymize instead, same
+    // GDPR-style pattern already used by the customer's own self-service
+    // "Delete Account" flow (userController.js) — preserves order/review
+    // history for accounting, works for every customer regardless of
+    // activity, and the account becomes unusable (email replaced with an
+    // unguessable placeholder, password replaced with a random hash) even
+    // though nothing here actually checks is_active at login time.
+    const randomHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+    const result = await pool.query(
+      `UPDATE users
+          SET is_active = FALSE,
+              email = CONCAT('deleted_', id, '@habibi.removed'),
+              name = 'Deleted User',
+              phone_number = NULL,
+              password_hash = $1,
+              reset_token = NULL,
+              reset_token_expires = NULL,
+              updated_at = NOW()
+        WHERE id = ANY($2) AND role = ANY($3)
+        RETURNING id`,
+      [randomHash, numericIds, CUSTOMER_ROLES]
+    );
     res.json({ deleted_count: result.rowCount });
   } catch (error) {
     res.status(500).json(safeError(error));
@@ -783,7 +811,7 @@ const getAdminLocations = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, title, brief_address, exact_address, phone_number,
-              working_days_hours, holidays, location_note, is_active, accepting_orders,
+              working_days_hours, holidays, location_note, roadie_pickup_message, is_active, accepting_orders,
               delivery_radius_miles, delivery_cost, latitude, longitude,
               preference_level, image_url, tablet_username, delivery_addresses,
               partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
@@ -803,7 +831,7 @@ const updateAdminLocation = async (req, res) => {
     const {
       title, phone_number, working_days_hours, is_active, accepting_orders,
       delivery_radius_miles, delivery_cost,
-      holidays, location_note, preference_level, image_url,
+      holidays, location_note, roadie_pickup_message, preference_level, image_url,
       tablet_username, tablet_password, delivery_addresses,
       exact_address, brief_address, latitude, longitude,
       partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
@@ -853,6 +881,7 @@ const updateAdminLocation = async (req, res) => {
            self_delivery_enabled = $23,
            location_note = $24,
            partner_instacart = $25, partner_hhe = $26,
+           roadie_pickup_message = $27,
            updated_at=NOW()
        WHERE id=$13 RETURNING *`,
       [
@@ -873,6 +902,7 @@ const updateAdminLocation = async (req, res) => {
         !!partner_ubereats, !!partner_doordash, !!partner_grubhub, !!partner_roadie, !!self_delivery_enabled,
         location_note || null,
         !!partner_instacart, !!partner_hhe,
+        roadie_pickup_message || '',
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });

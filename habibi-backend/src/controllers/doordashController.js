@@ -24,10 +24,14 @@ const createDelivery = async (req, res) => {
   const { order_id } = req.params;
   try {
     const orderResult = await pool.query(
-      `SELECT id, order_number, customer_name, customer_phone,
-              delivery_address, delivery_city, delivery_zip, delivery_state,
-              delivery_instructions, total
-       FROM guest_orders WHERE id = $1`,
+      `SELECT go.id, go.order_number, go.customer_name, go.customer_phone,
+              go.delivery_address, go.delivery_city, go.delivery_zip, go.delivery_state,
+              go.delivery_instructions, go.total,
+              loc.title AS location_title, loc.phone_number AS location_phone,
+              loc.exact_address AS location_exact_address
+       FROM guest_orders go
+       LEFT JOIN locations loc ON loc.id = go.location_id
+       WHERE go.id = $1`,
       [order_id]
     );
     if (!orderResult.rows.length) return res.status(404).json({ message: 'Order not found' });
@@ -36,11 +40,14 @@ const createDelivery = async (req, res) => {
     const dropoffAddress = [order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_zip]
       .filter(Boolean).join(', ');
 
+    // Pull pickup info from the order's actual servicing location -- the
+    // business has 3 real locations, so a single hardcoded address was wrong
+    // for any order not placed against the one env-var location.
     const payload = {
       external_delivery_id:    `habibi-${order.order_number}`,
-      pickup_address:          RESTAURANT_ADDRESS,
-      pickup_business_name:    RESTAURANT_NAME,
-      pickup_phone_number:     RESTAURANT_PHONE,
+      pickup_address:          order.location_exact_address || RESTAURANT_ADDRESS,
+      pickup_business_name:    order.location_title || RESTAURANT_NAME,
+      pickup_phone_number:     order.location_phone || RESTAURANT_PHONE,
       pickup_instructions:     'Pick up at counter. Tell staff the order number.',
       dropoff_address:         dropoffAddress,
       dropoff_business_name:   order.customer_name || 'Customer',

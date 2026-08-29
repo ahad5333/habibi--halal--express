@@ -7,7 +7,7 @@ const BLANK_NEW_LOCATION = {
   title: '', exact_address: '', brief_address: '', latitude: '', longitude: '',
   phone_number: '', working_days_hours: '', delivery_radius_miles: 5, delivery_cost: 0,
   preference_level: 1, is_active: true,
-  holidays: '', location_note: '', image_url: '',
+  holidays: '', location_note: '', roadie_pickup_message: '', image_url: '',
   tablet_username: '', tablet_password: '',
   self_delivery_enabled: false,
   partner_ubereats: true, partner_doordash: true, partner_grubhub: true,
@@ -54,6 +54,7 @@ export default function Locations() {
       working_days_hours:    loc.working_days_hours || '',
       holidays:              loc.holidays || '',
       location_note:         loc.location_note || '',
+      roadie_pickup_message: loc.roadie_pickup_message || '',
       is_active:             loc.is_active,
       accepting_orders:      loc.accepting_orders !== false,
       delivery_radius_miles: loc.delivery_radius_miles || 5,
@@ -273,6 +274,10 @@ export default function Locations() {
                 <textarea className="input" rows={2} value={form.location_note} onChange={e => setForm({...form,location_note:e.target.value})} placeholder="Internal or customer-facing note about this location" />
               </div>
               <div className="field">
+                <label>Roadie Pickup Message <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(sent to the driver, up to 500 chars)</span></label>
+                <textarea className="input" rows={2} value={form.roadie_pickup_message} onChange={e => setForm({...form,roadie_pickup_message:e.target.value})} placeholder="e.g. Enter through the side door, ask for the manager" />
+              </div>
+              <div className="field">
                 <label>Preference Level (1 = highest priority)</label>
                 <input className="input" type="number" min="1" max="99" value={form.preference_level} onChange={e => setForm({...form,preference_level:+e.target.value})} />
               </div>
@@ -462,6 +467,10 @@ export default function Locations() {
               <div className="field">
                 <label>Location Note <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(up to 2 lines)</span></label>
                 <textarea className="input" rows={2} value={addForm.location_note} onChange={e => setAddForm({...addForm,location_note:e.target.value})} placeholder="Internal or customer-facing note about this location" />
+              </div>
+              <div className="field">
+                <label>Roadie Pickup Message <span className="text-muted" style={{fontWeight:400,fontSize:'0.7rem'}}>(sent to the driver, up to 500 chars)</span></label>
+                <textarea className="input" rows={2} value={addForm.roadie_pickup_message} onChange={e => setAddForm({...addForm,roadie_pickup_message:e.target.value})} placeholder="e.g. Enter through the side door, ask for the manager" />
               </div>
               <div className="field">
                 <label>Preference Level (1 = highest priority)</label>
