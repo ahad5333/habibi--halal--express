@@ -2971,10 +2971,19 @@
 /* ── Hero section — comprehensive mobile fix ─────────────────── */
 @media (max-width: 768px) {
   .hero-top-dark {
-    min-height: clamp(250px, 72vw, 320px);
-    padding: 3.25rem 0.75rem 4rem;
+    /* Was clamp(250px, 72vw, 320px) -- barely taller than the text card
+       itself (opaque black, ~255px), so the poster image behind it was
+       only ever visible as a thin sliver above the card instead of reading
+       as an actual hero banner. Taller box gives the poster real room.
+       justify-content:flex-end here didn't push the card down as its own
+       height grew (measured: <1px shift after a 130px taller box) --
+       flex-start + an explicit margin-top on .hero-content below is a
+       direct, predictable way to control exactly how much poster shows
+       above the card instead of depending on flex-end's exact behavior. */
+    min-height: clamp(470px, 122vw, 540px);
+    padding: 3.25rem 0.75rem 2rem;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     overflow: visible;
   }
   .hero-halal-badge {
@@ -2986,12 +2995,17 @@
   .hero-logo-watermark { display: none; }
   .floating-item { display: none; }
 
-  /* Single authoritative hero-content rule — applies identically to every phone */
+  /* Single authoritative hero-content rule — applies identically to every phone.
+     margin-bottom was -11rem to compensate for .hero-top-dark being barely
+     taller than this card, pulling .hero-bottom-light way up to close the
+     gap the card's own overflow left below the (short) box. Now that the
+     box is genuinely tall enough to contain the card, this only needs to
+     close whatever small gap remains -- see the matching padding-top cut on
+     .hero-bottom-light below, which was the other half of that compensation. */
   .hero-content {
     width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
-    margin: 0.75rem auto;
-    margin-bottom: -11rem;
+    margin: 8rem auto 0;
     padding: 0.875rem 1rem;
     border-radius: 14px;
     text-align: center;
@@ -3006,7 +3020,7 @@
     margin-bottom: 0.5rem;
   }
   .hero-bottom-light {
-    padding-top: 7.5rem;
+    padding-top: 3rem;
     padding-bottom: 3rem;
   }
   .hero-title-line-1,
