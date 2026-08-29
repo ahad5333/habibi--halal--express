@@ -64,7 +64,11 @@ const Checkout = () => {
   const [timing, setTiming]               = useState('asap');
   const [scheduleDate, setScheduleDate]   = useState(() => toDateStr(new Date()));
   const [scheduleTime, setScheduleTime]   = useState('19:30');
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  // No method pre-selected -- "Credit or Debit Card" looking already-active
+  // on page load (checkmark, active styling) with no form underneath it was
+  // confusing (looked selected but nothing to fill in); clicking it now
+  // both selects it AND reveals the form/saved-card picker, same click.
+  const [paymentMethod, setPaymentMethod] = useState(null);
   const [tipIndex, setTipIndex]           = useState(2);
   const [customTip, setCustomTip]         = useState('');
   const [extraHelpNeeded, setExtraHelpNeeded] = useState(false);
@@ -245,7 +249,7 @@ const Checkout = () => {
         // fall back to the first method that actually is, so a customer
         // never ends up with a hidden selection that can't be submitted.
         const isActive = (id) => providers.has(id);
-        if (!isActive(paymentMethod)) {
+        if (paymentMethod && !isActive(paymentMethod)) {
           const fallback = ['card', ...ALT_PAYMENTS.map(m => m.id)].find(isActive);
           if (fallback) setPaymentMethod(fallback);
         }
@@ -914,6 +918,7 @@ const Checkout = () => {
 
   // ── Main CTA logic ─────────────────────────────────────────────────────────
   const handlePlaceOrder = () => {
+    if (!paymentMethod) { setOrderError('Please select a payment method.'); return; }
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
     // PayPal/Google Pay are rendered inline — "Place Order" shouldn't fire for them
     if (PAYPAL_METHODS.has(paymentMethod)) return;
@@ -931,6 +936,7 @@ const Checkout = () => {
 
   const ctaLabel = () => {
     if (placing) return 'Please wait…';
+    if (!paymentMethod) return null; // nothing chosen yet -- no CTA to show
     if (OFFLINE_METHODS.has(paymentMethod)) return 'PLACE YOUR ORDER';
     if (paymentMethod === 'card' && selectedSavedCardId) return 'PLACE ORDER →';
     if (!intentReady) return 'CONTINUE TO PAYMENT';
@@ -2165,7 +2171,7 @@ const Checkout = () => {
               onClick={handlePlaceOrder}
               disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
             >
-              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : placing ? 'Please wait…' : 'Place Order →'}
+              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : !paymentMethod ? 'Select payment method' : placing ? 'Please wait…' : 'Place Order →'}
             </button>
           ) : null}
         </div>
