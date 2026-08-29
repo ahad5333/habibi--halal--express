@@ -1397,18 +1397,23 @@
   flex-direction: column;
   gap: 0.05rem;
   min-width: 0;
+  overflow: hidden;
 }
 .trust-badge-label {
   font-size: 0.7rem;
   font-weight: 700;
   color: #e4e4e4;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.2;
 }
 .trust-badge-sub {
   font-size: 0.58rem;
   color: rgba(255,255,255,0.28);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .trust-badge-sep {
   width: 1px;
@@ -1416,7 +1421,11 @@
   background: rgba(255,255,255,0.07);
   flex-shrink: 0;
 }
-@media (max-width: 390px) {
+/* Three full badges (icon + label + subtext) don't fit on most phone-width
+   screens -- 390px missed real devices at 393/402/428px logical width
+   (iPhone 14/15/Plus etc.), which is exactly why this kept overflowing on
+   real phones despite looking fine in a 390px devtools/test viewport. */
+@media (max-width: 480px) {
   .trust-badge-sub { display: none; }
   .trust-badge-label { font-size: 0.65rem; }
 }
