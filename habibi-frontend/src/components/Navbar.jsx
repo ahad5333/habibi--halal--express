@@ -196,55 +196,83 @@ const Navbar = () => {
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef(null);
 
-  // The Halal/Order Now badge sits centered in the visible gap between the logo and the
-  // right-side icon cluster, not on the row's own midpoint -- the logo (155-280px) is far
-  // wider than the icon cluster (one cart icon logged out, up to bell+cart+avatar logged
-  // in), so centering on the row's true midpoint instead of the gap's midpoint left the
-  // badge visibly closer to the logo with a big empty gap before the icons (most obvious
-  // logged-out, where the icon cluster is at its narrowest). Recompute on every layout
-  // change so it stays centered in that gap, clamped so it never overlaps either neighbor
-  // once the icon cluster grows wide enough (logged in, narrow phones) to eat the room.
+  // The Halal badge (top row) and the Order Now badge (main nav row directly
+  // below it) are meant to sit in the same vertical line -- but each row's
+  // flanking content is a different width (logo vs. auth icon cluster up
+  // top; 4 nav links vs. 3 nav links below), so centering each badge on its
+  // own row's gap independently produces two different x-positions even
+  // though both rows share the same max-width+margin:auto container. Fixed
+  // by computing ONE shared `left` (anchored to the Halal badge's ideal gap
+  // center, since that's the more prominent landmark) and applying that same
+  // px value to both badges, clamped to whichever row's neighbors are
+  // currently tightest so it can never overlap either row's content.
   const topInnerRef = useRef(null);
   const logoRef = useRef(null);
   const centerBadgesRef = useRef(null);
   const topRightRef = useRef(null);
+  const navMainInnerRef = useRef(null);
+  const navLeftGroupRef = useRef(null);
+  const navOrderOnlineRef = useRef(null);
+  const navRightGroupRef = useRef(null);
   useLayoutEffect(() => {
-    const container = topInnerRef.current;
+    const topContainer = topInnerRef.current;
     const logo = logoRef.current;
     const badges = centerBadgesRef.current;
     const topRight = topRightRef.current;
-    if (!container || !logo || !badges || !topRight) return;
+    const navContainer = navMainInnerRef.current;
+    const navLeft = navLeftGroupRef.current;
+    const navOrder = navOrderOnlineRef.current;
+    const navRight = navRightGroupRef.current;
+    if (!topContainer || !logo || !badges || !topRight || !navContainer || !navLeft || !navOrder || !navRight) return;
 
-    const GAP = 8; // minimum breathing room between the badge and its neighbors, px
+    const GAP = 8; // minimum breathing room between a badge and its row neighbors, px
 
     const reposition = () => {
       // `left` on an absolutely positioned child is measured from the
-      // container's padding box, but offsetWidth-based math above assumed
-      // the flex children (logo, topRight) sit flush against that same
-      // edge -- they don't, .navbar-top-inner has real left/right padding,
-      // so that undercounted the padding and let the clamp allow a few px
-      // of overlap. Using getBoundingClientRect() throughout instead keeps
+      // container's padding box, but offsetWidth-based math assumes the
+      // flex children sit flush against that same edge -- they don't, both
+      // rows have real left/right padding, so getBoundingClientRect() keeps
       // everything in one consistent, padding-agnostic coordinate space.
-      const containerRect = container.getBoundingClientRect();
+      const topContainerRect = topContainer.getBoundingClientRect();
       const logoRect = logo.getBoundingClientRect();
       const topRightRect = topRight.getBoundingClientRect();
       const badgeWidth = badges.offsetWidth;
 
-      const gapMidpoint = ((logoRect.right + topRightRect.left) / 2) - containerRect.left;
-      const minLeft = (logoRect.right - containerRect.left) + GAP + badgeWidth / 2;
-      const maxLeft = (topRightRect.left - containerRect.left) - GAP - badgeWidth / 2;
+      const navContainerRect = navContainer.getBoundingClientRect();
+      const navLeftRect = navLeft.getBoundingClientRect();
+      const navRightRect = navRight.getBoundingClientRect();
+      const orderWidth = navOrder.offsetWidth;
+
+      const sharedTarget = ((logoRect.right + topRightRect.left) / 2) - topContainerRect.left;
+
+      const minLeftTop = (logoRect.right - topContainerRect.left) + GAP + badgeWidth / 2;
+      const maxLeftTop = (topRightRect.left - topContainerRect.left) - GAP - badgeWidth / 2;
+      const minLeftBottom = (navLeftRect.right - navContainerRect.left) + GAP + orderWidth / 2;
+      const maxLeftBottom = (navRightRect.left - navContainerRect.left) - GAP - orderWidth / 2;
+
+      // Intersection of both rows' valid ranges -- the shared position must
+      // avoid overlapping whichever row's content is currently tightest.
+      const minLeft = Math.max(minLeftTop, minLeftBottom);
+      const maxLeft = Math.min(maxLeftTop, maxLeftBottom);
+
       const left = maxLeft < minLeft
-        ? gapMidpoint // no room to avoid overlap either way -- still the best-effort center
-        : Math.min(Math.max(gapMidpoint, minLeft), maxLeft);
+        ? sharedTarget // no room to avoid overlap on one row or the other -- still the best-effort shared center
+        : Math.min(Math.max(sharedTarget, minLeft), maxLeft);
+
       badges.style.left = `${left}px`;
+      navOrder.style.left = `${left}px`;
     };
 
     reposition();
     const ro = new ResizeObserver(reposition);
-    ro.observe(container);
+    ro.observe(topContainer);
     ro.observe(logo);
     ro.observe(topRight);
     ro.observe(badges);
+    ro.observe(navContainer);
+    ro.observe(navLeft);
+    ro.observe(navRight);
+    ro.observe(navOrder);
     return () => ro.disconnect();
   }, [isLoggedIn, unreadCount, totalItems]);
 
@@ -447,9 +475,9 @@ const Navbar = () => {
 
       {/* ── Main nav row ── */}
       <nav className="navbar-main" onMouseLeave={() => setOpenId(null)}>
-        <div className="navbar-main-inner">
+        <div className="navbar-main-inner" ref={navMainInnerRef}>
           {/* Left group */}
-          <div className="nav-group">
+          <div className="nav-group" ref={navLeftGroupRef}>
             {LEFT_ITEMS.map((item) => (
               <NavItem key={item.id} item={item} openId={openId} setOpenId={setOpenId} />
             ))}
@@ -459,6 +487,7 @@ const Navbar = () => {
               other nav items, but the logo badge in place of plain text */}
           <div
             className={`nav-item nav-order-online${openId === CENTER_ITEM.id ? ' open' : ''}`}
+            ref={navOrderOnlineRef}
             onMouseEnter={() => setOpenId(CENTER_ITEM.id)}
             onMouseLeave={() => setOpenId(null)}
           >
@@ -471,7 +500,7 @@ const Navbar = () => {
           </div>
 
           {/* Right group */}
-          <div className="nav-group">
+          <div className="nav-group" ref={navRightGroupRef}>
             {RIGHT_ITEMS.map((item) => (
               <NavItem key={item.id} item={item} openId={openId} setOpenId={setOpenId} />
             ))}
