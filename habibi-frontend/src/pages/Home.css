@@ -2980,7 +2980,7 @@
        flex-start + an explicit margin-top on .hero-content below is a
        direct, predictable way to control exactly how much poster shows
        above the card instead of depending on flex-end's exact behavior. */
-    min-height: clamp(470px, 122vw, 540px);
+    min-height: clamp(520px, 138vw, 590px);
     padding: 3.25rem 0.75rem 2rem;
     align-items: center;
     justify-content: flex-start;
@@ -3005,7 +3005,7 @@
   .hero-content {
     width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
-    margin: 8rem auto 0;
+    margin: 11rem auto 0;
     padding: 0.875rem 1rem;
     border-radius: 14px;
     text-align: center;
