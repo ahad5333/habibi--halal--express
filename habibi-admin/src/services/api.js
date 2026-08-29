@@ -210,6 +210,13 @@ export const adminAPI = {
   deleteAuthNetAccount:   (id) => req(`/api/admin/authnet/accounts/${id}`, { method: 'DELETE' }),
   activateAuthNetAccount: (id) => req(`/api/admin/authnet/accounts/${id}/activate`, { method: 'POST' }),
 
+  // Square / Clover merchant accounts
+  listCardProcessorAccounts:    () => req('/api/admin/card-processors/accounts'),
+  createCardProcessorAccount:   (body) => req('/api/admin/card-processors/accounts', { method: 'POST', body: JSON.stringify(body) }),
+  updateCardProcessorAccount:   (id, body) => req(`/api/admin/card-processors/accounts/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteCardProcessorAccount:   (id) => req(`/api/admin/card-processors/accounts/${id}`, { method: 'DELETE' }),
+  activateCardProcessorAccount: (id) => req(`/api/admin/card-processors/accounts/${id}/activate`, { method: 'POST' }),
+
   // Reports
   reportRevenue:      (qs = '') => req(`/api/admin/reports/revenue${qs}`),
   reportTransactions: (qs = '') => req(`/api/admin/reports/transactions${qs}`),

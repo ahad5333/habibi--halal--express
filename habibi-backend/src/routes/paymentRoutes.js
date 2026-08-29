@@ -17,6 +17,9 @@ const {
   chargeSavedCardEndpoint,
   refundEndpoint,
 } = require("../controllers/authNetController");
+const {
+  getPublicCardConfig,
+} = require("../controllers/cardProcessorController");
 
 // ── Public ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +43,12 @@ router.post("/webhook/square", squareWebhook);
 router.get("/authnet/config", getPublicConfig);
 // Charge card using Accept.js opaqueData token
 router.post("/authnet/charge", chargeCardEndpoint);
+
+// ── Card (processor-agnostic — Authorize.net / Square / Clover) ──────────
+// Which processor (if any) is currently active, and its non-secret config —
+// the frontend uses `provider` in the response to decide which card-form
+// component to mount.
+router.get("/card/config", getPublicCardConfig);
 
 // ── Admin only ───────────────────────────────────────────────────────────────
 router.post("/refund/:orderNumber", protect, admin, refundOrder);

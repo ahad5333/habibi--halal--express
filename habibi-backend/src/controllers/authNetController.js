@@ -2,13 +2,21 @@ const pool = require('../config/db');
 const safeError = require('../utils/safeError');
 const { chargeCard, refundTransaction, chargeCustomerProfile } = require('../services/authNetService');
 const { logAudit } = require('./auditController');
+const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
+const { encrypt, decrypt } = require('../utils/encrypt');
+const { deactivateAllCardProcessors } = require('../services/cardProcessorRegistry');
 
 // ── Helper — fetch the currently active account ───────────────────────────
+// transaction_key is the live Authorize.net API secret (authorizes real card
+// charges) — decrypt here, once, so every caller transparently gets the real
+// value. decrypt() safely no-ops on any pre-existing plaintext row.
 async function getActiveAccount() {
   const res = await pool.query(
     `SELECT * FROM authorize_net_accounts WHERE is_active = TRUE LIMIT 1`
   );
-  return res.rows[0] || null;
+  const account = res.rows[0];
+  if (account?.transaction_key) account.transaction_key = decrypt(account.transaction_key);
+  return account || null;
 }
 
 // ── Public: return apiLoginId + clientKey for Accept.js (no secret key) ──
@@ -30,15 +38,19 @@ const getPublicConfig = async (req, res) => {
 
 // ── Public: charge card using opaqueData token from Accept.js ─────────────
 const chargeCardEndpoint = async (req, res) => {
-  const { opaqueData, amount, orderNumber, customerName, customerPhone, billingZip, reason, note } = req.body;
+  const { opaqueData, amount: clientAmount, orderNumber, customerName, customerPhone, billingZip, reason, note } = req.body;
   if (!opaqueData?.dataDescriptor || !opaqueData?.dataValue) {
     return res.status(400).json({ error: 'Invalid payment token.' });
   }
-  if (!amount || parseFloat(amount) <= 0) {
-    return res.status(400).json({ error: 'Invalid amount.' });
-  }
 
   try {
+    // Charge amount comes from the order's own server-side total when an
+    // orderNumber is given — never trust a client-supplied amount for a real order.
+    const { amount } = await resolveChargeAmount(orderNumber, clientAmount);
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount.' });
+    }
+
     const account = await getActiveAccount();
     if (!account) {
       return res.status(503).json({ error: 'Payment processor not configured.' });
@@ -78,15 +90,14 @@ const chargeCardEndpoint = async (req, res) => {
 
     res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
   } catch (err) {
-    res.status(402).json({ error: err.message || 'Payment failed.' });
+    res.status(err.statusCode || 402).json({ error: err.message || 'Payment failed.' });
   }
 };
 
 // ── Authenticated: charge a previously-saved card, no card data involved ──
 const chargeSavedCardEndpoint = async (req, res) => {
-  const { paymentMethodId, amount, orderNumber } = req.body;
+  const { paymentMethodId, amount: clientAmount, orderNumber } = req.body;
   if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId required.' });
-  if (!amount || parseFloat(amount) <= 0) return res.status(400).json({ error: 'Invalid amount.' });
 
   try {
     // Scoped to req.user.id -- a saved card can only ever be charged by the
@@ -98,6 +109,13 @@ const chargeSavedCardEndpoint = async (req, res) => {
     );
     if (!cardRes.rows.length) return res.status(404).json({ error: 'Saved card not found.' });
     const { authnet_customer_profile_id: customerProfileId, authnet_payment_profile_id: customerPaymentProfileId } = cardRes.rows[0];
+
+    // Charge amount comes from the order's own server-side total when an
+    // orderNumber is given — never trust a client-supplied amount for a real order.
+    const { amount } = await resolveChargeAmount(orderNumber, clientAmount);
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount.' });
+    }
 
     const account = await getActiveAccount();
     if (!account) return res.status(503).json({ error: 'Payment processor not configured.' });
@@ -131,7 +149,7 @@ const chargeSavedCardEndpoint = async (req, res) => {
 
     res.json({ success: true, transactionId: result.transactionId, authCode: result.authCode });
   } catch (err) {
-    res.status(402).json({ error: err.message || 'Payment failed.' });
+    res.status(err.statusCode || 402).json({ error: err.message || 'Payment failed.' });
   }
 };
 
@@ -200,7 +218,7 @@ const createAccount = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO authorize_net_accounts (nickname, api_login_id, transaction_key, client_key, environment, is_active)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [nickname, api_login_id, transaction_key, client_key || null, environment || 'production', isFirst]
+      [nickname, api_login_id, encrypt(transaction_key), client_key || null, environment || 'production', isFirst]
     );
     // Never log transaction_key/client_key — this is a real merchant secret.
     logAudit(pool, req.user?.id, req.user?.name, 'create_payment_account', 'payment_account', String(result.rows[0].id),
@@ -218,7 +236,10 @@ const updateAccount = async (req, res) => {
     // The edit form always blanks transaction_key ("leave blank to keep
     // existing") and submits that blank value unless the admin retypes it —
     // NULLIF turns that blank string into SQL NULL so COALESCE falls back to
-    // the existing key instead of overwriting it with ''.
+    // the existing key instead of overwriting it with ''. Encrypt only when
+    // a real new value was actually typed — encrypting '' would produce a
+    // non-empty ciphertext and defeat the NULLIF blank-means-keep check.
+    const encryptedKey = transaction_key ? encrypt(transaction_key) : '';
     await pool.query(
       `UPDATE authorize_net_accounts
           SET nickname        = COALESCE($1, nickname),
@@ -227,7 +248,7 @@ const updateAccount = async (req, res) => {
               client_key      = COALESCE($4, client_key),
               environment     = COALESCE($5, environment)
         WHERE id = $6`,
-      [nickname, api_login_id, transaction_key, client_key, environment, id]
+      [nickname, api_login_id, encryptedKey, client_key, environment, id]
     );
     // Never log transaction_key/client_key — record only that it changed, not the value.
     logAudit(pool, req.user?.id, req.user?.name, 'update_payment_account', 'payment_account', String(id),
@@ -262,7 +283,10 @@ const setActiveAccount = async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query(`UPDATE authorize_net_accounts SET is_active = FALSE`);
+    // Reactivating Authorize.net must also turn off any active Square/Clover
+    // account -- exactly one card processor is active globally, across both
+    // tables (see cardProcessorRegistry.js).
+    await deactivateAllCardProcessors(client);
     const result = await client.query(`UPDATE authorize_net_accounts SET is_active = TRUE WHERE id = $1`, [id]);
     // Without this check, a stale/invalid id deactivates every account (the
     // first UPDATE) then matches nothing on the second — committing a state

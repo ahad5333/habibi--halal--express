@@ -8,8 +8,11 @@ function getKey() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('CREDENTIAL_ENCRYPTION_KEY must be set and at least 32 chars in production.');
     }
-    // Dev fallback — deterministic but insecure; only for local testing
-    return Buffer.from('habibi-dev-key-0000000000000000');
+    // Dev fallback — deterministic but insecure; only for local testing.
+    // Must be exactly 32 bytes (AES-256 requires it) — createCipheriv throws
+    // "Invalid key length" otherwise, silently breaking every encrypt() call
+    // in any environment where CREDENTIAL_ENCRYPTION_KEY isn't set.
+    return Buffer.from('habibi-dev-key-00000000000000000');
   }
   // Use first 32 bytes of the key (allows longer keys for flexibility)
   return Buffer.from(raw.slice(0, 32), 'utf8');

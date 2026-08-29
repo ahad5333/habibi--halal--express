@@ -526,5 +526,19 @@ router.put("/authnet/accounts/:id",        updateAccount);
 router.delete("/authnet/accounts/:id",     deleteAccount);
 router.post("/authnet/accounts/:id/activate", setActiveAccount);
 
+// ── Square / Clover merchant accounts ────────────────────────────────────
+const {
+  listAccounts:  listCardProcessorAccounts,
+  createAccount: createCardProcessorAccount,
+  updateAccount: updateCardProcessorAccount,
+  deleteAccount: deleteCardProcessorAccount,
+  setActiveAccount: setActiveCardProcessorAccount,
+} = require('../controllers/cardProcessorController');
+router.get("/card-processors/accounts",              listCardProcessorAccounts);
+router.post("/card-processors/accounts",              createCardProcessorAccount);
+router.put("/card-processors/accounts/:id",           updateCardProcessorAccount);
+router.delete("/card-processors/accounts/:id",         deleteCardProcessorAccount);
+router.post("/card-processors/accounts/:id/activate", setActiveCardProcessorAccount);
+
 
 module.exports = router;

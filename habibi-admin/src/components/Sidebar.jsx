@@ -7,7 +7,7 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2, Layers,
+  Bookmark, Share2, Users2, Layers, QrCode,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -18,6 +18,7 @@ const NAV = [
   { to: '/urgent',     icon: <AlertTriangle size={17} />,   label: 'Urgent Requests' },
   { to: '/liveboard',  icon: <Monitor size={17} />,         label: 'Live Board',      badge: 'live' },
   { to: '/catering',      icon: <CalendarDays size={17} />, label: 'Catering Quotes' },
+  { to: '/tables',        icon: <QrCode size={17} />,       label: 'Table Manager' },
   { to: '/menu',           icon: <Utensils size={17} />,    label: 'Menu Builder' },
   { to: '/byo-ingredients', icon: <Layers size={17} />,     label: 'Build Your Own' },
   { to: '/global-addons',  icon: <Package size={17} />,    label: 'Global Add-ons' },
@@ -45,6 +46,7 @@ const NAV = [
   { to: '/reports',    icon: <FileText size={17} />,        label: 'Reports' },
   { to: '/payments',        icon: <CreditCard size={17} />, label: 'Payments' },
   { to: '/payment-accounts',   icon: <CreditCard size={17} />, label: 'Payment Accounts' },
+  { to: '/payment-processors', icon: <CreditCard size={17} />, label: 'Payment Processors' },
   { to: '/platform-credentials', icon: <KeyRound size={17} />, label: 'API Credentials' },
   { to: '/broadcasts', icon: <Bell size={17} />,            label: 'Broadcasts' },
   { to: '/chat',       icon: <MessageSquare size={17} />,   label: 'Customer Chat', live: true },

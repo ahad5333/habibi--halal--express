@@ -49,21 +49,6 @@ const createTables = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_partner             BOOLEAN DEFAULT FALSE`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_id             INTEGER`);
 
-    // ── Partner applications: add payment_methods + credit_balance ──
-    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
-    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS credit_balance  NUMERIC(10,2) DEFAULT 0`);
-
-    // ── Locations: add pre-selected delivery addresses ─────────────
-    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_addresses JSONB DEFAULT '[]'`);
-
-    // ── Marketplace orders: add location tracking ─────────────────
-    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
-    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS platform_store_id VARCHAR(255)`);
-
-    // ── Soft-delete for guest_orders ──────────────────────────────
-    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_guest_orders_deleted_at ON guest_orders(deleted_at) WHERE deleted_at IS NOT NULL`);
-
     // ── User search indexes (ILIKE performance) ───────────────────
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_name_lower  ON users(LOWER(name))`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email))`);
@@ -76,28 +61,6 @@ const createTables = async () => {
       )
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_revoked_tokens_exp ON revoked_tokens(expires_at)`);
-
-    // ── Addresses: user ownership column ──────────────────────────
-    await client.query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id)`);
-
-    // ── Group orders: host ownership ──────────────────────────────
-    await client.query(`ALTER TABLE group_order_sessions ADD COLUMN IF NOT EXISTS host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
-
-    // ── Per-location menu item availability ───────────────────────
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS menu_location_availability (
-        menu_id     INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
-        location_id INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
-        status      VARCHAR(20) NOT NULL DEFAULT 'available'
-                    CHECK (status IN ('available', 'sold_out', 'inactive')),
-        updated_at  TIMESTAMPTZ DEFAULT NOW(),
-        PRIMARY KEY (menu_id, location_id)
-      )
-    `);
-
-    // ── Urgent requests: make phone nullable for contact-form use ──
-    await client.query(`ALTER TABLE urgent_requests ALTER COLUMN phone DROP NOT NULL`).catch(() => {});
 
     // ── Customers (profile extension of users) ────────────────────
     await client.query(`
@@ -134,6 +97,10 @@ const createTables = async () => {
       );
     `);
 
+    // ── Addresses: user ownership column ──────────────────────────
+    await client.query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id)`);
+
     // ── Locations ─────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS locations (
@@ -157,6 +124,9 @@ const createTables = async () => {
         updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // ── Locations: add pre-selected delivery addresses ─────────────
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_addresses JSONB DEFAULT '[]'`);
 
     // ── Categories ────────────────────────────────────────────────
     await client.query(`
@@ -252,6 +222,19 @@ const createTables = async () => {
       );
     `);
 
+    // ── Per-location menu item availability ───────────────────────
+    // Needs both menus and locations to already exist (FKs below).
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS menu_location_availability (
+        menu_id     INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+        location_id INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+        status      VARCHAR(20) NOT NULL DEFAULT 'available'
+                    CHECK (status IN ('available', 'sold_out', 'inactive')),
+        updated_at  TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (menu_id, location_id)
+      )
+    `);
+
     // Dietary flag columns (idempotent — safe to run on existing table)
     await client.query(`
       ALTER TABLE menus
@@ -311,6 +294,10 @@ const createTables = async () => {
       -- Add column to existing tables (idempotent)
       ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS dispatch_fired BOOLEAN DEFAULT FALSE;
     `);
+
+    // ── Soft-delete for guest_orders ──────────────────────────────
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_guest_orders_deleted_at ON guest_orders(deleted_at) WHERE deleted_at IS NOT NULL`);
 
     // guest_orders.placed_at/updated_at were declared as naive TIMESTAMP here
     // from the very start (not drift from a later ALTER — the original design
@@ -483,6 +470,9 @@ const createTables = async () => {
       );
     `);
 
+    // ── Urgent requests: make phone nullable for contact-form use ──
+    await client.query(`ALTER TABLE urgent_requests ALTER COLUMN phone DROP NOT NULL`).catch(() => {});
+
     // ── Newsletter Subscribers ────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS newsletter_subscribers (
@@ -535,6 +525,10 @@ const createTables = async () => {
         updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // ── Partner applications: add payment_methods + credit_balance ──
+    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '[]'`);
+    await client.query(`ALTER TABLE partner_applications ADD COLUMN IF NOT EXISTS credit_balance  NUMERIC(10,2) DEFAULT 0`);
 
     // ── Delivery Tiers ────────────────────────────────────────────
     await client.query(`
@@ -845,6 +839,10 @@ const createTables = async () => {
         updated_at        TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
+    // ── Marketplace orders: add location tracking ─────────────────
+    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE marketplace_orders ADD COLUMN IF NOT EXISTS platform_store_id VARCHAR(255)`);
 
     // ── DoorDash Drive Deliveries ──────────────────────────────────
     await client.query(`
@@ -1697,6 +1695,12 @@ const seedDefaults = async () => {
   await pool.query(`UPDATE payment_settings SET provider = 'authorize.net' WHERE label = 'Credit / Debit Card' AND provider = 'square'`);
   await pool.query(`UPDATE payment_settings SET label = 'Zelle', provider = 'zelle' WHERE label = 'Apple Pay' AND provider = 'square'`);
   await pool.query(`UPDATE payment_settings SET label = 'Cash App', provider = 'cashapp' WHERE label = 'Google Pay' AND provider = 'square'`);
+  // Card payments are no longer Authorize.net-exclusive — Square and Clover
+  // accounts (see card_processor_accounts below) can now also power this
+  // toggle, so its provider value needs to stop naming one specific
+  // processor. Whichever processor is actually active is resolved at
+  // request time by getActiveCardProcessor(), not by this label.
+  await pool.query(`UPDATE payment_settings SET provider = 'card' WHERE provider = 'authorize.net'`);
 
   // ── Authorize.net merchant accounts ────────────────────────────────────────
   await pool.query(`
@@ -1716,6 +1720,28 @@ const seedDefaults = async () => {
   // which is meaningfully longer than the raw ~16-char plaintext key — VARCHAR(100)
   // was tight enough to risk truncation/rejection on longer keys.
   await pool.query(`ALTER TABLE authorize_net_accounts ALTER COLUMN transaction_key TYPE VARCHAR(512)`);
+
+  // ── Square / Clover merchant accounts ───────────────────────────────────
+  // One generalized table for the two new card processors (as opposed to
+  // authorize_net_accounts' own dedicated table above, left untouched) --
+  // there will only ever be 2-3 card processors here, not an open-ended
+  // plugin system, so a provider column + encrypted JSONB credentials avoids
+  // duplicating a near-identical table/controller/admin-page per processor.
+  // Every value inside `credentials` is AES-256-GCM encrypted via
+  // encryptObject() before it's ever written here.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS card_processor_accounts (
+      id              SERIAL PRIMARY KEY,
+      provider        VARCHAR(20) NOT NULL CHECK (provider IN ('square', 'clover')),
+      nickname        VARCHAR(100) NOT NULL,
+      environment     VARCHAR(20) DEFAULT 'production'
+                        CHECK (environment IN ('sandbox', 'production')),
+      credentials     JSONB NOT NULL DEFAULT '{}',
+      is_active       BOOLEAN DEFAULT FALSE,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_card_processor_accounts_provider ON card_processor_accounts(provider)`);
 
   // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);
