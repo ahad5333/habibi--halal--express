@@ -3,8 +3,6 @@ const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const { admin } = require("../middleware/authMiddleware");
 const {
-  squareCharge,
-  squareWebhook,
   refundOrder,
   getOfflinePaymentInfo,
   paypalCreateOrder,
@@ -25,9 +23,6 @@ const {
 
 // ── Public ──────────────────────────────────────────────────────────────────
 
-// Square card charge (nonce from Square Web Payments SDK)
-router.post("/square/charge", squareCharge);
-
 // Zelle / CashApp payment info
 router.get("/offline-info", getOfflinePaymentInfo);
 
@@ -36,9 +31,6 @@ router.post("/paypal/create-order", paypalCreateOrder);
 
 // PayPal server-side order capture
 router.post("/paypal/capture", paypalCapture);
-
-// ── Webhooks ─────────────────────────────────────────────────────────────────
-router.post("/webhook/square", squareWebhook);
 
 // ── Authorize.net ─────────────────────────────────────────────────────────
 // Public config — apiLoginId + clientKey for Accept.js (no secret key exposed)

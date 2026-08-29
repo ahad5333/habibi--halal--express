@@ -1,79 +1,17 @@
 const safeError = require('../utils/safeError');
 const pool      = require("../config/db");
-const crypto    = require("crypto");
 const { refundTransaction } = require('../services/authNetService');
 const { getActiveAccount } = require('./authNetController');
+const { getCardProcessorAccountByProvider } = require('./cardProcessorController');
+const squareService = require('../services/squareService');
+const cloverService = require('../services/cloverService');
 const { logAudit } = require('./auditController');
+const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
   "ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_intent_id VARCHAR(64)"
 ).catch(() => {});
-
-// ─── Square charge (nonce-based, no client secret needed) ───────────────────
-const squareCharge = async (req, res) => {
-  try {
-    const { sourceId, amount, order_number } = req.body;
-    if (!process.env.SQUARE_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN === "REPLACE_ME") {
-      return res.json({ success: true, mock: true, message: "Square not configured — mock charge" });
-    }
-
-    const { Client, Environment } = require("square");
-    const client = new Client({
-      accessToken: process.env.SQUARE_ACCESS_TOKEN,
-      environment: Environment.Sandbox,
-    });
-
-    const result = await client.paymentsApi.createPayment({
-      sourceId,
-      idempotencyKey: order_number || String(Date.now()),
-      amountMoney: { amount: Math.round(parseFloat(amount) * 100), currency: "USD" },
-      locationId: process.env.SQUARE_LOCATION_ID,
-    });
-
-    const paymentId = result.result?.payment?.id;
-    if (order_number) {
-      await pool.query(
-        "UPDATE guest_orders SET order_status='accepted', payment_intent_id=$1 WHERE order_number=$2",
-        [paymentId, order_number]
-      );
-    }
-    res.json({ success: true, paymentId });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-};
-
-// ─── Square Webhook ──────────────────────────────────────────────────────────
-const squareWebhook = async (req, res) => {
-  // Verify Square HMAC-SHA256 signature before processing any event
-  const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
-  if (sigKey) {
-    const sig      = req.headers['x-square-hmacsha256-signature'];
-    const notifUrl = `${process.env.FRONTEND_URL || ''}/api/payments/webhook/square`;
-    const body     = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    const expected = crypto.createHmac('sha256', sigKey).update(notifUrl + body).digest('base64');
-    if (!sig || sig !== expected) {
-      return res.status(401).json({ error: 'Invalid Square webhook signature.' });
-    }
-  }
-
-  try {
-    const event = req.body;
-    if (event.type === "payment.completed") {
-      const orderId = event.data?.object?.payment?.order_id;
-      if (orderId) {
-        await pool.query(
-          "UPDATE guest_orders SET order_status='accepted', updated_at=NOW() WHERE payment_intent_id=$1",
-          [orderId]
-        );
-      }
-    }
-    res.json({ received: true });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-};
 
 // ─── Refund (admin) ───────────────────────────────────────────────────────────
 // This is the endpoint the admin Payments page's Refund button actually calls
@@ -92,7 +30,7 @@ const refundOrder = async (req, res) => {
     const { amount } = req.body || {}; // optional partial amount, defaults to the order total
 
     const result = await pool.query(
-      "SELECT payment_intent_id, total, payment_method, order_status FROM guest_orders WHERE order_number=$1",
+      "SELECT payment_intent_id, total, payment_method, payment_processor, order_status FROM guest_orders WHERE order_number=$1",
       [orderNumber]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Order not found." });
@@ -104,24 +42,49 @@ const refundOrder = async (req, res) => {
     let refundId;
 
     if (order.payment_intent_id && (order.payment_method || '').toLowerCase() === 'card') {
-      // Real card charge via Authorize.net — actually refund the money.
-      const account = await getActiveAccount();
+      // Refund through whichever processor actually charged this order —
+      // NOT whatever's currently active in the admin panel. An order
+      // charged via Square yesterday must still refund through Square even
+      // if the admin has since switched to Clover. Orders from before this
+      // column existed have no payment_processor recorded; they were all
+      // Authorize.net (the only processor that existed then), hence the fallback.
+      const provider = order.payment_processor || 'authorize_net';
+      const account  = provider === 'authorize_net' ? await getActiveAccount() : await getCardProcessorAccountByProvider(provider);
       if (!account) {
-        return res.status(503).json({ message: 'Payment processor not configured — cannot process card refund.' });
+        return res.status(503).json({ message: `Payment processor (${provider}) not configured — cannot process card refund.` });
       }
       const refundAmount = parseFloat(amount) > 0 ? parseFloat(amount) : parseFloat(order.total);
       try {
-        const refunded = await refundTransaction({
-          transactionId:  order.payment_intent_id,
-          amount:         refundAmount,
-          cardLastFour:   '0000',
-          apiLoginId:     account.api_login_id,
-          transactionKey: account.transaction_key,
-          environment:    account.environment,
-        });
+        let refunded;
+        if (provider === 'authorize_net') {
+          refunded = await refundTransaction({
+            transactionId:  order.payment_intent_id,
+            amount:         refundAmount,
+            cardLastFour:   '0000',
+            apiLoginId:     account.api_login_id,
+            transactionKey: account.transaction_key,
+            environment:    account.environment,
+          });
+        } else if (provider === 'square') {
+          refunded = await squareService.refundPayment({
+            paymentId:   order.payment_intent_id,
+            amount:      refundAmount,
+            accessToken: account.credentials.accessToken,
+            environment: account.environment,
+          });
+        } else if (provider === 'clover') {
+          refunded = await cloverService.refundPayment({
+            chargeId:     order.payment_intent_id,
+            amount:       refundAmount,
+            privateToken: account.credentials.privateToken,
+            environment:  account.environment,
+          });
+        } else {
+          return res.status(400).json({ message: 'Unknown payment processor.' });
+        }
         refundId = refunded.transactionId;
       } catch (refundErr) {
-        return res.status(502).json({ message: 'Authorize.net refund failed: ' + refundErr.message });
+        return res.status(502).json({ message: `${provider} refund failed: ` + refundErr.message });
       }
     } else {
       // Cash/Zelle/CashApp/PayPal — no automated refund API, record-keeping only.
@@ -171,8 +134,7 @@ const getOfflinePaymentInfo = async (req, res) => {
 
 // ─── PayPal create order (mobile: returns approvalUrl for WebView) ──────────
 const paypalCreateOrder = async (req, res) => {
-  const { amount, order_number, return_url, cancel_url } = req.body;
-  if (!amount || amount <= 0) return res.status(400).json({ message: 'amount required' });
+  const { amount: clientAmount, order_number, return_url, cancel_url } = req.body;
 
   const clientId     = process.env.PAYPAL_CLIENT_ID;
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -187,6 +149,13 @@ const paypalCreateOrder = async (req, res) => {
   }
 
   try {
+    // Amount comes from the order's own server-side total when an
+    // order_number is given — never trust a client-supplied amount for a real
+    // order (PayPal's whole create→approve→capture flow is anchored on
+    // whatever amount is set here, so this is the one place that matters).
+    const { amount } = await resolveChargeAmount(order_number, clientAmount);
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'amount required' });
+
     const base = process.env.PAYPAL_ENV === 'production'
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
@@ -231,6 +200,7 @@ const paypalCreateOrder = async (req, res) => {
     const approvalUrl = order.links?.find(l => l.rel === 'approve')?.href;
     res.json({ orderID: order.id, approvalUrl });
   } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ message: err.message });
     res.status(500).json(safeError(err));
   }
 };
@@ -314,8 +284,6 @@ const verifyPayment = async (req, res) => {
 };
 
 module.exports = {
-  squareCharge,
-  squareWebhook,
   refundOrder,
   getOfflinePaymentInfo,
   paypalCreateOrder,
