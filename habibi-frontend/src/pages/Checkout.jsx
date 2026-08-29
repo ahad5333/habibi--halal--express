@@ -158,6 +158,7 @@ const Checkout = () => {
     if (c.includes('drink'))   return 'drinks';
     if (c.includes('extra'))   return 'extras';
     if (c.includes('special')) return 'specials';
+    if (c.includes('taco'))    return 'tacos';
     if (c.includes('platter')) return 'platter';
     return 'other';
   };
@@ -333,9 +334,10 @@ const Checkout = () => {
   // ("side"/"appetizer"/"snack") that don't actually exist in the real menu
   // -- the real category is "Extras" (22 items), so that whole bucket was
   // silently returning nothing live. Rebuilt against the real category set
-  // (Drinks/Extras/Habibi Specials/Platter) with higher caps -- deliberately
-  // still excludes Bergers/Breakfast/Sandwich/Family Tray/Tacos, since those
-  // read as competing full meals rather than a "complete your meal" add-on.
+  // (Drinks/Extras/Habibi Specials/Platter/Tacos) with generous caps --
+  // deliberately still excludes Bergers/Breakfast/Sandwich/Family Tray,
+  // since those read as competing full meals rather than a "complete your
+  // meal" add-on (Tacos included since they're more snack-sized).
   useEffect(() => {
     menuAPI.getAll()
       .then(data => {
@@ -345,26 +347,29 @@ const Checkout = () => {
 
         const drinks = all
           .filter(i => getCat(i).includes('drink') && !getName(i).includes('juice'))
-          .slice(0, 6);
+          .slice(0, 8);
         const juices = all
           .filter(i => getCat(i).includes('drink') && getName(i).includes('juice'))
-          .slice(0, 4);
+          .slice(0, 6);
         const extras = all
           .filter(i => getCat(i).includes('extra'))
-          .slice(0, 6);
+          .slice(0, 10);
         const specials = all
           .filter(i => getCat(i).includes('special'))
+          .slice(0, 6);
+        const tacos = all
+          .filter(i => getCat(i).includes('taco'))
           .slice(0, 4);
         const salads = all
           .filter(i => getCat(i).includes('platter') && getName(i).includes('salad'))
           .slice(0, 2);
 
-        // Deduplicate by id and cap at 20
+        // Deduplicate by id and cap at 30
         const seen = new Set();
-        const merged = [...drinks, ...juices, ...extras, ...specials, ...salads].filter(i => {
+        const merged = [...drinks, ...juices, ...extras, ...specials, ...tacos, ...salads].filter(i => {
           if (seen.has(i.id)) return false;
           seen.add(i.id); return true;
-        }).slice(0, 20);
+        }).slice(0, 30);
 
         setUpsellItems(merged);
       })
