@@ -1415,6 +1415,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Below 480px we swap to the short label instead of ellipsis-truncating the
+   full one -- for a *trust* badge, "Halal Certif…"/"Secure Check…" reads as
+   cut-off and unpolished (worse than "Grade A", which is short enough to
+   never truncate and looks inconsistent next to two chopped neighbors).
+   A clean short word looks intentional; the .tbl-full/.tbl-short overflow
+   rules above still apply as a safety net for anything narrower than that. */
+.tbl-short { display: none; }
 .trust-badge-sep {
   width: 1px;
   height: 30px;
@@ -1428,6 +1435,8 @@
 @media (max-width: 480px) {
   .trust-badge-sub { display: none; }
   .trust-badge-label { font-size: 0.65rem; }
+  .tbl-full { display: none; }
+  .tbl-short { display: inline; }
 }
 
 .place-order-btn {

@@ -1954,7 +1954,10 @@ const Checkout = () => {
                     <div className="trust-badge">
                       <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="trust-badge-img" />
                       <div className="trust-badge-text">
-                        <span className="trust-badge-label">Halal Certified</span>
+                        <span className="trust-badge-label">
+                          <span className="tbl-full">Halal Certified</span>
+                          <span className="tbl-short">Halal</span>
+                        </span>
                         <span className="trust-badge-sub">1000+ endorsements</span>
                       </div>
                     </div>
@@ -1970,7 +1973,10 @@ const Checkout = () => {
                     <div className="trust-badge">
                       <span className="trust-badge-emoji">🔒</span>
                       <div className="trust-badge-text">
-                        <span className="trust-badge-label">Secure Checkout</span>
+                        <span className="trust-badge-label">
+                          <span className="tbl-full">Secure Checkout</span>
+                          <span className="tbl-short">Secure</span>
+                        </span>
                         <span className="trust-badge-sub">SSL encrypted</span>
                       </div>
                     </div>
