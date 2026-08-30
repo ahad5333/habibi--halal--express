@@ -30,6 +30,15 @@ function bearingDeg(a, b) {
 const NAV_COMPASS = ['N','NE','E','SE','S','SW','W','NW'];
 const NAV_ARROWS  = ['↑','↗','→','↘','↓','↙','←','↖'];
 
+// Days until an insurance_expiry date; negative means already expired.
+// Ported from habibi-admin/src/pages/Drivers.jsx so the driver sees the
+// same warning threshold the admin panel already uses.
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const diffMs = new Date(dateStr) - new Date(new Date().toDateString());
+  return Math.round(diffMs / 86400000);
+}
+
 // Decodes Google's encoded polyline format (the standard algorithm --
 // see https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
 // into an array of [lat, lng] pairs Leaflet can draw directly.
@@ -208,6 +217,8 @@ export default function DriverView() {
   const [rejectReason, setRejectReason]   = useState('');
   const [cashCollected, setCashCollected] = useState(null);
   const [cashSummary, setCashSummary]     = useState(null);
+  const [driverCompliance, setDriverCompliance] = useState(null); // { vehicle_type, vehicle_plate, insurance_expiry }
+  const [nowTick, setNowTick]             = useState(Date.now()); // ticks while on duty, to keep the header shift timer live
   const [destCoords, setDestCoords]       = useState(null);
   const [route, setRoute]                 = useState(null); // { polyline, polylineDecoded, steps, duration_minutes, distance_text }
   const [routeStepIdx, setRouteStepIdx]   = useState(0);
@@ -421,6 +432,38 @@ export default function DriverView() {
       setCashSummary(data);
     } catch (_) {}
   }, [driverId, apiFetch]);
+
+  // Reconciles on-duty state + shift-start time from the server on mount --
+  // without this, reopening the app while already on shift showed "Offline"
+  // and reset the shift timer, even though the backend still had the driver
+  // on duty (onDuty/shiftStartTime were previously only ever set locally by
+  // toggleDuty, never hydrated from anywhere).
+  const loadDriverStatus = useCallback(async () => {
+    if (!driverId) return;
+    try {
+      const data = await apiFetch(`/api/dispatch/drivers/${driverId}/status`);
+      setDriverCompliance({
+        vehicle_type: data.vehicle_type,
+        vehicle_plate: data.vehicle_plate,
+        insurance_expiry: data.insurance_expiry,
+      });
+      if (data.is_on_duty) {
+        setOnDuty(true);
+        onDutyRef.current = true;
+        if (data.duty_started_at) setShiftStartTime(new Date(data.duty_started_at));
+      }
+    } catch (_) {}
+  }, [driverId, apiFetch]);
+
+  useEffect(() => { loadDriverStatus(); }, [loadDriverStatus]);
+
+  // Ticks once a minute while on duty so the header's shift timer stays live
+  // without depending on some unrelated re-render to happen to fire.
+  useEffect(() => {
+    if (!onDuty) return;
+    const id = setInterval(() => setNowTick(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, [onDuty]);
 
   useEffect(() => { loadCashSummary(); }, [loadCashSummary]);
 
@@ -1091,6 +1134,15 @@ export default function DriverView() {
   const shiftHours = shiftStartTime
     ? Math.max(0.1, (Date.now() - new Date(shiftStartTime)) / 3_600_000)
     : null;
+  // Header shift timer -- keyed off nowTick (not Date.now() directly) so it
+  // re-derives on the minute-tick effect above, not just on incidental re-renders.
+  const shiftElapsedLabel = (onDuty && shiftStartTime) ? (() => {
+    const mins = Math.max(0, Math.floor((nowTick - new Date(shiftStartTime)) / 60000));
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  })() : null;
+  const insuranceDays = daysUntil(driverCompliance?.insurance_expiry);
+  const insuranceWarn  = insuranceDays !== null && insuranceDays <= 14; // expired (negative) or expiring soon
   const earningsDrawer = showEarnings && (
     <div className="dv-history-overlay" onClick={() => setShowEarnings(false)}>
       <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
@@ -1287,6 +1339,26 @@ export default function DriverView() {
               <p className="dv-profile-phone">{driverPhone}</p>
             </div>
           </div>
+          {driverCompliance && (driverCompliance.vehicle_type || driverCompliance.vehicle_plate || driverCompliance.insurance_expiry) && (
+            <div className="dv-profile-compliance">
+              {(driverCompliance.vehicle_type || driverCompliance.vehicle_plate) && (
+                <div className="dv-profile-compliance-row">
+                  <span>Vehicle</span>
+                  <span>{[driverCompliance.vehicle_type, driverCompliance.vehicle_plate].filter(Boolean).join(' · ')}</span>
+                </div>
+              )}
+              {driverCompliance.insurance_expiry && (
+                <div className="dv-profile-compliance-row">
+                  <span>Insurance</span>
+                  <span className={insuranceWarn ? 'dv-profile-compliance-warn' : ''}>
+                    {insuranceDays < 0
+                      ? `Expired ${new Date(driverCompliance.insurance_expiry).toLocaleDateString()}`
+                      : `Expires ${new Date(driverCompliance.insurance_expiry).toLocaleDateString()}${insuranceWarn ? ` (${insuranceDays}d)` : ''}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <button className="dv-profile-row" onClick={() => { setShowProfile(false); loadPerf(); setShowPerf(true); }}>
             <BarChart2 size={18}/> <span>Performance</span>
           </button>
@@ -1597,8 +1669,17 @@ export default function DriverView() {
           <div className="dv-hdr-left">
             <img src="/images/logos/logo.png" className="dv-logo-sm" alt="Habibi Halal Express" onError={e => e.target.style.display='none'}/>
             <span className="dv-hdr-driver-badge">DRIVER</span>
+            {insuranceWarn && (
+              <button className="dv-hdr-compliance-badge" onClick={() => setShowProfile(true)} title={insuranceDays < 0 ? 'Insurance expired' : `Insurance expires in ${insuranceDays}d`}>
+                <AlertCircle size={12}/>
+              </button>
+            )}
           </div>
           <div className="dv-hdr-right">
+            <span
+              className={`dv-conn-dot ${!socketConnected ? 'dv-conn-dot-bad' : (tracking && gpsSignalLost) ? 'dv-conn-dot-warn' : 'dv-conn-dot-ok'}`}
+              title={!socketConnected ? 'No connection' : (tracking && gpsSignalLost) ? 'GPS signal lost' : 'Connected'}
+            />
             <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
               <Siren size={18}/>
             </button>
@@ -1609,6 +1690,7 @@ export default function DriverView() {
             >
               <span className={`dv-status-dot ${onBreak ? 'dv-status-dot-break' : onDuty ? 'dv-status-dot-on' : ''}`}/>
               {onBreak ? 'On Break' : onDuty ? 'Online' : 'Offline'}
+              {!onBreak && shiftElapsedLabel && <span className="dv-duty-timer"> · {shiftElapsedLabel}</span>}
             </button>
           </div>
         </header>
@@ -1853,8 +1935,15 @@ export default function DriverView() {
         <div className="dv-hdr-order">
           <span className="dv-order-tag">{assignment.order_number || `#${assignment.order_id}`}</span>
           <span className={`dv-status-chip ${statusCls}`}>{statusLabel}</span>
+          {cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0) && (
+            <span className="dv-hdr-earn-pill" title="Tips earned today">+${cashSummary.total_tips.toFixed(2)}</span>
+          )}
         </div>
         <div className="dv-hdr-right">
+          <span
+            className={`dv-conn-dot ${!socketConnected ? 'dv-conn-dot-bad' : (tracking && gpsSignalLost) ? 'dv-conn-dot-warn' : 'dv-conn-dot-ok'}`}
+            title={!socketConnected ? 'No connection' : (tracking && gpsSignalLost) ? 'GPS signal lost' : 'Connected'}
+          />
           <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
             <Siren size={18}/>
           </button>
@@ -1869,6 +1958,7 @@ export default function DriverView() {
           >
             <span className={`dv-status-dot ${onDuty ? 'dv-status-dot-on' : ''}`}/>
             {onDuty ? 'Online' : 'Offline'}
+            {shiftElapsedLabel && <span className="dv-duty-timer"> · {shiftElapsedLabel}</span>}
           </button>
         </div>
       </header>

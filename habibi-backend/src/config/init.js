@@ -1455,6 +1455,9 @@ const createTables = async () => {
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS vehicle_type      VARCHAR(50)`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS vehicle_plate     VARCHAR(20)`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS insurance_expiry  DATE`);
+    // When the current on-duty shift started -- lets the driver app show a
+    // live shift timer; NULL whenever the driver is off duty.
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS duty_started_at   TIMESTAMPTZ`);
 
     // ── driver_messages: driver ↔ dispatch chat ───────────────────
     await client.query(`

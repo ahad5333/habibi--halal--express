@@ -82,6 +82,7 @@ const {
   getDriverPerformance,
   exportPayroll,
   updateDriverLocation,
+  getDriverStatus,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
@@ -198,6 +199,7 @@ router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              c
 router.post  ('/assignments/:assignment_id/proof', proofUpload.single('photo'), driverOrAdmin, uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
 router.patch ('/drivers/:driver_id/location',      driverOrAdmin,              updateDriverLocation);
+router.get   ('/drivers/:driver_id/status',        driverOrAdmin,              getDriverStatus);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 router.get   ('/drivers/:driver_id/history',       driverOrAdmin,              getDriverHistory);
 router.get   ('/drivers/:driver_id/stats',         driverOrAdmin,              getDriverStats);

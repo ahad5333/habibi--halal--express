@@ -625,7 +625,7 @@ const setDriverDuty = async (req, res) => {
   if (typeof on_duty !== 'boolean') return res.status(400).json({ message: 'on_duty must be boolean' });
   try {
     await pool.query(
-      `UPDATE staff_members SET is_on_duty=$1 WHERE id=$2 AND role='delivery'`,
+      `UPDATE staff_members SET is_on_duty=$1, duty_started_at = CASE WHEN $1 THEN NOW() ELSE NULL END WHERE id=$2 AND role='delivery'`,
       [on_duty, driver_id]
     );
     const io = req.app.get('io');
@@ -994,6 +994,29 @@ const getDriverCashSummary = async (req, res) => {
       total_tips:       parseFloat(row.total_tips || 0),
       total_cod:        parseFloat(row.total_cod || 0),
       cod_orders_count: parseInt(row.cod_orders_count || 0),
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Driver: own duty/shift + compliance status (for the navbar) ─────
+const getDriverStatus = async (req, res) => {
+  const { driver_id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT is_on_duty, duty_started_at, vehicle_type, vehicle_plate, insurance_expiry
+       FROM staff_members WHERE id=$1 AND role='delivery'`,
+      [driver_id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: 'Driver not found' });
+    const row = result.rows[0];
+    res.json({
+      is_on_duty:       !!row.is_on_duty,
+      duty_started_at:  row.duty_started_at,
+      vehicle_type:     row.vehicle_type,
+      vehicle_plate:    row.vehicle_plate,
+      insurance_expiry: row.insurance_expiry,
     });
   } catch (err) {
     res.status(500).json(safeError(err));
@@ -1604,4 +1627,5 @@ module.exports = {
   exportPayroll,
   updateDriverLocation,
   broadcastOrderToNearestDrivers,
+  getDriverStatus,
 };
