@@ -39,6 +39,14 @@ function daysUntil(dateStr) {
   return Math.round(diffMs / 86400000);
 }
 
+// Explicit month/day/year in UTC -- a bare toLocaleDateString() is ambiguous
+// (MM/DD vs DD/MM depends on the viewer's browser locale) and, since this is
+// a pure calendar date with no time component, converting through the
+// viewer's local timezone risks displaying the day before/after the real one.
+function formatComplianceDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
 // Decodes Google's encoded polyline format (the standard algorithm --
 // see https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
 // into an array of [lat, lng] pairs Leaflet can draw directly.
@@ -1352,8 +1360,8 @@ export default function DriverView() {
                   <span>Insurance</span>
                   <span className={insuranceWarn ? 'dv-profile-compliance-warn' : ''}>
                     {insuranceDays < 0
-                      ? `Expired ${new Date(driverCompliance.insurance_expiry).toLocaleDateString()}`
-                      : `Expires ${new Date(driverCompliance.insurance_expiry).toLocaleDateString()}${insuranceWarn ? ` (${insuranceDays}d)` : ''}`}
+                      ? `Expired ${formatComplianceDate(driverCompliance.insurance_expiry)}`
+                      : `Expires ${formatComplianceDate(driverCompliance.insurance_expiry)}${insuranceWarn ? ` (${insuranceDays}d)` : ''}`}
                   </span>
                 </div>
               )}

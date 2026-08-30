@@ -2076,7 +2076,7 @@
   .dv-icon-btn svg { width: 14px; height: 14px; }
   .dv-duty-pill    { padding: 0.25rem 0.55rem; font-size: 0.7rem; gap: 0.28rem; }
   .dv-status-dot   { width: 6px; height: 6px; }
-  .dv-duty-timer   { display: none; } /* elapsed time is a nice-to-have -- drop it first when space is tight */
+  .dv-duty-timer   { font-size: 0.9em; }
   .dv-hdr-compliance-badge { width: 18px; height: 18px; }
   .dv-hdr-earn-pill { font-size: 0.65rem; padding: 0.1rem 0.4rem; }
   .dv-hdr-order    { gap: 0.35rem; }
