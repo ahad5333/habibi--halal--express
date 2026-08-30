@@ -2,7 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
+import { DOCS } from '../data/legalDocs';
 import './LegalPage.css';
+
+// See TermsOfService.jsx's comment -- section content now sources from the
+// shared data/legalDocs.js instead of a page-local hardcoded copy. One
+// exception: "Feedback & Contact" drops the shared data's static
+// email/phone sentence, since this page already shows that info in its own
+// dynamic, settings-driven contact card just below -- repeating it inline
+// would just be redundant, not a real omission.
+const sections = DOCS.accessibility.sections.map(s =>
+  s.title === 'Feedback & Contact'
+    ? { ...s, content: 'If you experience difficulty accessing any portion of the Services, require assistance, or wish to report an accessibility concern, please contact us. Habibi Halal Express will make reasonable efforts to address accessibility concerns and provide assistance where practicable.' }
+    : s
+);
 
 const Accessibility = () => {
   const settings = useSettings();
@@ -32,37 +45,15 @@ const Accessibility = () => {
         </p>
 
         <div className="legal-sections">
-
-          <div className="legal-section">
-            <div className="legal-section-hdr">
-              <span className="legal-section-icon">🎯</span>
-              <h2 className="legal-section-title">Our Commitment</h2>
+          {sections.map(s => (
+            <div key={s.title} className="legal-section">
+              <div className="legal-section-hdr">
+                <span className="legal-section-icon">{s.icon}</span>
+                <h2 className="legal-section-title">{s.title}</h2>
+              </div>
+              <p className="legal-section-body">{s.content}</p>
             </div>
-            <p className="legal-section-body">
-              Habibi Halal Express continually works to improve accessibility through ongoing evaluation, testing, maintenance, and enhancement of digital properties. The Company endeavors to support commonly used assistive technologies and accessibility features, including screen readers, keyboard navigation, alternative text where appropriate, scalable text, and other accessibility tools.
-            </p>
-          </div>
-
-          <div className="legal-section">
-            <div className="legal-section-hdr">
-              <span className="legal-section-icon">♿</span>
-              <h2 className="legal-section-title">Assistive Technology Support</h2>
-            </div>
-            <p className="legal-section-body">
-              Because technology continuously evolves, some content, features, or third-party integrations may not always function perfectly with every assistive technology. Habibi Halal Express welcomes feedback regarding accessibility barriers and opportunities for improvement.
-            </p>
-          </div>
-
-          <div className="legal-section">
-            <div className="legal-section-hdr">
-              <span className="legal-section-icon">📣</span>
-              <h2 className="legal-section-title">Feedback & Contact</h2>
-            </div>
-            <p className="legal-section-body">
-              If you experience difficulty accessing any portion of the Services, require assistance, or wish to report an accessibility concern, please contact us. Habibi Halal Express will make reasonable efforts to address accessibility concerns and provide assistance where practicable.
-            </p>
-          </div>
-
+          ))}
         </div>
 
         {/* Contact card */}

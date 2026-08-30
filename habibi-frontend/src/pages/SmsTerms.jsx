@@ -2,82 +2,30 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
+import { DOCS } from '../data/legalDocs';
 import './LegalPage.css';
 
 const SmsTerms = () => {
   const settings = useSettings();
 
-  const sections = [
-    {
-      icon: '📲',
-      title: 'How You Consent',
-      content: 'By providing your mobile telephone number and affirmatively opting in through one or more approved methods, you consent to receive recurring automated and non-automated text messages from Habibi Halal Express, Inc. Consent may be obtained through account registration, mobile-application registration, checkout processes, loyalty-program enrollment, wholesale-account enrollment, promotional forms, website forms, customer-service interactions, or other approved consent mechanisms.',
-    },
-    {
-      icon: '📨',
-      title: 'Message Types',
-      content: null,
-      list: [
-        'Order confirmations.',
-        'Order updates.',
-        'Pickup notifications.',
-        'Delivery notifications.',
-        'Customer-service communications.',
-        'Account notifications.',
-        'Security notifications.',
-        'Marketing messages.',
-        'Promotional offers.',
-        'Coupons.',
-        'Loyalty and rewards communications.',
-        'Event announcements.',
-        'Abandoned-cart reminders.',
-        'Wholesale-account communications.',
-        'Operational communications.',
-      ],
-    },
-    {
-      icon: '✅',
-      title: 'Consent & Rates',
-      content: 'Consent to receive text messages is not a condition of purchase. Message frequency may vary. Message and data rates may apply.',
-    },
-    {
-      icon: '🛑',
-      title: 'Opt-Out (STOP)',
-      content: 'You may opt out at any time by replying STOP to any text message. After opting out, you may receive a final confirmation message confirming your request. You may re-enroll at any time by texting START or updating your notification preferences in your account settings.',
-    },
-    {
-      icon: '❓',
-      title: 'Help',
-      content: null,
-      detail: (
-        <>
-          For assistance, reply <strong>HELP</strong> or contact us at{' '}
-          <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a>{' '}
-          or <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>.
-        </>
-      ),
-    },
-    {
-      icon: '📡',
-      title: 'Carrier Disclaimer',
-      content: 'Wireless carriers are not liable for delayed or undelivered messages. Message delivery is subject to network availability.',
-    },
-    {
-      icon: '👤',
-      title: 'Eligibility',
-      content: 'You represent that you are the authorized user of the mobile telephone number provided and that you have authority to consent to receive communications at that number.',
-    },
-    {
-      icon: '🔄',
-      title: 'Modifications',
-      content: 'Habibi Halal Express may modify, suspend, or terminate SMS programs at any time with or without notice.',
-    },
-    {
-      icon: '🔒',
-      title: 'Privacy',
-      content: 'Information collected in connection with SMS programs is subject to the Company\'s Privacy Policy. We will not sell your mobile number to third parties for their own marketing purposes.',
-    },
-  ];
+  // See TermsOfService.jsx's comment -- section content now sources from the
+  // shared data/legalDocs.js instead of a page-local hardcoded copy. One
+  // exception: "Help" swaps in a live settings-driven contact link (the
+  // shared data file can't reach useSettings()), same info either way.
+  const sections = DOCS.sms.sections.map(s =>
+    s.title === 'Help'
+      ? {
+          ...s,
+          detail: (
+            <>
+              For assistance, reply <strong>HELP</strong> or contact us at{' '}
+              <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a>{' '}
+              or <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>.
+            </>
+          ),
+        }
+      : s
+  );
 
   return (
     <>
