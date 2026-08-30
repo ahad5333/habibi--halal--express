@@ -85,12 +85,19 @@
   align-items: center;
   gap: 0.5rem;
 }
-.dv-logo-sm {
-  width: 96px;
-  height: 96px;
+/* Brand banner row -- sits above the sticky .dv-hdr controls row (not
+   inside it) so it scrolls away instead of permanently costing header
+   height on every screen. mix-blend-mode:screen makes the logo art's
+   near-black background disappear into the page's own dark background. */
+.dv-hdr-banner-row {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem 0;
+}
+.dv-logo-banner {
+  height: 52px;
+  width: auto;
   object-fit: contain;
-  border-radius: 0;
-  background: transparent;
   mix-blend-mode: screen;
 }
 .dv-hdr-title {
@@ -2067,7 +2074,8 @@
 /* Mobile phones — fix header crowding + empty space (< 640px) */
 @media (max-width: 640px) {
   /* Header: keep logo + title, shrink icon buttons + pill to fit one line */
-  .dv-logo-sm      { width: 108px; height: 108px; border-radius: 0; }
+  .dv-hdr-banner-row { padding: 0.5rem 0.85rem 0; }
+  .dv-logo-banner  { height: 56px; }
   .dv-hdr          { padding: 0.55rem 0.85rem; }
   .dv-hdr-left     { gap: 0.5rem; }
   .dv-hdr-title    { font-size: 0.88rem; white-space: nowrap; }
@@ -2090,7 +2098,7 @@
 
 /* Extra-small phones (< 380px) */
 @media (max-width: 380px) {
-  .dv-logo-sm      { width: 74px; height: 74px; border-radius: 0; }
+  .dv-logo-banner  { height: 42px; }
   .dv-duty-pill    { font-size: 0.68rem; padding: 0.25rem 0.5rem; }
   .dv-hero         { min-height: 170px; max-height: 300px; }
   .dv-hero-h1      { font-size: 1.2rem; }
@@ -2111,7 +2119,8 @@
 
 /* Landscape on phones (short viewport) */
 @media (max-height: 520px) and (orientation: landscape) {
-  .dv-logo-sm   { width: 56px; height: 56px; }
+  .dv-hdr-banner-row { padding: 0.3rem 1rem 0; }
+  .dv-logo-banner { height: 32px; }
   .dv-hdr       { padding: 0.4rem 1rem; }
   .dv-hero      { height: 130px; }
   .dv-hero-h1   { font-size: 1.1rem; }
@@ -2128,7 +2137,7 @@
 
 /* Large phones / small tablets (560px+) */
 @media (min-width: 560px) {
-  .dv-logo-sm      { width: 112px; height: 112px; }
+  .dv-logo-banner  { height: 58px; }
   .dv-hero         { height: 260px; }
   .dv-hero-h1      { font-size: 1.75rem; }
   .dv-body         { padding: 1.25rem; max-width: 600px; }
@@ -2141,7 +2150,8 @@
 
 /* Tablets (768px+) */
 @media (min-width: 768px) {
-  .dv-logo-sm   { width: 130px; height: 130px; }
+  .dv-hdr-banner-row { padding: 0.75rem 2rem 0; }
+  .dv-logo-banner { height: 66px; }
   .dv-hdr       { padding: 0.9rem 2rem; }
   .dv-hero      { height: 300px; }
   .dv-hero-h1   { font-size: 2rem; }

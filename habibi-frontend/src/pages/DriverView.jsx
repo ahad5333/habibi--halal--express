@@ -1672,10 +1672,19 @@ export default function DriverView() {
         {cancelAlertModal}
         {connBanner}
 
+        {/* Brand banner -- sits above the sticky controls header, not inside
+            it, so it scrolls away on scroll instead of permanently eating
+            header height every screen (the controls row below stays pinned
+            on its own). Full wordmark lockup, not just the icon, so it gets
+            its own row rather than being squeezed into the icon-sized slot
+            the old square logo used. */}
+        <div className="dv-hdr-banner-row">
+          <img src="/images/logos/logo-full.webp" className="dv-logo-banner" alt="Habibi Halal Express" onError={e => e.target.style.display='none'}/>
+        </div>
+
         {/* Header */}
         <header className="dv-hdr">
           <div className="dv-hdr-left">
-            <img src="/images/logos/logo.png" className="dv-logo-sm" alt="Habibi Halal Express" onError={e => e.target.style.display='none'}/>
             <span className="dv-hdr-driver-badge">DRIVER</span>
             {insuranceWarn && (
               <button className="dv-hdr-compliance-badge" onClick={() => setShowProfile(true)} title={insuranceDays < 0 ? 'Insurance expired' : `Insurance expires in ${insuranceDays}d`}>
