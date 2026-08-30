@@ -220,9 +220,13 @@
      street, warm amber streetlights, grill smoke/embers at the edge --
      matches the driver app's dark/amber theme and is delivery-specific
      rather than the generic kitchen-scene hero used elsewhere. */
+  /* Wide poster (2.36:1) cropped by "cover" into a narrower phone-width
+     slot -- centered position lands on the empty street stretch between
+     the scooter and the grill smoke, hiding the scooter entirely. Shifted
+     left so the scooter (the actual subject) stays in frame. */
   background-image: url('/images/hero/driver_hero_scooter.png');
   background-size: cover;
-  background-position: center;
+  background-position: 15% center;
   transform: scale(1.04);
   transition: transform 6s ease;
 }
