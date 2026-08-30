@@ -757,7 +757,7 @@ export default function DriverView() {
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/respond`, {
         method: 'PATCH',
-        body: JSON.stringify({ response: 'accepted' }),
+        body: JSON.stringify({ response: 'accepted', driver_id: driverId }),
       });
       setAssignment(prev => ({ ...prev, accepted_at: new Date().toISOString() }));
     } catch (e) { setError(e.message); }
@@ -767,7 +767,7 @@ export default function DriverView() {
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/respond`, {
         method: 'PATCH',
-        body: JSON.stringify({ response: 'rejected', reason: rejectReason }),
+        body: JSON.stringify({ response: 'rejected', reason: rejectReason, driver_id: driverId }),
       });
       setAssignment(null);
       setRejectOpen(false);
@@ -779,7 +779,7 @@ export default function DriverView() {
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'delivered' }),
+        body: JSON.stringify({ status: 'delivered', driver_id: driverId }),
       });
       stopTracking();
       setDeliveryPhase(null);
@@ -845,7 +845,7 @@ export default function DriverView() {
     try {
       await apiFetch(`/api/dispatch/assignments/${assignment.id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'delivered', note: 'Left at door' }),
+        body: JSON.stringify({ status: 'delivered', note: 'Left at door', driver_id: driverId }),
       });
       stopTracking();
       setDeliveryPhase(null);
