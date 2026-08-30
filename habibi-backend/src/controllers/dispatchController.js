@@ -266,6 +266,97 @@ const updateDriverGPS = async (req, res) => {
 };
 
 // ── Admin: broadcast a new order to all on-duty drivers ────────────
+function haversineMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Shared by both broadcast entry points: adminController.js's updateOrderStatus
+// (fires automatically on pending -> accepted, the primary path) and this
+// file's own broadcastOrderToDrivers (the manual admin re-broadcast button).
+// Ranks on-duty drivers by live distance to the delivery address and offers
+// the order to the nearest ones first -- but can never be WORSE than the old
+// broadcast-to-everyone behavior: if nobody on duty has a fresh location on
+// file yet, it falls straight back to that.
+async function broadcastOrderToNearestDrivers(io, order) {
+  let itemCount = 0;
+  try { itemCount = (typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []).length; } catch (_) {}
+  const deliveryAddr = [order.delivery_address, order.delivery_city].filter(Boolean).join(', ');
+  const payload = {
+    order_number: order.order_number,
+    customer_name: order.customer_name,
+    delivery_address: deliveryAddr,
+    total: parseFloat(order.total || 0),
+    tip: parseFloat(order.tip || 0),
+    item_count: itemCount,
+    broadcast_at: new Date().toISOString(),
+  };
+
+  const broadcastToEveryone = () => { if (io) io.to('drivers_online').emit('new_order_broadcast', payload); };
+
+  try {
+    const driversRes = await pool.query(
+      `SELECT id, current_lat, current_lng FROM staff_members
+        WHERE role='delivery' AND is_active=TRUE AND is_on_duty=TRUE
+          AND last_location_update > NOW() - INTERVAL '10 minutes'`
+    );
+
+    if (!io || driversRes.rows.length === 0 || !deliveryAddr) {
+      broadcastToEveryone();
+    } else {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(deliveryAddr)}`,
+        { headers: { 'User-Agent': 'HabibiHalalExpress/1.0', 'Accept-Language': 'en' } }
+      );
+      const geoData = await geoRes.json();
+      if (!geoData[0]) {
+        broadcastToEveryone();
+      } else {
+        const destLat = parseFloat(geoData[0].lat);
+        const destLng = parseFloat(geoData[0].lon);
+        const ranked = driversRes.rows
+          .map(d => ({ id: d.id, miles: haversineMiles(destLat, destLng, parseFloat(d.current_lat), parseFloat(d.current_lng)) }))
+          .sort((a, b) => a.miles - b.miles);
+        const nearest = ranked.slice(0, 2);
+
+        for (const d of nearest) io.to(`driver_${d.id}`).emit('new_order_broadcast', payload);
+
+        setTimeout(async () => {
+          try {
+            const claimed = await pool.query(
+              `SELECT 1 FROM delivery_assignments WHERE order_number=$1 AND status != 'cancelled'`,
+              [order.order_number]
+            );
+            if (claimed.rows.length === 0) broadcastToEveryone();
+          } catch (_) { broadcastToEveryone(); }
+        }, 8000);
+      }
+    }
+  } catch (_) {
+    broadcastToEveryone();
+  }
+
+  // Firebase push to drivers with the app closed/backgrounded -- unchanged
+  // from the previous behavior, sent to everyone regardless of the staging
+  // above (a closed app can't receive the personal-room socket emit anyway).
+  const tokenRes = await pool.query(
+    `SELECT driver_fcm_token FROM staff_members
+     WHERE role='delivery' AND is_active=TRUE AND driver_fcm_token IS NOT NULL`
+  );
+  for (const { driver_fcm_token } of tokenRes.rows) {
+    sendPushNotification(
+      driver_fcm_token,
+      '🔔 New Delivery Order',
+      `#${order.order_number} — ${deliveryAddr || 'Tap to view'}`,
+      { url: '/driver', type: 'new_order', tag: 'new-order' }
+    ).catch(() => {});
+  }
+  return tokenRes.rowCount;
+}
+
 const broadcastOrderToDrivers = async (req, res) => {
   const { order_number } = req.params;
   try {
@@ -276,41 +367,9 @@ const broadcastOrderToDrivers = async (req, res) => {
     );
     if (!orderRes.rows.length) return res.status(404).json({ message: 'Order not found' });
 
-    const order = orderRes.rows[0];
-    let itemCount = 0;
-    try { itemCount = (typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []).length; } catch (_) {}
-
-    const deliveryAddr = [order.delivery_address, order.delivery_city].filter(Boolean).join(', ');
-    const payload = {
-      order_number: order.order_number,
-      customer_name: order.customer_name,
-      delivery_address: deliveryAddr,
-      total: parseFloat(order.total || 0),
-      tip: parseFloat(order.tip || 0),
-      item_count: itemCount,
-      broadcast_at: new Date().toISOString(),
-    };
-
     const io = req.app.get('io');
-    if (io) {
-      io.to('drivers_online').emit('new_order_broadcast', payload);
-    }
-
-    // Also send Firebase push to drivers who have the app closed/backgrounded
-    const tokenRes = await pool.query(
-      `SELECT driver_fcm_token FROM staff_members
-       WHERE role='delivery' AND is_active=TRUE AND driver_fcm_token IS NOT NULL`
-    );
-    for (const { driver_fcm_token } of tokenRes.rows) {
-      sendPushNotification(
-        driver_fcm_token,
-        '🔔 New Delivery Order',
-        `#${order.order_number} — ${deliveryAddr || 'Tap to view'}`,
-        { url: '/driver', type: 'new_order', tag: 'new-order' }
-      ).catch(() => {});
-    }
-
-    res.json({ ok: true, broadcast_to: 'drivers_online', push_sent: tokenRes.rowCount });
+    const pushSent = await broadcastOrderToNearestDrivers(io, orderRes.rows[0]);
+    res.json({ ok: true, broadcast_to: 'drivers_online', push_sent: pushSent });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -572,6 +631,26 @@ const setDriverDuty = async (req, res) => {
     const io = req.app.get('io');
     if (io) io.to('admins').emit('driver_duty_change', { driver_id: parseInt(driver_id), on_duty });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Driver: lightweight location ping while on duty (idle, no active
+// delivery) -- separate from updateDriverGPS above, which is scoped to and
+// only runs during an active assignment. This is what makes nearest-driver
+// broadcast (broadcastOrderToNearestDrivers, below) possible at all.
+const updateDriverLocation = async (req, res) => {
+  const { driver_id } = req.params;
+  const { lat, lng } = req.body;
+  if (!lat || !lng) return res.status(400).json({ message: 'lat and lng required' });
+  try {
+    await pool.query(
+      `UPDATE staff_members SET current_lat=$1, current_lng=$2, last_location_update=NOW()
+        WHERE id=$3 ${req.isAdmin ? '' : 'AND id=$4'}`,
+      req.isAdmin ? [lat, lng, driver_id] : [lat, lng, driver_id, req.driverId]
+    );
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -1394,6 +1473,35 @@ const getDriverPerformance = async (req, res) => {
   }
 };
 
+// ── Admin: payroll export -- what's owed each driver for a date range ──
+// No "hours worked" column -- is_on_duty is a live boolean, not a
+// timestamped shift log, so that figure doesn't exist anywhere to report.
+const exportPayroll = async (req, res) => {
+  const { start, end } = req.query;
+  if (!start || !end) return res.status(400).json({ message: 'start and end dates required' });
+  try {
+    const result = await pool.query(
+      `SELECT sm.id, sm.name, sm.phone,
+         COUNT(da.id) FILTER (WHERE da.status = 'delivered') AS deliveries,
+         COALESCE(SUM(da.tip_amount) FILTER (WHERE da.status = 'delivered'), 0) AS total_tips,
+         COALESCE(SUM(go.total) FILTER (WHERE da.status = 'delivered' AND go.payment_method = 'cash'), 0) AS cash_collected
+       FROM staff_members sm
+       LEFT JOIN delivery_assignments da
+         ON da.driver_id = sm.id
+         AND da.assigned_at >= $1::date
+         AND da.assigned_at <  $2::date + INTERVAL '1 day'
+       LEFT JOIN guest_orders go ON go.order_number = da.order_number
+       WHERE sm.role = 'delivery'
+       GROUP BY sm.id, sm.name, sm.phone
+       ORDER BY sm.name`,
+      [start, end]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 // ── Driver: save FCM push token for background notifications ────────
 const saveDriverFcmToken = async (req, res) => {
   const { driver_id, fcm_token } = req.body;
@@ -1457,4 +1565,7 @@ module.exports = {
   getChatThreads,
   markChatRead,
   getDriverPerformance,
+  exportPayroll,
+  updateDriverLocation,
+  broadcastOrderToNearestDrivers,
 };

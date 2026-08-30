@@ -1440,6 +1440,13 @@ const createTables = async () => {
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_attempts INTEGER      DEFAULT 0`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_pin_lockout_until TIMESTAMPTZ`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS driver_fcm_token    TEXT`);
+    // Live location while ON DUTY, independent of any active delivery -- GPS was
+    // previously only ever recorded per-assignment (delivery_assignments.current_lat/
+    // lng), so an idle, waiting driver had no known location anywhere, making
+    // nearest-driver dispatch impossible. Same column types as that table.
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS current_lat         NUMERIC(10,7)`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS current_lng         NUMERIC(10,7)`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS last_location_update TIMESTAMPTZ`);
 
     // ── driver_messages: driver ↔ dispatch chat ───────────────────
     await client.query(`

@@ -642,6 +642,31 @@ export default function DriverView() {
 
   useEffect(() => () => stopTracking(), []);
 
+  // Lightweight idle location ping -- while on duty (regardless of whether
+  // there's an active delivery), report position every 60s so nearest-driver
+  // broadcast dispatch has something to rank against. One-shot getCurrentPosition
+  // rather than a continuous watchPosition (that's what startTracking/sendGPS
+  // above already does, but only during an active delivery) -- this needs to
+  // be battery-friendly since it can run for a whole shift with no delivery.
+  useEffect(() => {
+    if (!onDuty || !driverId || !navigator.geolocation) return;
+    const ping = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          apiFetch(`/api/dispatch/drivers/${driverId}/location`, {
+            method: 'PATCH',
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          }).catch(() => {});
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+      );
+    };
+    ping();
+    const interval = setInterval(ping, 60000);
+    return () => clearInterval(interval);
+  }, [onDuty, driverId, apiFetch]);
+
   useEffect(() => {
     if (!broadcastOrder) return;
     countdownRef.current = setInterval(() => {
@@ -816,6 +841,39 @@ export default function DriverView() {
         setError(e.message);
       }
     }
+  };
+
+  // Cash orders had no photo evidence at all before -- "Cash Collected" went
+  // straight to collect-cash. Now it opens an optional photo step first
+  // (this function), reusing the same proofFile/proofPreview state and the
+  // existing uploadProof endpoint the no-answer flow already relies on.
+  // Skipping the photo (skipCashProof, below) still completes the exact
+  // same collect-cash action -- never blocks the core payment-collection step.
+  const submitCashProofAndCollect = async () => {
+    if (!proofFile) { markCashCollected(); return; }
+    setSubmitting(true);
+    try {
+      const form = new FormData();
+      form.append('photo', proofFile);
+      form.append('driver_id', driverId);
+      form.append('note', 'Cash collected');
+      if (token) form.append('x_driver_token', token);
+      await fetch(`${API_BASE}/api/dispatch/assignments/${assignment.id}/proof`, {
+        method: 'POST',
+        headers: token ? { 'X-Driver-Token': token } : {},
+        body: form,
+      });
+    } catch (_) {}
+    setSubmitting(false);
+    setProofFile(null);
+    setProofPreview(null);
+    markCashCollected();
+  };
+
+  const skipCashProof = () => {
+    setProofFile(null);
+    setProofPreview(null);
+    markCashCollected();
   };
 
   const handlePhotoCapture = (e) => {
@@ -2059,7 +2117,7 @@ export default function DriverView() {
                 <div className="dv-contact-divider"><span>{isCod ? 'Collected cash?' : 'Customer responded?'}</span></div>
                 <div className="dv-btn-row">
                   {isCod ? (
-                    <button className="dv-btn dv-btn-cash-collect" onClick={markCashCollected}>
+                    <button className="dv-btn dv-btn-cash-collect" onClick={() => setDeliveryPhase('cod_photo')}>
                       <DollarSign size={18}/> Cash Collected — ${codAmt.toFixed(2)} ✓
                     </button>
                   ) : (
@@ -2116,6 +2174,51 @@ export default function DriverView() {
                   {submitting ? 'Submitting…' : <><CheckCircle size={18}/> Confirm — Left at Door</>}
                 </button>
                 <button className="dv-btn dv-btn-back" onClick={() => setDeliveryPhase('arrived')}>← Back</button>
+              </div>
+            )}
+
+            {deliveryPhase === 'cod_photo' && (
+              <div className="dv-card dv-proof-card">
+                <div className="dv-proof-header">
+                  <DollarSign size={22} className="dv-proof-icon"/>
+                  <div>
+                    <p className="dv-card-title" style={{ marginBottom: 0 }}>Add a Photo? (Optional)</p>
+                    <p className="dv-proof-sub">A photo can help if a cash amount is ever disputed. Totally optional — skip if you're in a hurry.</p>
+                  </div>
+                </div>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  style={{ display: 'none' }}
+                  onChange={handlePhotoCapture}
+                />
+                {!proofPreview ? (
+                  <button className="dv-btn dv-btn-camera" onClick={() => photoInputRef.current?.click()}>
+                    <Camera size={18}/> Take Photo
+                  </button>
+                ) : (
+                  <div className="dv-proof-preview-wrap">
+                    <img src={proofPreview} alt="Proof" className="dv-proof-img"/>
+                    <button className="dv-proof-retake" onClick={() => { setProofFile(null); setProofPreview(null); }}>
+                      <X size={13}/> Retake
+                    </button>
+                  </div>
+                )}
+                <button
+                  className="dv-btn dv-btn-cash-collect"
+                  onClick={submitCashProofAndCollect}
+                  disabled={submitting}
+                  style={{ marginTop: '0.75rem' }}
+                >
+                  {submitting ? 'Confirming…' : <><DollarSign size={18}/> {proofPreview ? 'Confirm with Photo' : `Confirm — $${codAmt.toFixed(2)} Collected`}</>}
+                </button>
+                {proofPreview ? (
+                  <button className="dv-btn dv-btn-back" onClick={skipCashProof} disabled={submitting}>Skip Photo, Confirm Anyway</button>
+                ) : (
+                  <button className="dv-btn dv-btn-back" onClick={() => setDeliveryPhase('arrived')}>← Back</button>
+                )}
               </div>
             )}
 

@@ -80,6 +80,8 @@ const {
   getChatThreads,
   markChatRead,
   getDriverPerformance,
+  exportPayroll,
+  updateDriverLocation,
 } = require('../controllers/dispatchController');
 
 // ── Driver auth middleware ──────────────────────────────────────────
@@ -195,6 +197,7 @@ router.patch ('/assignments/:id/collect-cash',     driverOrAdmin,              c
 router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              codDeliveryFailed);
 router.post  ('/assignments/:assignment_id/proof', proofUpload.single('photo'), driverOrAdmin, uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
+router.patch ('/drivers/:driver_id/location',      driverOrAdmin,              updateDriverLocation);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);
 router.get   ('/drivers/:driver_id/history',       driverOrAdmin,              getDriverHistory);
 router.get   ('/drivers/:driver_id/stats',         driverOrAdmin,              getDriverStats);
@@ -215,6 +218,7 @@ router.get ('/cash-report',              protect, admin, getCashReport);
 router.post('/cash-handins',             protect, admin, recordCashHandin);
 router.delete('/cash-handins/:id',       protect, admin, deleteCashHandin);
 router.get ('/driver-performance',       protect, admin, getDriverPerformance);
+router.get ('/driver-performance/export', protect, admin, exportPayroll);
 
 // Scheduled orders waiting for dispatch
 router.get('/scheduled', protect, admin, async (req, res) => {

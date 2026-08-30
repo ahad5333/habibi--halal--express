@@ -182,28 +182,22 @@ const updateOrderStatus = async (req, res) => {
         });
       } catch (_) {}
 
-      // When order is accepted, broadcast to all on-duty online drivers
+      // When order is accepted, broadcast to on-duty drivers -- nearest first
+      // if any have a fresh location on file, falling back to everyone at
+      // once otherwise (see broadcastOrderToNearestDrivers for the staging).
       if (status.toLowerCase() === 'accepted' && orderNumber) {
         void (async () => {
           try {
             const ord = await pool.query(
-              `SELECT customer_name, delivery_address, delivery_city, total, items
+              `SELECT order_number, customer_name, delivery_address, delivery_city, total, tip, items
                  FROM guest_orders WHERE order_number = $1 LIMIT 1`,
               [orderNumber]
             );
             const o = ord.rows[0];
             if (o) {
-              const itemCount = Array.isArray(o.items) ? o.items.length : 0;
-              const addr = [o.delivery_address, o.delivery_city].filter(Boolean).join(', ');
-              io.to('drivers_online').emit('new_order_broadcast', {
-                order_number:     orderNumber,
-                customer_name:    o.customer_name || 'Customer',
-                delivery_address: addr,
-                total:            parseFloat(o.total || 0),
-                item_count:       itemCount,
-                broadcast_at:     new Date().toISOString(),
-              });
-              console.log(`[Admin] Broadcast order ${orderNumber} to drivers_online`);
+              const { broadcastOrderToNearestDrivers } = require('./dispatchController');
+              await broadcastOrderToNearestDrivers(io, o);
+              console.log(`[Admin] Broadcast order ${orderNumber} to drivers`);
             }
           } catch (err) { console.error('[Admin] Driver broadcast failed:', err.message); }
         })();

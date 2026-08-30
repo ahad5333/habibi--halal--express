@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Truck, User, MapPin, Clock, CheckCircle, XCircle,
   RefreshCw, Navigation, ExternalLink, Phone, AlertCircle,
-  Package, ChevronDown, Bell, Map, MessageSquare, Send, BarChart2,
+  Package, ChevronDown, Bell, Map, MessageSquare, Send, BarChart2, Download,
 } from 'lucide-react';
 import io from 'socket.io-client';
 import L from 'leaflet';
@@ -464,12 +464,43 @@ function DriverChatPanel({ socket }) {
   );
 }
 
+// Same small local helper as Reports.jsx -- Blob + <a download>, no shared util.
+function csvExport(rows, filename) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]).join(',');
+  const body = rows.map(r => Object.values(r).map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([`${headers}\n${body}`], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function mondayOfThisWeek() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff)).toISOString().slice(0, 10);
+}
+
 // ── Driver Performance Panel ────────────────────────────────────────
 function DriverPerformancePanel() {
   const [rows, setRows]   = useState([]);
   const [days, setDays]   = useState(30);
   const [loading, setLoading] = useState(true);
   const [sort, setSort]   = useState({ col: 'deliveries', dir: -1 });
+  const [payrollStart, setPayrollStart] = useState(mondayOfThisWeek());
+  const [payrollEnd, setPayrollEnd]     = useState(new Date().toISOString().slice(0, 10));
+  const [exporting, setExporting]       = useState(false);
+
+  const handleExportPayroll = async () => {
+    setExporting(true);
+    try {
+      const data = await adminAPI.exportPayroll(payrollStart, payrollEnd);
+      csvExport(Array.isArray(data) ? data : [], `payroll_${payrollStart}_${payrollEnd}.csv`);
+    } catch (_) {}
+    setExporting(false);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -503,6 +534,18 @@ function DriverPerformancePanel() {
             className={days === p.val ? 'dd-btn-primary dd-btn-sm' : 'dd-btn-outline dd-btn-sm'}
           >{p.label}</button>
         ))}
+      </div>
+
+      {/* Payroll export -- separate date range from the table's own period filter above,
+          since payroll periods (e.g. this week) rarely line up with the table's presets */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Payroll export:</span>
+        <input type="date" value={payrollStart} onChange={e => setPayrollStart(e.target.value)} className="dd-input" style={{ width: 'auto' }} />
+        <span style={{ color: 'var(--color-text-muted)' }}>to</span>
+        <input type="date" value={payrollEnd} onChange={e => setPayrollEnd(e.target.value)} className="dd-input" style={{ width: 'auto' }} />
+        <button className="dd-btn-outline dd-btn-sm" onClick={handleExportPayroll} disabled={exporting}>
+          <Download size={13}/> {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
       </div>
 
       {loading ? (
