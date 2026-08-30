@@ -171,7 +171,7 @@ const getDriverAssignment = async (req, res) => {
               go.items, go.delivery_instructions
        FROM delivery_assignments da
        LEFT JOIN guest_orders go ON go.order_number = da.order_number
-       WHERE da.driver_id=$1 AND da.status IN ('assigned','en_route')
+       WHERE da.driver_id=$1 AND da.status IN ('assigned','picked_up','en_route')
        ORDER BY da.assigned_at DESC
        LIMIT 1`,
       [driver_id]
@@ -582,7 +582,7 @@ const getDeliveryDrivers = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT sm.id, sm.name, sm.phone, sm.is_on_duty,
-              COUNT(da.id) FILTER (WHERE da.status IN ('assigned','en_route')) AS active_assignments
+              COUNT(da.id) FILTER (WHERE da.status IN ('assigned','picked_up','en_route')) AS active_assignments
        FROM staff_members sm
        LEFT JOIN delivery_assignments da ON da.driver_id = sm.id
        WHERE sm.role='delivery' AND sm.is_active=TRUE
@@ -611,7 +611,7 @@ const getAssignmentForOrder = async (req, res) => {
                 WHERE driver_id = da.driver_id AND customer_rating IS NOT NULL) AS driver_rating_count
        FROM delivery_assignments da
        LEFT JOIN staff_members sm ON sm.id = da.driver_id
-       WHERE da.order_number=$1 AND da.status IN ('assigned','en_route','delivered')
+       WHERE da.order_number=$1 AND da.status IN ('assigned','picked_up','en_route','delivered')
        ORDER BY da.assigned_at DESC LIMIT 1`,
       [order_number]
     );
