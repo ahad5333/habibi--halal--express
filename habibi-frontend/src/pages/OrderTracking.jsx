@@ -481,15 +481,18 @@ export default function OrderTracking() {
       scrollWheelZoom: false,
     });
 
-    // CartoDB Dark Matter — no API key required
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
+    // CARTO's dark_all tiles now require a paid API key (previously free) --
+    // switched to Esri's World_Dark_Gray basemap, which stays key-free.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+    }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
     }).addTo(map);
 
     // Attribution bottom-right
     L.control.attribution({ position: 'bottomright', prefix: false })
-      .addAttribution('© <a href="https://openstreetmap.org">OSM</a> © <a href="https://carto.com">CARTO</a>')
+      .addAttribution('© <a href="https://openstreetmap.org">OSM</a> © <a href="https://www.esri.com">Esri</a>')
       .addTo(map);
 
     // Restaurant pin
