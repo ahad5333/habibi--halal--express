@@ -1005,7 +1005,7 @@ const getDriverStatus = async (req, res) => {
   const { driver_id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT is_on_duty, duty_started_at, vehicle_type, vehicle_plate, insurance_expiry
+      `SELECT is_on_duty, duty_started_at, vehicle_type, vehicle_plate, insurance_expiry, shift_start, shift_end
        FROM staff_members WHERE id=$1 AND role='delivery'`,
       [driver_id]
     );
@@ -1017,6 +1017,8 @@ const getDriverStatus = async (req, res) => {
       vehicle_type:     row.vehicle_type,
       vehicle_plate:    row.vehicle_plate,
       insurance_expiry: row.insurance_expiry,
+      shift_start:      row.shift_start,
+      shift_end:        row.shift_end,
     });
   } catch (err) {
     res.status(500).json(safeError(err));

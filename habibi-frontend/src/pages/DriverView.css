@@ -767,6 +767,37 @@
 .dv-profile-compliance-row > span:first-child { color: #888; }
 .dv-profile-compliance-row > span:last-child { color: #ddd; font-weight: 600; }
 .dv-profile-compliance-warn { color: #f5a623 !important; }
+/* Rows that pair a label with an inline action/status (Notifications,
+   Install App) -- distinct from .dv-profile-row, which is itself a
+   full-row button (Performance/PIN/Logout). */
+.dv-profile-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px solid #222;
+  font-size: 0.85rem;
+  color: #ddd;
+}
+.dv-profile-status-ok   { color: #00c853; font-weight: 600; font-size: 0.82rem; }
+.dv-profile-status-warn { color: #f5a623; font-weight: 600; font-size: 0.82rem; }
+.dv-profile-status-hint { color: #888; font-size: 0.76rem; text-align: right; max-width: 60%; }
+.dv-profile-inline-btn {
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.35);
+  color: #E5B64E;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.dv-profile-version {
+  text-align: center;
+  color: #555;
+  font-size: 0.7rem;
+  margin-top: 0.75rem;
+}
 .dv-profile-row {
   display: flex;
   align-items: center;

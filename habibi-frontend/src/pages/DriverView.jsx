@@ -47,6 +47,15 @@ function formatComplianceDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
+// Postgres TIME columns arrive as "HH:MM:SS" -- format as "5:00 PM".
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 // Decodes Google's encoded polyline format (the standard algorithm --
 // see https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
 // into an array of [lat, lng] pairs Leaflet can draw directly.
@@ -274,6 +283,14 @@ export default function DriverView() {
   const [pinError, setPinError]                 = useState('');
   const [pinSuccess, setPinSuccess]             = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [notifPermission, setNotifPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : null
+  );
+  const [isStandalone] = useState(
+    () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator?.standalone === true
+  );
+  const [isIOS] = useState(() => /iPad|iPhone|iPod/.test(navigator.userAgent));
+  const [installAvailable, setInstallAvailable] = useState(false); // mirrors installPromptRef -- refs don't trigger re-renders, so this is what the Profile row actually reads
 
   const photoInputRef        = useRef(null);
   const watchRef             = useRef(null);
@@ -384,9 +401,10 @@ export default function DriverView() {
     const onPrompt = (e) => {
       e.preventDefault();
       installPromptRef.current = e;
+      setInstallAvailable(true);
       setTimeout(() => setShowInstallBanner(true), 20000);
     };
-    const onInstalled = () => setShowInstallBanner(false);
+    const onInstalled = () => { setShowInstallBanner(false); setInstallAvailable(false); };
     window.addEventListener('beforeinstallprompt', onPrompt);
     window.addEventListener('appinstalled', onInstalled);
     return () => {
@@ -454,6 +472,8 @@ export default function DriverView() {
         vehicle_type: data.vehicle_type,
         vehicle_plate: data.vehicle_plate,
         insurance_expiry: data.insurance_expiry,
+        shift_start: data.shift_start,
+        shift_end: data.shift_end,
       });
       if (data.is_on_duty) {
         setOnDuty(true);
@@ -1332,6 +1352,25 @@ export default function DriverView() {
     </div>
   );
 
+  // Shared by the install banner and the Profile drawer's Install row, so
+  // both stay in sync on the same captured beforeinstallprompt event.
+  const handleInstallClick = async () => {
+    if (!installPromptRef.current) return;
+    installPromptRef.current.prompt();
+    const { outcome } = await installPromptRef.current.userChoice;
+    // The captured prompt event is one-shot either way -- gone once used,
+    // accepted or not -- so stop offering it regardless of outcome.
+    setShowInstallBanner(false);
+    setInstallAvailable(false);
+    installPromptRef.current = null;
+  };
+
+  const handleEnableNotifications = async () => {
+    if (typeof Notification === 'undefined') return;
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+  };
+
   const profileDrawer = showProfile && (
     <div className="dv-history-overlay" onClick={() => setShowProfile(false)}>
       <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
@@ -1367,6 +1406,36 @@ export default function DriverView() {
               )}
             </div>
           )}
+          {driverCompliance?.shift_start && driverCompliance?.shift_end && (
+            <div className="dv-profile-compliance">
+              <div className="dv-profile-compliance-row">
+                <span>Scheduled Shift</span>
+                <span>{formatTime(driverCompliance.shift_start)} – {formatTime(driverCompliance.shift_end)}</span>
+              </div>
+            </div>
+          )}
+          {typeof Notification !== 'undefined' && (
+            <div className="dv-profile-action-row">
+              <span>Notifications</span>
+              {notifPermission === 'granted' ? (
+                <span className="dv-profile-status-ok">Enabled</span>
+              ) : notifPermission === 'denied' ? (
+                <span className="dv-profile-status-warn" title="Blocked in your browser settings -- Habibi Driver can't re-ask, you'll need to allow it manually">Blocked</span>
+              ) : (
+                <button className="dv-profile-inline-btn" onClick={handleEnableNotifications}>Enable</button>
+              )}
+            </div>
+          )}
+          {!isStandalone && (installAvailable || isIOS) && (
+            <div className="dv-profile-action-row">
+              <span>Install App</span>
+              {installAvailable ? (
+                <button className="dv-profile-inline-btn" onClick={handleInstallClick}>Install</button>
+              ) : (
+                <span className="dv-profile-status-hint">Tap Share, then "Add to Home Screen"</span>
+              )}
+            </div>
+          )}
           <button className="dv-profile-row" onClick={() => { setShowProfile(false); loadPerf(); setShowPerf(true); }}>
             <BarChart2 size={18}/> <span>Performance</span>
           </button>
@@ -1376,6 +1445,7 @@ export default function DriverView() {
           <button className="dv-profile-row dv-profile-row-danger" onClick={handleLogout}>
             <DoorOpen size={18}/> <span>Log Out</span>
           </button>
+          <p className="dv-profile-version">v{__BUILD_INFO__.sha} · {__BUILD_INFO__.date}</p>
         </div>
       </div>
     </div>
@@ -1429,15 +1499,7 @@ export default function DriverView() {
     <div className="dv-install-banner">
       <span className="dv-install-icon">📱</span>
       <span className="dv-install-text">Add Habibi Driver to your home screen</span>
-      <button
-        className="dv-install-btn"
-        onClick={async () => {
-          if (!installPromptRef.current) return;
-          installPromptRef.current.prompt();
-          const { outcome } = await installPromptRef.current.userChoice;
-          if (outcome === 'accepted') { setShowInstallBanner(false); installPromptRef.current = null; }
-        }}
-      >
+      <button className="dv-install-btn" onClick={handleInstallClick}>
         Install
       </button>
       <button className="dv-install-dismiss" onClick={() => setShowInstallBanner(false)}><X size={14}/></button>
