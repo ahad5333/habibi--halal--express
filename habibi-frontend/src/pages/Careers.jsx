@@ -1,52 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { departments } from '../data/departments';
 import './Careers.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-
-const departments = [
-  {
-    id: 'management',
-    label: 'The Visionaries',
-    title: 'Management',
-    description: 'Our leadership orchestrates the symphony of service with precision and cultural integrity.',
-    img: '/images/staff/management.png',
-    size: 'large',
-  },
-  {
-    id: 'kitchen',
-    label: 'The Artists',
-    title: 'Kitchen',
-    description: 'Masters of Halal gastronomy and flavor architecture.',
-    img: '/images/staff/kitchen.jpg',
-    size: 'large',
-  },
-  {
-    id: 'serving',
-    label: 'The Ambassadors',
-    title: 'Serving',
-    description: 'Guiding our guests through an immersive culinary journey.',
-    img: '/images/staff/serving.png',
-    size: 'small',
-  },
-  {
-    id: 'delivery',
-    label: 'The Logistics',
-    title: 'Delivery',
-    description: 'Precision on every route, freshness at every door.',
-    img: '/images/staff/delivery.png',
-    size: 'small',
-  },
-  {
-    id: 'stock',
-    label: 'The Foundation',
-    title: 'Stock Staff',
-    description: 'The backbone of our artisanal supply chain.',
-    img: '/images/staff/stock.png',
-    size: 'small',
-  },
-];
 
 const EMPTY_FORM = {
   name: '', email: '', phone: '', role_applied: '', cover_message: '', vacancy_id: '',
@@ -62,6 +20,8 @@ const Careers = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null); // { success, message }
   const openRolesRef = useRef(null);
+  const deptSectionRef = useRef(null);
+  const [deptInView, setDeptInView] = useState(false);
 
   useEffect(() => {
     if (!location.hash) return;
@@ -71,6 +31,16 @@ const Careers = () => {
       setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     }
   }, [location.hash]);
+
+  useEffect(() => {
+    const el = deptSectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setDeptInView(true); obs.disconnect(); }
+    }, { threshold: 0.15 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/careers/vacancies`)
@@ -145,31 +115,56 @@ const Careers = () => {
       </section>
 
       {/* Department Grid */}
-      <section className="section departments-section">
+      <section className="section departments-section" ref={deptSectionRef}>
         <div className="container">
+          <div className={`dept-header${deptInView ? ' in-view' : ''}`}>
+            <span className="dept-eyebrow">✦ Meet The Team</span>
+            <h2 className="dept-heading">The Departments</h2>
+            <p className="dept-subheading">
+              Five crafts, one kitchen — every role plays its part in the art of Halal hospitality.
+            </p>
+          </div>
           <div className="dept-grid">
             <div className="dept-row row-two">
-              {departments.slice(0, 2).map(dept => (
-                <div key={dept.id} id={dept.id} className="dept-card dept-card-large">
+              {departments.slice(0, 2).map((dept, i) => (
+                <Link
+                  key={dept.id}
+                  id={dept.id}
+                  to={`/careers/departments/${dept.id}`}
+                  className={`dept-card dept-card-large${deptInView ? ' in-view' : ''}`}
+                  style={{ transitionDelay: `${0.15 + i * 0.12}s` }}
+                >
+                  <span className="dept-index">0{i + 1}</span>
                   <img src={dept.img} alt={dept.title} className="dept-img" />
+                  <div className="dept-shine" aria-hidden="true" />
                   <div className="dept-overlay">
                     <span className="dept-label">{dept.label}</span>
                     <h3 className="dept-title">{dept.title}</h3>
                     <p className="dept-desc">{dept.description}</p>
+                    <span className="dept-arrow" aria-hidden="true">→</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <div className="dept-row row-three">
-              {departments.slice(2).map(dept => (
-                <div key={dept.id} id={dept.id} className="dept-card dept-card-small">
+              {departments.slice(2).map((dept, i) => (
+                <Link
+                  key={dept.id}
+                  id={dept.id}
+                  to={`/careers/departments/${dept.id}`}
+                  className={`dept-card dept-card-small${deptInView ? ' in-view' : ''}`}
+                  style={{ transitionDelay: `${0.15 + (i + 2) * 0.12}s` }}
+                >
+                  <span className="dept-index">0{i + 3}</span>
                   <img src={dept.img} alt={dept.title} className="dept-img" />
+                  <div className="dept-shine" aria-hidden="true" />
                   <div className="dept-overlay">
                     <span className="dept-label">{dept.label}</span>
                     <h3 className="dept-title">{dept.title}</h3>
                     <p className="dept-desc">{dept.description}</p>
+                    <span className="dept-arrow" aria-hidden="true">→</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -206,11 +201,25 @@ const Careers = () => {
 
           <div className="hiring-image-col">
             <div className="hiring-image">
-              <img src="/images/staff/hiring.jpg" alt="We Are Hiring" className="hiring-img" />
+              <img src="/images/food/kitchen-hero.webp" alt="Join the Habibi Halal Express team" className="hiring-img" />
               <div className="hiring-img-overlay" />
               <div className="positions-badge">
-                <span className="positions-num text-primary">{vacanciesLoading ? '—' : `${vacancies.length}+`}</span>
-                <span className="text-xs text-muted uppercase tracking-wider">Active Positions</span>
+                {vacanciesLoading ? (
+                  <>
+                    <span className="positions-num text-primary">—</span>
+                    <span className="text-xs text-muted uppercase tracking-wider">Loading…</span>
+                  </>
+                ) : vacancies.length > 0 ? (
+                  <>
+                    <span className="positions-num text-primary">{vacancies.length}+</span>
+                    <span className="text-xs text-muted uppercase tracking-wider">Active Positions</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="positions-num text-primary" style={{ fontSize: '1.4rem' }}>Always</span>
+                    <span className="text-xs text-muted uppercase tracking-wider">Hiring</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -218,7 +227,7 @@ const Careers = () => {
       </section>
 
       {/* Open Roles */}
-      <section className="section open-roles-section" ref={openRolesRef}>
+      <section id="open-roles" className="section open-roles-section" ref={openRolesRef}>
         <div className="container">
           <h2 className="section-title">Open <em>Roles</em></h2>
           <p className="section-subtitle text-muted">Explore current opportunities across all departments.</p>

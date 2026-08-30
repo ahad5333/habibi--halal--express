@@ -1,0 +1,360 @@
+/* DepartmentDetail.css */
+
+.dd-page {
+  background: var(--color-bg);
+}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.dd-hero {
+  position: relative;
+  height: 60vh;
+  min-height: 460px;
+  max-height: 640px;
+  overflow: hidden;
+}
+
+/* Full-bleed cover, cropped from the bottom only (object-position: top) so
+   whatever gets cut off on a short wide banner is legs/background, never
+   heads — staff photos vary a lot in aspect ratio (some near-square) and a
+   center crop was cutting heads off entirely on the squarer ones. */
+.dd-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(1.1) brightness(0.88);
+}
+
+.dd-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(0deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.15) 100%);
+}
+
+.dd-hero-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2.75rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.dd-back:hover {
+  border-color: #E5B64E;
+  color: #E5B64E;
+}
+
+.dd-eyebrow {
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #E5B64E;
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.3);
+  border-radius: 20px;
+  padding: 5px 16px;
+  margin-bottom: 0.4rem;
+}
+
+.dd-title {
+  font-family: var(--font-serif);
+  font-size: 3.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.05;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.dd-tagline {
+  font-size: 1.15rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+  max-width: 560px;
+}
+
+/* ── Intro ────────────────────────────────────────────────────── */
+.dd-intro-section {
+  background: var(--color-bg);
+}
+
+.dd-intro {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.dd-intro.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dd-intro-text {
+  font-size: 1.3rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.82);
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+/* ── Pillars ──────────────────────────────────────────────────── */
+.dd-pillars-section {
+  padding-top: 0;
+}
+
+.dd-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.dd-pillar-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem;
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16,1,0.3,1),
+    transform 0.6s cubic-bezier(0.16,1,0.3,1),
+    border-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.dd-pillar-card.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dd-pillar-card:hover {
+  border-color: rgba(229,182,78,0.4);
+  transform: translateY(-6px);
+}
+
+.dd-pillar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.25);
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.dd-pillar-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.dd-pillar-text {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+/* ── Secondary photo break ───────────────────────────────────── */
+.dd-photo-break {
+  position: relative;
+  height: 520px;
+  overflow: hidden;
+}
+
+.dd-photo-break-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  filter: saturate(1.1) brightness(0.92);
+}
+
+.dd-photo-break-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.5) 100%);
+}
+
+/* ── CTA ──────────────────────────────────────────────────────── */
+.dd-cta-block {
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.dd-cta-heading {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+}
+
+.dd-cta-sub {
+  color: var(--color-text-muted);
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+
+.dd-cta-btns {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dd-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary);
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.dd-cta-btn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+}
+
+.dd-cta-btn--outline {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.dd-cta-btn--outline:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.4);
+}
+
+/* ── Next department banner ──────────────────────────────────── */
+.dd-next-section {
+  position: relative;
+  display: block;
+  height: 220px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dd-next-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  filter: saturate(1.1) brightness(0.55);
+  transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), filter 0.4s ease;
+}
+
+.dd-next-section:hover .dd-next-img {
+  transform: scale(1.06);
+  filter: saturate(1.2) brightness(0.65);
+}
+
+.dd-next-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.3) 100%);
+}
+
+.dd-next-content {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.dd-next-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #E5B64E;
+}
+
+.dd-next-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: #ffffff;
+  width: fit-content;
+  transition: gap 0.3s ease;
+}
+
+.dd-next-section:hover .dd-next-title {
+  gap: 16px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .dd-title { font-size: 2.5rem; }
+  .dd-pillars-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .dd-hero { min-height: 400px; }
+  .dd-title { font-size: 2rem; }
+  .dd-tagline { font-size: 1rem; }
+  .dd-intro-text { font-size: 1.05rem; }
+  .dd-pillars-grid { grid-template-columns: 1fr; }
+  .dd-cta-heading { font-size: 1.6rem; }
+  .dd-next-title { font-size: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd-intro,
+  .dd-pillar-card,
+  .dd-next-img {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

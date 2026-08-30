@@ -18,6 +18,7 @@ const Locations        = lazy(() => import('./pages/Locations'));
 const OrderTracking    = lazy(() => import('./pages/OrderTracking'));
 const About            = lazy(() => import('./pages/About'));
 const Careers          = lazy(() => import('./pages/Careers'));
+const DepartmentDetail  = lazy(() => import('./pages/DepartmentDetail'));
 const Contact          = lazy(() => import('./pages/Contact'));
 const Wholesale        = lazy(() => import('./pages/Wholesale'));
 const Account          = lazy(() => import('./pages/Account'));
@@ -127,6 +128,7 @@ function Layout() {
           <Route path="/order-tracking" element={<OrderTracking />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
+          <Route path="/careers/departments/:id" element={<DepartmentDetail />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/wholesale" element={<Wholesale />} />
           <Route path="/login" element={<Login />} />
