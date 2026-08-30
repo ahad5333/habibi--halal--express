@@ -8,6 +8,12 @@ import { adminAPI } from '../services/api';
 import './Integrations.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
+// These webhook URLs get copy-pasted into each marketplace's merchant developer
+// portal, so they must point at the real backend API — not window.location.origin,
+// which on the deployed admin panel is admin.habibihe.com (a different domain
+// from the API at habibihe.com and doesn't run the backend at all).
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 const PLATFORM_META = {
   ubereats: {
     name:     'Uber Eats',
@@ -85,10 +91,7 @@ function PlatformCard({ platform, data, onSave, onSync, syncing }) {
   const [editing, setEditing]   = useState(false);
   const [rate, setRate]         = useState(String(data.commission_rate));
   const [saving, setSaving]     = useState(false);
-  const apiBase = typeof window !== 'undefined'
-    ? window.location.origin.replace(':5174', ':5001').replace(':5173', ':5001')
-    : 'https://yourapi.com';
-  const webhookUrl = `${apiBase}/api/marketplace/webhook/${platform}`;
+  const webhookUrl = `${API_BASE}/api/marketplace/webhook/${platform}`;
 
   const save = async () => {
     setSaving(true);
@@ -262,7 +265,7 @@ export default function Integrations() {
           <button className="btn btn-secondary btn-icon" onClick={load} title="Refresh">
             <RefreshCw size={15} />
           </button>
-          <Link to="/credentials" className="btn btn-secondary">
+          <Link to="/platform-credentials" className="btn btn-secondary">
             <KeyRound size={14} /> API Keys
           </Link>
           <button
@@ -350,10 +353,7 @@ export default function Integrations() {
           <p className="int-panel-sub">Register these URLs in each platform's developer portal to receive live orders.</p>
           {['ubereats', 'grubhub', 'doordash', 'caviar'].map(plat => {
             const meta = PLATFORM_META[plat];
-            const apiBase = typeof window !== 'undefined'
-              ? window.location.origin.replace(':5174', ':5001').replace(':5173', ':5001')
-              : 'https://yourapi.com';
-            const url = `${apiBase}/api/marketplace/webhook/${plat}`;
+            const url = `${API_BASE}/api/marketplace/webhook/${plat}`;
             return (
               <div key={plat} className="int-webhook-row">
                 <div>
