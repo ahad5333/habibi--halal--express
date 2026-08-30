@@ -619,6 +619,81 @@
   color: var(--color-primary);
   margin: 0;
 }
+
+/* ── Post-delivery rating popup ── */
+@keyframes ot-rating-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ot-rating-pop {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.ot-rating-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: ot-rating-fade 0.2s ease;
+}
+.ot-rating-popup {
+  background: #111111;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 380px;
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  animation: ot-rating-pop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.ot-rating-popup-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  text-align: center;
+}
+.ot-rating-popup-stars {
+  display: flex;
+  gap: 0.4rem;
+}
+.ot-rating-popup-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.ot-rating-tag {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #ccc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ot-rating-tag-selected {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.ot-rating-popup-submit { width: 100%; margin-top: 0.25rem; }
+.ot-rating-popup-later {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
 .ot-new-driver-badge {
   font-size: 0.7rem;
   color: var(--color-text-muted);

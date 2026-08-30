@@ -289,6 +289,7 @@ export const adminAPI = {
   markChatRead:         (driver_id)       => req(`/api/dispatch/driver/${driver_id}/chat/read`, { method: 'PATCH' }),
   getDriverPerformance: (days = 30)       => req(`/api/dispatch/driver-performance?days=${days}`),
   exportPayroll: (start, end)             => req(`/api/dispatch/driver-performance/export?start=${start}&end=${end}`),
+  getDriverFeedback: ()                   => req(`/api/dispatch/driver-feedback`),
 
   // Offline payment handles (Zelle / Cash App)
   getOfflineHandles:    ()     => req('/api/admin/payment-settings/offline-handles'),

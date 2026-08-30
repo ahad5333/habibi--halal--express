@@ -495,6 +495,8 @@ function DriverPerformancePanel() {
   const [checkoutSettings, setCheckoutSettings] = useState(null); // current tax/fee/goal -- needed so saving the goal doesn't clobber the others
   const [goalInput, setGoalInput]       = useState('10');
   const [savingGoal, setSavingGoal]     = useState(false);
+  const [feedback, setFeedback]         = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
 
   const handleExportPayroll = async () => {
     setExporting(true);
@@ -534,6 +536,13 @@ function DriverPerformancePanel() {
         if (data?.driver_daily_goal) setGoalInput(String(data.driver_daily_goal));
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    adminAPI.getDriverFeedback()
+      .then(data => setFeedback(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setFeedbackLoading(false));
   }, []);
 
   const sorted = [...rows].sort((a, b) => {
@@ -660,6 +669,38 @@ function DriverPerformancePanel() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Individual customer ratings/comments -- the table above only ever
+          shows an aggregate avg_rating per driver, with no way to see what
+          customers actually said. */}
+      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '2rem 0 0.75rem' }}>Recent Delivery Feedback</h3>
+      {feedbackLoading ? (
+        <div className="dd-loading"><div className="dd-spinner-lg"/></div>
+      ) : feedback.length === 0 ? (
+        <div className="dd-empty">No customer ratings yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          {feedback.map(f => (
+            <div key={f.order_number} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 0.9rem', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{f.driver_name || 'Unknown driver'}</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>#{f.order_number}</span>
+                  <span style={{ color: '#E5B64E', fontSize: '0.82rem' }}>{'★'.repeat(f.customer_rating)}{'☆'.repeat(5 - f.customer_rating)}</span>
+                </div>
+                {f.customer_rating_tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                    {f.customer_rating_tags.map(tag => (
+                      <span key={tag} style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{fmtDateTime(f.delivered_at)}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

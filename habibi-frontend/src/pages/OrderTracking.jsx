@@ -13,6 +13,11 @@ const API_BASE   = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const RESTAURANT_LAT = 40.873092;
 const RESTAURANT_LNG = -73.8892829;
 
+// Pre-written quick-select comment tags for the post-delivery rating popup --
+// must match RATING_TAGS in habibi-backend/src/controllers/dispatchController.js
+// (the server rejects anything not in that list).
+const RATING_TAGS = ['Fast delivery', 'Friendly driver', 'Order arrived hot', 'Great communication', 'Order was late', 'Missing items', 'Order was cold'];
+
 const STEPS = [
   { id: 1, key: 'pending',          label: 'Received',   emoji: '📋', animClass: 'anim-received'  },
   { id: 2, key: 'accepted',         label: 'Accepted',   emoji: '✅', animClass: 'anim-accepted'  },
@@ -181,6 +186,9 @@ export default function OrderTracking() {
   const [driverRatingHover, setDriverRatingHover] = useState(0);
   const [driverRatingSubmitting, setDriverRatingSubmitting] = useState(false);
   const [driverRatingSubmitted, setDriverRatingSubmitted] = useState(false);
+  const [ratingPopupStars, setRatingPopupStars] = useState(0);
+  const [ratingPopupTags, setRatingPopupTags]   = useState([]);
+  const [showRatingPopup, setShowRatingPopup]   = useState(false);
   const [proofPhotoUrl, setProofPhotoUrl]   = useState(null); // delivery photo, in-house drivers only
   const [nearbyToast, setNearbyToast]       = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
@@ -589,6 +597,21 @@ export default function OrderTracking() {
     if (showChatPanel) chatBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [chatMessages, showChatPanel]);
 
+  // Auto-opens the post-delivery rating popup the moment the order is
+  // delivered and not yet rated -- covers both the live socket-driven
+  // transition (driver marks delivered while this tab is open) and the
+  // customer reopening/reloading the tracking page later while still
+  // unrated. Suppressed for this order once dismissed this session.
+  useEffect(() => {
+    if (currentStep < 6) return;
+    if (assignmentInfo?.customerRating != null) return;
+    if (driverRatingSubmitted) return;
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem(`dismissed_rating_${orderNum}`) === '1'; } catch {}
+    if (dismissed) return;
+    setShowRatingPopup(true);
+  }, [currentStep, assignmentInfo, driverRatingSubmitted, orderNum]);
+
   const fmtEta = (s) => {
     const m = Math.floor(s / 60);
     const sec = String(s % 60).padStart(2, '0');
@@ -628,22 +651,32 @@ export default function OrderTracking() {
     }
   };
 
-  const handleRateDriver = async (stars) => {
+  const handleRateDriver = async (stars, tags = []) => {
     if (driverRatingSubmitting || driverRatingSubmitted) return;
     setDriverRatingSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/api/dispatch/order/${orderNum}/rate`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: stars }),
+        body: JSON.stringify({ rating: stars, tags }),
       });
       if (!res.ok) throw new Error();
       setDriverRatingSubmitted(true);
+      setShowRatingPopup(false);
     } catch {
       // Non-critical — silently leave the widget interactive so the customer can retry.
     } finally {
       setDriverRatingSubmitting(false);
     }
+  };
+
+  const dismissRatingPopup = () => {
+    try { sessionStorage.setItem(`dismissed_rating_${orderNum}`, '1'); } catch {}
+    setShowRatingPopup(false);
+  };
+
+  const toggleRatingTag = (tag) => {
+    setRatingPopupTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
   // ── Support chat handlers ──
@@ -741,6 +774,49 @@ export default function OrderTracking() {
           <MapPin size={15} />
           <span>Your driver is almost there! Please be ready.</span>
           <button className="ot-nearby-close" onClick={() => setNearbyToast(false)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
+      {/* ── Post-delivery rating popup ── */}
+      {showRatingPopup && (
+        <div className="ot-rating-popup-overlay" onClick={dismissRatingPopup}>
+          <div className="ot-rating-popup" onClick={e => e.stopPropagation()}>
+            <p className="ot-rating-popup-title">How was your delivery?</p>
+            <div className="ot-rating-popup-stars" role="radiogroup" aria-label="Rate your delivery from 1 to 5 stars">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  className="ot-driver-rating-star"
+                  disabled={driverRatingSubmitting}
+                  onClick={() => setRatingPopupStars(n)}
+                  aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                >
+                  <Star size={28} fill={n <= ratingPopupStars ? 'var(--color-primary)' : 'none'} stroke="var(--color-primary)" strokeWidth={1.5} />
+                </button>
+              ))}
+            </div>
+            <div className="ot-rating-popup-tags">
+              {RATING_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`ot-rating-tag ${ratingPopupTags.includes(tag) ? 'ot-rating-tag-selected' : ''}`}
+                  onClick={() => toggleRatingTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <button
+              className="btn btn-primary ot-rating-popup-submit"
+              disabled={!ratingPopupStars || driverRatingSubmitting}
+              onClick={() => handleRateDriver(ratingPopupStars, ratingPopupTags)}
+            >
+              {driverRatingSubmitting ? 'Submitting…' : 'Submit'}
+            </button>
+            <button className="ot-rating-popup-later" onClick={dismissRatingPopup}>Maybe later</button>
+          </div>
         </div>
       )}
 

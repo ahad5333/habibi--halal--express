@@ -1382,6 +1382,9 @@ const createTables = async () => {
     // Customer's post-delivery rating of the driver (1-5, one-time -- see rateDelivery).
     // Nullable/unset means "not rated yet", not "0 stars" -- callers must distinguish.
     await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS customer_rating SMALLINT CHECK (customer_rating BETWEEN 1 AND 5)`);
+    // Pre-written quick-select tags the customer can pick alongside their
+    // star rating (e.g. "Order was late") -- see RATING_TAGS in rateDelivery.
+    await client.query(`ALTER TABLE delivery_assignments ADD COLUMN IF NOT EXISTS customer_rating_tags TEXT[]`);
     await client.query(`
       CREATE TABLE IF NOT EXISTS driver_cash_handins (
         id           SERIAL PRIMARY KEY,

@@ -81,6 +81,7 @@ const {
   markChatRead,
   getDriverPerformance,
   exportPayroll,
+  getRecentDeliveryFeedback,
   updateDriverLocation,
   getDriverStatus,
 } = require('../controllers/dispatchController');
@@ -221,6 +222,7 @@ router.post('/cash-handins',             protect, admin, recordCashHandin);
 router.delete('/cash-handins/:id',       protect, admin, deleteCashHandin);
 router.get ('/driver-performance',       protect, admin, getDriverPerformance);
 router.get ('/driver-performance/export', protect, admin, exportPayroll);
+router.get ('/driver-feedback',          protect, admin, getRecentDeliveryFeedback);
 
 // Scheduled orders waiting for dispatch
 router.get('/scheduled', protect, admin, async (req, res) => {

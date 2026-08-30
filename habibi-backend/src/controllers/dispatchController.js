@@ -755,24 +755,49 @@ const getAssignmentForOrder = async (req, res) => {
 // allowed once per assignment (customer_rating IS NULL) and only after the
 // order actually shows delivered, so this can't be used to pre-rate or
 // spam-overwrite a rating.
+// Fixed allowlist -- keeps customer_rating_tags from being used to stash
+// arbitrary free text; must match RATING_TAGS in OrderTracking.jsx.
+const RATING_TAGS = ['Fast delivery', 'Friendly driver', 'Order arrived hot', 'Great communication', 'Order was late', 'Missing items', 'Order was cold'];
+
 const rateDelivery = async (req, res) => {
   const { order_number } = req.params;
   const rating = parseInt(req.body.rating, 10);
   if (!rating || rating < 1 || rating > 5) {
     return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
   }
+  const tags = Array.isArray(req.body.tags)
+    ? req.body.tags.filter(t => RATING_TAGS.includes(t))
+    : [];
   try {
     const result = await pool.query(
       `UPDATE delivery_assignments
-          SET customer_rating = $1
-        WHERE order_number = $2 AND status = 'delivered' AND customer_rating IS NULL
+          SET customer_rating = $1, customer_rating_tags = $2
+        WHERE order_number = $3 AND status = 'delivered' AND customer_rating IS NULL
         RETURNING id`,
-      [rating, order_number]
+      [rating, tags.length ? tags : null, order_number]
     );
     if (!result.rows.length) {
       return res.status(409).json({ message: 'This delivery has already been rated, or is not yet complete.' });
     }
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Admin: recent per-delivery customer feedback (stars + tags) ─────
+const getRecentDeliveryFeedback = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT sm.name AS driver_name, da.order_number, da.customer_rating,
+              da.customer_rating_tags, da.delivered_at
+       FROM delivery_assignments da
+       LEFT JOIN staff_members sm ON sm.id = da.driver_id
+       WHERE da.customer_rating IS NOT NULL
+       ORDER BY da.delivered_at DESC
+       LIMIT 30`
+    );
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -1630,4 +1655,5 @@ module.exports = {
   updateDriverLocation,
   broadcastOrderToNearestDrivers,
   getDriverStatus,
+  getRecentDeliveryFeedback,
 };
