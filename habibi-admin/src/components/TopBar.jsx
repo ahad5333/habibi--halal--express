@@ -14,7 +14,6 @@ const TITLES = {
   '/partners':       { label: 'Partner Applications', sub: 'Review wholesale & partner requests' },
   '/wholesale-catalog': { label: 'Wholesale Catalog', sub: 'Business menu management' },
   '/partner-orders': { label: 'Partner Orders',       sub: 'B2B order management' },
-  '/tables':         { label: 'Table Manager',        sub: 'Dine-in QR codes & seating' },
   '/catering':       { label: 'Catering',             sub: 'Event & catering requests' },
   '/careers':        { label: 'Careers',              sub: 'Job listings & applications' },
   '/reviews':        { label: 'Reviews',              sub: 'Customer ratings & feedback' },

@@ -47,7 +47,6 @@ const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
 const DeliveryDispatch = lazy(() => import('./pages/DeliveryDispatch'));
 const DriverView       = lazy(() => import('./pages/Driver'));
 const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
-const TableManager      = lazy(() => import('./pages/TableManager'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
 const PaymentAccounts  = lazy(() => import('./pages/PaymentAccounts'));
@@ -94,7 +93,6 @@ function AdminLayout() {
             <Route path="/customers" element={<Customers />} />
             <Route path="/coupons"   element={<Coupons />} />
             <Route path="/catering"         element={<CateringAdmin />} />
-            <Route path="/tables"           element={<TableManager />} />
           <Route path="/careers"          element={<CareersAdmin />} />
             <Route path="/reviews"          element={<Reviews />} />
             <Route path="/analytics" element={<Analytics />} />

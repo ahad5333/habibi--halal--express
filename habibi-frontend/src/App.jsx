@@ -34,7 +34,6 @@ const VerifyEmail      = lazy(() => import('./pages/VerifyEmail'));
 const DriverView       = lazy(() => import('./pages/DriverView'));
 const DriverLogin      = lazy(() => import('./pages/DriverLogin'));
 const DriverSetPin     = lazy(() => import('./pages/DriverSetPin'));
-const DineIn           = lazy(() => import('./pages/DineIn'));
 const KitchenDisplay   = lazy(() => import('./pages/KitchenDisplay'));
 const Catering         = lazy(() => import('./pages/Catering'));
 const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
@@ -69,7 +68,6 @@ const NOINDEX_PATHS = new Set([
 ]);
 function isNoIndexPath(pathname) {
   if (NOINDEX_PATHS.has(pathname)) return true;
-  if (pathname.startsWith('/dine-in/')) return true;
   if (pathname === '*' || !pathname) return true;
   return false;
 }
@@ -151,7 +149,6 @@ function Layout() {
           <Route path="/partner/login" element={<PartnerLogin />} />
           <Route path="/partner" element={<PartnerPortal />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/dine-in/:tableSlug" element={<DineIn />} />
           <Route path="/catering" element={<Catering />} />
           <Route path="/admin/broadcasts" element={<InternalGuard requireAdmin><Broadcasts /></InternalGuard>} />
 
