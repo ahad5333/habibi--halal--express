@@ -1595,8 +1595,8 @@ export default function DriverView() {
         {/* Header */}
         <header className="dv-hdr">
           <div className="dv-hdr-left">
-            <img src="/images/logos/logo.png" className="dv-logo-sm" alt="" onError={e => e.target.style.display='none'}/>
-            <span className="dv-hdr-title">Habibi Driver</span>
+            <img src="/images/logos/logo.png" className="dv-logo-sm" alt="Habibi Halal Express" onError={e => e.target.style.display='none'}/>
+            <span className="dv-hdr-driver-badge">DRIVER</span>
           </div>
           <div className="dv-hdr-right">
             <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
