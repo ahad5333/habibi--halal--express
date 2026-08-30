@@ -216,10 +216,11 @@
 .dv-hero-img {
   position: absolute;
   inset: 0;
-  /* Real Habibi photography (was a generic Unsplash stock photo of an
-     unrelated plated dish) -- this one's dark, moody "halal street food"
-     shot already matches the app's own theme far better than stock ever did. */
-  background-image: url('/images/hero/hero_bg_stunning.webp');
+  /* Client-provided poster: a delivery scooter parked on a dark night
+     street, warm amber streetlights, grill smoke/embers at the edge --
+     matches the driver app's dark/amber theme and is delivery-specific
+     rather than the generic kitchen-scene hero used elsewhere. */
+  background-image: url('/images/hero/driver_hero_scooter.png');
   background-size: cover;
   background-position: center;
   transform: scale(1.04);
