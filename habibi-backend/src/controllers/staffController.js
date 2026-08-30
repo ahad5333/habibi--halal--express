@@ -2,9 +2,10 @@ const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const crypto = require('crypto');
 const { sendSMS, toE164 } = require('../services/smsService');
+const { getDriverSecretSalt } = require('../utils/driverSecret');
 
 function driverToken(driver_id) {
-  const salt = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
+  const salt = getDriverSecretSalt();
   return crypto.createHmac('sha256', salt).update(String(driver_id)).digest('hex');
 }
 
@@ -23,14 +24,15 @@ exports.getStaff = async (req, res) => {
 
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, phone, role, shift_start, shift_end, notes } = req.body;
+    const { name, email, phone, role, shift_start, shift_end, notes, vehicle_type, vehicle_plate, insurance_expiry } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
     const normalizedPhone = phone ? toE164(String(phone).trim()) : null;
     const result = await pool.query(
-      `INSERT INTO staff_members (name, email, phone, role, shift_start, shift_end, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO staff_members (name, email, phone, role, shift_start, shift_end, notes, vehicle_type, vehicle_plate, insurance_expiry)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [name, email || null, normalizedPhone, role || 'kitchen',
-       shift_start || null, shift_end || null, notes || null]
+       shift_start || null, shift_end || null, notes || null,
+       vehicle_type || null, vehicle_plate || null, insurance_expiry || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -42,16 +44,18 @@ exports.createStaff = async (req, res) => {
 exports.updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, role, shift_start, shift_end, notes, is_active } = req.body;
+    const { name, email, phone, role, shift_start, shift_end, notes, is_active, vehicle_type, vehicle_plate, insurance_expiry } = req.body;
     const normalizedPhone = phone ? toE164(String(phone).trim()) : null;
     const result = await pool.query(
       `UPDATE staff_members
        SET name=$1, email=$2, phone=$3, role=$4,
            shift_start=$5, shift_end=$6, notes=$7, is_active=$8,
+           vehicle_type=$9, vehicle_plate=$10, insurance_expiry=$11,
            updated_at=NOW()
-       WHERE id=$9 RETURNING *`,
+       WHERE id=$12 RETURNING *`,
       [name, email || null, normalizedPhone, role, shift_start || null,
-       shift_end || null, notes || null, is_active !== false, id]
+       shift_end || null, notes || null, is_active !== false,
+       vehicle_type || null, vehicle_plate || null, insurance_expiry || null, id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Staff not found' });
     res.json(result.rows[0]);

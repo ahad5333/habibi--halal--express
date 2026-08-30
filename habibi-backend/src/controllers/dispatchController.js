@@ -630,7 +630,43 @@ const setDriverDuty = async (req, res) => {
     );
     const io = req.app.get('io');
     if (io) io.to('admins').emit('driver_duty_change', { driver_id: parseInt(driver_id), on_duty });
-    res.json({ success: true });
+
+    // Going off duty with real, uncollected COD cash outstanding gets a live
+    // dispatch alert -- collected minus already-handed-in (NOT the raw total;
+    // getDriverCashSummary's total_cod doesn't net out hand-ins, which would
+    // over-alert here for a driver who already handed some in mid-shift).
+    let outstandingCash = 0;
+    let driverName = null;
+    if (!on_duty && io) {
+      try {
+        const nameRes = await pool.query(`SELECT name FROM staff_members WHERE id=$1`, [driver_id]);
+        driverName = nameRes.rows[0]?.name || null;
+        const cashRes = await pool.query(
+          `SELECT
+             COALESCE((
+               SELECT SUM(go.total) FROM delivery_assignments da
+               LEFT JOIN guest_orders go ON go.order_number = da.order_number
+               WHERE da.driver_id = $1 AND go.payment_method = 'cash' AND da.status != 'cancelled'
+                 AND da.cash_collected_at IS NOT NULL
+                 AND DATE(da.assigned_at AT TIME ZONE 'America/New_York') = DATE(NOW() AT TIME ZONE 'America/New_York')
+             ), 0) AS collected,
+             COALESCE((
+               SELECT SUM(amount) FROM driver_cash_handins
+               WHERE driver_id = $1 AND DATE(created_at AT TIME ZONE 'America/New_York') = DATE(NOW() AT TIME ZONE 'America/New_York')
+             ), 0) AS handed_in`,
+          [driver_id]
+        );
+        const { collected, handed_in } = cashRes.rows[0];
+        outstandingCash = Math.max(0, parseFloat(collected) - parseFloat(handed_in));
+        if (outstandingCash > 0) {
+          io.to('admins').emit('driver_offline_with_cash', {
+            driver_id: parseInt(driver_id), driver_name: driverName, amount: outstandingCash,
+          });
+        }
+      } catch (_) { /* non-fatal -- duty toggle itself already succeeded above */ }
+    }
+
+    res.json({ success: true, outstanding_cash: outstandingCash });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

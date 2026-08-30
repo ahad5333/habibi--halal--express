@@ -1053,6 +1053,7 @@ const createTables = async () => {
     `);
     await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS free_delivery_threshold NUMERIC(8,2)`);
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS driver_daily_goal INTEGER DEFAULT 10`);
 
     // ── Business Hours ─────────────────────────────────────────────
     // This table had no CREATE TABLE anywhere in this file — it only exists
@@ -1447,6 +1448,13 @@ const createTables = async () => {
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS current_lat         NUMERIC(10,7)`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS current_lng         NUMERIC(10,7)`);
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS last_location_update TIMESTAMPTZ`);
+    // Structured vehicle/insurance fields -- previously only ever lived inside
+    // the freeform notes box (whose own placeholder literally suggested
+    // "Vehicle, license plate, etc."), with no way to see at a glance whose
+    // insurance is about to lapse.
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS vehicle_type      VARCHAR(50)`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS vehicle_plate     VARCHAR(20)`);
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS insurance_expiry  DATE`);
 
     // ── driver_messages: driver ↔ dispatch chat ───────────────────
     await client.query(`

@@ -1921,6 +1921,21 @@
   line-height: 1.4;
 }
 
+.dv-cash-ack-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(245,166,35,0.06);
+  border: 1px solid rgba(245,166,35,0.2);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #d4a94a;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.dv-cash-ack-row input { margin-top: 0.15rem; accent-color: #f5a623; flex-shrink: 0; }
+
 .dv-summary-empty {
   text-align: center;
   font-size: 0.875rem;

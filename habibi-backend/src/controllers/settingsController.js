@@ -63,6 +63,14 @@ const getCheckoutSettings = async (req, res) => {
     getTaxRate(), getServiceFeeRate(), getFreeDeliveryThreshold(),
   ]);
 
+  // Driver dashboard's daily-deliveries goal -- previously hardcoded to 10
+  // in DriverView.jsx with no way for an admin to change it.
+  let driverDailyGoal = 10;
+  try {
+    const goalRes = await pool.query(`SELECT driver_daily_goal FROM system_settings WHERE id = 1`);
+    if (goalRes.rows[0]?.driver_daily_goal != null) driverDailyGoal = parseInt(goalRes.rows[0].driver_daily_goal, 10);
+  } catch (_) { /* fall back to default above */ }
+
   res.json({
     tax_rate:                taxRate,
     service_fee_rate:        svcFeeRate,
@@ -70,11 +78,12 @@ const getCheckoutSettings = async (req, res) => {
     free_delivery_threshold: freeDeliveryThreshold,
     loyalty_earn_rate:       loyaltyEarnRate,
     loyalty_redeem_rate:     loyaltyRedeemRate,
+    driver_daily_goal:       driverDailyGoal,
   });
 };
 
 const updateSystemSettings = async (req, res) => {
-  const { tax_rate, service_fee_rate, free_delivery_threshold } = req.body;
+  const { tax_rate, service_fee_rate, free_delivery_threshold, driver_daily_goal } = req.body;
   const taxNum = parseFloat(tax_rate);
   const svcNum = parseFloat(service_fee_rate);
   if (!(taxNum >= 0 && taxNum < 1)) {
@@ -93,18 +102,27 @@ const updateSystemSettings = async (req, res) => {
       return res.status(400).json({ message: 'Free delivery threshold must be a non-negative dollar amount.' });
     }
   }
+  // Same optional pattern for the driver dashboard's daily goal.
+  let goalNum;
+  if (driver_daily_goal !== undefined && driver_daily_goal !== '') {
+    goalNum = parseInt(driver_daily_goal, 10);
+    if (!(goalNum > 0)) {
+      return res.status(400).json({ message: 'Driver daily goal must be a positive whole number.' });
+    }
+  }
   try {
     await pool.query(
       `UPDATE system_settings
           SET tax_rate = $1, service_fee_rate = $2,
               free_delivery_threshold = COALESCE($3, free_delivery_threshold),
+              driver_daily_goal = COALESCE($4, driver_daily_goal),
               updated_at = NOW()
         WHERE id = 1`,
-      [taxNum, svcNum, thresholdNum ?? null]
+      [taxNum, svcNum, thresholdNum ?? null, goalNum ?? null]
     );
     logAudit(pool, req.user?.id, req.user?.name, 'update_system_settings', 'setting', 'checkout',
-      { tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum }, req.ip);
-    res.json({ tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum });
+      { tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum, driver_daily_goal: goalNum }, req.ip);
+    res.json({ tax_rate: taxNum, service_fee_rate: svcNum, free_delivery_threshold: thresholdNum, driver_daily_goal: goalNum });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

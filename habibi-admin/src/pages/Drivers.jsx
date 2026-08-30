@@ -3,7 +3,14 @@ import { Truck, Plus, Pencil, Trash2, X, Check, KeyRound, Smartphone, Wifi, Wifi
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
-const BLANK = { name: '', email: '', phone: '', shift_start: '', shift_end: '', notes: '', is_active: true };
+const BLANK = { name: '', email: '', phone: '', shift_start: '', shift_end: '', notes: '', is_active: true, vehicle_type: '', vehicle_plate: '', insurance_expiry: '' };
+
+// Days until an insurance_expiry date; negative means already expired.
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const diffMs = new Date(dateStr) - new Date(new Date().toDateString());
+  return Math.round(diffMs / 86400000);
+}
 
 // Minimal CSV parser — handles quoted fields (so a name with a comma in it
 // doesn't break column alignment). Matches "name"/"phone" headers case-
@@ -95,7 +102,19 @@ export default function Drivers() {
   useEffect(() => { load(); }, []);
 
   const openAdd  = () => { setForm(BLANK); setModal('add'); };
-  const openEdit = (d) => { setForm({ ...d, shift_start: d.shift_start || '', shift_end: d.shift_end || '' }); setModal(d); };
+  const openEdit = (d) => {
+    setForm({
+      ...d,
+      shift_start: d.shift_start || '',
+      shift_end: d.shift_end || '',
+      vehicle_type: d.vehicle_type || '',
+      vehicle_plate: d.vehicle_plate || '',
+      // Postgres DATE columns come back as full ISO timestamps via the pg
+      // driver's JSON serialization -- <input type="date"> needs YYYY-MM-DD only.
+      insurance_expiry: d.insurance_expiry ? String(d.insurance_expiry).slice(0, 10) : '',
+    });
+    setModal(d);
+  };
 
   const save = async () => {
     if (!form.name.trim()) return;
@@ -244,9 +263,19 @@ export default function Drivers() {
                     </tr>
                   </thead>
                   <tbody>
-                    {active.map(d => (
+                    {active.map(d => {
+                      const expDays = daysUntil(d.insurance_expiry);
+                      return (
                       <tr key={d.id}>
-                        <td style={{ fontWeight: 600 }}>{d.name}</td>
+                        <td style={{ fontWeight: 600 }}>
+                          {d.name}
+                          {expDays !== null && expDays < 0 && (
+                            <div className="badge badge-error" style={{ marginTop: 4, fontSize: '0.68rem' }}>⚠ Insurance EXPIRED</div>
+                          )}
+                          {expDays !== null && expDays >= 0 && expDays <= 14 && (
+                            <div className="badge badge-warning" style={{ marginTop: 4, fontSize: '0.68rem' }}>⚠ Insurance expires in {expDays}d</div>
+                          )}
+                        </td>
                         <td className="text-muted" style={{ fontSize: '0.85rem' }}>{d.phone || '—'}</td>
                         <td>
                           {d.is_on_duty
@@ -278,7 +307,8 @@ export default function Drivers() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -343,10 +373,22 @@ export default function Drivers() {
                   <label>Shift End</label>
                   <input className="input" type="time" value={form.shift_end} onChange={e => setForm({ ...form, shift_end: e.target.value })} />
                 </div>
+                <div className="field">
+                  <label>Vehicle Type</label>
+                  <input className="input" value={form.vehicle_type} onChange={e => setForm({ ...form, vehicle_type: e.target.value })} placeholder="e.g. Sedan, Scooter" />
+                </div>
+                <div className="field">
+                  <label>License Plate</label>
+                  <input className="input" value={form.vehicle_plate} onChange={e => setForm({ ...form, vehicle_plate: e.target.value })} placeholder="e.g. ABC1234" />
+                </div>
+                <div className="field">
+                  <label>Insurance Expiry</label>
+                  <input className="input" type="date" value={form.insurance_expiry} onChange={e => setForm({ ...form, insurance_expiry: e.target.value })} />
+                </div>
               </div>
               <div className="field">
                 <label>Notes</label>
-                <textarea className="input textarea" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Vehicle, license plate, etc." />
+                <textarea className="input textarea" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Anything else worth knowing about this driver" />
               </div>
               {modal !== 'add' && (
                 <label className="staff-active-toggle">

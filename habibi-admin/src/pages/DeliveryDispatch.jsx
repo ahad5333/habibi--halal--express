@@ -492,6 +492,9 @@ function DriverPerformancePanel() {
   const [payrollStart, setPayrollStart] = useState(mondayOfThisWeek());
   const [payrollEnd, setPayrollEnd]     = useState(new Date().toISOString().slice(0, 10));
   const [exporting, setExporting]       = useState(false);
+  const [checkoutSettings, setCheckoutSettings] = useState(null); // current tax/fee/goal -- needed so saving the goal doesn't clobber the others
+  const [goalInput, setGoalInput]       = useState('10');
+  const [savingGoal, setSavingGoal]     = useState(false);
 
   const handleExportPayroll = async () => {
     setExporting(true);
@@ -502,6 +505,20 @@ function DriverPerformancePanel() {
     setExporting(false);
   };
 
+  const handleSaveGoal = async () => {
+    const goal = parseInt(goalInput, 10);
+    if (!(goal > 0) || !checkoutSettings) return;
+    setSavingGoal(true);
+    try {
+      await adminAPI.updateSystemSettings({
+        tax_rate: checkoutSettings.tax_rate,
+        service_fee_rate: checkoutSettings.service_fee_rate,
+        driver_daily_goal: goal,
+      });
+    } catch (_) {}
+    setSavingGoal(false);
+  };
+
   useEffect(() => {
     setLoading(true);
     adminAPI.getDriverPerformance(days)
@@ -509,6 +526,15 @@ function DriverPerformancePanel() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [days]);
+
+  useEffect(() => {
+    adminAPI.getCheckoutSettings()
+      .then(data => {
+        setCheckoutSettings(data);
+        if (data?.driver_daily_goal) setGoalInput(String(data.driver_daily_goal));
+      })
+      .catch(() => {});
+  }, []);
 
   const sorted = [...rows].sort((a, b) => {
     const av = parseFloat(a[sort.col]) || 0;
@@ -545,6 +571,21 @@ function DriverPerformancePanel() {
         <input type="date" value={payrollEnd} onChange={e => setPayrollEnd(e.target.value)} className="dd-input" style={{ width: 'auto' }} />
         <button className="dd-btn-outline dd-btn-sm" onClick={handleExportPayroll} disabled={exporting}>
           <Download size={13}/> {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
+      </div>
+
+      {/* Daily deliveries goal shown on each driver's own dashboard -- was
+          hardcoded to 10 with no admin control at all */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Driver daily goal:</span>
+        <input
+          type="number" min="1" value={goalInput}
+          onChange={e => setGoalInput(e.target.value)}
+          className="dd-input" style={{ width: 70 }}
+        />
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>deliveries/day</span>
+        <button className="dd-btn-outline dd-btn-sm" onClick={handleSaveGoal} disabled={savingGoal || !checkoutSettings}>
+          {savingGoal ? 'Saving…' : 'Save'}
         </button>
       </div>
 
@@ -720,6 +761,7 @@ export default function DeliveryDispatch() {
   const [ddConfigured, setDDConf] = useState(false);
   const [newAlert, setNewAlert]   = useState(null); // { order_number, miles }
   const [sosAlert, setSosAlert]   = useState(null); // { name, phone, order_id, message, created_at }
+  const [cashAlert, setCashAlert] = useState(null); // { driver_id, driver_name, amount }
   const audioRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -797,6 +839,15 @@ export default function DeliveryDispatch() {
         });
       }
     });
+    // Driver went off duty with real, uncollected COD cash still outstanding.
+    socket.on('driver_offline_with_cash', (payload) => {
+      setCashAlert(payload);
+      if (Notification.permission === 'granted') {
+        new Notification('💰 Driver Went Off Duty With Cash', {
+          body: `${payload.driver_name || 'A driver'} still has $${parseFloat(payload.amount || 0).toFixed(2)} uncollected.`,
+        });
+      }
+    });
     return () => { sock.disconnect(); setSocket(null); };
   }, [load]);
 
@@ -863,6 +914,19 @@ export default function DeliveryDispatch() {
           </div>
         );
       })()}
+
+      {/* Driver went off duty with cash still outstanding */}
+      {cashAlert && (
+        <div className="dd-alert-banner dd-alert-banner-cash">
+          <Bell size={16} />
+          <span>
+            💰 <strong>{cashAlert.driver_name || 'A driver'}</strong> went off duty with{' '}
+            <strong>${parseFloat(cashAlert.amount || 0).toFixed(2)}</strong> in uncollected cash still outstanding.
+          </span>
+          <a className="dd-alert-assign" href="/cash-log">View Cash Log</a>
+          <button className="dd-alert-dismiss" onClick={() => setCashAlert(null)}>✕</button>
+        </div>
+      )}
 
       {/* Real-time alert banner */}
       {newAlert && (

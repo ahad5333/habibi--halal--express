@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSettings } from '../context/SettingsContext';
+import { settingsAPI } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
@@ -172,6 +173,12 @@ function readSession() {
 
 export default function DriverView() {
   const settings = useSettings();
+  const [dailyGoal, setDailyGoal] = useState(10); // admin-configurable, see settingsAPI.getCheckout below
+  useEffect(() => {
+    settingsAPI.getCheckout()
+      .then(data => { if (data?.driver_daily_goal > 0) setDailyGoal(data.driver_daily_goal); })
+      .catch(() => {});
+  }, []);
   // Read session synchronously so the first render already knows auth state
   const [authenticated, setAuthenticated]   = useState(() => !!readSession());
   const [driverId, setDriverId]             = useState(() => readSession()?.driver_id || '');
@@ -191,6 +198,7 @@ export default function DriverView() {
   const [dutyLoading, setDutyLoading]     = useState(false);
   const [shiftStartTime, setShiftStartTime] = useState(null);
   const [showShiftSummary, setShowShiftSummary] = useState(false);
+  const [cashAckChecked, setCashAckChecked]      = useState(false);
   const [deliveryPhase, setDeliveryPhase] = useState(null);
   const [proofFile, setProofFile]         = useState(null);
   const [proofPreview, setProofPreview]   = useState(null);
@@ -723,6 +731,7 @@ export default function DriverView() {
 
   const toggleDuty = async () => {
     if (onDuty) {
+      setCashAckChecked(false);
       setShowShiftSummary(true);
       return;
     }
@@ -1493,8 +1502,19 @@ export default function DriverView() {
           <p className="dv-summary-empty">No deliveries this session — see you next time! 👋</p>
         )}
 
+        {summaryCod > 0 && (
+          <label className="dv-cash-ack-row">
+            <input type="checkbox" checked={cashAckChecked} onChange={e => setCashAckChecked(e.target.checked)} />
+            <span>I still have ${summaryCod.toFixed(2)} cash — I'll hand it in next shift</span>
+          </label>
+        )}
+
         <div className="dv-summary-actions">
-          <button className="dv-summary-btn-offline" onClick={confirmGoOffline} disabled={dutyLoading}>
+          <button
+            className="dv-summary-btn-offline"
+            onClick={confirmGoOffline}
+            disabled={dutyLoading || (summaryCod > 0 && !cashAckChecked)}
+          >
             {dutyLoading ? 'Going offline…' : 'Go Offline'}
           </button>
           <button className="dv-summary-btn-stay" onClick={() => setShowShiftSummary(false)}>
@@ -1557,7 +1577,7 @@ export default function DriverView() {
     const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
     const shiftTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const deliveries = hasEarnings ? cashSummary.deliveries_count : 0;
-    const goalPct = Math.min(100, (deliveries / 10) * 100);
+    const goalPct = Math.min(100, (deliveries / dailyGoal) * 100);
 
     return (
       <div className="dv-shell">
@@ -1678,7 +1698,7 @@ export default function DriverView() {
           <div className="dv-goal">
             <div className="dv-goal-row">
               <span className="dv-goal-lbl">Daily Goal</span>
-              <span className="dv-goal-pct dv-clr-gold">{deliveries} / 10 deliveries</span>
+              <span className="dv-goal-pct dv-clr-gold">{deliveries} / {dailyGoal} deliveries</span>
             </div>
             <div className="dv-goal-track">
               <div className="dv-goal-fill" style={{ width: `${goalPct}%` }}/>

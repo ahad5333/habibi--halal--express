@@ -71,6 +71,16 @@
   50%      { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
 }
 
+.dd-alert-banner-cash {
+  background: #fef3c7;
+  border-color: #d97706;
+  color: #92400e;
+}
+.dd-alert-banner-cash svg { color: #d97706; }
+.dd-alert-banner-cash .dd-alert-dismiss { color: #92400e; }
+.dd-alert-banner-cash .dd-alert-assign { background: #d97706; }
+.dd-alert-banner-cash .dd-alert-assign:hover { background: #b45309; }
+
 .dd-topbar {
   display: flex;
   justify-content: space-between;
