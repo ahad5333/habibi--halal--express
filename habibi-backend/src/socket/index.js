@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const jwt  = require("jsonwebtoken");
+const { getDriverSecretSalt } = require("../utils/driverSecret");
 
 // Per-socket message rate limiting: max 30 chat messages per minute
 const MSG_WINDOW_MS = 60 * 1000;
@@ -150,7 +151,7 @@ module.exports = (io) => {
       if (driver_id && hmac_token) {
         try {
           const crypto = require("crypto");
-          const salt   = process.env.DRIVER_SECRET_SALT || "habibi-driver-default";
+          const salt   = getDriverSecretSalt();
           const expected = crypto.createHmac("sha256", salt).update(String(driver_id)).digest("hex");
           isHmacValid = hmac_token === expected;
         } catch (_) {}
@@ -177,6 +178,24 @@ module.exports = (io) => {
       const { order_id, order_number, lat, lng, progress } = data;
       const room = order_number ? `order_${order_number}` : `order_${order_id}`;
       io.to(room).emit("driver_location_update", { order_id, order_number, lat, lng, progress });
+
+      // Persist alongside the REST GPS path (PATCH /assignments/:id/gps) so this
+      // socket-only path -- currently used only by the dev tool simulate-driver.js,
+      // confirmed via repo-wide search -- doesn't silently diverge from the DB.
+      // Previously this only emitted the live event and never wrote to
+      // delivery_assignments at all, making it a non-authoritative shadow path.
+      if (lat != null && lng != null && (order_number || order_id)) {
+        try {
+          await pool.query(
+            `UPDATE delivery_assignments
+                SET current_lat=$1, current_lng=$2, last_location_update=NOW()
+              WHERE (order_number=$3 OR order_id=$4) AND status IN ('assigned','en_route','picked_up')`,
+            [lat, lng, order_number || null, order_id || null]
+          );
+        } catch (err) {
+          console.error('[Socket] Failed to persist GPS from update_location:', err.message);
+        }
+      }
     });
 
     // ── send_message ──────────────────────────────────────────────────────────

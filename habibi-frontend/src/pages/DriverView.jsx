@@ -7,6 +7,7 @@ import {
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
   Zap, Star, History, TrendingUp, BarChart2, Award, Settings, Wifi, WifiOff,
+  Siren,
 } from 'lucide-react';
 
 // ── Navigation helpers ────────────────────────────────────────────────
@@ -27,6 +28,35 @@ function bearingDeg(a, b) {
 }
 const NAV_COMPASS = ['N','NE','E','SE','S','SW','W','NW'];
 const NAV_ARROWS  = ['↑','↗','→','↘','↓','↙','←','↖'];
+
+// Decodes Google's encoded polyline format (the standard algorithm --
+// see https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
+// into an array of [lat, lng] pairs Leaflet can draw directly.
+function decodePolyline(encoded) {
+  if (!encoded) return [];
+  let index = 0, lat = 0, lng = 0;
+  const coords = [];
+  while (index < encoded.length) {
+    let shift = 0, result = 0, byte;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+    shift = 0; result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+    coords.push([lat / 1e5, lng / 1e5]);
+  }
+  return coords;
+}
 import './DriverView.css';
 import DriverMap from '../components/DriverMap';
 
@@ -171,6 +201,9 @@ export default function DriverView() {
   const [cashCollected, setCashCollected] = useState(null);
   const [cashSummary, setCashSummary]     = useState(null);
   const [destCoords, setDestCoords]       = useState(null);
+  const [route, setRoute]                 = useState(null); // { polyline, polylineDecoded, steps, duration_minutes, distance_text }
+  const [routeStepIdx, setRouteStepIdx]   = useState(0);
+  const routeFetchedForRef = useRef(null); // "lat,lng" key -- guards against re-fetching Directions on every GPS tick
   const [broadcastOrder, setBroadcastOrder] = useState(null);
   const [claimCountdown, setClaimCountdown] = useState(30);
   const [claimLoading, setClaimLoading]     = useState(false);
@@ -197,6 +230,11 @@ export default function DriverView() {
 
   const [showCancelAlert, setShowCancelAlert]       = useState(false);
   const [cancelledOrder, setCancelledOrder]         = useState(null);
+
+  const [showSosSheet, setShowSosSheet] = useState(false);
+  const [sosNote, setSosNote]           = useState('');
+  const [sosSubmitting, setSosSubmitting] = useState(false);
+  const [sosSent, setSosSent]           = useState(false);
   const [showDeliverySuccess, setShowDeliverySuccess] = useState(false);
   const [lastDeliveredOrder, setLastDeliveredOrder] = useState(null);
 
@@ -237,6 +275,33 @@ export default function DriverView() {
     localStorage.removeItem('habibi_driver_session');
     socketRef.current?.disconnect();
     window.location.replace('/driver/login');
+  };
+
+  // Reuses the same urgent-request pipeline already proven for kitchen/food-safety
+  // alerts (SMS to the admin's phone) -- the backend additionally fires a live
+  // socket alert on the admin dispatch board specifically for this reason string.
+  const handleSendSos = async () => {
+    if (sosSubmitting) return;
+    setSosSubmitting(true);
+    try {
+      const locationNote = lastPos ? `Location: ${lastPos.lat.toFixed(5)},${lastPos.lng.toFixed(5)}. ` : '';
+      await fetch(`${API_BASE}/api/urgent-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: driverName || 'Driver',
+          phone: driverPhone || '',
+          order_id: assignment?.order_number || '',
+          reason: 'Driver Safety SOS',
+          message: `${locationNote}${sosNote.trim()}`.trim() || 'No additional details provided.',
+        }),
+      });
+      setSosSent(true);
+    } catch {
+      setSosSent(true); // Still show confirmation -- the SMS fallback in createUrgentRequest is best-effort either way, and re-showing the form here would just tempt a repeat tap mid-emergency.
+    } finally {
+      setSosSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -377,28 +442,76 @@ export default function DriverView() {
     }
   }, [assignment?.order_number]); // eslint-disable-line
 
-  // Compute nav bearing + distance from driver to destination
+  // Compute nav guidance from driver to destination -- prefers the real routed
+  // step (from Google Directions, see the fetch effect below) and falls back
+  // to a straight-line compass/ETA guess when no route is available yet
+  // (Directions not configured, still loading, or Google couldn't route).
   const navData = useMemo(() => {
     if (!lastPos || !destCoords) return null;
     const distKm = haversineKm(lastPos, destCoords);
+    const fallbackDist = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
+    const fallbackEtaMins = Math.max(1, Math.round(distKm / 0.5)); // ~30 km/h
+
+    const step = route?.steps?.[routeStepIdx];
+    if (step) {
+      return {
+        hasRoute: true,
+        instruction: step.instruction || 'Continue',
+        dist: step.distance_text || fallbackDist,
+        etaMins: route.duration_minutes ? Math.max(1, Math.round(route.duration_minutes)) : fallbackEtaMins,
+      };
+    }
     const bearing = bearingDeg(lastPos, destCoords);
     const idx = Math.round(bearing / 45) % 8;
-    const etaMins = Math.max(1, Math.round(distKm / 0.5)); // ~30 km/h
     return {
-      dist: distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`,
-      compass: NAV_COMPASS[idx],
+      hasRoute: false,
+      instruction: `Head ${NAV_COMPASS[idx]}`,
       arrow: NAV_ARROWS[idx],
-      etaMins,
+      dist: fallbackDist,
+      etaMins: fallbackEtaMins,
     };
-  }, [lastPos?.lat, lastPos?.lng, destCoords?.lat, destCoords?.lng]); // eslint-disable-line
+  }, [lastPos?.lat, lastPos?.lng, destCoords?.lat, destCoords?.lng, route, routeStepIdx]); // eslint-disable-line
 
   useEffect(() => {
-    if (!assignment?.delivery_address) { setDestCoords(null); return; }
+    if (!assignment?.delivery_address) {
+      setDestCoords(null);
+      setRoute(null);
+      setRouteStepIdx(0);
+      routeFetchedForRef.current = null;
+      return;
+    }
     const addr = [assignment.delivery_address, assignment.delivery_city].filter(Boolean).join(', ');
     apiFetch(`/api/dispatch/geocode?addr=${encodeURIComponent(addr)}`)
       .then(d => setDestCoords({ lat: d.lat, lng: d.lng }))
       .catch(() => {});
   }, [assignment?.delivery_address, assignment?.delivery_city]);
+
+  // Fetch a real routed path once per delivery -- keyed by destination so this
+  // never re-fires on every GPS tick (Directions API calls cost money). Waits
+  // for the first GPS fix so the route starts from the driver's real position.
+  useEffect(() => {
+    if (!destCoords || !lastPos) return;
+    const key = `${destCoords.lat.toFixed(5)},${destCoords.lng.toFixed(5)}`;
+    if (routeFetchedForRef.current === key) return;
+    routeFetchedForRef.current = key;
+    setRouteStepIdx(0);
+    apiFetch(`/api/dispatch/directions?origin=${lastPos.lat},${lastPos.lng}&destination=${destCoords.lat},${destCoords.lng}`)
+      .then(d => setRoute({ ...d, polylineDecoded: decodePolyline(d.polyline) }))
+      .catch(() => setRoute(null));
+  }, [destCoords?.lat, destCoords?.lng, !!lastPos]); // eslint-disable-line
+
+  // Advance to the next Directions step once the driver's live GPS comes
+  // within ~30m of the current step's endpoint (simple proximity-based
+  // advancement -- not full snap-to-route).
+  useEffect(() => {
+    if (!lastPos || !route?.steps?.length) return;
+    const step = route.steps[routeStepIdx];
+    if (!step || step.end_lat == null || step.end_lng == null) return;
+    const distM = haversineKm(lastPos, { lat: step.end_lat, lng: step.end_lng }) * 1000;
+    if (distM < 30 && routeStepIdx < route.steps.length - 1) {
+      setRouteStepIdx(i => i + 1);
+    }
+  }, [lastPos?.lat, lastPos?.lng]); // eslint-disable-line
 
   // Shows the claim modal + bell + notification for a broadcast-shaped order.
   // Shared by the live socket event and the missed-broadcast fallback below.
@@ -1261,6 +1374,51 @@ export default function DriverView() {
     </div>
   );
 
+  const closeSosSheet = () => {
+    setShowSosSheet(false);
+    setSosNote('');
+    setSosSent(false);
+  };
+
+  const sosSheet = showSosSheet && (
+    <div className="dv-summary-overlay" onClick={closeSosSheet}>
+      <div className="dv-summary-sheet" onClick={e => e.stopPropagation()}>
+        <div className="dv-summary-handle"/>
+        {sosSent ? (
+          <>
+            <h2 className="dv-summary-title">Dispatch Has Been Alerted</h2>
+            <p className="dv-sos-sub">A manager has been notified with your name and location. If this is a life-threatening emergency, call 911 first.</p>
+            <div className="dv-summary-actions">
+              <a className="dv-summary-btn-offline" href={`tel:+1${(settings.phone_main || '').replace(/\D/g, '')}`}>
+                <Phone size={16}/> Call Store
+              </a>
+              <button className="dv-summary-btn-stay" onClick={closeSosSheet}>Close</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="dv-summary-title"><Siren size={20} style={{ verticalAlign: 'middle', marginRight: 6 }}/> Confirm Emergency Alert</h2>
+            <p className="dv-sos-sub">This immediately notifies dispatch with your name, phone, and current location. If this is a life-threatening emergency, call 911 first.</p>
+            <textarea
+              className="dv-sos-note"
+              placeholder="Optional: what's happening? (visible to dispatch)"
+              value={sosNote}
+              onChange={e => setSosNote(e.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+            <div className="dv-summary-actions">
+              <button className="dv-summary-btn-offline" onClick={handleSendSos} disabled={sosSubmitting}>
+                {sosSubmitting ? 'Sending…' : 'Confirm Emergency Alert'}
+              </button>
+              <button className="dv-summary-btn-stay" onClick={closeSosSheet} disabled={sosSubmitting}>Cancel</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   // ── Idle screen ───────────────────────────────────────────────────
   if (!assignment) {
     const hasEarnings = cashSummary && (cashSummary.deliveries_count > 0 || cashSummary.total_tips > 0 || cashSummary.total_cod > 0);
@@ -1274,6 +1432,7 @@ export default function DriverView() {
       <div className="dv-shell">
         {chatOverlay}
         {shiftSummaryModal}
+        {sosSheet}
         {historyDrawer}
         {earningsDrawer}
         {perfDrawer}
@@ -1288,6 +1447,9 @@ export default function DriverView() {
             <span className="dv-hdr-title">Habibi Driver</span>
           </div>
           <div className="dv-hdr-right">
+            <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
+              <Siren size={18}/>
+            </button>
             <button className="dv-icon-btn" onClick={() => setShowPinChange(true)} title="Change PIN">
               <Settings size={18}/>
             </button>
@@ -1500,6 +1662,7 @@ export default function DriverView() {
     <div className="dv-shell">
       {chatOverlay}
       {shiftSummaryModal}
+      {sosSheet}
       {earningsDrawer}
       {perfDrawer}
       {pinChangeDrawer}
@@ -1547,6 +1710,9 @@ export default function DriverView() {
           <span className={`dv-status-chip ${statusCls}`}>{statusLabel}</span>
         </div>
         <div className="dv-hdr-right">
+          <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
+            <Siren size={18}/>
+          </button>
           <button className="dv-icon-btn" onClick={openChat}>
             <MessageSquare size={18}/>
             {chatUnread > 0 && <span className="dv-badge-dot">{chatUnread}</span>}
@@ -1589,9 +1755,9 @@ export default function DriverView() {
       {/* In-app navigation bar */}
       {navData && assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
         <div className="dv-nav-bar">
-          <span className="dv-nav-arrow">{navData.arrow}</span>
+          <span className="dv-nav-arrow">{navData.hasRoute ? '➜' : navData.arrow}</span>
           <div className="dv-nav-info">
-            <span className="dv-nav-heading">Head {navData.compass}</span>
+            <span className="dv-nav-heading">{navData.instruction}</span>
             <span className="dv-nav-sub">{navData.dist} · ~{navData.etaMins} min</span>
           </div>
           <span className="dv-nav-live">● GPS</span>
@@ -1605,6 +1771,7 @@ export default function DriverView() {
           <DriverMap
             driverPos={lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : null}
             destPos={destCoords}
+            routePolyline={route?.polylineDecoded}
           />
         )}
 

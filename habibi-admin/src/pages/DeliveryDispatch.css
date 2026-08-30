@@ -56,6 +56,21 @@
   padding: 0 0.25rem;
 }
 
+.dd-alert-banner-sos {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #991b1b;
+  animation: dd-sos-pulse 1.5s ease-in-out infinite;
+}
+.dd-alert-banner-sos svg { color: #dc2626; }
+.dd-alert-banner-sos .dd-alert-dismiss { color: #991b1b; }
+.dd-alert-banner-sos .dd-alert-assign { background: #dc2626; }
+.dd-alert-banner-sos .dd-alert-assign:hover { background: #b91c1c; }
+@keyframes dd-sos-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+}
+
 .dd-topbar {
   display: flex;
   justify-content: space-between;

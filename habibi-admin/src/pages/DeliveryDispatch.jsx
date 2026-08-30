@@ -245,9 +245,6 @@ function AssignCard({ assignment, onStatusChange }) {
             <MapPin size={12}/> Map
           </a>
         )}
-        <a className="dd-btn-outline" href={`/driver?id=${assignment.driver_id}`} target="_blank" rel="noreferrer">
-          Driver View
-        </a>
         {assignment.status !== 'delivered' && assignment.status !== 'cancelled' && (
           <button className="dd-btn-success dd-btn-sm" onClick={() => onStatusChange(assignment.id, 'delivered')}>
             <CheckCircle size={12}/> Mark Delivered
@@ -521,6 +518,7 @@ function DriverPerformancePanel() {
                 <th style={{ ...thStyle, textAlign: 'center' }}>Status</th>
                 <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('deliveries')}>Deliveries{arrow('deliveries')}</th>
                 <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('acceptance_rate')}>Accept Rate{arrow('acceptance_rate')}</th>
+                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('avg_rating')}>Avg Rating{arrow('avg_rating')}</th>
                 <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('avg_delivery_mins')}>Avg Time{arrow('avg_delivery_mins')}</th>
                 <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('total_tips')}>Tips Earned{arrow('total_tips')}</th>
                 <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => colClick('rejections')}>Rejections{arrow('rejections')}</th>
@@ -556,6 +554,11 @@ function DriverPerformancePanel() {
                           <span style={{ color: rateColor, fontWeight: 600, fontSize: '0.85rem' }}>{rate}%</span>
                         </div>
                       ) : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
+                    </td>
+                    <td style={tdStyle}>
+                      {parseInt(d.rating_count) > 0
+                        ? <span>★ {d.avg_rating} <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>({d.rating_count})</span></span>
+                        : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
                     </td>
                     <td style={tdStyle}>
                       {mins !== null && !isNaN(mins)
@@ -673,6 +676,7 @@ export default function DeliveryDispatch() {
   const [loadErr, setLoadErr]     = useState('');
   const [ddConfigured, setDDConf] = useState(false);
   const [newAlert, setNewAlert]   = useState(null); // { order_number, miles }
+  const [sosAlert, setSosAlert]   = useState(null); // { name, phone, order_id, message, created_at }
   const audioRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -739,6 +743,17 @@ export default function DeliveryDispatch() {
     });
     // Driver rejected assignment — reload so admin can reassign
     socket.on('assignment_rejected', () => { load(); });
+    // Driver panic button — highest-priority alert, shown alongside (not
+    // instead of) the SMS this same event already triggers server-side.
+    socket.on('driver_sos', (payload) => {
+      setSosAlert(payload);
+      if (Notification.permission === 'granted') {
+        new Notification('🚨 Driver Safety SOS', {
+          body: `${payload.name || 'A driver'} triggered an emergency alert.`,
+          requireInteraction: true,
+        });
+      }
+    });
     return () => { sock.disconnect(); setSocket(null); };
   }, [load]);
 
@@ -781,6 +796,30 @@ export default function DeliveryDispatch() {
           </button>
         </div>
       </div>
+
+      {/* Driver safety SOS — highest priority, shown above the routine dispatch alert */}
+      {sosAlert && (() => {
+        const locMatch = /Location: (-?\d+\.\d+),(-?\d+\.\d+)/.exec(sosAlert.message || '');
+        const mapsUrl = locMatch ? `https://www.google.com/maps?q=${locMatch[1]},${locMatch[2]}` : null;
+        const note = (sosAlert.message || '').replace(/Location: -?\d+\.\d+,-?\d+\.\d+\.\s*/, '');
+        return (
+          <div className="dd-alert-banner dd-alert-banner-sos">
+            <Bell size={16} />
+            <span>
+              🚨 <strong>{sosAlert.name || 'A driver'}</strong> ({sosAlert.phone || 'no phone on file'}) triggered a safety SOS
+              {sosAlert.order_id && <> on order <strong>#{sosAlert.order_id}</strong></>}.
+              {note && note !== 'No additional details provided.' && <> "{note}"</>}
+            </span>
+            {sosAlert.phone && (
+              <a className="dd-alert-assign" href={`tel:${sosAlert.phone}`}>Call Driver</a>
+            )}
+            {mapsUrl && (
+              <a className="dd-alert-assign" href={mapsUrl} target="_blank" rel="noreferrer">View Location</a>
+            )}
+            <button className="dd-alert-dismiss" onClick={() => setSosAlert(null)}>✕</button>
+          </div>
+        );
+      })()}
 
       {/* Real-time alert banner */}
       {newAlert && (

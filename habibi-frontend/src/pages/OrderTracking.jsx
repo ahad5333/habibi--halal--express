@@ -40,8 +40,6 @@ const STATUS_INFO = {
   6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite, made with Habibi love. ✨',                        icon: PartyPopper,   color: '#4ade80', animate: 'delivered' },
 };
 
-const DRIVER = { name: 'Ahmad K.', rating: 4.9, deliveries: '1.2K' };
-
 function statusToStep(status) {
   return STATUS_STEP[(status || '').toLowerCase()] || 1;
 }
@@ -178,7 +176,11 @@ export default function OrderTracking() {
   const [driverLatLng, setDriverLatLng]     = useState(null);
   const [leafletReady, setLeafletReady]     = useState(false);
   const [queuePosition, setQueuePosition]   = useState(null); // null = not in queue, 0 = next up, N = N orders ahead
-  const [driverInfo, setDriverInfo]         = useState(null); // { name, phone, rating } from dispatch
+  const [driverInfo, setDriverInfo]         = useState(null); // { name, phone, rating, rating_count } from dispatch
+  const [assignmentInfo, setAssignmentInfo] = useState(null); // { id, status, customerRating } -- drives the post-delivery rating widget
+  const [driverRatingHover, setDriverRatingHover] = useState(0);
+  const [driverRatingSubmitting, setDriverRatingSubmitting] = useState(false);
+  const [driverRatingSubmitted, setDriverRatingSubmitted] = useState(false);
   const [proofPhotoUrl, setProofPhotoUrl]   = useState(null); // delivery photo, in-house drivers only
   const [nearbyToast, setNearbyToast]       = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
@@ -295,12 +297,14 @@ export default function OrderTracking() {
             // In-house assignment overrides driver name/phone only if no partner driver set
             if ((assignment.driver_name || assignment.driver_phone) && assignment.driver_name !== 'Unassigned') {
               setDriverInfo(prev => prev?.source && prev.source !== 'in_house' ? prev : {
-                name:   assignment.driver_name  || 'Your Driver',
-                phone:  assignment.driver_phone || '',
-                rating: assignment.driver_rating || null,
-                source: 'in_house',
+                name:         assignment.driver_name  || 'Your Driver',
+                phone:        assignment.driver_phone || '',
+                rating:       assignment.driver_rating_avg   || null,
+                rating_count: assignment.driver_rating_count || 0,
+                source:       'in_house',
               });
             }
+            setAssignmentInfo({ id: assignment.id, status: assignment.status, customerRating: assignment.customer_rating });
           })
           .catch(() => {});
       }
@@ -621,6 +625,24 @@ export default function OrderTracking() {
       setCancelError(err.message || 'Could not cancel order.');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRateDriver = async (stars) => {
+    if (driverRatingSubmitting || driverRatingSubmitted) return;
+    setDriverRatingSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/dispatch/order/${orderNum}/rate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: stars }),
+      });
+      if (!res.ok) throw new Error();
+      setDriverRatingSubmitted(true);
+    } catch {
+      // Non-critical — silently leave the widget interactive so the customer can retry.
+    } finally {
+      setDriverRatingSubmitting(false);
     }
   };
 
@@ -979,6 +1001,34 @@ export default function OrderTracking() {
                     </div>
                   )}
 
+                  {isDelivered && driverInfo?.source !== 'doordash' && driverInfo?.source !== 'roadie' && (
+                    <div className="ot-driver-rating-widget">
+                      {driverRatingSubmitted || assignmentInfo?.customerRating != null ? (
+                        <p className="ot-driver-rating-thanks">Thanks for rating your driver!</p>
+                      ) : (
+                        <>
+                          <p className="ot-driver-rating-prompt">Rate your delivery driver</p>
+                          <div className="ot-driver-rating-stars" role="radiogroup" aria-label="Rate your driver from 1 to 5 stars">
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <button
+                                key={n}
+                                type="button"
+                                className="ot-driver-rating-star"
+                                disabled={driverRatingSubmitting}
+                                onMouseEnter={() => setDriverRatingHover(n)}
+                                onMouseLeave={() => setDriverRatingHover(0)}
+                                onClick={() => handleRateDriver(n)}
+                                aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                              >
+                                <Star size={22} fill={n <= driverRatingHover ? 'var(--color-primary)' : 'none'} stroke="var(--color-primary)" strokeWidth={1.5} />
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {isDelivered && (
                     <div className="ot-delivered-actions">
                       <Link to="/menu" className="btn btn-primary">Order Again</Link>
@@ -1107,10 +1157,13 @@ export default function OrderTracking() {
                       </div>
                       <div className="ot-driver-info">
                         <span className="ot-rider-badge">YOUR RIDER</span>
-                        <p className="ot-driver-name">{driverInfo?.name || DRIVER.name}</p>
+                        <p className="ot-driver-name">{driverInfo?.name || 'Your Driver'}</p>
                         <p className="ot-driver-meta">
-                          <Star size={11} fill="var(--color-primary)" stroke="none" />
-                          {driverInfo?.rating || DRIVER.rating}
+                          {driverInfo?.rating_count > 0 ? (
+                            <><Star size={11} fill="var(--color-primary)" stroke="none" /> {driverInfo.rating} ({driverInfo.rating_count})</>
+                          ) : (
+                            !driverInfo?.source && <span className="ot-new-driver-badge">New Driver</span>
+                          )}
                           {driverLatLng && <> · <span className="ot-gps-live">GPS live</span></>}
                           {!driverLatLng && driverInfo?.source === 'doordash' && <> · <span>DoorDash Drive</span></>}
                           {!driverLatLng && driverInfo?.source === 'roadie'   && <> · <span>Roadie Courier</span></>}

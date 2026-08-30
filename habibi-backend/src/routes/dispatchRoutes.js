@@ -2,10 +2,10 @@ const express   = require('express');
 const router    = express.Router();
 const rateLimit = require('express-rate-limit');
 const multer    = require('multer');
-const path      = require('path');
 const crypto    = require('crypto');
 const protect   = require('../middleware/authMiddleware');
 const admin     = require('../middleware/adminMiddleware');
+const { getDriverSecretSalt } = require('../utils/driverSecret');
 
 const isDev = process.env.NODE_ENV !== 'production';
 const gpsLimiter = rateLimit({
@@ -16,20 +16,27 @@ const gpsLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Multer for proof-of-delivery photos
-const proofStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../public/uploads/proofs');
-    require('fs').mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `proof_${req.params.assignment_id}_${Date.now()}${ext}`);
-  },
+// The two fully public, unauthenticated dispatch routes — /geocode proxies
+// to Nominatim with no auth at all, which without a limiter is usable as a
+// free amplifying relay against a third party.
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 500 : 30,
+  message: { message: 'Too many requests. Please try again shortly.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+
+// Multer for proof-of-delivery photos — memory storage, NOT disk. The route
+// below has to run multer before the driverOrAdmin auth check (the driver's
+// HMAC token is verified against a driver_id field carried in this same
+// multipart body, which only multer can parse), so auth can't simply be
+// moved ahead of it. Writing straight to a publicly-served disk path here
+// would mean an unauthenticated/failed-auth request still plants a file at
+// a public URL. Buffering in memory instead means nothing touches disk
+// until uploadProof() has verified the caller owns the assignment.
 const proofUpload = multer({
-  storage: proofStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -46,6 +53,7 @@ const {
   respondToAssignment,
   getDriverAssignment,
   getAssignmentForOrder,
+  rateDelivery,
   updateDriverGPS,
   updateAssignmentStatus,
   uploadProof,
@@ -82,6 +90,14 @@ const {
 // never a Bearer header — without it, that link 401'd unconditionally,
 // always surfacing "Driver authentication required" no matter how the
 // admin was logged in.
+// Besides authenticating, this exposes a *trustworthy* identity on the
+// request: req.isAdmin (bypasses ownership checks) and req.driverId (the
+// actual verified driver — from the JWT subject for JWT auth, or from the
+// HMAC-verified id for token auth). Controllers must use these, never a
+// raw req.body.driver_id, to scope assignment ownership — a JWT only proves
+// "this is some valid driver," it does NOT prove req.body.driver_id is that
+// same driver, so trusting the body field there would let any driver claim
+// to be any other driver_id and act on their assignments.
 function driverOrAdmin(req, res, next) {
   // 1. JWT — httpOnly cookie (admin panel) or Bearer header (driver app)
   const cookieToken = req.cookies?.auth_token;
@@ -93,7 +109,9 @@ function driverOrAdmin(req, res, next) {
       const jwt     = require('jsonwebtoken');
       const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
       if (decoded.role === 'admin' || decoded.role === 'driver' || decoded.role === 'delivery') {
-        req.user = decoded;
+        req.user     = decoded;
+        req.isAdmin  = decoded.role === 'admin';
+        req.driverId = req.isAdmin ? null : decoded.id;
         return next();
       }
     } catch (_) {}
@@ -104,11 +122,13 @@ function driverOrAdmin(req, res, next) {
   const driverId    = req.params.driver_id || req.params.assignment_id
                       ? (req.params.driver_id || req.body?.driver_id || '')
                       : (req.body?.driver_id || req.query?.driver_id || '');
-  const salt        = process.env.DRIVER_SECRET_SALT || 'habibi-driver-default';
   if (driverId && driverToken) {
     try {
+      const salt     = getDriverSecretSalt();
       const expected = crypto.createHmac('sha256', salt).update(String(driverId)).digest('hex');
       if (crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected))) {
+        req.isAdmin  = false;
+        req.driverId = parseInt(driverId, 10);
         return next();
       }
     } catch (_) {}
@@ -118,11 +138,12 @@ function driverOrAdmin(req, res, next) {
 }
 
 // ── Public routes ──────────────────────────────────────────────────
-router.post('/calculate-fee',       calculateDeliveryFee);
-router.get ('/order/:order_number', getAssignmentForOrder);
+router.post ('/calculate-fee',            publicLimiter, calculateDeliveryFee);
+router.get  ('/order/:order_number',      getAssignmentForOrder);
+router.patch('/order/:order_number/rate', publicLimiter, rateDelivery);
 
 // Geocode a delivery address via Nominatim (proxy avoids frontend CSP issues)
-router.get('/geocode', async (req, res) => {
+router.get('/geocode', publicLimiter, async (req, res) => {
   const { addr } = req.query;
   if (!addr) return res.status(400).json({ message: 'addr required' });
   try {
@@ -135,6 +156,23 @@ router.get('/geocode', async (req, res) => {
     res.json({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
   } catch (e) {
     res.status(500).json({ message: 'Geocoding failed' });
+  }
+});
+
+// Turn-by-turn route via Google Directions (proxy keeps the API key server-side,
+// same pattern as calculateDeliveryFee's Distance Matrix use). Public since the
+// driver PWA's HMAC/JWT auth doesn't need to gate a read-only routing lookup.
+router.get('/directions', publicLimiter, async (req, res) => {
+  const { origin, destination } = req.query;
+  if (!origin || !destination) return res.status(400).json({ message: 'origin and destination required' });
+  try {
+    const { getDirections } = require('../utils/googleMaps');
+    const result = await getDirections(origin, destination);
+    if (!result) return res.status(404).json({ message: 'Could not find a route between these points.' });
+    if (result.unavailable) return res.status(503).json({ message: 'Routing service unavailable.' });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: 'Directions lookup failed' });
   }
 });
 

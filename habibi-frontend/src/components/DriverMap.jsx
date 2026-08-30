@@ -18,12 +18,13 @@ const destIcon = L.divIcon({
   iconAnchor: [8, 8],
 });
 
-export default function DriverMap({ driverPos, destPos }) {
+export default function DriverMap({ driverPos, destPos, routePolyline }) {
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const driverRef    = useRef(null);
   const destRef      = useRef(null);
   const lineRef      = useRef(null);
+  const routeLineRef = useRef(null);
 
   // Init map once
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function DriverMap({ driverPos, destPos }) {
       driverRef.current = null;
       destRef.current = null;
       lineRef.current = null;
+      routeLineRef.current = null;
     };
   }, []);
 
@@ -81,8 +83,9 @@ export default function DriverMap({ driverPos, destPos }) {
       driverRef.current = L.marker(latlng, { icon: driverIcon, zIndexOffset: 1000 }).addTo(map);
     }
 
-    // Update dashed route line if dest exists
-    if (destRef.current) {
+    // Dashed straight-line fallback -- only drawn when there's no real routed
+    // polyline from Google Directions (see the routePolyline effect below).
+    if (destRef.current && (!routePolyline || routePolyline.length < 2)) {
       const pts = [latlng, destRef.current.getLatLng()];
       if (lineRef.current) {
         lineRef.current.setLatLngs(pts);
@@ -109,8 +112,8 @@ export default function DriverMap({ driverPos, destPos }) {
     if (!destRef.current) {
       destRef.current = L.marker(latlng, { icon: destIcon }).addTo(map);
 
-      // Draw line if driver already placed
-      if (driverRef.current) {
+      // Draw the dashed fallback line only if no real route is available yet
+      if (driverRef.current && (!routePolyline || routePolyline.length < 2)) {
         const pts = [driverRef.current.getLatLng(), latlng];
         lineRef.current = L.polyline(pts, {
           color: '#00c853',
@@ -131,6 +134,29 @@ export default function DriverMap({ driverPos, destPos }) {
       map.setView(latlng, 15);
     }
   }, [destPos]);
+
+  // Draw the real routed polyline from Google Directions (solid line), and
+  // remove the dashed straight-line fallback once a real route is available.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (routePolyline && routePolyline.length >= 2) {
+      if (lineRef.current) { map.removeLayer(lineRef.current); lineRef.current = null; }
+      if (routeLineRef.current) {
+        routeLineRef.current.setLatLngs(routePolyline);
+      } else {
+        routeLineRef.current = L.polyline(routePolyline, {
+          color: '#00c853',
+          weight: 4,
+          opacity: 0.85,
+        }).addTo(map);
+      }
+    } else if (routeLineRef.current) {
+      map.removeLayer(routeLineRef.current);
+      routeLineRef.current = null;
+    }
+  }, [routePolyline]);
 
   return (
     <div className="dv-map-wrap">

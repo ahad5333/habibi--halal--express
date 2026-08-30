@@ -1,8 +1,14 @@
 const MAPS_BASE = 'https://maps.googleapis.com/maps/api';
 
+// Returns { unavailable: true } when the Maps integration itself isn't
+// configured (no API key) — distinct from a plain `null`, which means the
+// key IS configured and Google was reached, but this specific address
+// couldn't be resolved/routed to at all. Callers need to tell these apart:
+// "service unavailable" should fail open (existing behavior), but "this
+// address doesn't resolve to anywhere real" should not.
 async function getDistance(origin, destination) {
   const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
+  if (!key) return { unavailable: true };
 
   const url =
     `${MAPS_BASE}/distancematrix/json` +
@@ -17,8 +23,13 @@ async function getDistance(origin, destination) {
   try {
     const res  = await fetch(url);
     const data = await res.json();
-    if (data.status !== 'OK') return null;
+    // Request-level failure (bad key, over quota, malformed request) is a
+    // service problem, not evidence the destination is bogus — fail open.
+    if (data.status !== 'OK') return { unavailable: true };
 
+    // Per-pair failure (e.g. ZERO_RESULTS/NOT_FOUND) means Google itself
+    // couldn't find or route to this specific destination — that IS a real
+    // signal the address doesn't resolve to anywhere real.
     const element = data.rows?.[0]?.elements?.[0];
     if (!element || element.status !== 'OK') return null;
 
@@ -34,6 +45,81 @@ async function getDistance(origin, destination) {
       duration_in_traffic:         trafficDuration?.text ?? null,
       duration_in_traffic_minutes: trafficDuration ? trafficDuration.value / 60 : null,
     };
+  } catch {
+    // Network/fetch failure — service problem, not an address problem.
+    return { unavailable: true };
+  }
+}
+
+// Real routed directions (turn-by-turn steps + an overview polyline) between
+// two points, driving mode. Same fail-open convention as getDistance:
+// {unavailable:true} means the service itself couldn't be reached (no key,
+// network failure, quota) -- callers should fall back to a straight-line
+// guess. `null` means Google WAS reached but genuinely can't route between
+// these two points (e.g. one resolves to water/an unreachable spot).
+async function getDirections(origin, destination) {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return { unavailable: true };
+
+  const url =
+    `${MAPS_BASE}/directions/json` +
+    `?origin=${encodeURIComponent(origin)}` +
+    `&destination=${encodeURIComponent(destination)}` +
+    `&mode=driving` +
+    `&key=${key}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'ZERO_RESULTS' || data.status === 'NOT_FOUND') return null;
+    if (data.status !== 'OK') return { unavailable: true };
+
+    const route = data.routes?.[0];
+    const leg   = route?.legs?.[0];
+    if (!route || !leg) return null;
+
+    return {
+      polyline:         route.overview_polyline?.points || null,
+      distance_text:    leg.distance?.text || null,
+      duration_text:    leg.duration?.text || null,
+      duration_minutes: leg.duration ? leg.duration.value / 60 : null,
+      steps: (leg.steps || []).map(s => ({
+        // html_instructions carries basic markup (e.g. <b>, <div>) -- strip it
+        // down to plain text for display rather than rendering raw HTML.
+        instruction:   (s.html_instructions || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+        distance_text: s.distance?.text || null,
+        end_lat:       s.end_location?.lat ?? null,
+        end_lng:       s.end_location?.lng ?? null,
+      })),
+    };
+  } catch {
+    return { unavailable: true };
+  }
+}
+
+// Geocodes an address and returns its ISO-3166-1 alpha-2 country code (e.g.
+// "US"), or null if it can't be determined — either the address doesn't
+// resolve to a real place, or the Maps service itself isn't reachable/
+// configured. Callers should fail OPEN on null (don't block an order just
+// because we couldn't confirm the country) and only act when a country code
+// IS returned but doesn't match what's expected — that's a real signal.
+async function geocodeCountry(address) {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+
+  const url =
+    `${MAPS_BASE}/geocode/json` +
+    `?address=${encodeURIComponent(address)}` +
+    `&key=${key}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status !== 'OK') return null;
+
+    const components = data.results?.[0]?.address_components || [];
+    const countryComponent = components.find(c => c.types?.includes('country'));
+    return countryComponent?.short_name || null;
   } catch {
     return null;
   }
@@ -73,4 +159,4 @@ function formatMinutes(totalMinutes) {
   return rem === 0 ? `${hrs} hr` : `${hrs} hr ${rem} min`;
 }
 
-module.exports = { getDistance, feeFromMiles, providerFromMiles, formatMinutes };
+module.exports = { getDistance, getDirections, geocodeCountry, feeFromMiles, providerFromMiles, formatMinutes };

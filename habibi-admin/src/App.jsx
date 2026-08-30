@@ -45,7 +45,6 @@ const Reports          = lazy(() => import('./pages/Reports'));
 const LiveBoard        = lazy(() => import('./pages/LiveBoard'));
 const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
 const DeliveryDispatch = lazy(() => import('./pages/DeliveryDispatch'));
-const DriverView       = lazy(() => import('./pages/Driver'));
 const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
@@ -143,20 +142,12 @@ function Guard() {
   return <AdminLayout />;
 }
 
-function DriverGuard() {
-  const { isAdmin, loading } = useAdminAuth();
-  if (loading) return <div className="admin-loading"><div className="spinner" aria-label="Loading" role="status" /></div>;
-  if (!isAdmin) return <Navigate to="/" replace />;
-  return <Suspense fallback={<PageLoader />}><DriverView /></Suspense>;
-}
-
 export default function App() {
   return (
     <ErrorBoundary>
       <AdminAuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/driver" element={<DriverGuard />} />
             <Route path="*" element={<Guard />} />
           </Routes>
         </BrowserRouter>

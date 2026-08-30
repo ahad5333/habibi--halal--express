@@ -111,7 +111,6 @@ const authRoutes = require("./routes/authRoutes")
 const cartRoutes = require("./routes/cartRoutes")
 const orderRoutes = require("./routes/orderRoutes")
 const paymentRoutes = require("./routes/paymentRoutes")
-const deliveryRoutes = require("./routes/deliveryRoutes")
 const adminRoutes = require("./routes/adminRoutes")
 const reservationRoutes = require("./routes/reservationRoutes");
 const aiRoutes = require("./routes/aiRoutes");
@@ -175,6 +174,11 @@ app.use('/api', (req, res, next) => {
 
 app.use(cookieParser());
 app.use(express.json({ limit: '500kb' }))
+// Twilio (and any other form-POST webhook) sends application/x-www-form-urlencoded,
+// never JSON — without this, req.body was always {} for those requests, so e.g. the
+// inbound SMS STOP/HELP/START webhook read req.body.From/.Body as undefined and its
+// "if (from)" guard never once fired for a real Twilio request.
+app.use(express.urlencoded({ extended: true, limit: '500kb' }))
 const staticOpts = { maxAge: '1y', etag: true, lastModified: true }
 app.use(express.static("public", staticOpts))
 app.use("/uploads", express.static("public/uploads", staticOpts))
@@ -194,7 +198,6 @@ app.use("/api/auth", authRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderLimiter, orderRoutes);
 app.use("/api/payments", payLimiter, paymentRoutes);
-app.use("/api/delivery", deliveryRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/admin", adminLimiter, adminRoutes);
 app.use("/api/ai", aiRoutes);
@@ -232,7 +235,11 @@ app.get("/health", async (req, res) => {
   // Only allow internal/monitoring requests — block public access in production
   const clientIp = req.ip || '';
   const isLocalhost = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
-  const allowedMonitorHeader = req.headers['x-monitor-secret'] === process.env.HEALTH_SECRET;
+  // Require a real, non-empty HEALTH_SECRET to match against — otherwise an
+  // unset env var (undefined) would equal a request that simply omits the
+  // header (also undefined), silently allowing anyone through.
+  const allowedMonitorHeader = !!process.env.HEALTH_SECRET &&
+    req.headers['x-monitor-secret'] === process.env.HEALTH_SECRET;
   if (process.env.NODE_ENV === 'production' && !isLocalhost && !allowedMonitorHeader) {
     return res.status(404).json({ message: 'Not found' });
   }

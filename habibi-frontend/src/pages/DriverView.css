@@ -139,6 +139,8 @@
   transition: background 0.15s;
 }
 .dv-icon-btn:hover { background: #242424; }
+.dv-icon-btn-sos { color: #ff4444; border-color: rgba(255,68,68,0.3); }
+.dv-icon-btn-sos:hover { background: rgba(255,68,68,0.12); }
 .dv-badge-dot {
   position: absolute;
   top: -3px;
@@ -1731,6 +1733,26 @@
   color: #777;
 }
 .dv-summary-duration strong { color: #a0a0a0; }
+
+.dv-sos-sub {
+  font-size: 0.82rem;
+  color: #999;
+  text-align: center;
+  line-height: 1.5;
+  padding: 0 0.5rem;
+}
+.dv-sos-note {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: #fff;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: none;
+}
+.dv-sos-note:focus { outline: none; border-color: #ff4444; }
 
 .dv-summary-stats {
   display: flex;

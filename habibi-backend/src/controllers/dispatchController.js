@@ -602,9 +602,13 @@ const getAssignmentForOrder = async (req, res) => {
     const result = await pool.query(
       `SELECT da.id, da.status, da.current_lat, da.current_lng,
               da.last_location_update, da.assigned_at, da.delivered_at,
-              da.driver_name, da.proof_photo_url,
+              da.driver_name, da.proof_photo_url, da.driver_id, da.customer_rating,
               sm.phone AS driver_phone,
-              sm.name  AS driver_full_name
+              sm.name  AS driver_full_name,
+              (SELECT ROUND(AVG(customer_rating), 1) FROM delivery_assignments
+                WHERE driver_id = da.driver_id AND customer_rating IS NOT NULL) AS driver_rating_avg,
+              (SELECT COUNT(*) FROM delivery_assignments
+                WHERE driver_id = da.driver_id AND customer_rating IS NOT NULL) AS driver_rating_count
        FROM delivery_assignments da
        LEFT JOIN staff_members sm ON sm.id = da.driver_id
        WHERE da.order_number=$1 AND da.status IN ('assigned','en_route','delivered')
@@ -622,7 +626,38 @@ const getAssignmentForOrder = async (req, res) => {
       ...row,
       driver_name:  row.driver_full_name || row.driver_name || null,
       driver_phone: rawPhone.length > 4 ? `***-***-${rawPhone.slice(-4)}` : null,
+      driver_rating_avg:   row.driver_rating_avg   != null ? parseFloat(row.driver_rating_avg) : null,
+      driver_rating_count: parseInt(row.driver_rating_count, 10) || 0,
     });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ── Customer rates the driver post-delivery ─────────────────────────
+// Public, keyed by order_number (same trust model as getAssignmentForOrder --
+// the order number itself is the shared secret, no login required). Only
+// allowed once per assignment (customer_rating IS NULL) and only after the
+// order actually shows delivered, so this can't be used to pre-rate or
+// spam-overwrite a rating.
+const rateDelivery = async (req, res) => {
+  const { order_number } = req.params;
+  const rating = parseInt(req.body.rating, 10);
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE delivery_assignments
+          SET customer_rating = $1
+        WHERE order_number = $2 AND status = 'delivered' AND customer_rating IS NULL
+        RETURNING id`,
+      [rating, order_number]
+    );
+    if (!result.rows.length) {
+      return res.status(409).json({ message: 'This delivery has already been rated, or is not yet complete.' });
+    }
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -1340,7 +1375,11 @@ const getDriverPerformance = async (req, res) => {
           EXTRACT(EPOCH FROM
             AVG(da.delivered_at - COALESCE(da.accepted_at, da.assigned_at))
           ) / 60
-        ) AS avg_delivery_mins
+        ) AS avg_delivery_mins,
+        (SELECT ROUND(AVG(customer_rating), 1) FROM delivery_assignments
+          WHERE driver_id = sm.id AND customer_rating IS NOT NULL) AS avg_rating,
+        (SELECT COUNT(*) FROM delivery_assignments
+          WHERE driver_id = sm.id AND customer_rating IS NOT NULL) AS rating_count
       FROM staff_members sm
       LEFT JOIN delivery_assignments da
         ON da.driver_id = sm.id
@@ -1391,6 +1430,7 @@ module.exports = {
   respondToAssignment,
   getDriverAssignment,
   getAssignmentForOrder,
+  rateDelivery,
   updateDriverGPS,
   updateAssignmentStatus,
   uploadProof,

@@ -13,9 +13,29 @@ const createUrgentRequest = async (req, res) => {
       [name, phone, email, order_id, reason, message, urgency_level || 'High']
     );
 
-    // Trigger SMS Notification to Admin
-    const adminPhone = process.env.ADMIN_CPANEL_PHONE || "+17185550123";
-    sendUrgentSOS(adminPhone, { name, phone, reason });
+    // Trigger SMS Notification to Admin — these are safety-critical alerts
+    // (medical emergency, food safety), so a misconfigured/missing admin
+    // phone must never fail silently. If this ever logs, urgent alerts are
+    // being sent nowhere despite customers seeing "Alert Dispatched".
+    const adminPhone = process.env.ADMIN_CPANEL_PHONE;
+    if (!adminPhone) {
+      console.error('[URGENT ALERT] ADMIN_CPANEL_PHONE is not configured — urgent SOS SMS was NOT sent for request:', { name, phone, reason });
+    } else {
+      sendUrgentSOS(adminPhone, { name, phone, reason }).catch(err =>
+        console.error('[URGENT ALERT] Failed to send SOS SMS:', err.message)
+      );
+    }
+
+    // Driver safety SOS additionally gets a live, unmissable alert on the
+    // admin dispatch board (DeliveryDispatch.jsx) -- dispatch is already
+    // watching that screen in real time while drivers are out, so this
+    // reaches them faster than waiting on the SMS/UrgentRequests inbox alone.
+    if (reason === 'Driver Safety SOS') {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admins').emit('driver_sos', { name, phone, order_id, message, created_at: result.rows[0].created_at });
+      }
+    }
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
