@@ -240,7 +240,7 @@
   font-size: clamp(1.8rem, 3vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
-  margin-top: 1.5rem;
+  margin-top: 4.5rem;
   margin-bottom: 1.5rem;
   color: #fff;
   letter-spacing: -0.5px;
@@ -268,8 +268,8 @@
 }
 
 .animated-hero-words {
-  color: #ef4444;
-  -webkit-text-fill-color: #ef4444;
+  color: #ff0000;
+  -webkit-text-fill-color: #ff0000;
   display: inline-block;
   position: relative;
   font-size: 1.1em;
