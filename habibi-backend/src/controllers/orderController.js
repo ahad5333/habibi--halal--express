@@ -3,6 +3,7 @@ const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
+const { syncMenuAvailability } = require('./inventoryController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
 const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMaps");
@@ -615,6 +616,39 @@ const createGuestOrder = async (req, res) => {
     } finally {
       client.release();
     }
+
+    // Best-effort inventory decrement. Runs after the order transaction has
+    // already committed -- a real order was placed regardless of whether
+    // stock-tracking succeeds, same "never let a side effect block the
+    // order" philosophy as the UTM/dispatch blocks below. Custom/BYO items
+    // (isCustomItem) aren't linked to inventory_items at all, so they're
+    // skipped -- only real menu items (id/menu_id resolving to a menus row)
+    // participate. Every inventory row linked to that menu item is
+    // decremented by the ordered qty, not just one -- a single dish can be
+    // constrained by multiple ingredients (e.g. buns AND patties both
+    // linked to "Burger"), same multi-link reality syncMenuAvailability
+    // already accounts for via MIN(current_stock) across all linked rows.
+    (async () => {
+      try {
+        const menuIdsTouched = new Set();
+        for (const item of items) {
+          if (isCustomItem(item)) continue;
+          const menuId = parseInt(item.id || item.menu_id, 10);
+          const qty = parseInt(item.qty || item.quantity || 1, 10);
+          if (!menuId || !qty) continue;
+          await pool.query(
+            `UPDATE inventory_items SET current_stock = current_stock - $1, updated_at = NOW() WHERE menu_item_id = $2`,
+            [qty, menuId]
+          );
+          menuIdsTouched.add(menuId);
+        }
+        for (const menuId of menuIdsTouched) {
+          await syncMenuAvailability(menuId);
+        }
+      } catch (err) {
+        console.error('[Inventory] Failed to decrement stock for order', db_id, ':', err.message);
+      }
+    })();
 
     // Store UTM attribution if present (columns added by migrate-utm.js)
     if (utm_source || utm_medium || utm_campaign || utm_content) {

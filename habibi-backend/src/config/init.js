@@ -331,6 +331,18 @@ const createTables = async () => {
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS scheduled_date    DATE`);
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS scheduled_time    VARCHAR(5)`);
 
+    // Gift-order columns -- every real createGuestOrder() INSERT already
+    // references these, but no ALTER for them existed anywhere in this file,
+    // so a truly fresh bootstrap (empty DB, never hit by any of the many
+    // incremental migrations production has accumulated over time) failed
+    // outright on the very first gift-eligible order with "column is_gift
+    // does not exist". Found while locally testing the inventory-decrement
+    // feature below on a from-scratch DB.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS is_gift              BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS gift_recipient_name  VARCHAR(255)`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS gift_recipient_phone VARCHAR(50)`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS gift_message         TEXT`);
+
     // guest_orders.placed_at/updated_at were declared as naive TIMESTAMP here
     // from the very start (not drift from a later ALTER — the original design
     // was wrong), same underlying issue already fixed on delivery_assignments/

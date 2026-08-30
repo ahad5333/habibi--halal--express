@@ -27,6 +27,8 @@ async function syncMenuAvailability(menu_item_id) {
   }
 }
 
+exports.syncMenuAvailability = syncMenuAvailability;
+
 exports.getInventory = async (req, res) => {
   try {
     const items = await pool.query(
