@@ -22,8 +22,9 @@ export default function Inventory() {
   const [items, setItems]         = useState([]);
   const [menus, setMenus]         = useState([]);
   const [log, setLog]             = useState([]);
+  const [orderLog, setOrderLog]   = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [tab, setTab]             = useState('items'); // 'items' | 'log'
+  const [tab, setTab]             = useState('items'); // 'items' | 'log' | 'orderlog'
   const [modal, setModal]         = useState(null);
   const [form, setForm]           = useState(BLANK);
   const [saving, setSaving]       = useState(false);
@@ -38,13 +39,15 @@ export default function Inventory() {
     setLoading(true);
     setLoadErr('');
     try {
-      const [inv, lg, menuList] = await Promise.all([
+      const [inv, lg, orderLg, menuList] = await Promise.all([
         adminAPI.getInventory(),
         adminAPI.getRestockLog(),
+        adminAPI.getOrderLog(),
         adminAPI.menus(),
       ]);
       setItems(inv);
       setLog(lg);
+      setOrderLog(orderLg);
       setMenus(Array.isArray(menuList) ? menuList : []);
     } catch (e) {
       setLoadErr(e.message || 'Failed to load inventory.');
@@ -162,6 +165,7 @@ export default function Inventory() {
       <div className="inv-tabs">
         <button className={`inv-tab ${tab==='items'?'active':''}`} onClick={() => setTab('items')}><Package size={14}/> Items</button>
         <button className={`inv-tab ${tab==='log'?'active':''}`} onClick={() => setTab('log')}><History size={14}/> Restock Log</button>
+        <button className={`inv-tab ${tab==='orderlog'?'active':''}`} onClick={() => setTab('orderlog')}><History size={14}/> Order Activity</button>
       </div>
 
       {loading ? (
@@ -234,7 +238,7 @@ export default function Inventory() {
             </div>
           )}
         </div>
-      ) : (
+      ) : tab === 'log' ? (
         <div className="card">
           {log.length === 0 ? (
             <div className="empty"><History size={32}/><p>No restock events yet</p></div>
@@ -254,6 +258,40 @@ export default function Inventory() {
                       <td className="text-muted">{l.created_by}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="card">
+          {orderLog.length === 0 ? (
+            <div className="empty"><History size={32}/><p>No order activity yet</p></div>
+          ) : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>Date</th><th>Item</th><th>Order #</th><th>Qty Change</th><th>Reason</th></tr></thead>
+                <tbody>
+                  {orderLog.map(l => {
+                    const qty = parseFloat(l.quantity_change);
+                    const reasonLabel = l.reason === 'order' ? 'Order placed'
+                      : l.reason === 'cancel_restock' ? 'Order cancelled'
+                      : l.reason === 'refund_restock' ? 'Order refunded'
+                      : l.reason;
+                    return (
+                      <tr key={l.id}>
+                        <td className="text-muted" style={{fontSize:'0.78rem',whiteSpace:'nowrap'}}>
+                          {fmtDateTime(l.created_at, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+                        </td>
+                        <td style={{fontWeight:500}}>{l.item_name}</td>
+                        <td className="text-muted" style={{fontSize:'0.78rem'}}>{l.order_number || '—'}</td>
+                        <td className={qty < 0 ? 'text-error' : 'text-success'}>
+                          {qty > 0 ? '+' : ''}{qty} {l.unit}
+                        </td>
+                        <td className="text-muted">{reasonLabel}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

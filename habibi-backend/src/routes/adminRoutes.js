@@ -253,10 +253,11 @@ router.patch("/staff/bulk-status", bulkSetStaffStatus);
 
 // Inventory
 const {
-  getInventory, createItem, updateItem, deleteItem, restockItem, getRestockLog
+  getInventory, createItem, updateItem, deleteItem, restockItem, getRestockLog, getOrderLog
 } = require("../controllers/inventoryController");
 router.get("/inventory", getInventory);
 router.get("/inventory/restock-log", getRestockLog);
+router.get("/inventory/order-log", getOrderLog);
 router.post("/inventory", createItem);
 router.put("/inventory/:id", updateItem);
 router.delete("/inventory/:id", deleteItem);

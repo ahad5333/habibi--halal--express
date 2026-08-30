@@ -777,6 +777,27 @@ const createTables = async () => {
       );
     `);
 
+    // ── Inventory Order Log ─────────────────────────────────────────
+    // Every order-driven stock change (a real order consuming stock, or a
+    // cancelled/refunded order returning it) — separate from the manual,
+    // admin-initiated inventory_restock_log above since the shape is
+    // different (signed quantity_change + which order caused it, not an
+    // admin name). Without this, current_stock could only ever be watched
+    // going down with zero way to see which order did it.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS inventory_order_log (
+        id               SERIAL PRIMARY KEY,
+        item_id          INTEGER REFERENCES inventory_items(id) ON DELETE CASCADE,
+        order_id         INTEGER REFERENCES guest_orders(id) ON DELETE SET NULL,
+        order_number     VARCHAR(50),
+        quantity_change  NUMERIC(10,2) NOT NULL,
+        reason           VARCHAR(30) NOT NULL,
+        created_at       TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_inventory_order_log_item ON inventory_order_log(item_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_inventory_order_log_order ON inventory_order_log(order_id)`);
+
     // ── Delivery Zones ─────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS delivery_zones (

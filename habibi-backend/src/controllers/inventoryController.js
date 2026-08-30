@@ -29,6 +29,59 @@ async function syncMenuAvailability(menu_item_id) {
 
 exports.syncMenuAvailability = syncMenuAvailability;
 
+// Reverses an order's stock consumption -- called when an order is
+// cancelled or refunded, so inventory reflects that the food is no longer
+// being made. `items` is the order's raw cart array (same shape
+// createGuestOrder validates), `reason` is 'cancel_restock' or
+// 'refund_restock' for the inventory_order_log audit trail. Best-effort by
+// design (caller wraps in try/catch) -- a restock failure shouldn't block a
+// cancellation or refund from completing, same philosophy as the original
+// decrement being non-blocking, just applied to the reverse direction.
+async function restockOrderItems(orderId, orderNumber, items, reason) {
+  if (!Array.isArray(items) || !items.length) return;
+
+  const menuIdsInOrder = [];
+  for (const item of items) {
+    const isCustom = typeof item.id === 'string' && item.id.startsWith('custom-');
+    if (isCustom) continue;
+    const menuId = parseInt(item.id || item.menu_id, 10);
+    const qty = parseInt(item.qty || item.quantity || 1, 10);
+    if (!menuId || !qty) continue;
+    menuIdsInOrder.push({ menuId, qty });
+  }
+  if (!menuIdsInOrder.length) return;
+
+  const linkedMenuIds = [...new Set(menuIdsInOrder.map(m => m.menuId))];
+  const invRows = await pool.query(
+    `SELECT id, menu_item_id FROM inventory_items WHERE menu_item_id = ANY($1)`,
+    [linkedMenuIds]
+  );
+  const byMenuId = new Map();
+  for (const row of invRows.rows) {
+    if (!byMenuId.has(row.menu_item_id)) byMenuId.set(row.menu_item_id, []);
+    byMenuId.get(row.menu_item_id).push(row);
+  }
+
+  const touchedMenuIds = new Set();
+  for (const { menuId, qty } of menuIdsInOrder) {
+    for (const row of (byMenuId.get(menuId) || [])) {
+      await pool.query(
+        `UPDATE inventory_items SET current_stock = current_stock + $1, updated_at = NOW() WHERE id = $2`,
+        [qty, row.id]
+      );
+      await pool.query(
+        `INSERT INTO inventory_order_log (item_id, order_id, order_number, quantity_change, reason) VALUES ($1,$2,$3,$4,$5)`,
+        [row.id, orderId, orderNumber, qty, reason]
+      );
+      touchedMenuIds.add(menuId);
+    }
+  }
+  for (const menuId of touchedMenuIds) {
+    await syncMenuAvailability(menuId);
+  }
+}
+exports.restockOrderItems = restockOrderItems;
+
 exports.getInventory = async (req, res) => {
   try {
     const items = await pool.query(
@@ -146,6 +199,20 @@ exports.getRestockLog = async (req, res) => {
     const result = await pool.query(
       `SELECT l.*, i.name AS item_name, i.unit
        FROM inventory_restock_log l
+       JOIN inventory_items i ON i.id = l.item_id
+       ORDER BY l.created_at DESC LIMIT 100`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+exports.getOrderLog = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT l.*, i.name AS item_name, i.unit
+       FROM inventory_order_log l
        JOIN inventory_items i ON i.id = l.item_id
        ORDER BY l.created_at DESC LIMIT 100`
     );

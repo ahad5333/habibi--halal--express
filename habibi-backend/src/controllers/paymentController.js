@@ -7,6 +7,7 @@ const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
 const { logAudit } = require('./auditController');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
+const { restockOrderItems } = require('./inventoryController');
 
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
@@ -30,7 +31,7 @@ const refundOrder = async (req, res) => {
     const { amount } = req.body || {}; // optional partial amount, defaults to the order total
 
     const result = await pool.query(
-      "SELECT payment_intent_id, total, payment_method, payment_processor, order_status FROM guest_orders WHERE order_number=$1",
+      "SELECT id, payment_intent_id, total, payment_method, payment_processor, order_status, items FROM guest_orders WHERE order_number=$1",
       [orderNumber]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Order not found." });
@@ -95,6 +96,17 @@ const refundOrder = async (req, res) => {
       "UPDATE guest_orders SET order_status='refunded', payment_status='refunded', updated_at=NOW() WHERE order_number=$1",
       [orderNumber]
     );
+
+    // Skip restocking if this order was already cancelled -- cancelOrder
+    // already returned its stock at that point, and this refund is just
+    // the money catching up to a fulfillment decision made earlier.
+    // Anything else (a direct refund with no prior cancellation) restocks
+    // here, since this is the only point that ever signals the food isn't
+    // being made.
+    if (order.order_status !== 'cancelled') {
+      restockOrderItems(order.id, orderNumber, order.items, 'refund_restock')
+        .catch(err => console.error('[Inventory] Restock failed for refunded order', orderNumber, ':', err.message));
+    }
 
     const io = req.app.get("io");
     if (io) {

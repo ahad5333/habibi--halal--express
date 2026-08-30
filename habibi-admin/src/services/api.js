@@ -184,6 +184,7 @@ export const adminAPI = {
   deleteInventoryItem:(id) => req(`/api/admin/inventory/${id}`, { method: 'DELETE' }),
   restockItem:        (id, body) => req(`/api/admin/inventory/${id}/restock`, { method: 'POST', body: JSON.stringify(body) }),
   getRestockLog:      () => req('/api/admin/inventory/restock-log'),
+  getOrderLog:        () => req('/api/admin/inventory/order-log'),
 
   // Delivery Zones
   getZones:    () => req('/api/admin/zones'),

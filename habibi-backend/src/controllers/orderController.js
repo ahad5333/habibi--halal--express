@@ -3,7 +3,7 @@ const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { isOpenNow } = require('../utils/businessHours');
 const { logAudit } = require('./auditController');
-const { syncMenuAvailability } = require('./inventoryController');
+const { syncMenuAvailability, restockOrderItems } = require('./inventoryController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
 const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMaps");
@@ -402,6 +402,7 @@ const createGuestOrder = async (req, res) => {
     // Loyalty check + INSERT + deduct all in one transaction to prevent race conditions
     const client = await pool.connect();
     let db_id;
+    let inventoryDecrements = [];
     try {
       await client.query('BEGIN');
 
@@ -504,6 +505,56 @@ const createGuestOrder = async (req, res) => {
         }
       }
 
+      // Inventory availability check + decrement, done atomically inside
+      // this same transaction with FOR UPDATE locks. This used to be a
+      // post-commit, best-effort step -- fine for tracking, but it meant
+      // nothing server-side actually stopped an order from being placed
+      // and paid for after stock hit zero (the sold_out flag it computed
+      // was cosmetic, storefront-listing-only). Locking every linked
+      // inventory row here means two orders racing for the last unit can't
+      // both pass the check, and rolling back on insufficient stock means
+      // a sold-out item genuinely can't be ordered anymore, not just
+      // displayed as such.
+      {
+        const menuIdsInOrder = [];
+        for (const item of items) {
+          if (isCustomItem(item)) continue;
+          const menuId = parseInt(item.id || item.menu_id, 10);
+          const qty = parseInt(item.qty || item.quantity || 1, 10);
+          if (!menuId || !qty) continue;
+          menuIdsInOrder.push({ menuId, qty });
+        }
+        if (menuIdsInOrder.length > 0) {
+          const linkedMenuIds = [...new Set(menuIdsInOrder.map(m => m.menuId))];
+          const invRows = await client.query(
+            `SELECT id, menu_item_id, current_stock FROM inventory_items WHERE menu_item_id = ANY($1) FOR UPDATE`,
+            [linkedMenuIds]
+          );
+          const byMenuId = new Map();
+          for (const row of invRows.rows) {
+            if (!byMenuId.has(row.menu_item_id)) byMenuId.set(row.menu_item_id, []);
+            byMenuId.get(row.menu_item_id).push(row);
+          }
+          for (const { menuId, qty } of menuIdsInOrder) {
+            for (const row of (byMenuId.get(menuId) || [])) {
+              if (parseFloat(row.current_stock) < qty) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ message: 'One or more items just sold out. Please refresh your cart.' });
+              }
+            }
+          }
+          for (const { menuId, qty } of menuIdsInOrder) {
+            for (const row of (byMenuId.get(menuId) || [])) {
+              await client.query(
+                `UPDATE inventory_items SET current_stock = current_stock - $1, updated_at = NOW() WHERE id = $2`,
+                [qty, row.id]
+              );
+              inventoryDecrements.push({ itemId: row.id, menuId, qty });
+            }
+          }
+        }
+      }
+
       if (loyalty_points_redeemed > 0 && customer_email) {
         const userRes = await client.query(
           'SELECT loyalty_points FROM users WHERE LOWER(email) = LOWER($1) FOR UPDATE',
@@ -601,6 +652,17 @@ const createGuestOrder = async (req, res) => {
 
       db_id = result.rows[0].id;
 
+      // Consumption audit trail -- same transaction, so it can never exist
+      // without the order it belongs to (or vice versa). Without this,
+      // current_stock only ever showed a shrinking number with no way to
+      // trace which order caused which decrement.
+      for (const dec of inventoryDecrements) {
+        await client.query(
+          `INSERT INTO inventory_order_log (item_id, order_id, order_number, quantity_change, reason) VALUES ($1,$2,$3,$4,'order')`,
+          [dec.itemId, db_id, order_number, -dec.qty]
+        );
+      }
+
       // Deduct loyalty points inside the same transaction
       if (loyalty_points_redeemed > 0 && customer_email) {
         await client.query(
@@ -617,38 +679,23 @@ const createGuestOrder = async (req, res) => {
       client.release();
     }
 
-    // Best-effort inventory decrement. Runs after the order transaction has
-    // already committed -- a real order was placed regardless of whether
-    // stock-tracking succeeds, same "never let a side effect block the
-    // order" philosophy as the UTM/dispatch blocks below. Custom/BYO items
-    // (isCustomItem) aren't linked to inventory_items at all, so they're
-    // skipped -- only real menu items (id/menu_id resolving to a menus row)
-    // participate. Every inventory row linked to that menu item is
-    // decremented by the ordered qty, not just one -- a single dish can be
-    // constrained by multiple ingredients (e.g. buns AND patties both
-    // linked to "Burger"), same multi-link reality syncMenuAvailability
-    // already accounts for via MIN(current_stock) across all linked rows.
-    (async () => {
-      try {
-        const menuIdsTouched = new Set();
-        for (const item of items) {
-          if (isCustomItem(item)) continue;
-          const menuId = parseInt(item.id || item.menu_id, 10);
-          const qty = parseInt(item.qty || item.quantity || 1, 10);
-          if (!menuId || !qty) continue;
-          await pool.query(
-            `UPDATE inventory_items SET current_stock = current_stock - $1, updated_at = NOW() WHERE menu_item_id = $2`,
-            [qty, menuId]
-          );
-          menuIdsTouched.add(menuId);
+    // Refresh the storefront's sold-out badge for every menu item this
+    // order touched. Purely cosmetic (menu_location_availability display
+    // status) -- actual oversell prevention already happened atomically
+    // inside the transaction above, so this can safely stay best-effort
+    // and run after commit without risking a real oversell if it fails.
+    if (inventoryDecrements.length > 0) {
+      const touchedMenuIds = new Set(inventoryDecrements.map(d => d.menuId));
+      (async () => {
+        try {
+          for (const menuId of touchedMenuIds) {
+            await syncMenuAvailability(menuId);
+          }
+        } catch (err) {
+          console.error('[Inventory] Availability sync failed for order', db_id, ':', err.message);
         }
-        for (const menuId of menuIdsTouched) {
-          await syncMenuAvailability(menuId);
-        }
-      } catch (err) {
-        console.error('[Inventory] Failed to decrement stock for order', db_id, ':', err.message);
-      }
-    })();
+      })();
+    }
 
     // Store UTM attribution if present (columns added by migrate-utm.js)
     if (utm_source || utm_medium || utm_campaign || utm_content) {
@@ -986,7 +1033,7 @@ const cancelOrder = async (req, res) => {
     // comparing it against a JS Date.now() here would be skewed by whatever the
     // DB session's timezone happens to be. Let Postgres do the subtraction.
     const result = await pool.query(
-      `SELECT id, user_id, customer_email, order_status, payment_method,
+      `SELECT id, user_id, customer_email, order_status, payment_method, items,
               EXTRACT(EPOCH FROM (NOW() - placed_at)) / 60 AS minutes_elapsed
          FROM guest_orders WHERE order_number = $1`,
       [orderNumber]
@@ -1019,6 +1066,13 @@ const cancelOrder = async (req, res) => {
         WHERE id = $1`,
       [order.id]
     );
+
+    // Cancelling here always means this is the first time this order has
+    // moved out of 'pending' (checked above), so it's always safe to
+    // restock -- no risk of double-restocking a refund that already did it,
+    // since a refund can only happen after this point, not before.
+    restockOrderItems(order.id, orderNumber, order.items, 'cancel_restock')
+      .catch(err => console.error('[Inventory] Restock failed for cancelled order', orderNumber, ':', err.message));
 
     const io = req.app.get('io');
     if (io) {
