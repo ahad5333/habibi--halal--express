@@ -28,7 +28,7 @@ const ALT_PAYMENTS = [
   { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay-v2.png' },
   { id: 'zelle',     label: 'Zelle',            img: '/images/partners/zelle.png' },
   { id: 'cashapp',   label: 'Cash App',         img: '/images/partners/cashapp.png' },
-  { id: 'cash',      label: 'Cash on Delivery', img: '/images/partners/cash-on-delivery.png' },
+  { id: 'cash',      label: 'Cash on Delivery', img: '/images/partners/cash-on-delivery-v2.png' },
 ];
 
 // Methods that go through an offline/modal flow

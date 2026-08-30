@@ -201,7 +201,7 @@ const Footer = () => {
           <span className="payment-badge">Amex</span>
           <img src="/images/partners/cashapp.png" alt="Cash App" className="payment-logo" title="Cash App" />
           <img src="/images/partners/zelle.png" alt="Zelle" className="payment-logo" title="Zelle" />
-          <img src="/images/partners/cash-on-delivery.png" alt="Cash on Delivery" className="payment-logo" title="Cash on Delivery" />
+          <img src="/images/partners/cash-on-delivery-v2.png" alt="Cash on Delivery" className="payment-logo" title="Cash on Delivery" />
         </div>
       </div>
     </footer>
