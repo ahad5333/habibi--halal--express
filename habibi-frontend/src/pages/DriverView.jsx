@@ -7,7 +7,7 @@ import {
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
   Zap, Star, History, TrendingUp, BarChart2, Award, Settings, Wifi, WifiOff,
-  Siren,
+  Siren, Home,
 } from 'lucide-react';
 
 // ── Navigation helpers ────────────────────────────────────────────────
@@ -224,6 +224,7 @@ export default function DriverView() {
 
   const [showEarnings, setShowEarnings] = useState(false);
   const [showPerf, setShowPerf]         = useState(false);
+  const [showProfile, setShowProfile]   = useState(false);
   const [perfData, setPerfData]         = useState(null);
   const [perfLoading, setPerfLoading]   = useState(false);
   const [queuedOrder, setQueuedOrder]   = useState(null);
@@ -1204,6 +1205,78 @@ export default function DriverView() {
     </div>
   );
 
+  const profileDrawer = showProfile && (
+    <div className="dv-history-overlay" onClick={() => setShowProfile(false)}>
+      <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
+        <div className="dv-history-hdr">
+          <span className="dv-history-title">Profile</span>
+          <button className="dv-chat-close" onClick={() => setShowProfile(false)}><X size={18}/></button>
+        </div>
+        <div className="dv-history-body">
+          <div className="dv-profile-id">
+            <div className="dv-profile-avatar"><User size={22}/></div>
+            <div>
+              <p className="dv-profile-name">{driverName || 'Driver'}</p>
+              <p className="dv-profile-phone">{driverPhone}</p>
+            </div>
+          </div>
+          <button className="dv-profile-row" onClick={() => { setShowProfile(false); loadPerf(); setShowPerf(true); }}>
+            <BarChart2 size={18}/> <span>Performance</span>
+          </button>
+          <button className="dv-profile-row" onClick={() => { setShowProfile(false); setShowPinChange(true); }}>
+            <Settings size={18}/> <span>Change PIN</span>
+          </button>
+          <button className="dv-profile-row dv-profile-row-danger" onClick={handleLogout}>
+            <DoorOpen size={18}/> <span>Log Out</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Bottom tab bar (idle screen only) ──────────────────────────────
+  // Tabs are just relocated entry points into the existing drawers above --
+  // "active" is derived from which drawer is open rather than tracked as
+  // separate state, so it can never drift out of sync with what's actually
+  // showing. Every tab closes all OTHER drawers first (they're independent
+  // booleans, not a single "current view" enum) so switching tabs can never
+  // stack two overlays on top of each other.
+  const closeAllTabDrawers = () => {
+    setShowEarnings(false);
+    setShowHistory(false);
+    setShowProfile(false);
+    setChatOpen(false);
+    setShowPerf(false);
+    setShowPinChange(false);
+  };
+  const bottomTabBar = (
+    <nav className="dv-tabbar">
+      <button className={`dv-tab ${!showEarnings && !showHistory && !chatOpen && !showProfile ? 'dv-tab-active' : ''}`} onClick={closeAllTabDrawers}>
+        <Home size={20}/>
+        <span className="dv-tab-label">Home</span>
+      </button>
+      <button className={`dv-tab ${showEarnings ? 'dv-tab-active' : ''}`} onClick={() => { closeAllTabDrawers(); setShowEarnings(true); }}>
+        <DollarSign size={20}/>
+        <span className="dv-tab-label">Earnings</span>
+      </button>
+      <button className={`dv-tab ${showHistory ? 'dv-tab-active' : ''}`} onClick={() => { closeAllTabDrawers(); loadHistory(); setShowHistory(true); }}>
+        <History size={20}/>
+        <span className="dv-tab-label">History</span>
+      </button>
+      <button className={`dv-tab ${chatOpen ? 'dv-tab-active' : ''}`} onClick={() => { closeAllTabDrawers(); openChat(); }}>
+        <div className="dv-tab-icon-wrap">
+          <MessageSquare size={20}/>
+          {chatUnread > 0 && <span className="dv-badge-dot">{chatUnread}</span>}
+        </div>
+        <span className="dv-tab-label">Chat</span>
+      </button>
+      <button className={`dv-tab ${showProfile ? 'dv-tab-active' : ''}`} onClick={() => { closeAllTabDrawers(); setShowProfile(true); }}>
+        <User size={20}/>
+        <span className="dv-tab-label">Profile</span>
+      </button>
+    </nav>
+  );
+
   // ── PWA install nudge banner ──────────────────────────────────────
   const installBanner = showInstallBanner && (
     <div className="dv-install-banner">
@@ -1437,6 +1510,7 @@ export default function DriverView() {
         {earningsDrawer}
         {perfDrawer}
         {pinChangeDrawer}
+        {profileDrawer}
         {cancelAlertModal}
         {connBanner}
 
@@ -1449,22 +1523,6 @@ export default function DriverView() {
           <div className="dv-hdr-right">
             <button className="dv-icon-btn dv-icon-btn-sos" onClick={() => setShowSosSheet(true)} title="Emergency SOS">
               <Siren size={18}/>
-            </button>
-            <button className="dv-icon-btn" onClick={() => setShowPinChange(true)} title="Change PIN">
-              <Settings size={18}/>
-            </button>
-            <button className="dv-icon-btn" onClick={() => { loadPerf(); setShowPerf(true); }} title="My performance">
-              <BarChart2 size={18}/>
-            </button>
-            <button className="dv-icon-btn" onClick={() => { loadHistory(); setShowHistory(true); }} title="Delivery history">
-              <History size={18}/>
-              {cashSummary && cashSummary.deliveries_count > 0 && (
-                <span className="dv-badge-dot">{cashSummary.deliveries_count}</span>
-              )}
-            </button>
-            <button className="dv-icon-btn" onClick={openChat} title="Chat dispatch">
-              <MessageSquare size={18}/>
-              {chatUnread > 0 && <span className="dv-badge-dot">{chatUnread}</span>}
             </button>
             <button
               className={`dv-duty-pill ${onBreak ? 'dv-duty-pill-break' : onDuty ? 'dv-duty-pill-on' : ''}`}
@@ -1604,7 +1662,16 @@ export default function DriverView() {
             </button>
           </div>
 
+          {/* Dedicated spacer, not the .dv-body padding shorthand -- several
+              responsive breakpoints reset .dv-body's padding wholesale, which
+              was silently clobbering a padding-bottom clearance value for the
+              fixed tab bar below. A standalone element can't be overridden
+              that way. */}
+          <div className="dv-tabbar-spacer" aria-hidden="true"/>
+
         </div>
+
+        {bottomTabBar}
 
         {/* Full broadcast modal for idle drivers */}
         {broadcastOrder && (

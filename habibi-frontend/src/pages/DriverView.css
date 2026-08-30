@@ -290,6 +290,15 @@
   width: 100%;
   margin: 0 auto;
 }
+/* Standalone spacer (not .dv-body padding, which several @media breakpoints
+   below reset via the `padding` shorthand and would silently clobber a
+   padding-bottom value) -- reserves room for the fixed bottom tab bar so the
+   last card (quick actions) never sits underneath it. Idle screen only; the
+   active-delivery screen has no tab bar and renders no spacer. */
+.dv-tabbar-spacer {
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
 
 /* ─── Duty button ────────────────────────────────────────────────────── */
 .dv-duty-btn {
@@ -312,6 +321,7 @@
   color: #000;
 }
 .dv-duty-btn-off:hover { background: #00e65c; }
+.dv-duty-btn:active { transform: scale(0.97); }
 .dv-duty-btn-on {
   background: #1a1a1a;
   color: #ff4444;
@@ -528,6 +538,7 @@
   outline: none;
 }
 .dv-quick:hover { background: #242424; border-color: #333; }
+.dv-quick:active { transform: scale(0.95); }
 .dv-quick svg { color: #00c853; }
 
 /* ─── Embedded map ───────────────────────────────────────────────────── */
@@ -599,6 +610,89 @@
 }
 .dv-map-you  { color: #00c853; }
 .dv-map-drop { color: #ff6b6b; }
+
+/* ─── Bottom tab bar (idle screen only) ─────────────────────────────── */
+.dv-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above every drawer/overlay this screen can show while idle -- History/
+     Earnings/Profile (z-index 200) AND Chat (z-index 300) -- so tapping a
+     different tab always works even while one is already open; each one's
+     full-screen backdrop would otherwise sit on top of and swallow clicks
+     meant for the tab bar. Still below the true full-attention modals
+     (shift-summary/SOS, z-index 350), which should cover it entirely. */
+  z-index: 310;
+  display: flex;
+  background: #0f0f0f;
+  border-top: 1px solid #1e1e1e;
+  padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+}
+.dv-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  background: none;
+  border: none;
+  color: #666;
+  padding: 0.35rem 0.1rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.dv-tab:active { transform: scale(0.93); }
+.dv-tab-active { color: #E5B64E; }
+.dv-tab-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+.dv-tab-icon-wrap { position: relative; display: inline-flex; }
+.dv-tab-icon-wrap .dv-badge-dot { top: -4px; right: -6px; }
+
+/* ─── Profile drawer ─────────────────────────────────────────────────── */
+.dv-profile-id {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.25rem 1.1rem;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 0.5rem;
+}
+.dv-profile-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #242424;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #E5B64E;
+  flex-shrink: 0;
+}
+.dv-profile-name { font-size: 1rem; font-weight: 700; color: #fff; }
+.dv-profile-phone { font-size: 0.8rem; color: #888; margin-top: 0.1rem; }
+.dv-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.9rem 0.5rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #222;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.dv-profile-row:last-child { border-bottom: none; }
+.dv-profile-row:active { background: #1e1e1e; }
+.dv-profile-row-danger { color: #ff6b6b; }
 
 @media (min-width: 560px) {
   .dv-map-container { height: 240px; }
@@ -1430,6 +1524,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Idle screen only in practice (chat from an active delivery has no tab
+     bar to clear, so this is a harmless small gap there). Unlike the History/
+     Earnings/etc drawers, the message input row is flex-shrink:0 -- pinned,
+     not scrollable -- so it needs the whole panel lifted above the fixed tab
+     bar (z-index 310), not just extra internal scroll room. */
+  margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 .dv-chat-header {
   display: flex;
@@ -2040,6 +2140,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  /* This drawer shell is shared by History/Earnings/Performance/PIN/Profile.
+     On the idle screen the bottom tab bar (z-index 310, fixed) sits above it
+     and would otherwise cover the last row/button; the drawer's own
+     max-height already clamps to 80dvh so this just adds scrollable room,
+     harmless on the active-delivery screen where no tab bar exists. */
+  padding-bottom: calc(0.75rem + 60px + env(safe-area-inset-bottom, 0px));
 }
 
 .dv-history-empty {
