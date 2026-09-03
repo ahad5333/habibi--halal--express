@@ -588,6 +588,15 @@ const uploadProof = async (req, res) => {
   const { note } = req.body;
 
   if (!req.file) return res.status(400).json({ message: 'No photo uploaded' });
+  // assignment_id flows straight into the stored filename below. The
+  // non-admin branch happens to be safe today because the ownership
+  // SELECT's WHERE id=$1 fails closed on a non-numeric value, but the
+  // admin branch skips that query entirely -- validate up front,
+  // independent of which branch runs, so a path-traversal value
+  // (e.g. "..%2f..%2f...") can never reach the filesystem write below.
+  if (!/^\d+$/.test(String(assignment_id))) {
+    return res.status(400).json({ message: 'Invalid assignment id' });
+  }
 
   try {
     if (!req.isAdmin) {

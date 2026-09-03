@@ -9,17 +9,37 @@ const emailService = require('../services/emailService');
 
 const PRICE_TIER_LABELS = { tier_1: 'Standard', tier_2: 'Silver', tier_3: 'Gold' };
 
-// Ensure documents directory exists
-const uploadDir = path.join(__dirname, "../../uploads/partners");
+// Was "../../uploads/partners" -- missing the "public/" prefix app.js
+// actually serves statically (see app.js's `/uploads` -> `public/uploads`
+// mount), so every certificate_url this ever wrote 404'd and no partner
+// certificate could actually be viewed. Fixed here alongside the upload
+// validation below, since fixing only the path without also tightening
+// the filter would turn this into a live stored-XSS-via-upload the
+// instant the files became reachable.
+const uploadDir = path.join(__dirname, "../../public/uploads/partners");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// Strict whitelist: both MIME type AND extension must match, and the
+// stored extension is always forced from the validated MIME type, never
+// taken from the client-supplied original filename -- matches the same
+// pattern already used by uploadMiddleware.js/uploadArticleMiddleware.js.
+// "image/*" alone would have allowed image/svg+xml, which can carry
+// <script>/onload payloads; PDFs are also excluded from that check and
+// verified separately.
+const ALLOWED_TYPES = {
+  'image/jpeg': '.jpg',
+  'image/png':  '.png',
+  'image/webp': '.webp',
+  'application/pdf': '.pdf',
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const rand = crypto.randomBytes(16).toString('hex');
-    cb(null, `partner-${rand}${path.extname(file.originalname).toLowerCase()}`);
+    cb(null, `partner-${rand}${ALLOWED_TYPES[file.mimetype]}`);
   }
 });
 
@@ -27,24 +47,31 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
+    if (ALLOWED_TYPES[file.mimetype]) {
       cb(null, true);
     } else {
-      cb(new Error("Only images and PDFs are allowed"), false);
+      cb(new Error("Only JPEG/PNG/WebP images and PDFs are allowed"), false);
     }
   }
 });
 
 const submitPartnerApplication = async (req, res) => {
-  const { business_name, ein_number, contact_name, email, phone, address } = req.body;
+  const { business_name, ein_number, contact_name, email, phone, address, notes } = req.body;
   const certificate_url = req.file ? `/uploads/partners/${req.file.filename}` : null;
+
+  // A previous frontend field-name mismatch let completely empty applications
+  // through silently (every column null) — guard against that ever happening
+  // again regardless of what the client sends.
+  if (!business_name?.trim() || !contact_name?.trim() || !email?.trim()) {
+    return res.status(400).json({ message: 'Business name, contact name, and email are required.' });
+  }
 
   try {
     const result = await pool.query(
-      `INSERT INTO partner_applications 
-       (business_name, ein_number, contact_name, email, phone, address, certificate_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [business_name, ein_number, contact_name, email, phone, address, certificate_url]
+      `INSERT INTO partner_applications
+       (business_name, ein_number, contact_name, email, phone, address, certificate_url, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [business_name, ein_number, contact_name, email, phone, address, certificate_url, notes || null]
     );
 
     res.status(201).json({

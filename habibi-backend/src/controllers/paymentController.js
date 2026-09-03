@@ -236,6 +236,19 @@ const paypalCapture = async (req, res) => {
   }
 
   try {
+    // Resolve the order's own server-side total BEFORE trusting anything
+    // PayPal returns -- this is what the capture is actually checked
+    // against below. Without this, a client could capture their own
+    // unrelated (e.g. far cheaper) PayPal order and pass a victim's
+    // orderNumber in the same request, flipping that order to
+    // accepted/paid for the wrong amount with no auth required. Mirrors
+    // the same resolveChargeAmount() guard paypalCreateOrder and the
+    // card-charge endpoints already use.
+    let expectedAmount = null;
+    if (orderNumber) {
+      ({ amount: expectedAmount } = await resolveChargeAmount(orderNumber, null));
+    }
+
     const base = process.env.PAYPAL_ENV === 'production'
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
@@ -269,8 +282,17 @@ const paypalCapture = async (req, res) => {
     const captureID = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderID;
 
     if (orderNumber) {
+      // The captured PayPal order must actually have been created FOR this
+      // exact order_number, at this exact order's real total -- not just
+      // any PayPal order the caller happens to be able to capture.
+      const referenceId     = captureData.purchase_units?.[0]?.reference_id;
+      const capturedAmount  = parseFloat(captureData.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value);
+      if (referenceId !== orderNumber || !(Math.abs(capturedAmount - expectedAmount) < 0.01)) {
+        return res.status(400).json({ message: 'This payment does not match the order.' });
+      }
+
       await pool.query(
-        "UPDATE guest_orders SET order_status='accepted', payment_intent_id=$1, updated_at=NOW() WHERE order_number=$2",
+        "UPDATE guest_orders SET order_status='accepted', payment_status='paid', payment_intent_id=$1, updated_at=NOW() WHERE order_number=$2",
         [captureID, orderNumber]
       );
       const io = req.app.get('io');
@@ -279,6 +301,7 @@ const paypalCapture = async (req, res) => {
 
     res.json({ success: true, captureID, status: captureData.status });
   } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ message: err.message });
     res.status(500).json(safeError(err));
   }
 };

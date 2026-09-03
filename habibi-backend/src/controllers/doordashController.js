@@ -5,7 +5,14 @@ const { ddRequest, isConfigured } = require('../utils/doordash');
 
 function verifyDoorDashSignature(rawBody, signature) {
   const secret = process.env.DOORDASH_WEBHOOK_SECRET;
-  if (!secret) return true; // not configured — allow but log
+  // Fail closed, matching every other marketplace webhook (Uber/GrubHub/
+  // Caviar/Roadie) -- an unconfigured secret must never mean "trust
+  // anything," since it previously let anyone forge delivery-status
+  // webhooks (e.g. fake "delivered") with no auth at all.
+  if (!secret) {
+    console.error('[DoorDash Webhook] DOORDASH_WEBHOOK_SECRET not set -- rejecting all webhook requests until configured.');
+    return false;
+  }
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   try {
     return crypto.timingSafeEqual(

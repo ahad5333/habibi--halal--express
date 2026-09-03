@@ -217,9 +217,31 @@ const getSiteSettings = async (req, res) => {
   }
 };
 
+// social_* fields are rendered as raw <a href> on the public site (Footer,
+// About) with no scheme check there -- a value like "javascript:..." would
+// execute in every visitor's browser when they click the icon. Only an
+// admin can set these, but validating here means a compromised/malicious
+// admin session can't turn this into a site-wide XSS vector via settings.
+const SOCIAL_URL_FIELDS = ['social_instagram', 'social_facebook', 'social_twitter', 'social_tiktok'];
+function isSafeHttpUrl(value) {
+  if (!value) return true; // clearing the field is fine
+  try {
+    const u = new URL(value);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 const updateSiteSettings = async (req, res) => {
   const allowed = SITE_FIELDS.filter(f => req.body[f] !== undefined);
   if (!allowed.length) return res.status(400).json({ message: 'No valid fields provided.' });
+
+  for (const f of allowed) {
+    if (SOCIAL_URL_FIELDS.includes(f) && !isSafeHttpUrl(req.body[f])) {
+      return res.status(400).json({ message: `${f} must be a valid http(s) URL.` });
+    }
+  }
 
   const sets = allowed.map((f, i) => `${f} = $${i + 1}`).join(', ');
   const vals = allowed.map(f => req.body[f]);

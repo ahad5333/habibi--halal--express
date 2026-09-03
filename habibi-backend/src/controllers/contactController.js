@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
 const crypto = require('crypto');
+const twilio = require('twilio');
 const pool = require('../config/db');
 const emailService = require('../services/emailService');
 
@@ -72,11 +73,43 @@ const unsubscribeNewsletter = async (req, res) => {
   }
 };
 
-// Twilio STOP webhook — called by Twilio when a recipient replies STOP/UNSUBSCRIBE
+// Twilio inbound SMS webhook — handles STOP/START/HELP replies.
+// SmsTerms.jsx explicitly promises all three keywords work (opt out, re-enroll,
+// get help) — this used to treat *every* inbound message as a STOP unconditionally,
+// with no check on the actual message body. If this URL is Twilio's general inbound
+// webhook (rather than one that only ever receives pre-filtered STOP replies), that
+// meant replying HELP — literally what this page tells customers to do — would have
+// silently unsubscribed them instead. Keying off the real keyword fixes that either
+// way: it's a no-op if Twilio was already pre-filtering, and a real fix if not.
+function escapeXml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+const STOP_KEYWORDS  = ['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'];
+const START_KEYWORDS = ['start', 'unstop'];
+const HELP_KEYWORDS  = ['help', 'info'];
+
 const smsTwilioStop = async (req, res) => {
   try {
+    // This endpoint previously had no signature verification at all --
+    // anyone who found the URL could POST fake From/Body form data to
+    // silently toggle any real phone number's SMS opt-in status (a TCPA
+    // compliance risk: mass opt-out real customers, or force-resubscribe
+    // a number that had legitimately opted out). Twilio signs every
+    // webhook request; reject anything that doesn't verify.
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const signature = req.headers['x-twilio-signature'];
+    const publicUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+    if (!authToken || !signature || !twilio.validateRequest(authToken, signature, publicUrl, req.body || {})) {
+      console.error('[SMS Webhook] Invalid or missing Twilio signature -- rejecting.');
+      return res.status(403).send('<Response></Response>');
+    }
+
     const from = req.body?.From || '';
-    if (from) {
+    const body = (req.body?.Body || '').trim().toLowerCase();
+    let reply = '';
+
+    if (from && STOP_KEYWORDS.includes(body)) {
       // Normalise E.164 to digits-only for flexible matching
       const digits = from.replace(/\D/g, '');
       await pool.query(
@@ -96,10 +129,35 @@ const smsTwilioStop = async (req, res) => {
         [digits]
       ).catch(() => {});
       console.log(`[SMS Opt-out] ${from} opted out via Twilio STOP webhook`);
+      reply = 'You have been unsubscribed from Habibi Halal Express texts and will receive no further messages. Reply START to re-subscribe.';
+    } else if (from && START_KEYWORDS.includes(body)) {
+      const digits = from.replace(/\D/g, '');
+      await pool.query(
+        `UPDATE users SET receive_sms_updates = TRUE
+         WHERE regexp_replace(phone_number, '[^0-9]', '', 'g') = $1`,
+        [digits]
+      ).catch(() => {});
+      await pool.query(
+        `UPDATE customers SET receive_sms_updates = TRUE
+         WHERE regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g') = $1`,
+        [digits]
+      ).catch(() => {});
+      await pool.query(`DELETE FROM sms_optouts WHERE phone_digits = $1`, [digits]).catch(() => {});
+      console.log(`[SMS Opt-in] ${from} re-subscribed via Twilio START webhook`);
+      reply = 'You are re-subscribed to Habibi Halal Express texts. Reply STOP to opt out anytime.';
+    } else if (from && HELP_KEYWORDS.includes(body)) {
+      let phone = '', email = '';
+      try {
+        const s = await pool.query(`SELECT phone_main, email_contact FROM site_settings WHERE id=1`);
+        phone = s.rows[0]?.phone_main || '';
+        email = s.rows[0]?.email_contact || '';
+      } catch (_) {}
+      reply = `Habibi Halal Express: For help, contact us${phone ? ` at ${phone}` : ''}${email ? ` or ${email}` : ''}. Msg&data rates may apply. Reply STOP to opt out.`;
     }
+
     // Twilio expects a TwiML response
     res.set('Content-Type', 'text/xml');
-    res.send('<Response></Response>');
+    res.send(reply ? `<Response><Message>${escapeXml(reply)}</Message></Response>` : '<Response></Response>');
   } catch (err) {
     res.status(500).send('<Response></Response>');
   }
