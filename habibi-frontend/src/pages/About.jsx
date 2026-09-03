@@ -14,7 +14,7 @@ const aboutSchema = {
     "name": "Habibi Halal Express",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://habibihalalexpress.com/images/logos/logo.png"
+      "url": "https://habibihe.com/images/logos/logo.png"
     }
   }
 };
@@ -57,11 +57,14 @@ const STAFF_ROLES = [
   { label: 'Delivery', img: '/images/staff/delivery.png' },
 ];
 
+// Matches Navbar.jsx's social links exactly (same handle, same 4 platforms)
+// -- these two lists had drifted: different Facebook/Instagram handles, and
+// YouTube/TikTok were dead "#" links here despite Navbar already having them.
 const SOCIAL = [
-  { label: 'Facebook', url: '#' },
-  { label: 'Instagram', url: '#' },
-  { label: 'YouTube', url: '#' },
-  { label: 'TikTok', url: '#' },
+  { label: 'Facebook', url: 'https://facebook.com/habibihalalexpress' },
+  { label: 'Instagram', url: 'https://instagram.com/habibihalalexpress' },
+  { label: 'YouTube', url: 'https://youtube.com/habibihalalexpress' },
+  { label: 'TikTok', url: 'https://tiktok.com/@habibihalalexpress' },
 ];
 
 const getSocialIcon = (label) => {
