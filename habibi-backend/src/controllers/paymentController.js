@@ -8,6 +8,7 @@ const cloverService = require('../services/cloverService');
 const { logAudit } = require('./auditController');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const { restockOrderItems } = require('./inventoryController');
+const { finalizePendingCheckout } = require('./orderController');
 
 // ─── Ensure payment_intent_id column exists ─────────────────────────────────
 pool.query(
@@ -291,10 +292,11 @@ const paypalCapture = async (req, res) => {
         return res.status(400).json({ message: 'This payment does not match the order.' });
       }
 
-      await pool.query(
-        "UPDATE guest_orders SET order_status='accepted', payment_status='paid', payment_intent_id=$1, updated_at=NOW() WHERE order_number=$2",
-        [captureID, orderNumber]
-      );
+      // Materializes the pending_checkouts row staged by the frontend's
+      // "prepare" step into a real, paid guest_orders row (or, if none
+      // exists -- e.g. a saved-card recharge against an order that already
+      // exists -- falls back to a plain UPDATE). See finalizePendingCheckout.
+      await finalizePendingCheckout(req, orderNumber, { transactionId: captureID, processor: 'paypal' });
       const io = req.app.get('io');
       if (io) io.to(`order_${orderNumber}`).emit('order_status_updated', { order_id: orderNumber, status: 'accepted' });
     }

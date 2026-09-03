@@ -794,15 +794,20 @@ const Checkout = () => {
     return true;
   };
 
-  // ── Card: re-check the active processor's config, then show its card form ──
+  // ── Card: validate + price the order server-side FIRST (creates a
+  // pending_checkouts row and returns the real order_number to charge
+  // against), then re-check the active processor's config and show its
+  // card form. Without the prepare step, the charge endpoint has nothing
+  // to look up and every real payment fails immediately -- see
+  // createPendingCheckout/finalizePendingCheckout in orderController.js.
   const handlePrepareCardPayment = async () => {
     if (items.length === 0) return;
     if (!validateOrder()) return;
     trackBeginCheckout(items, total);
     setPlacing(true); setOrderError('');
     try {
-      const orderNumber = `HAB-${Date.now()}`;
-      setPendingOrderNum(orderNumber);
+      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+      setPendingOrderNum(prepared.order_number);
       // Re-fetch rather than trusting the on-mount check — the active
       // processor could have changed in the admin panel since page load.
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -858,8 +863,17 @@ const Checkout = () => {
     if (!validateOrder()) return;
     trackBeginCheckout(items, total);
     setPlacing(true); setOrderError('');
-    const orderNumber = `HAB-${Date.now()}`;
-    setPendingOrderNum(orderNumber);
+
+    let orderNumber;
+    try {
+      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+      orderNumber = prepared.order_number;
+      setPendingOrderNum(orderNumber);
+    } catch (err) {
+      setOrderError(err.message || 'Failed to initiate payment.');
+      setPlacing(false);
+      return;
+    }
 
     let result;
     try {
@@ -870,31 +884,26 @@ const Checkout = () => {
       return;
     }
 
-    await attemptSaveOrder(
-      buildPayload(orderNumber),
-      result.transactionId,
-      'Your card was charged, but we could not save your order.'
-    );
+    // The order was already fully created server-side (paid, correct
+    // order_number, correct payment_intent_id) inside finalizePendingCheckout
+    // as part of the charge above -- nothing left to save.
+    setPlacing(false);
+    await finishOrder(orderNumber);
   };
 
-  // Called by AuthNetForm on successful charge
+  // Called by AuthNetForm on successful charge -- same reasoning as
+  // handleChargeSavedCard above: the order already exists, paid, by the
+  // time this fires (finalizePendingCheckout ran inside the charge call).
   const handleAuthNetSuccess = async (transactionId) => {
-    await attemptSaveOrder(
-      buildPayload(pendingOrderNum),
-      transactionId,
-      'Your card was charged, but we could not save your order.'
-    );
+    await finishOrder(pendingOrderNum);
   };
 
   const handleCardError = (msg) => setOrderError(msg || 'Payment failed. Please try again.');
 
-  // ── PayPal success ─────────────────────────────────────────────────────────
+  // ── PayPal success ── same reasoning: the order already exists, paid, by
+  // the time this fires (finalizePendingCheckout ran inside paypalCapture).
   const handlePayPalSuccess = async (details) => {
-    await attemptSaveOrder(
-      buildPayload(pendingOrderNum),
-      details.id,
-      'Your PayPal payment was captured, but we could not save your order.'
-    );
+    await finishOrder(pendingOrderNum);
   };
 
   // ── Offline / Cash / Zelle / CashApp ──────────────────────────────────────
@@ -930,8 +939,11 @@ const Checkout = () => {
   };
 
   const showCardForm  = paymentMethod === 'card' && intentReady && !selectedSavedCardId;
-  const showPayPal    = paymentMethod === 'paypal';
-  const showGooglePay = paymentMethod === 'googlepay';
+  // Gated on intentReady, same as the card form -- the button can't render
+  // until prepareGuest returns a real order_number to charge against.
+  const showPayPal    = paymentMethod === 'paypal' && intentReady;
+  const showGooglePay = paymentMethod === 'googlepay' && intentReady;
+  const showPaypalLoading = PAYPAL_METHODS.has(paymentMethod) && !intentReady && placing;
   const showCTABtn    = !PAYPAL_METHODS.has(paymentMethod);
 
   const ctaLabel = () => {
@@ -1814,7 +1826,7 @@ const Checkout = () => {
                     <button
                       key={m.id}
                       className={`alt-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
-                      onClick={() => {
+                      onClick={async () => {
                         setPaymentMethod(m.id);
                         setIntentReady(false);
                         // Same reasoning as the Card tile above -- a leftover
@@ -1822,7 +1834,20 @@ const Checkout = () => {
                         // charge) shouldn't still be showing once the
                         // customer has moved on to a different one.
                         setOrderError('');
-                        if (PAYPAL_METHODS.has(m.id)) setPendingOrderNum(`HAB-${Date.now()}`);
+                        if (PAYPAL_METHODS.has(m.id)) {
+                          if (items.length === 0 || !validateOrder()) return;
+                          trackBeginCheckout(items, total);
+                          setPlacing(true);
+                          try {
+                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+                            setPendingOrderNum(prepared.order_number);
+                            setIntentReady(true);
+                          } catch (err) {
+                            setOrderError(err.message || 'Failed to initiate payment.');
+                          } finally {
+                            setPlacing(false);
+                          }
+                        }
                       }}
                     >
                       {m.img
@@ -1872,11 +1897,18 @@ const Checkout = () => {
                   />
                 )}
 
+                {/* Order is validated + priced server-side (prepareGuest)
+                    before either button below can even render -- see the
+                    alt-payment tile's onClick above. */}
+                {showPaypalLoading && (
+                  <p className="alt-pay-loading">Preparing your order…</p>
+                )}
+
                 {/* PayPal inline buttons */}
                 {showPayPal && (
                   <PayPalButton
                     amount={total}
-                    orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
+                    orderNumber={pendingOrderNum}
                     onSuccess={handlePayPalSuccess}
                     onError={(msg) => setOrderError(msg)}
                     onValidate={validateOrder}
@@ -1888,7 +1920,7 @@ const Checkout = () => {
                 {showGooglePay && (
                   <GooglePayButton
                     amount={total}
-                    orderNumber={pendingOrderNum || `HAB-${Date.now()}`}
+                    orderNumber={pendingOrderNum}
                     onSuccess={handlePayPalSuccess}
                     onError={(msg) => setOrderError(msg)}
                     onValidate={validateOrder}

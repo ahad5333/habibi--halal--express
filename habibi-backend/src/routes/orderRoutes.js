@@ -7,6 +7,7 @@ const { handleValidation, rules, body } = require('../middleware/validate');
 const safeError = require('../utils/safeError');
 const {
   createGuestOrder,
+  createPendingCheckout,
   getAdminOrders,
   updateGuestOrderStatus,
   cancelOrder,
@@ -18,8 +19,7 @@ const {
   updateOrderStatus,
 } = require("../controllers/orderController");
 
-/* ── Guest order — optionalAuth so logged-in users get their user_id stored ── */
-router.post("/guest",
+const guestOrderValidation = [
   optionalAuth,
   body('customer_name').optional({ checkFalsy: true }).trim().isLength({ max: 100 }).withMessage('Name too long.'),
   body('customer_email').optional({ checkFalsy: true }).isEmail().withMessage('Invalid email.').normalizeEmail(),
@@ -35,8 +35,14 @@ router.post("/guest",
   rules.positiveFloat('tip',          'Tip'),
   body('items').isArray({ min: 1 }).withMessage('Order must contain at least one item.'),
   handleValidation,
-  createGuestOrder
-);
+];
+
+/* ── Guest order — optionalAuth so logged-in users get their user_id stored ── */
+router.post("/guest", ...guestOrderValidation, createGuestOrder);
+
+/* ── Guest order, staged before payment (card/PayPal/Square/Clover) — see
+   createPendingCheckout for why this exists as a separate step ── */
+router.post("/guest/prepare", ...guestOrderValidation, createPendingCheckout);
 
 /* ── Public: queue position for a specific order ── */
 router.get("/queue/:orderNumber", async (req, res) => {

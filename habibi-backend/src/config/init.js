@@ -314,6 +314,31 @@ const createTables = async () => {
     // Which processor actually charged this order -- same reasoning as
     // quick_payments.payment_processor above.
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_processor VARCHAR(20)`);
+    // The processor's own charge/capture id -- already live on production
+    // (added out-of-band, never tracked here) and already relied on by
+    // every charge-confirmation endpoint; tracked now so a fresh database
+    // bootstraps with it too.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_intent_id VARCHAR(100)`);
+
+    // Holds a fully-validated, server-priced order (everything
+    // createGuestOrder itself would insert) BEFORE any money has moved --
+    // card/PayPal/Square/Clover checkout charges against this order_number,
+    // and only becomes a real guest_orders row (via finalizePendingCheckout)
+    // once that charge actually succeeds. Deliberately a separate table
+    // rather than a new guest_orders status: several existing kitchen/
+    // admin/report queries filter guest_orders with an *exclusive* status
+    // check (e.g. "NOT IN ('delivered','cancelled')"), so a new in-progress
+    // status would leak into all of them as a phantom order. This table is
+    // invisible to every one of those by construction.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pending_checkouts (
+        id           SERIAL PRIMARY KEY,
+        order_number VARCHAR(60) UNIQUE NOT NULL,
+        payload      JSONB NOT NULL,
+        total        NUMERIC(10,2) NOT NULL,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
 
     // Discrete fields for the Roadie dispatch message-construction logic --
     // these used to only exist smushed into delivery_address/delivery_instructions

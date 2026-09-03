@@ -101,6 +101,14 @@
   line-height: 1.5;
 }
 
+.alt-pay-loading {
+  text-align: center;
+  padding: 0.875rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+}
+
 .cart-item-options {
   font-size: 0.72rem;
   color: rgba(255,255,255,0.70);

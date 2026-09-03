@@ -7,6 +7,7 @@ const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
 const { chargeCustomerProfile } = require('../services/authNetService');
+const { finalizePendingCheckout } = require('./orderController');
 
 // Non-secret fields per provider — safe to send back to the browser as-is.
 // Everything else in `credentials` is a real secret and must never leave
@@ -130,15 +131,10 @@ const chargeCardEndpoint = async (req, res) => {
     }
 
     if (orderNumber) {
-      await pool.query(
-        `UPDATE guest_orders
-            SET payment_status = 'paid',
-                payment_intent_id = $1,
-                payment_processor = $2,
-                updated_at = NOW()
-          WHERE order_number = $3`,
-        [result.transactionId, active.provider, orderNumber]
-      );
+      // Materializes the pending_checkouts row staged by the frontend's
+      // "prepare" step into a real, paid guest_orders row (or, if none
+      // exists, falls back to a plain UPDATE). See finalizePendingCheckout.
+      await finalizePendingCheckout(req, orderNumber, { transactionId: result.transactionId, processor: active.provider });
     }
 
     // Durable record of the charge itself — independent of whether it's
@@ -217,15 +213,7 @@ const chargeSavedCardEndpoint = async (req, res) => {
     }
 
     if (orderNumber) {
-      await pool.query(
-        `UPDATE guest_orders
-            SET payment_status = 'paid',
-                payment_intent_id = $1,
-                payment_processor = $2,
-                updated_at = NOW()
-          WHERE order_number = $3`,
-        [result.transactionId, provider, orderNumber]
-      );
+      await finalizePendingCheckout(req, orderNumber, { transactionId: result.transactionId, processor: provider });
     }
 
     await pool.query(

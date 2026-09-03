@@ -3,6 +3,7 @@ const safeError = require('../utils/safeError');
 const { chargeCard, refundTransaction, chargeCustomerProfile } = require('../services/authNetService');
 const { logAudit } = require('./auditController');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
+const { finalizePendingCheckout } = require('./orderController');
 const { encrypt, decrypt } = require('../utils/encrypt');
 const { deactivateAllCardProcessors } = require('../services/cardProcessorRegistry');
 
@@ -66,16 +67,11 @@ const chargeCardEndpoint = async (req, res) => {
       environment:    account.environment,
     });
 
-    // Update order payment status if orderNumber matches a real order
+    // Materializes the pending_checkouts row staged by the frontend's
+    // "prepare" step into a real, paid guest_orders row (or, if none
+    // exists, falls back to a plain UPDATE). See finalizePendingCheckout.
     if (orderNumber) {
-      await pool.query(
-        `UPDATE guest_orders
-            SET payment_status = 'paid',
-                payment_intent_id = $1,
-                updated_at = NOW()
-          WHERE order_number = $2`,
-        [result.transactionId, orderNumber]
-      );
+      await finalizePendingCheckout(req, orderNumber, { transactionId: result.transactionId, processor: 'authorize_net' });
     }
 
     // Durable record of the charge itself — independent of whether it's
@@ -131,14 +127,7 @@ const chargeSavedCardEndpoint = async (req, res) => {
     });
 
     if (orderNumber) {
-      await pool.query(
-        `UPDATE guest_orders
-            SET payment_status = 'paid',
-                payment_intent_id = $1,
-                updated_at = NOW()
-          WHERE order_number = $2`,
-        [result.transactionId, orderNumber]
-      );
+      await finalizePendingCheckout(req, orderNumber, { transactionId: result.transactionId, processor: 'authorize_net' });
     }
 
     await pool.query(

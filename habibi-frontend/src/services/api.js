@@ -171,6 +171,15 @@ export const ordersAPI = {
       body: JSON.stringify(orderData),
     }),
 
+  /** POST /api/orders/guest/prepare — validate + price an order BEFORE
+      charging (card/PayPal/Square/Clover only); returns the real,
+      server-generated order_number to charge against. */
+  prepareGuest: (orderData) =>
+    request('/api/orders/guest/prepare', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    }),
+
   /** GET /api/orders */
   getAll: () => request('/api/orders'),
 

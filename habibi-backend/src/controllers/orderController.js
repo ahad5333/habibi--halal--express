@@ -130,7 +130,12 @@ async function autoDispatchRoadie(order_id, order) {
 }
 
 /* ── Guest order (no auth) ── */
-const createGuestOrder = async (req, res) => {
+// `overrides` is only ever passed by finalizePendingCheckout (below), never
+// by the public HTTP route -- lets a payment that already succeeded against
+// a pending_checkouts row materialize into the SAME order_number it was
+// charged against, correctly marked paid, without duplicating this entire
+// function's validation/pricing/inventory/dispatch logic a second time.
+const createGuestOrder = async (req, res, overrides = {}) => {
   try {
     // ── Business hours gate ────────────────────────────────────────────────
     const locsRes = await pool.query(
@@ -171,8 +176,12 @@ const createGuestOrder = async (req, res) => {
       return res.status(400).json({ message: 'Payment confirmation number is required for this payment method.' });
     }
 
-    // Generate order number server-side — never trust client-supplied values
-    const order_number = `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    // Generate order number server-side — never trust client-supplied values.
+    // Exception: overrides.order_number, which only ever comes from
+    // finalizePendingCheckout re-using the number a payment was already
+    // charged against (itself server-generated at prepare time, never from
+    // the raw request) -- not a relaxation of the "never trust client" rule.
+    const order_number = overrides.order_number || `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     const loyalty_points_redeemed = Math.max(0, parseInt(loyalty_points_raw, 10) || 0);
 
@@ -604,8 +613,8 @@ const createGuestOrder = async (req, res) => {
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
          is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id,
          payment_reference, leave_at_door, apt_unit, driver_note, extra_help_needed, extra_help_note, business_name,
-         scheduled_date, scheduled_time)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39)
+         scheduled_date, scheduled_time, payment_intent_id, payment_processor)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41)
        RETURNING id`,
       [
         order_number,
@@ -636,7 +645,7 @@ const createGuestOrder = async (req, res) => {
         gift_recipient_name  || null,
         gift_recipient_phone || null,
         gift_message         || null,
-        ['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid',
+        overrides.payment_status || (['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid'),
         resolvedLocationId,
         String(payment_reference || '').trim().slice(0, 100) || null,
         leave_at_door === true || leave_at_door === 'true',
@@ -647,6 +656,8 @@ const createGuestOrder = async (req, res) => {
         String(business_name || '').slice(0, 255),
         scheduled_date || null,
         scheduled_time || null,
+        overrides.payment_intent_id || null,
+        overrides.payment_processor || null,
       ]
     );
 
@@ -871,6 +882,356 @@ const createGuestOrder = async (req, res) => {
     res.status(500).json(safeError(err));
   }
 };
+
+// ── Guest order, staged before payment (card/PayPal/Square/Clover only) ──
+// Runs the same server-side validation/pricing createGuestOrder does
+// (business hours, item-price-vs-DB, BYO recompute, delivery fee, tax/fee,
+// birthday coupon, total-components-match) so the amount that gets charged
+// is genuinely authoritative -- but stores the result in pending_checkouts
+// instead of guest_orders, and does NOT touch inventory or loyalty points
+// yet (those are appropriately deferred to finalizePendingCheckout, which
+// runs this same validated payload through the real createGuestOrder once
+// the charge actually succeeds -- see the comment on that function for why
+// a second, separate table is used rather than an in-progress order status).
+//
+// Deliberately does NOT hold a FOR UPDATE lock here (unlike the identical
+// check inside createGuestOrder's transaction) -- this is a pre-payment
+// price quote, not a commit; the real, TOCTOU-safe check still runs exactly
+// once, for real, inside createGuestOrder at finalize time. If a price
+// genuinely changed in the (typically seconds-long) window between prepare
+// and a successful charge, finalize's own check will reject it -- rare, but
+// funnels into the same "payment succeeded, contact us with this reference"
+// path every charge endpoint already has for unexpected finalize failures.
+const createPendingCheckout = async (req, res) => {
+  try {
+    // ── Business hours gate ────────────────────────────────────────────────
+    const locsRes = await pool.query(
+      `SELECT accepting_orders, working_days_hours FROM locations WHERE is_active = true`
+    );
+    const anyOpen = locsRes.rows.length === 0 || locsRes.rows.some(l => {
+      if (l.accepting_orders === false) return false;
+      const auto = isOpenNow(l.working_days_hours);
+      return auto === true || auto === null;
+    });
+    if (!anyOpen) {
+      return res.status(503).json({ message: "We're currently closed. Please check our hours and try again." });
+    }
+
+    const {
+      delivery_method, delivery_address, delivery_city, delivery_zip,
+      delivery_state, customer_email,
+      sub_total, tax, service_fee, delivery_fee, tip, discount, total,
+      coupon_code, items, location_id, customer_name, delivery_instructions,
+    } = req.body;
+
+    // Validate items — no negative quantities, no empty array
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Order must contain at least one item.' });
+    }
+    for (const item of items) {
+      const qty = parseInt(item.qty || item.quantity || 0, 10);
+      if (qty < 1) return res.status(400).json({ message: 'Item quantities must be at least 1.' });
+      const price = parseFloat(item.price || item.unit_price || 0);
+      if (price < 0) return res.status(400).json({ message: 'Item prices cannot be negative.' });
+    }
+
+    // Server-side total validation
+    const clientTotal    = parseFloat(total)        || 0;
+    const clientSubtotal = parseFloat(sub_total)    || 0;
+    const clientTax      = parseFloat(tax)          || 0;
+    const clientSvcFee   = parseFloat(service_fee)  || 0;
+    const clientDelFee   = parseFloat(delivery_fee) || 0;
+    const clientTip      = parseFloat(tip)          || 0;
+    const clientDiscount = parseFloat(discount)     || 0;
+
+    if (clientTotal < 0) {
+      return res.status(400).json({ message: 'Order total cannot be negative.' });
+    }
+
+    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount;
+    if (Math.abs(expectedTotal - clientTotal) > 0.10) {
+      return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
+    }
+
+    const isCustomItem = item => typeof item.id === 'string' && item.id.startsWith('custom-');
+    for (const item of items) {
+      if (isCustomItem(item)) continue;
+      const menuId = parseInt(item.id || item.menu_id, 10);
+      if (!menuId || menuId <= 0) {
+        return res.status(400).json({ message: 'All items must include a valid menu ID.' });
+      }
+    }
+    const itemIds = items
+      .filter(i => !isCustomItem(i))
+      .map(i => parseInt(i.id || i.menu_id, 10));
+    for (const item of items) {
+      if (!isCustomItem(item) || !item.customCfg) continue;
+      for (const key of Object.keys(item.customCfg.extras || {})) {
+        const id = parseInt(key, 10);
+        if (id > 0) itemIds.push(id);
+      }
+      for (const key of Object.keys(item.customCfg.drinks || {})) {
+        const id = parseInt(key, 10);
+        if (id > 0) itemIds.push(id);
+      }
+    }
+
+    const resolvedLocationId = parseInt(location_id, 10) || null;
+
+    // Server-side delivery fee enforcement
+    const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
+    if (!isDeliveryOrder) {
+      if (clientDelFee > 0.01) {
+        return res.status(400).json({ message: 'Delivery fee not applicable for this order type.' });
+      }
+    } else if (delivery_address) {
+      try {
+        const addrStr = [delivery_address, delivery_city, delivery_state, delivery_zip]
+          .filter(Boolean).join(', ');
+        let origin = RESTAURANT_ADDRESS;
+        let feeLocationId = await getOriginLocationId();
+        if (resolvedLocationId) {
+          const locRes = await pool.query('SELECT exact_address FROM locations WHERE id=$1', [resolvedLocationId]);
+          if (locRes.rows.length && locRes.rows[0].exact_address) {
+            origin = locRes.rows[0].exact_address;
+            feeLocationId = resolvedLocationId;
+          }
+        }
+        const dist = await getDistance(origin, addrStr);
+        if (dist?.unavailable) {
+          const minFee = feeFromMiles(0) ?? 2.99;
+          if (clientDelFee < minFee - 0.10) {
+            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          }
+        } else if (!dist) {
+          return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
+        } else {
+          let serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
+          if (serverDelFee === null) {
+            return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
+          }
+          const freeDeliveryThreshold = await getFreeDeliveryThreshold();
+          if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
+            serverDelFee = 0;
+          }
+          if (clientDelFee < serverDelFee - 0.10) {
+            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          }
+          const country = await geocodeCountry(addrStr);
+          if (country && country !== 'US') {
+            return res.status(400).json({ message: "We're sorry, we can only deliver within the United States." });
+          }
+        }
+      } catch (_) { /* non-fatal */ }
+    }
+
+    // Server-side tax and service fee validation
+    let serverTaxRate    = parseFloat(process.env.TAX_RATE)          || 0.08875;
+    let serverSvcFeeRate = parseFloat(process.env.SERVICE_FEE_RATE)  || 0.04273;
+    try {
+      const sys = await pool.query(`SELECT tax_rate, service_fee_rate FROM system_settings WHERE id = 1`);
+      if (sys.rows[0]?.tax_rate != null)         serverTaxRate    = parseFloat(sys.rows[0].tax_rate);
+      if (sys.rows[0]?.service_fee_rate != null) serverSvcFeeRate = parseFloat(sys.rows[0].service_fee_rate);
+    } catch (_) { /* fall back to env above */ }
+    const serverTax    = Math.round(clientSubtotal * serverTaxRate    * 100) / 100;
+    const serverSvcFee = Math.round(clientSubtotal * serverSvcFeeRate * 100) / 100;
+    if (clientTax < serverTax - 0.10) {
+      return res.status(400).json({ message: 'Tax amount is incorrect. Please refresh and retry.' });
+    }
+    if (clientSvcFee < serverSvcFee - 0.10) {
+      return res.status(400).json({ message: 'Service fee is incorrect. Please refresh and retry.' });
+    }
+
+    // Birthday coupon validation
+    const BIRTHDAY_COUPON_RE = /^BDAY-(\d+)-(\d{4})$/i;
+    const bdayMatch = coupon_code && BIRTHDAY_COUPON_RE.exec(coupon_code.trim());
+    if (bdayMatch && clientDiscount > 0) {
+      const bdayUserId = parseInt(bdayMatch[1]);
+      const bdayYear   = parseInt(bdayMatch[2]);
+      const now = new Date();
+      let birthdayValid = false;
+      if (customer_email && bdayYear === now.getFullYear()) {
+        try {
+          const uRes = await pool.query(
+            `SELECT date_of_birth FROM users
+              WHERE LOWER(email) = LOWER($1) AND id = $2 AND date_of_birth IS NOT NULL`,
+            [customer_email, bdayUserId]
+          );
+          if (uRes.rows.length) {
+            const dob = new Date(uRes.rows[0].date_of_birth);
+            birthdayValid = dob.getMonth() === now.getMonth() && dob.getDate() === now.getDate();
+          }
+        } catch (_) { /* non-fatal */ }
+      }
+      if (!birthdayValid) {
+        return res.status(400).json({ message: 'Birthday discount is not valid for today.' });
+      }
+    }
+
+    if (delivery_address && delivery_address.length > 300)
+      return res.status(400).json({ message: 'Delivery address is too long.' });
+    if (delivery_instructions && delivery_instructions.length > 500)
+      return res.status(400).json({ message: 'Delivery instructions are too long.' });
+    if (customer_name && customer_name.length > 100)
+      return res.status(400).json({ message: 'Customer name is too long.' });
+
+    // ── Item price validation against DB (no FOR UPDATE -- see comment atop
+    //    this function for why the lock isn't needed here) ──────────────────
+    const priceRows = await pool.query(
+      `SELECT id, price, choices, addons FROM menus WHERE id = ANY($1) AND is_available = TRUE`,
+      [itemIds]
+    );
+    const dbMap = {};
+    priceRows.rows.forEach(r => { dbMap[r.id] = r; });
+
+    let recalcSubtotal = 0;
+    for (const item of items) {
+      if (isCustomItem(item)) continue;
+      const menuId = parseInt(item.id || item.menu_id, 10);
+      const row = dbMap[menuId];
+      if (!row) {
+        return res.status(400).json({ message: 'One or more items are no longer available. Please refresh your cart.' });
+      }
+      const dbPrice = parseFloat(row.price);
+      const choices = row.choices || [];
+      const addons  = row.addons  || [];
+      const selChoices = item.selectedChoices || {};
+      const selAddons  = item.selectedAddons  || {};
+      let modifierExtra = 0;
+      for (const [cgId, optId] of Object.entries(selChoices)) {
+        const cg  = choices.find(c => c.id === parseInt(cgId));
+        const opt = (cg?.options || []).find(o => o.id === parseInt(optId));
+        modifierExtra += parseFloat(opt?.extra_price || 0);
+      }
+      for (const [optId, addonQty] of Object.entries(selAddons)) {
+        for (const ag of addons) {
+          const opt = (ag?.options || []).find(o => o.id === parseInt(optId));
+          if (opt) modifierExtra += parseFloat(opt.price || 0) * parseInt(addonQty, 10);
+        }
+      }
+      const expectedUnit = dbPrice + modifierExtra;
+      const clientUnit   = parseFloat(item.price || item.unit_price || 0);
+      if (clientUnit < expectedUnit - 0.02) {
+        return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
+      }
+      recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
+    }
+
+    const customItems = items.filter(isCustomItem);
+    if (customItems.length > 0) {
+      const ingRows = await pool.query(
+        `SELECT option_key, category, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
+      );
+      const mapFor = (cat) => new Map(
+        ingRows.rows
+          .filter(r => r.category === cat)
+          .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type }])
+      );
+      const ingredientMaps = {
+        baseMap:    mapFor('base'),
+        cheeseMap:  mapFor('cheese'),
+        vegMap:     mapFor('veg'),
+        proteinMap: mapFor('protein'),
+        sauceMap:   mapFor('sauce'),
+      };
+      const menuPriceMap = new Map(priceRows.rows.map(r => [r.id, parseFloat(r.price)]));
+
+      for (const item of customItems) {
+        if (!item.customCfg) {
+          return res.status(400).json({ message: 'Custom item is missing its configuration. Please refresh and try again.' });
+        }
+        let expectedUnit;
+        try {
+          expectedUnit = computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
+        } catch (_) {
+          return res.status(400).json({ message: 'One or more custom ingredients are no longer available. Please refresh your cart.' });
+        }
+        const clientUnit = parseFloat(item.price || item.unit_price || 0);
+        if (clientUnit < expectedUnit - 0.05) {
+          return res.status(400).json({ message: 'Item price mismatch. Please refresh and try again.' });
+        }
+        recalcSubtotal += clientUnit * parseInt(item.qty || item.quantity || 1, 10);
+      }
+    }
+
+    if (recalcSubtotal > 0 && clientSubtotal < recalcSubtotal - 0.02) {
+      return res.status(400).json({ message: 'Item prices have changed. Please refresh your cart.' });
+    }
+
+    // All validation passed -- stage it. order_number generated the same
+    // way createGuestOrder generates its own, so the format guarantee a
+    // client might rely on doesn't change.
+    const order_number = `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    await pool.query(
+      `INSERT INTO pending_checkouts (order_number, payload, total) VALUES ($1, $2, $3)`,
+      [order_number, JSON.stringify(req.body), clientTotal]
+    );
+
+    res.status(201).json({ order_number, total: clientTotal });
+  } catch (err) {
+    console.error('createPendingCheckout error:', err.message);
+    res.status(500).json(safeError(err));
+  }
+};
+
+// Called by every charge-confirmation endpoint (paypalCapture, Authorize.net,
+// Square/Clover) once a real charge has actually succeeded. Looks up the
+// pending_checkouts row staged by createPendingCheckout above and replays
+// its already-validated payload through the real createGuestOrder -- same
+// order_number the payment was charged against, so payment_intent_id/
+// payment_processor land on the order that's actually shown to staff, not a
+// separate orphaned row. Runs the full transactional item-price/inventory/
+// loyalty logic exactly once, for real, right here.
+//
+// `req` must be a real Express request (from the calling charge endpoint) --
+// only `req.app` is used (for the `io` socket broadcast createGuestOrder
+// fires), not any of its body/params.
+async function finalizePendingCheckout(req, orderNumber, { transactionId, processor }) {
+  const pending = await pool.query(
+    `SELECT payload FROM pending_checkouts WHERE order_number = $1`,
+    [orderNumber]
+  );
+
+  if (!pending.rows.length) {
+    // No staged checkout for this order_number -- most likely a saved-card
+    // recharge against an order that already exists for other reasons.
+    // Falls back to the simple direct UPDATE every charge endpoint used to
+    // do inline.
+    await pool.query(
+      `UPDATE guest_orders
+          SET payment_status = 'paid', payment_intent_id = $1, payment_processor = $2, updated_at = NOW()
+        WHERE order_number = $3`,
+      [transactionId, processor, orderNumber]
+    );
+    return { order_number: orderNumber, alreadyExisted: true };
+  }
+
+  const payload = pending.rows[0].payload; // JSONB -- already a parsed object
+  const fakeReq = { body: payload, app: req.app, user: undefined, ip: req.ip };
+  let captured = { statusCode: 200, body: null };
+  const fakeRes = {
+    status(code) { captured.statusCode = code; return this; },
+    json(data) { captured.body = data; return this; },
+  };
+
+  await createGuestOrder(fakeReq, fakeRes, {
+    order_number: orderNumber,
+    payment_status: 'paid',
+    payment_intent_id: transactionId,
+    payment_processor: processor,
+  });
+
+  if (captured.statusCode >= 400) {
+    // Money already moved by the time this runs -- leave the pending_checkouts
+    // row in place (not deleted) so there's still a record of what was
+    // charged and why order creation failed, for manual follow-up.
+    const msg = captured.body?.message || 'Order could not be finalized after payment.';
+    throw new Error(msg);
+  }
+
+  await pool.query(`DELETE FROM pending_checkouts WHERE order_number = $1`, [orderNumber]);
+  return { order_number: orderNumber, ...captured.body };
+}
 
 /* ── Admin: get all orders ── */
 const getAdminOrders = async (req, res) => {
@@ -1220,6 +1581,8 @@ const updateOrderStatus = async (req, res) => {
 
 module.exports = {
   createGuestOrder,
+  createPendingCheckout,
+  finalizePendingCheckout,
   getAdminOrders,
   updateGuestOrderStatus,
   cancelOrder,
