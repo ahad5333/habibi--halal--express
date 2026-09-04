@@ -10,6 +10,7 @@ const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMa
 const { getFeeForDistance } = require("../utils/deliveryFee");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
+const { computeCouponDiscount } = require("./couponController");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -577,18 +578,47 @@ const createGuestOrder = async (req, res, overrides = {}) => {
       }
 
       // The claimed discount was never checked against what
-      // loyalty_points_redeemed actually justifies — only "total = sum of
-      // parts" was verified above, so a tampered request could claim
-      // loyalty_points_redeemed: 1 alongside an arbitrary discount and pass
-      // every other check. Cap it at what the redeemed points are really
-      // worth, using the real admin-configured redeem_rate (not whatever
-      // rate the client assumed), plus a coupon allowance bounded by the
-      // subtotal itself — a coupon can never discount more than the order.
+      // loyalty_points_redeemed actually justifies, NOR against what
+      // coupon_code actually computes to -- only "total = sum of parts" was
+      // verified above, so a request could claim ANY coupon_code (even one
+      // that doesn't exist) alongside almost any discount up to the full
+      // subtotal and pass every other check, including on a real captured
+      // card/PayPal charge. Cap loyalty at what the redeemed points are
+      // really worth (real admin-configured redeem_rate, not whatever the
+      // client assumed), and cap a coupon at what computeCouponDiscount
+      // (the same logic /api/coupons/validate uses) actually says it's worth
+      // for a real, active, currently-applicable coupon.
       {
         const cfgRes = await client.query(`SELECT redeem_rate FROM loyalty_config WHERE id = 1`);
         const redeemRate = parseFloat(cfgRes.rows[0]?.redeem_rate) || 100;
         const maxLoyaltyDiscount = loyalty_points_redeemed / redeemRate;
-        const couponAllowance = coupon_code ? clientSubtotal : 0;
+
+        let couponAllowance = 0;
+        if (coupon_code && !bdayMatch) {
+          try {
+            // resolved_user_id isn't computed until later in this function --
+            // req.user?.id is what it would resolve to anyway for any coupon
+            // that actually needs a userId here (customer_email/first-order
+            // restrictions both already require real login, not just a
+            // guest checkout that happens to match an account's email).
+            const computed = await computeCouponDiscount({
+              code: coupon_code, amount: clientSubtotal, userId: req.user?.id || null,
+              locationId: resolvedLocationId, cart: items,
+            });
+            couponAllowance = computed.discount;
+          } catch (err) {
+            await client.query('ROLLBACK');
+            return res.status(err.statusCode || 400).json({ message: err.message || 'Invalid coupon code.' });
+          }
+        } else if (bdayMatch) {
+          // No admin-configured birthday-reward amount exists anywhere in
+          // the system (checked) -- this is a conservative placeholder cap,
+          // not a real business-decided value. The birthday itself is
+          // already verified for real above; this only bounds how much can
+          // be claimed once verified.
+          couponAllowance = 15;
+        }
+
         if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
           await client.query('ROLLBACK');
           return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
@@ -922,7 +952,9 @@ const createPendingCheckout = async (req, res) => {
       delivery_state, customer_email,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
       coupon_code, items, location_id, customer_name, delivery_instructions,
+      loyalty_points_redeemed: loyalty_points_raw,
     } = req.body;
+    const loyalty_points_redeemed = Math.max(0, parseInt(loyalty_points_raw, 10) || 0);
 
     // Validate items — no negative quantities, no empty array
     if (!Array.isArray(items) || items.length === 0) {
@@ -1068,6 +1100,37 @@ const createPendingCheckout = async (req, res) => {
       }
     }
 
+    // This endpoint previously had NO discount validation of any kind (not
+    // even the weaker "bounded by subtotal" check createGuestOrder had) --
+    // a card/PayPal order could claim any coupon_code plus almost any
+    // discount up to the full subtotal and it would be charged for real.
+    // Same cap logic as createGuestOrder: see the comment there.
+    {
+      const cfgRes = await pool.query(`SELECT redeem_rate FROM loyalty_config WHERE id = 1`);
+      const redeemRate = parseFloat(cfgRes.rows[0]?.redeem_rate) || 100;
+      const maxLoyaltyDiscount = loyalty_points_redeemed / redeemRate;
+
+      let couponAllowance = 0;
+      if (coupon_code && !bdayMatch) {
+        try {
+          const computed = await computeCouponDiscount({
+            code: coupon_code, amount: clientSubtotal, userId: req.user?.id || null,
+            locationId: resolvedLocationId, cart: items,
+          });
+          couponAllowance = computed.discount;
+        } catch (err) {
+          return res.status(err.statusCode || 400).json({ message: err.message || 'Invalid coupon code.' });
+        }
+      } else if (bdayMatch) {
+        // Placeholder cap -- see the identical comment in createGuestOrder.
+        couponAllowance = 15;
+      }
+
+      if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
+        return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
+      }
+    }
+
     if (delivery_address && delivery_address.length > 300)
       return res.status(400).json({ message: 'Delivery address is too long.' });
     if (delivery_instructions && delivery_instructions.length > 500)
@@ -1161,10 +1224,19 @@ const createPendingCheckout = async (req, res) => {
     // All validation passed -- stage it. order_number generated the same
     // way createGuestOrder generates its own, so the format guarantee a
     // client might rely on doesn't change.
+    //
+    // _authenticated_user_id carries req.user?.id (from THIS real HTTP
+    // request) into the stored payload so finalizePendingCheckout can
+    // reconstruct it on its fake req at finalize time -- without this, a
+    // logged-in customer's coupon that requires login (customer_email
+    // restriction or first-order-only) would validate fine here but then
+    // get rejected on replay, since the fake req has no real req.user.
+    // createGuestOrder's own destructuring ignores unknown body keys, so
+    // this is harmless there.
     const order_number = `HBB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
     await pool.query(
       `INSERT INTO pending_checkouts (order_number, payload, total) VALUES ($1, $2, $3)`,
-      [order_number, JSON.stringify(req.body), clientTotal]
+      [order_number, JSON.stringify({ ...req.body, _authenticated_user_id: req.user?.id || null }), clientTotal]
     );
 
     res.status(201).json({ order_number, total: clientTotal });
@@ -1187,12 +1259,21 @@ const createPendingCheckout = async (req, res) => {
 // only `req.app` is used (for the `io` socket broadcast createGuestOrder
 // fires), not any of its body/params.
 async function finalizePendingCheckout(req, orderNumber, { transactionId, processor }) {
-  const pending = await pool.query(
-    `SELECT payload FROM pending_checkouts WHERE order_number = $1`,
+  // Atomic claim: DELETE...RETURNING means at most one concurrent caller can
+  // ever get a row back for a given order_number (two near-simultaneous
+  // charge-confirmation calls -- a double-click, a client retry-on-timeout,
+  // a race between two processor callbacks -- previously both could read the
+  // same pending_checkouts row via a plain SELECT and both attempt to
+  // finalize; the loser's createGuestOrder INSERT would hit
+  // guest_orders.order_number's UNIQUE constraint and throw, but only AFTER
+  // its processor charge had already gone through for real, on some
+  // processors with no idempotency protection of their own).
+  const claimed = await pool.query(
+    `DELETE FROM pending_checkouts WHERE order_number = $1 RETURNING payload`,
     [orderNumber]
   );
 
-  if (!pending.rows.length) {
+  if (!claimed.rows.length) {
     // No staged checkout for this order_number -- most likely a saved-card
     // recharge against an order that already exists for other reasons.
     // Falls back to the simple direct UPDATE every charge endpoint used to
@@ -1206,8 +1287,14 @@ async function finalizePendingCheckout(req, orderNumber, { transactionId, proces
     return { order_number: orderNumber, alreadyExisted: true };
   }
 
-  const payload = pending.rows[0].payload; // JSONB -- already a parsed object
-  const fakeReq = { body: payload, app: req.app, user: undefined, ip: req.ip };
+  const payload = claimed.rows[0].payload; // JSONB -- already a parsed object
+  const authenticatedUserId = payload._authenticated_user_id || null;
+  const fakeReq = {
+    body: payload,
+    app: req.app,
+    user: authenticatedUserId ? { id: authenticatedUserId } : undefined,
+    ip: req.ip,
+  };
   let captured = { statusCode: 200, body: null };
   const fakeRes = {
     status(code) { captured.statusCode = code; return this; },
@@ -1222,15 +1309,44 @@ async function finalizePendingCheckout(req, orderNumber, { transactionId, proces
   });
 
   if (captured.statusCode >= 400) {
-    // Money already moved by the time this runs -- leave the pending_checkouts
-    // row in place (not deleted) so there's still a record of what was
-    // charged and why order creation failed, for manual follow-up.
-    const msg = captured.body?.message || 'Order could not be finalized after payment.';
-    throw new Error(msg);
+    // Money already moved by the time this runs -- the row was already
+    // claimed (deleted) above to prevent a concurrent double-finalize, so
+    // put it back rather than losing the only record of what was charged
+    // and why order creation failed. Re-insert can itself fail if two
+    // concurrent finalizes both got this far (extremely unlikely given the
+    // claim above already serializes them) -- best-effort, not the primary
+    // safety net.
+    await pool.query(
+      `INSERT INTO pending_checkouts (order_number, payload, total) VALUES ($1, $2, $3) ON CONFLICT (order_number) DO NOTHING`,
+      [orderNumber, JSON.stringify(payload), payload.total || 0]
+    ).catch(() => {});
+    const detail = captured.body?.message || 'a validation error';
+    throw new Error(
+      `Your payment (ref ${transactionId}) succeeded, but we could not finalize order ${orderNumber}: ${detail}. Please contact us with this reference and we'll sort it out.`
+    );
   }
 
-  await pool.query(`DELETE FROM pending_checkouts WHERE order_number = $1`, [orderNumber]);
   return { order_number: orderNumber, ...captured.body };
+}
+
+// A customer who starts card entry (createPendingCheckout stages a row)
+// and never completes payment leaves that row behind forever -- nothing
+// else ever deletes it. Harmless to any business-facing view (this table
+// is invisible to kitchen/admin/reports by construction), but genuinely
+// unbounded growth otherwise. Called hourly from server.js, same pattern
+// as scheduledDispatch.js's cron. 24h is generous -- a real checkout
+// completes in well under a minute of prepare->charge.
+async function cleanupAbandonedPendingCheckouts() {
+  try {
+    const result = await pool.query(
+      `DELETE FROM pending_checkouts WHERE created_at < NOW() - INTERVAL '24 hours'`
+    );
+    if (result.rowCount > 0) {
+      console.log(`[PendingCheckouts] Cleaned up ${result.rowCount} abandoned row(s) older than 24h`);
+    }
+  } catch (err) {
+    console.error('[PendingCheckouts] Cleanup error:', err.message);
+  }
 }
 
 /* ── Admin: get all orders ── */
@@ -1583,6 +1699,7 @@ module.exports = {
   createGuestOrder,
   createPendingCheckout,
   finalizePendingCheckout,
+  cleanupAbandonedPendingCheckouts,
   getAdminOrders,
   updateGuestOrderStatus,
   cancelOrder,

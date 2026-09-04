@@ -23,9 +23,19 @@ function toCents(amount) {
 async function chargeCard({ sourceToken, amount, orderNumber, privateToken, environment = 'production' }) {
   const base = API_BASES[environment] || API_BASES.production;
 
+  // Unlike Square (which already sends its own idempotency_key), Clover's
+  // charge call previously had no idempotency protection at all -- a race
+  // between two near-simultaneous requests for the same order (double-
+  // click, client retry-on-timeout) would genuinely double-charge the
+  // card. Clover's Idempotency-Key header (>=13 alphanumeric chars,
+  // confirmed via their docs -- same convention as Stripe, which this API
+  // is modeled on) makes a retried request with the same key return the
+  // original charge instead of creating a new one.
+  const idempotencyKey = String(orderNumber).replace(/[^a-zA-Z0-9]/g, '').padEnd(13, '0');
+
   const res  = await fetch(`${base}/v1/charges`, {
     method:  'POST',
-    headers: headers(privateToken),
+    headers: { ...headers(privateToken), 'Idempotency-Key': idempotencyKey },
     body:    JSON.stringify({
       amount:                toCents(amount),
       currency:              'usd',

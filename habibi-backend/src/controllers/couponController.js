@@ -2,130 +2,95 @@ const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { logAudit } = require('./auditController');
 
-// Public: Validate coupon
-const validateCoupon = async (req, res) => {
-  try {
-    const { code, location_id, cart = [] } = req.body;
-    if (!code || typeof code !== 'string' || !code.trim()) {
-      return res.status(400).json({ message: 'Coupon code is required.' });
-    }
-    // Accept 'amount' or 'subtotal' — frontend sends subtotal
-    const amount = req.body.amount ?? req.body.subtotal ?? 0;
-    const userId = req.user ? req.user.id : null;
+// Shared core: look up + validate a coupon and compute its real discount,
+// WITHOUT touching used_count (callers that actually consume the coupon --
+// currently only the /validate preview endpoint below -- do that increment
+// themselves, in their own transaction, after this resolves). Used by
+// order-creation (createGuestOrder/createPendingCheckout) to verify a
+// client-claimed discount against what the coupon actually computes to,
+// rather than trusting `discount` bounded only by "not more than the
+// subtotal" -- previously an order could claim ANY coupon_code plus almost
+// any discount up to the full subtotal and nothing ever checked the coupon
+// was real, active, or actually worth that much.
+// Throws an Error with .statusCode set (same convention as
+// resolveChargeAmount.js) on any validation failure.
+async function computeCouponDiscount({ code, amount, userId, locationId, cart = [] }) {
+  if (!code || typeof code !== 'string' || !code.trim()) {
+    const err = new Error('Coupon code is required.'); err.statusCode = 400; throw err;
+  }
 
-    const result = await pool.query(
-      "SELECT * FROM coupons WHERE code=$1 AND is_active=TRUE",
-      [code.toUpperCase()]
+  const result = await pool.query(
+    "SELECT * FROM coupons WHERE code=$1 AND is_active=TRUE",
+    [code.toUpperCase()]
+  );
+  if (result.rows.length === 0) {
+    const err = new Error('Invalid or expired coupon code.'); err.statusCode = 404; throw err;
+  }
+  const coupon = result.rows[0];
+
+  if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+    const err = new Error('This coupon has expired.'); err.statusCode = 400; throw err;
+  }
+  if (coupon.valid_from && new Date(coupon.valid_from) > new Date()) {
+    const err = new Error('This coupon is not yet active.'); err.statusCode = 400; throw err;
+  }
+  if (coupon.condition_type === 'min_order' && parseFloat(amount) < parseFloat(coupon.condition_value || 0)) {
+    const err = new Error(`Minimum order amount for this coupon is $${parseFloat(coupon.condition_value).toFixed(2)}`); err.statusCode = 400; throw err;
+  }
+  if (coupon.customer_email) {
+    if (!userId) { const err = new Error('Please log in to use this coupon.'); err.statusCode = 401; throw err; }
+    const userRow  = await pool.query('SELECT email FROM users WHERE id=$1', [userId]);
+    const userEmail = userRow.rows[0]?.email || '';
+    if (coupon.customer_email.toLowerCase() !== userEmail.toLowerCase()) {
+      const err = new Error('This coupon is not valid for your account.'); err.statusCode = 400; throw err;
+    }
+  }
+  if (coupon.location_id && locationId) {
+    if (parseInt(coupon.location_id) !== parseInt(locationId)) {
+      const err = new Error('This coupon is only valid at a specific location.'); err.statusCode = 400; throw err;
+    }
+  }
+  if (coupon.is_first_order_only) {
+    if (!userId) { const err = new Error('Please log in to use this coupon.'); err.statusCode = 401; throw err; }
+    const priorOrders = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM guest_orders WHERE user_id=$1 AND order_status != 'cancelled'`,
+      [userId]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Invalid or expired coupon code." });
+    if (priorOrders.rows[0].n > 0) {
+      const err = new Error('This coupon is only valid on your first order.'); err.statusCode = 400; throw err;
     }
+  }
+  // used_count vs usage_limit is checked (read-only, no lock) here too --
+  // callers that actually consume the coupon still do their own FOR UPDATE
+  // increment afterward, which is the real atomic enforcement.
+  if (coupon.usage_limit !== null && coupon.used_count >= coupon.usage_limit) {
+    const err = new Error('This coupon has reached its usage limit.'); err.statusCode = 400; throw err;
+  }
 
-    const coupon = result.rows[0];
+  let discount = 0;
+  let isFreeDelivery = false;
+  let message = '';
 
-    // Check expiry (column is valid_until)
-    if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
-      return res.status(400).json({ message: "This coupon has expired." });
-    }
+  const FAMILY_TRAY_KEYWORDS = ['family tray', 'family-tray', 'familytray'];
+  const isFamilyTray = (item) => {
+    const hay = `${item.name || ''} ${item.category || ''}`.toLowerCase();
+    return FAMILY_TRAY_KEYWORDS.some(k => hay.includes(k));
+  };
+  const cartItems = (cart || [])
+    .map(i => ({
+      price:    parseFloat(i.price || i.unit_price || 0),
+      quantity: parseInt(i.quantity || i.qty || 1),
+      name:     i.name || '',
+      category: i.category || '',
+    }))
+    .filter(i => i.price > 0);
+  const bogoItems     = cartItems.filter(i => !isFamilyTray(i));
+  const bogoSorted    = [...bogoItems].sort((a, b) => a.price - b.price);
+  const bogoMinPrice  = bogoSorted[0]?.price || 0;
+  const allSorted     = [...cartItems].sort((a, b) => a.price - b.price);
+  const cheapestPrice = allSorted[0]?.price || 0;
 
-    // Check valid_from
-    if (coupon.valid_from && new Date(coupon.valid_from) > new Date()) {
-      return res.status(400).json({ message: "This coupon is not yet active." });
-    }
-
-    // All validation checks FIRST — then increment inside a transaction
-    // Check condition_type / condition_value (min order amount)
-    if (coupon.condition_type === 'min_order' && parseFloat(amount) < parseFloat(coupon.condition_value || 0)) {
-      return res.status(400).json({
-        message: `Minimum order amount for this coupon is $${parseFloat(coupon.condition_value).toFixed(2)}`
-      });
-    }
-
-    // Check customer-specific restriction
-    if (coupon.customer_email) {
-      if (!req.user) {
-        return res.status(401).json({ message: "Please log in to use this coupon." });
-      }
-      // The JWT payload doesn't carry email, so look it up rather than
-      // reading req.user.email (which is always undefined).
-      const userRow  = await pool.query('SELECT email FROM users WHERE id=$1', [req.user.id]);
-      const userEmail = userRow.rows[0]?.email || '';
-      if (coupon.customer_email.toLowerCase() !== userEmail.toLowerCase()) {
-        return res.status(400).json({ message: "This coupon is not valid for your account." });
-      }
-    }
-
-    // Check location-specific restriction
-    if (coupon.location_id && location_id) {
-      if (parseInt(coupon.location_id) !== parseInt(location_id)) {
-        return res.status(400).json({ message: "This coupon is only valid at a specific location." });
-      }
-    }
-
-    // Check first-order-only restriction
-    if (coupon.is_first_order_only) {
-      if (!req.user) {
-        return res.status(401).json({ message: "Please log in to use this coupon." });
-      }
-      const priorOrders = await pool.query(
-        `SELECT COUNT(*)::int AS n FROM guest_orders WHERE user_id=$1 AND order_status != 'cancelled'`,
-        [req.user.id]
-      );
-      if (priorOrders.rows[0].n > 0) {
-        return res.status(400).json({ message: "This coupon is only valid on your first order." });
-      }
-    }
-
-    // All checks passed — now atomically lock + verify + increment in one transaction
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const lockedCoupon = await client.query(
-        "SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE",
-        [coupon.id]
-      );
-      const lc = lockedCoupon.rows[0];
-      if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
-        await client.query('ROLLBACK');
-        client.release();
-        return res.status(400).json({ message: "This coupon has reached its usage limit." });
-      }
-      await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [coupon.id]);
-      await client.query('COMMIT');
-    } catch (txErr) {
-      await client.query('ROLLBACK');
-      client.release();
-      throw txErr;
-    }
-    client.release();
-
-    let discount = 0;
-    let isFreeDelivery = false;
-    let message = '';
-
-    // Normalise cart items for BOGO/free-item calculations
-    const FAMILY_TRAY_KEYWORDS = ['family tray', 'family-tray', 'familytray'];
-    const isFamilyTray = (item) => {
-      const hay = `${item.name || ''} ${item.category || ''}`.toLowerCase();
-      return FAMILY_TRAY_KEYWORDS.some(k => hay.includes(k));
-    };
-    const cartItems = (cart || [])
-      .map(i => ({
-        price:    parseFloat(i.price || i.unit_price || 0),
-        quantity: parseInt(i.quantity || i.qty || 1),
-        name:     i.name || '',
-        category: i.category || '',
-      }))
-      .filter(i => i.price > 0);
-    // For BOGO purposes, exclude family tray items
-    const bogoItems     = cartItems.filter(i => !isFamilyTray(i));
-    const bogoSorted    = [...bogoItems].sort((a, b) => a.price - b.price);
-    const bogoMinPrice  = bogoSorted[0]?.price || 0;
-    const allSorted     = [...cartItems].sort((a, b) => a.price - b.price);
-    const cheapestPrice = allSorted[0]?.price || 0;
-
-    switch (coupon.discount_type) {
+  switch (coupon.discount_type) {
       case 'percentage':
         discount = (parseFloat(amount) * Number(coupon.discount_value)) / 100;
         message = `${coupon.discount_value}% off applied!`;
@@ -171,27 +136,76 @@ const validateCoupon = async (req, res) => {
         discount = 0;
     }
 
-    // Cap discount at the coupon's configured max, if any
-    if (coupon.max_discount != null && parseFloat(coupon.max_discount) > 0) {
-      discount = Math.min(discount, parseFloat(coupon.max_discount));
+  // Cap discount at the coupon's configured max, if any
+  if (coupon.max_discount != null && parseFloat(coupon.max_discount) > 0) {
+    discount = Math.min(discount, parseFloat(coupon.max_discount));
+  }
+  // Cap discount at order amount
+  discount = Math.min(discount, parseFloat(amount));
+
+  // A custom admin-set message (coupon.description) always wins over the
+  // auto-generated discount-type message when present.
+  const customMessage = (coupon.description || '').trim();
+
+  return {
+    coupon,
+    discount: parseFloat(discount.toFixed(2)),
+    isFreeDelivery,
+    message: customMessage || message || `Coupon applied — you saved $${discount.toFixed(2)}! 🎉`,
+  };
+}
+
+// Public: Validate coupon (preview, called as the customer types/applies a
+// code in the cart -- this is the ONLY place used_count actually increments).
+const validateCoupon = async (req, res) => {
+  try {
+    const { code, location_id, cart = [] } = req.body;
+    // Accept 'amount' or 'subtotal' — frontend sends subtotal
+    const amount = req.body.amount ?? req.body.subtotal ?? 0;
+    const userId = req.user ? req.user.id : null;
+
+    let result;
+    try {
+      result = await computeCouponDiscount({ code, amount, userId, locationId: location_id, cart });
+    } catch (err) {
+      return res.status(err.statusCode || 500).json({ message: err.message || 'Could not validate coupon.' });
     }
+    const { coupon, discount, isFreeDelivery, message } = result;
 
-    // Cap discount at order amount
-    discount = Math.min(discount, parseFloat(amount));
-
-    // A custom admin-set message (coupon.description) always wins over the
-    // auto-generated discount-type message when present.
-    const customMessage = (coupon.description || '').trim();
+    // All checks passed — now atomically lock + re-verify + increment in one
+    // transaction (computeCouponDiscount only read-checked usage_limit above;
+    // this is the real enforcement against a race between two concurrent
+    // validations of the same near-exhausted coupon).
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const lockedCoupon = await client.query(
+        "SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE",
+        [coupon.id]
+      );
+      const lc = lockedCoupon.rows[0];
+      if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(400).json({ message: "This coupon has reached its usage limit." });
+      }
+      await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [coupon.id]);
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw txErr;
+    }
+    client.release();
 
     res.json({
       valid: true,
-      discount: parseFloat(discount.toFixed(2)),
+      discount,
       is_free_delivery: isFreeDelivery,
       code: coupon.code,
       discount_type: coupon.discount_type,
-      message: customMessage || message || `Coupon applied — you saved $${discount.toFixed(2)}! 🎉`
+      message,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json(safeError(error));
@@ -374,6 +388,7 @@ const deleteCoupon = async (req, res) => {
 
 module.exports = {
   validateCoupon,
+  computeCouponDiscount,
   getCoupons,
   createCoupon,
   updateCoupon,

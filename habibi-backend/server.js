@@ -7,6 +7,8 @@ const pool = require("./src/config/db");
 const createTables = require("./src/config/init");
 const { Server } = require("socket.io");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
+const cron = require("node-cron");
+const { cleanupAbandonedPendingCheckouts } = require("./src/controllers/orderController");
 
 const PORT = process.env.PORT || 5001;
 const initSocket = require("./src/socket");
@@ -33,9 +35,15 @@ pool.connect()
 
     await createTables();
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    // Bind to localhost only — nginx already proxies to this port via
+    // localhost:5001, and this app has no other reason to be reachable
+    // directly from the internet. Binding to all interfaces (the default)
+    // let anyone hit the backend directly by IP, skipping nginx's TLS,
+    // CORS, and security headers entirely.
+    server.listen(PORT, "127.0.0.1", () => {
+      console.log(`Server running on port ${PORT} (localhost only)`);
       startScheduledDispatch(io);
+      cron.schedule("0 * * * *", cleanupAbandonedPendingCheckouts);
     });
   })
   .catch((err) => {

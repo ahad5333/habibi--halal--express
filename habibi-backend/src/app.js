@@ -104,6 +104,15 @@ const reviewLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+// Referral redemption -- authenticated, but still had no throttle on how
+// many codes one account could try per minute.
+const referralLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 300 : 15,
+  message: { error: "Too many requests. Please wait a moment." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const userRoutes = require("./routes/userRoutes")
 const menuRoutes = require("./routes/menuRoutes")
 const byoIngredientRoutes = require("./routes/byoIngredientRoutes")
@@ -206,6 +215,11 @@ app.use("/api/coupons", couponLimiter, couponRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/urgent-requests", urgentRequestRoutes);
+// Not applied blanket to the whole /api/contact mount -- that would also
+// throttle the Twilio SMS webhook mounted here (/sms-optout), which is
+// already protected by signature verification (a stronger guarantee than
+// IP-based rate limiting) and could see legitimate bursts. Applied
+// per-route inside contactRoutes.js instead.
 app.use("/api/contact", contactRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/partners", partnerRoutes);
@@ -221,7 +235,7 @@ app.use("/api/reviews", reviewLimiter, reviewsRoutes);
 app.use("/api/favorites", favoritesRoutes);
 app.use("/api/saved-customs", savedCustomRoutes);
 app.use("/api/group-orders", groupOrderRoutes);
-app.use("/api/referrals",   referralRoutes);
+app.use("/api/referrals",   referralLimiter, referralRoutes);
 app.use("/api/articles",   articleRoutes);
 app.get("/api/settings/payments", getPaymentSettings);
 app.get("/api/settings/checkout", getCheckoutSettings);

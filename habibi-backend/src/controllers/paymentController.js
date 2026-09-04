@@ -297,8 +297,15 @@ const paypalCapture = async (req, res) => {
       // exists -- e.g. a saved-card recharge against an order that already
       // exists -- falls back to a plain UPDATE). See finalizePendingCheckout.
       await finalizePendingCheckout(req, orderNumber, { transactionId: captureID, processor: 'paypal' });
+      // 'pending' -- matches the real order_status createGuestOrder always
+      // sets (Square/Clover/Authorize.net never touched order_status at
+      // all, so 'pending' was already the true status for every OTHER
+      // payment method; this used to claim 'accepted' here specifically,
+      // a stale PayPal-only broadcast that no longer matched the DB once
+      // finalizePendingCheckout started routing every processor through
+      // the same createGuestOrder insert).
       const io = req.app.get('io');
-      if (io) io.to(`order_${orderNumber}`).emit('order_status_updated', { order_id: orderNumber, status: 'accepted' });
+      if (io) io.to(`order_${orderNumber}`).emit('order_status_updated', { order_id: orderNumber, status: 'pending' });
     }
 
     res.json({ success: true, captureID, status: captureData.status });

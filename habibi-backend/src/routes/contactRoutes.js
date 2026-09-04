@@ -1,12 +1,29 @@
 ﻿const safeError = require('../utils/safeError');
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const pool = require('../config/db');
 const emailService = require('../services/emailService');
 const { subscribeNewsletter, unsubscribeNewsletter, smsTwilioStop, submitFeedback } = require('../controllers/contactController');
 
+const isDev = process.env.NODE_ENV !== 'production';
+// Applied only to the contact form / newsletter subscribe / feedback --
+// NOT to /sms-optout below, which is the Twilio webhook (already protected
+// by signature verification, a stronger guarantee than IP-based rate
+// limiting, and could see legitimate bursts an IP limiter would wrongly
+// throttle). These three previously had no limiter at all, so any could be
+// spammed to flood the admin inbox or the urgent_requests/
+// newsletter_subscribers tables.
+const contactLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 300 : 10,
+  message: { error: "Too many requests. Please wait a moment." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* ── POST /api/contact — public contact form ── */
-router.post('/', async (req, res) => {
+router.post('/', contactLimiter, async (req, res) => {
   try {
     const { name, email, subject, message, phone, nature, order_number, urgent } = req.body;
     if (!name || !email || !message) {
@@ -29,10 +46,10 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/subscribe', subscribeNewsletter);
+router.post('/subscribe', contactLimiter, subscribeNewsletter);
 router.get('/unsubscribe', unsubscribeNewsletter);
 router.post('/sms-optout', smsTwilioStop);
-router.post('/feedback', submitFeedback);
+router.post('/feedback', contactLimiter, submitFeedback);
 
 module.exports = router;
 
