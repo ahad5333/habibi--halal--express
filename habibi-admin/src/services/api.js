@@ -119,6 +119,8 @@ export const adminAPI = {
     const qs = new URLSearchParams({ dateFrom, dateTo, sort, limit });
     return req(`/api/admin/customers/top?${qs.toString()}`);
   },
+  customerSegments: () => req('/api/admin/customers/segments'),
+  customerCohorts:  (months = 12) => req(`/api/admin/customers/cohorts?months=${months}`),
   integrationStatus: () => req('/api/admin/integration-status'),
 
   coupons:     () => req('/api/admin/coupons'),

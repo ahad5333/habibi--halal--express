@@ -18,6 +18,8 @@ const {
   exportCustomers,
   getTopCustomers,
   getCustomerDetails,
+  getCustomerSegments,
+  getCohortRetention,
   createCustomer,
   updateCustomer,
   bulkDeleteCustomers,
@@ -92,6 +94,8 @@ router.patch("/orders/:id/provider", updateOrderProvider);
 router.get("/customers", getAllCustomers);
 router.get("/customers/export", exportCustomers);
 router.get("/customers/top", getTopCustomers);
+router.get("/customers/segments", getCustomerSegments);
+router.get("/customers/cohorts", getCohortRetention);
 router.post("/customers", createCustomer);
 router.post("/customers/bulk-import", bulkImportCustomers);
 router.post("/customers/bulk-delete", bulkDeleteCustomers);

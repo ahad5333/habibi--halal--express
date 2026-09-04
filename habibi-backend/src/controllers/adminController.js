@@ -612,6 +612,119 @@ const getCustomerDetails = async (req, res) => {
   }
 };
 
+// Customer segmentation by lifetime order count -- "who are your actual
+// repeat customers." Keyed on guest_orders.customer_email directly (same
+// identity convention getTopCustomers already uses above), not users.id --
+// a large share of real orders are guest checkouts with no account at all,
+// and joining users would also hit bulkDeleteCustomers' soft-delete email
+// mangling (deleted_<id>@habibi.removed), corrupting the numbers.
+const getCustomerSegments = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      WITH customer_stats AS (
+        SELECT customer_email AS email,
+               COUNT(*)::int AS order_count,
+               COALESCE(SUM(total), 0)::numeric AS total_spent
+        FROM guest_orders
+        WHERE order_status IN ('delivered','completed')
+          AND customer_email IS NOT NULL AND customer_email <> ''
+        GROUP BY customer_email
+      )
+      SELECT
+        CASE WHEN order_count = 1 THEN '1'
+             WHEN order_count BETWEEN 2 AND 3 THEN '2-3'
+             WHEN order_count BETWEEN 4 AND 9 THEN '4-9'
+             ELSE '10+' END AS bucket,
+        COUNT(*)::int AS customer_count,
+        SUM(total_spent)::numeric AS bucket_revenue
+      FROM customer_stats
+      GROUP BY bucket
+    `);
+
+    const totalsRes = await pool.query(`
+      WITH customer_stats AS (
+        SELECT customer_email AS email,
+               COUNT(*)::int AS order_count,
+               COALESCE(SUM(total), 0)::numeric AS total_spent
+        FROM guest_orders
+        WHERE order_status IN ('delivered','completed')
+          AND customer_email IS NOT NULL AND customer_email <> ''
+        GROUP BY customer_email
+      )
+      SELECT
+        COUNT(*)::int AS total_customers,
+        COUNT(*) FILTER (WHERE order_count >= 2)::int AS repeat_customers,
+        COALESCE(AVG(total_spent), 0)::numeric AS avg_ltv,
+        COALESCE(AVG(total_spent) FILTER (WHERE order_count >= 2), 0)::numeric AS avg_ltv_repeat
+      FROM customer_stats
+    `);
+
+    res.json({ segments: result.rows, totals: totalsRes.rows[0] });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
+// Cohort retention -- groups customers by the month of their FIRST order
+// (not users.created_at/"signup month") so it covers guest-checkout
+// customers who never made an account, and never touches the users table at
+// all, sidestepping the same soft-delete email-mangling issue noted above.
+// month_index is a real calendar-month difference (not a raw date subtraction)
+// so cohorts line up correctly regardless of how many days are in a month.
+const getCohortRetention = async (req, res) => {
+  const months = Math.min(24, Math.max(3, parseInt(req.query.months) || 12));
+  try {
+    const result = await pool.query(`
+      WITH customer_orders AS (
+        SELECT customer_email AS email, DATE_TRUNC('month', placed_at) AS order_month
+        FROM guest_orders
+        WHERE order_status IN ('delivered','completed')
+          AND customer_email IS NOT NULL AND customer_email <> ''
+      ),
+      cohorts AS (
+        SELECT email, MIN(order_month) AS cohort_month
+        FROM customer_orders
+        GROUP BY email
+        HAVING MIN(order_month) >= DATE_TRUNC('month', NOW()) - ($1 || ' months')::interval
+      ),
+      activity AS (
+        SELECT DISTINCT co.email, c.cohort_month, co.order_month,
+               ((DATE_PART('year', co.order_month) - DATE_PART('year', c.cohort_month)) * 12
+                 + (DATE_PART('month', co.order_month) - DATE_PART('month', c.cohort_month)))::int AS month_index
+        FROM customer_orders co
+        JOIN cohorts c ON c.email = co.email
+      )
+      SELECT cohort_month, month_index, COUNT(DISTINCT email)::int AS active_customers
+      FROM activity
+      GROUP BY cohort_month, month_index
+      ORDER BY cohort_month, month_index
+    `, [String(months)]);
+
+    const sizesRes = await pool.query(`
+      WITH customer_orders AS (
+        SELECT customer_email AS email, DATE_TRUNC('month', placed_at) AS order_month
+        FROM guest_orders
+        WHERE order_status IN ('delivered','completed')
+          AND customer_email IS NOT NULL AND customer_email <> ''
+      ),
+      cohorts AS (
+        SELECT email, MIN(order_month) AS cohort_month
+        FROM customer_orders
+        GROUP BY email
+      )
+      SELECT cohort_month, COUNT(*)::int AS cohort_size
+      FROM cohorts
+      WHERE cohort_month >= DATE_TRUNC('month', NOW()) - ($1 || ' months')::interval
+      GROUP BY cohort_month
+      ORDER BY cohort_month
+    `, [String(months)]);
+
+    res.json({ cohorts: sizesRes.rows, activity: result.rows, months });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 // Generates a 24h set-password link (same reset_token mechanism as "Forgot Password")
 // so admin-created/imported accounts can be claimed without anyone knowing a password.
 async function sendAccountSetupEmail(user) {
@@ -1366,6 +1479,8 @@ module.exports = {
   exportCustomers,
   getTopCustomers,
   getCustomerDetails,
+  getCustomerSegments,
+  getCohortRetention,
   createCustomer,
   updateCustomer,
   bulkDeleteCustomers,

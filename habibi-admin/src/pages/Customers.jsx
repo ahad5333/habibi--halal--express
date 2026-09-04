@@ -114,6 +114,13 @@ export default function Customers() {
   const [topRows, setTopRows]       = useState(null);
   const [topLoading, setTopLoading] = useState(false);
 
+  // Cohorts & Retention report
+  const [cohortModal, setCohortModal]     = useState(false);
+  const [cohortLoading, setCohortLoading] = useState(false);
+  const [cohortErr, setCohortErr]         = useState('');
+  const [segments, setSegments]           = useState(null); // { segments, totals }
+  const [cohortData, setCohortData]       = useState(null); // { cohorts, activity, months }
+
   const [exporting, setExporting] = useState(false);
 
   const load = useCallback((f, p) => {
@@ -266,6 +273,21 @@ export default function Customers() {
       setTopLoading(false);
     }
   };
+
+  const openCohortModal = async () => {
+    setCohortModal(true);
+    if (segments && cohortData) return; // already loaded this session
+    setCohortLoading(true); setCohortErr('');
+    try {
+      const [s, c] = await Promise.all([adminAPI.customerSegments(), adminAPI.customerCohorts(12)]);
+      setSegments(s);
+      setCohortData(c);
+    } catch (e) {
+      setCohortErr(e.message);
+    } finally {
+      setCohortLoading(false);
+    }
+  };
   const exportTopReport = () => {
     if (!topRows) return;
     const rows = topRows.map(c => [c.name || '', c.email, c.phone || '', c.role, c.orders_in_range, parseFloat(c.spent_in_range || 0).toFixed(2)]);
@@ -285,6 +307,9 @@ export default function Customers() {
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={() => { setTopModal(true); setTopRows(null); }}>
             <TrendingUp size={15} /> Top Customers
+          </button>
+          <button className="btn btn-secondary" onClick={openCohortModal}>
+            <Star size={15} /> Cohorts & Retention
           </button>
           <button className="btn btn-secondary" onClick={runExport} disabled={exporting}>
             {exporting ? <div className="spinner" /> : <><Download size={15} /> Export CSV</>}
@@ -685,6 +710,122 @@ export default function Customers() {
                     </button>
                   </>
                 )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cohorts & Retention Modal */}
+      {cohortModal && (
+        <div className="modal-overlay" onClick={() => setCohortModal(false)}>
+          <div className="modal" style={{ maxWidth: 780 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2 className="modal-title">Customer Cohorts &amp; Retention</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setCohortModal(false)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              {cohortLoading && <div className="empty" style={{ minHeight: 100 }}><div className="spinner" /></div>}
+              {cohortErr && <p className="text-error">{cohortErr}</p>}
+
+              {segments && cohortData && !cohortLoading && (
+                <>
+                  {/* Summary stats */}
+                  <div className="cust-cohort-stats">
+                    <div className="cust-stat-box">
+                      <p className="cust-stat-label">Total Customers</p>
+                      <p className="cust-stat-num">{(segments.totals.total_customers || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="cust-stat-box">
+                      <p className="cust-stat-label">Repeat Rate</p>
+                      <p className="cust-stat-num">
+                        {segments.totals.total_customers > 0
+                          ? Math.round((segments.totals.repeat_customers / segments.totals.total_customers) * 100)
+                          : 0}%
+                      </p>
+                    </div>
+                    <div className="cust-stat-box">
+                      <p className="cust-stat-label">Avg. Lifetime Value</p>
+                      <p className="cust-stat-num" style={{ color: 'var(--color-primary)' }}>${parseFloat(segments.totals.avg_ltv || 0).toFixed(2)}</p>
+                    </div>
+                    <div className="cust-stat-box">
+                      <p className="cust-stat-label">Avg. LTV (Repeat)</p>
+                      <p className="cust-stat-num" style={{ color: 'var(--color-primary)' }}>${parseFloat(segments.totals.avg_ltv_repeat || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {/* Segmentation by order count */}
+                  <p className="cust-cohort-subhdr">Customers by Order Count</p>
+                  <div className="cust-segment-list">
+                    {['1', '2-3', '4-9', '10+'].map(bucket => {
+                      const row = segments.segments.find(s => s.bucket === bucket);
+                      const count = row ? row.customer_count : 0;
+                      const revenue = row ? parseFloat(row.bucket_revenue || 0) : 0;
+                      const maxCount = Math.max(1, ...segments.segments.map(s => s.customer_count));
+                      return (
+                        <div key={bucket} className="cust-segment-row">
+                          <span className="cust-segment-label">{bucket} order{bucket === '1' ? '' : 's'}</span>
+                          <div className="cust-segment-bar-wrap">
+                            <div className="cust-segment-bar" style={{ width: `${(count / maxCount) * 120}px` }} />
+                            <span>{count.toLocaleString()} customers · ${revenue.toFixed(0)} revenue</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Cohort retention heatmap */}
+                  <p className="cust-cohort-subhdr">Retention by First-Order Month</p>
+                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.75rem' }}>
+                    Each row is a group of customers by the month they first ordered. Each column is % of that group who ordered again N months later.
+                  </p>
+                  {cohortData.cohorts.length === 0 ? (
+                    <p className="text-muted" style={{ fontSize: '0.82rem' }}>Not enough order history yet to show cohorts.</p>
+                  ) : (() => {
+                    const activityMap = {};
+                    let maxIndex = 0;
+                    cohortData.activity.forEach(a => {
+                      activityMap[`${a.cohort_month}-${a.month_index}`] = a.active_customers;
+                      if (a.month_index > maxIndex) maxIndex = a.month_index;
+                    });
+                    const fmtCohortMonth = (m) => new Date(m).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+                    return (
+                      <div className="cust-cohort-heatmap-wrap">
+                        <table className="cust-cohort-heatmap">
+                          <thead>
+                            <tr>
+                              <th>Cohort</th>
+                              <th>Size</th>
+                              {Array.from({ length: maxIndex + 1 }).map((_, i) => <th key={i}>M{i}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cohortData.cohorts.map(c => (
+                              <tr key={c.cohort_month}>
+                                <td className="cust-cohort-month">{fmtCohortMonth(c.cohort_month)}</td>
+                                <td className="text-muted">{c.cohort_size}</td>
+                                {Array.from({ length: maxIndex + 1 }).map((_, i) => {
+                                  const active = activityMap[`${c.cohort_month}-${i}`];
+                                  const pct = active != null ? Math.round((active / c.cohort_size) * 100) : null;
+                                  return (
+                                    <td key={i}>
+                                      {pct != null && (
+                                        <span
+                                          className="cust-cohort-cell"
+                                          style={{ background: `rgba(249,115,22,${Math.max(0.08, pct / 100)})` }}
+                                        >{pct}%</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </div>
           </div>
