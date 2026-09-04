@@ -319,6 +319,8 @@ const createTables = async () => {
     // every charge-confirmation endpoint; tracked now so a fresh database
     // bootstraps with it too.
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_intent_id VARCHAR(100)`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS gift_card_code   VARCHAR(30)`);
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS gift_card_amount NUMERIC(10,2) DEFAULT 0`);
 
     // Holds a fully-validated, server-priced order (everything
     // createGuestOrder itself would insert) BEFORE any money has moved --
@@ -1079,6 +1081,33 @@ const createTables = async () => {
     await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS free_delivery_threshold NUMERIC(8,2)`);
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS driver_daily_goal INTEGER DEFAULT 10`);
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS gift_card_min_amount NUMERIC(8,2) DEFAULT 10`);
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS gift_card_max_amount NUMERIC(8,2) DEFAULT 500`);
+
+    // ── Gift Cards ──────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS gift_cards (
+        id               SERIAL PRIMARY KEY,
+        code             VARCHAR(30) UNIQUE NOT NULL,
+        initial_value    NUMERIC(10,2) NOT NULL,
+        balance          NUMERIC(10,2) NOT NULL,
+        status           VARCHAR(20) NOT NULL DEFAULT 'active',
+        purchaser_name   VARCHAR(150),
+        purchaser_email  VARCHAR(150),
+        message          TEXT,
+        created_at       TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS gift_card_transactions (
+        id            SERIAL PRIMARY KEY,
+        gift_card_id  INTEGER NOT NULL REFERENCES gift_cards(id),
+        order_number  VARCHAR(60),
+        amount        NUMERIC(10,2) NOT NULL,
+        type          VARCHAR(20) NOT NULL,
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
 
     // ── Business Hours ─────────────────────────────────────────────
     // This table had no CREATE TABLE anywhere in this file — it only exists

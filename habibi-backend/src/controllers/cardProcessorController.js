@@ -1,8 +1,8 @@
 const pool = require('../config/db');
 const safeError = require('../utils/safeError');
 const { logAudit } = require('./auditController');
-const { encryptObject, decryptObject, decrypt } = require('../utils/encrypt');
-const { deactivateAllCardProcessors } = require('../services/cardProcessorRegistry');
+const { encryptObject, decryptObject } = require('../utils/encrypt');
+const { deactivateAllCardProcessors, getActiveCardProcessor, getCardProcessorAccountByProvider } = require('../services/cardProcessorRegistry');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
@@ -18,48 +18,11 @@ const PUBLIC_FIELDS = {
   clover: ['merchantId', 'publicToken'],
 };
 
-// ── Helper — fetch the currently active card processor, of any kind ──────
-// Checks authorize_net_accounts and card_processor_accounts for whichever
-// single row is active across both tables (deactivateAllCardProcessors
-// guarantees there's at most one). Returns decrypted credentials — callers
-// get the real values, same contract as authNetController.getActiveAccount().
-async function getActiveCardProcessor() {
-  const authNet = await pool.query(`SELECT * FROM authorize_net_accounts WHERE is_active = TRUE LIMIT 1`);
-  if (authNet.rows[0]) {
-    const account = authNet.rows[0];
-    if (account.transaction_key) account.transaction_key = decrypt(account.transaction_key);
-    return { provider: 'authorize_net', account };
-  }
-
-  const other = await pool.query(`SELECT * FROM card_processor_accounts WHERE is_active = TRUE LIMIT 1`);
-  if (other.rows[0]) {
-    const row = other.rows[0];
-    return { provider: row.provider, account: { ...row, credentials: decryptObject(row.credentials || {}) } };
-  }
-
-  return null;
-}
-
-// ── Helper — fetch credentials for a SPECIFIC provider, active or not ────
-// Saved cards must keep working against whichever processor originally
-// saved them even after the admin switches the active one (see
-// chargeSavedCardEndpoint / paymentMethodController's delete flow) — this
-// is the "any account for this provider" lookup that makes that possible,
-// as opposed to getActiveCardProcessor()'s "whichever is active" lookup.
-async function getCardProcessorAccountByProvider(provider) {
-  if (provider === 'authorize_net') {
-    const res = await pool.query(`SELECT * FROM authorize_net_accounts ORDER BY is_active DESC, created_at DESC LIMIT 1`);
-    const account = res.rows[0];
-    if (account?.transaction_key) account.transaction_key = decrypt(account.transaction_key);
-    return account || null;
-  }
-  const res = await pool.query(
-    `SELECT * FROM card_processor_accounts WHERE provider = $1 ORDER BY is_active DESC, created_at DESC LIMIT 1`,
-    [provider]
-  );
-  const row = res.rows[0];
-  return row ? { ...row, credentials: decryptObject(row.credentials || {}) } : null;
-}
+// getActiveCardProcessor / getCardProcessorAccountByProvider now live in
+// services/cardProcessorRegistry.js (imported above) — moved out of this
+// controller so giftCardController.js can use them without requiring this
+// file, which would have closed a circular require (this file already
+// requires orderController.js for finalizePendingCheckout).
 
 // ── Public: which processor (if any) is live, and its non-secret config ──
 const getPublicCardConfig = async (req, res) => {

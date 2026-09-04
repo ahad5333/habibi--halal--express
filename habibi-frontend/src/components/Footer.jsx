@@ -106,6 +106,7 @@ const Footer = () => {
             <Link to="/group-order">Group Order</Link>
             <Link to="/delivery-coverage">Delivery Coverage</Link>
             <Link to="/checkout">Order Online</Link>
+            <Link to="/gift-cards">Gift Cards</Link>
             <Link to="/wholesale">Wholesale</Link>
           </div>
           <div className="footer-column">

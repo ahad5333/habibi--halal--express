@@ -41,7 +41,7 @@ const SQUARE_CARD_STYLE = {
   '.message-icon': { color: '#c0392b' },
 };
 
-export default function SquareCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {
+export default function SquareCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError, endpoint = '/api/payments/card/charge', extraFields = {} }) {
   const [cardName,   setCardName]   = useState('');
   const [billingZip, setBillingZip] = useState('');
   const [saveCard,   setSaveCard]   = useState(true);
@@ -164,7 +164,7 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
       }
 
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const res  = await fetch(`${BASE}/api/payments/card/charge`, {
+      const res  = await fetch(`${BASE}${endpoint}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -175,6 +175,7 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
           customerPhone,
           reason,
           note,
+          ...extraFields,
         }),
       });
       const data = await res.json();
@@ -207,8 +208,10 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
       // Always fires, even if the customer has since switched to a
       // different payment method -- real money already moved by this point
       // (the charge fetch above succeeded), so the order must still be
-      // saved regardless of what the UI currently shows.
-      onSuccess?.(data.transactionId);
+      // saved regardless of what the UI currently shows. Full response
+      // passed as a second arg for callers (e.g. gift card purchase) that
+      // need more than the transaction id -- existing callers just ignore it.
+      onSuccess?.(data.transactionId, data);
     } catch (err) {
       // Unlike the tokenize()-stage guard above, this catch only runs
       // after a real charge attempt was sent -- if it failed/declined, no

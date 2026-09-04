@@ -1,0 +1,18 @@
+<h2 style="color: #1e3a8a; margin-top: 0; font-size: 20px;">You've Got a Habibi Halal Express Gift Card!</h2>
+<p>Hello {{purchaserName}},</p>
+<p>Thank you for your purchase. Your gift card is ready to use.</p>
+
+<div style="margin: 30px 0; text-align: center; padding: 24px; background: #f8fafc; border: 2px dashed #E5B64E; border-radius: 8px;">
+  <p style="margin: 0 0 8px; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Gift Card Code</p>
+  <p style="margin: 0 0 12px; font-size: 26px; font-weight: bold; color: #0f172a; letter-spacing: 1px;">{{code}}</p>
+  <p style="margin: 0; font-size: 18px; color: #1e3a8a; font-weight: bold;">${{currency amount}}</p>
+</div>
+
+{{#if message}}
+<p style="font-style: italic; color: #334155;">"{{message}}"</p>
+{{/if}}
+
+<p>Use this code at checkout on <a href="{{frontendUrl}}" style="color:#1e3a8a;">habibihe.com</a> to redeem it toward any order.</p>
+
+<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;">
+<p style="font-size: 14px; color: #64748b;">Keep this code safe — anyone with the code can redeem the balance.</p>

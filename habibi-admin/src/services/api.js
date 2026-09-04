@@ -127,6 +127,11 @@ export const adminAPI = {
   toggleCoupon:(id) => req(`/api/admin/coupons/${id}/toggle`, { method: 'PUT' }),
   deleteCoupon:(id) => req(`/api/admin/coupons/${id}`, { method: 'DELETE' }),
 
+  giftCards:            () => req('/api/gift-cards'),
+  issueGiftCard:        (body) => req('/api/gift-cards/issue', { method: 'POST', body: JSON.stringify(body) }),
+  voidGiftCard:         (id) => req(`/api/gift-cards/${id}/void`, { method: 'PUT' }),
+  giftCardTransactions: (id) => req(`/api/gift-cards/${id}/transactions`),
+
   partners:    () => req('/api/admin/partners/applications'),
   updatePartner:(id, status, note, price_tier, payment_methods, credit_balance) =>
     req(`/api/admin/partners/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes: note, price_tier, payment_methods, credit_balance }) }),

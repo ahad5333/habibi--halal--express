@@ -449,6 +449,16 @@ const sendReviewAdminAlert = async (adminEmail, review) => {
   return sendMailHelper(adminEmail, `New ${review.rating}-star review from ${name}`, html);
 };
 
+const sendGiftCardEmail = async (email, { code, amount, purchaserName, message }) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = renderEmail('gift-card', {
+    code, amount, message,
+    purchaserName: purchaserName || 'there',
+    frontendUrl,
+  });
+  return sendMailHelper(email, `Your Habibi Halal Express Gift Card (${code})`, html);
+};
+
 const sendAdminOTP = async (email, code) => {
   if (!email) return { success: false, error: 'No email provided' };
   const html = `
@@ -482,4 +492,5 @@ module.exports = {
   sendCateringInvoice,
   sendAdminOTP,
   sendReviewAdminAlert,
+  sendGiftCardEmail,
 };

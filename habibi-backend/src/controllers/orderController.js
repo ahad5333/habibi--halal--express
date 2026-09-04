@@ -11,6 +11,7 @@ const { getFeeForDistance } = require("../utils/deliveryFee");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const { computeCouponDiscount } = require("./couponController");
+const { computeGiftCardRedemption } = require("./giftCardController");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -157,6 +158,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
       delivery_state, delivery_instructions, payment_method,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
       coupon_code, expected_time, items,
+      gift_card_code, gift_card_amount: gift_card_amount_raw,
       location_id,
       table_id,
       table_number: table_number_raw,
@@ -218,13 +220,14 @@ const createGuestOrder = async (req, res, overrides = {}) => {
     const clientDelFee   = parseFloat(delivery_fee) || 0;
     const clientTip      = parseFloat(tip)          || 0;
     const clientDiscount = parseFloat(discount)     || 0;
+    const clientGiftCardAmount = Math.max(0, parseFloat(gift_card_amount_raw) || 0);
 
     if (clientTotal < 0) {
       return res.status(400).json({ message: 'Order total cannot be negative.' });
     }
 
     // 1. Total must equal sum of its components (catches $0.01 tricks)
-    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount;
+    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount - clientGiftCardAmount;
     if (Math.abs(expectedTotal - clientTotal) > 0.10) {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
@@ -625,6 +628,33 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         }
       }
 
+      // Gift card redemption — same real-DB-backed validation discipline as
+      // the coupon/loyalty checks just above, not a separate weaker path.
+      // Locked (FOR UPDATE, via computeGiftCardRedemption's `client` param)
+      // and actually deducted right here, inside this same transaction --
+      // this is the one real commit; createPendingCheckout's own call to
+      // computeGiftCardRedemption (no `client` passed) is read-only, a
+      // pre-payment quote against the balance as it stood at prepare time.
+      let giftCardRedemption = null;
+      if (gift_card_code) {
+        try {
+          const { card, redeemAmount } = await computeGiftCardRedemption({
+            code: gift_card_code, requestedAmount: clientGiftCardAmount, client,
+          });
+          if (clientGiftCardAmount > redeemAmount + 0.02) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ message: 'Gift card amount is incorrect. Please refresh and retry.' });
+          }
+          giftCardRedemption = { cardId: card.id, redeemAmount };
+        } catch (err) {
+          await client.query('ROLLBACK');
+          return res.status(err.statusCode || 400).json({ message: err.message || 'Invalid gift card code.' });
+        }
+      } else if (clientGiftCardAmount > 0.02) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Gift card amount is incorrect. Please refresh and retry.' });
+      }
+
     // Resolve user_id if the request carries a valid JWT
     let resolved_user_id = req.user?.id || null;
     if (!resolved_user_id && customer_email) {
@@ -643,8 +673,8 @@ const createGuestOrder = async (req, res, overrides = {}) => {
          coupon_code, expected_time, items, table_number, loyalty_points_redeemed, user_id, order_status,
          is_gift, gift_recipient_name, gift_recipient_phone, gift_message, payment_status, location_id,
          payment_reference, leave_at_door, apt_unit, driver_note, extra_help_needed, extra_help_note, business_name,
-         scheduled_date, scheduled_time, payment_intent_id, payment_processor)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41)
+         scheduled_date, scheduled_time, payment_intent_id, payment_processor, gift_card_code, gift_card_amount)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'pending',$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43)
        RETURNING id`,
       [
         order_number,
@@ -675,7 +705,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         gift_recipient_name  || null,
         gift_recipient_phone || null,
         gift_message         || null,
-        overrides.payment_status || (['card', 'paypal'].includes(payment_method) ? 'paid' : 'unpaid'),
+        overrides.payment_status || (['card', 'paypal', 'gift_card'].includes(payment_method) ? 'paid' : 'unpaid'),
         resolvedLocationId,
         String(payment_reference || '').trim().slice(0, 100) || null,
         leave_at_door === true || leave_at_door === 'true',
@@ -688,6 +718,8 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         scheduled_time || null,
         overrides.payment_intent_id || null,
         overrides.payment_processor || null,
+        giftCardRedemption ? gift_card_code.trim().toUpperCase() : null,
+        giftCardRedemption ? giftCardRedemption.redeemAmount : 0,
       ]
     );
 
@@ -709,6 +741,20 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         await client.query(
           `UPDATE users SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) - $1) WHERE LOWER(email) = LOWER($2)`,
           [loyalty_points_redeemed, customer_email]
+        );
+      }
+
+      // Deduct gift card balance inside the same transaction -- the row was
+      // already FOR UPDATE-locked by computeGiftCardRedemption above, so
+      // this can't race a concurrent redemption of the same card.
+      if (giftCardRedemption) {
+        await client.query(
+          `UPDATE gift_cards SET balance = GREATEST(0, balance - $1) WHERE id = $2`,
+          [giftCardRedemption.redeemAmount, giftCardRedemption.cardId]
+        );
+        await client.query(
+          `INSERT INTO gift_card_transactions (gift_card_id, order_number, amount, type) VALUES ($1, $2, $3, 'redeem')`,
+          [giftCardRedemption.cardId, order_number, giftCardRedemption.redeemAmount]
         );
       }
 
@@ -953,6 +999,7 @@ const createPendingCheckout = async (req, res) => {
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
       coupon_code, items, location_id, customer_name, delivery_instructions,
       loyalty_points_redeemed: loyalty_points_raw,
+      gift_card_code, gift_card_amount: gift_card_amount_raw,
     } = req.body;
     const loyalty_points_redeemed = Math.max(0, parseInt(loyalty_points_raw, 10) || 0);
 
@@ -975,12 +1022,13 @@ const createPendingCheckout = async (req, res) => {
     const clientDelFee   = parseFloat(delivery_fee) || 0;
     const clientTip      = parseFloat(tip)          || 0;
     const clientDiscount = parseFloat(discount)     || 0;
+    const clientGiftCardAmount = Math.max(0, parseFloat(gift_card_amount_raw) || 0);
 
     if (clientTotal < 0) {
       return res.status(400).json({ message: 'Order total cannot be negative.' });
     }
 
-    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount;
+    const expectedTotal = clientSubtotal + clientTax + clientSvcFee + clientDelFee + clientTip - clientDiscount - clientGiftCardAmount;
     if (Math.abs(expectedTotal - clientTotal) > 0.10) {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
@@ -1129,6 +1177,26 @@ const createPendingCheckout = async (req, res) => {
       if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
         return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
       }
+    }
+
+    // Gift card redemption — read-only quote against the balance as it
+    // stands right now (no `client`/lock passed, same "quote, not a commit"
+    // treatment as the item-price check below); the real, TOCTOU-safe check
+    // and the actual balance deduction both happen exactly once, for real,
+    // inside createGuestOrder's transaction at finalize time.
+    if (gift_card_code) {
+      try {
+        const { redeemAmount } = await computeGiftCardRedemption({
+          code: gift_card_code, requestedAmount: clientGiftCardAmount,
+        });
+        if (clientGiftCardAmount > redeemAmount + 0.02) {
+          return res.status(400).json({ message: 'Gift card amount is incorrect. Please refresh and retry.' });
+        }
+      } catch (err) {
+        return res.status(err.statusCode || 400).json({ message: err.message || 'Invalid gift card code.' });
+      }
+    } else if (clientGiftCardAmount > 0.02) {
+      return res.status(400).json({ message: 'Gift card amount is incorrect. Please refresh and retry.' });
     }
 
     if (delivery_address && delivery_address.length > 300)

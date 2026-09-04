@@ -263,6 +263,24 @@ export const couponsAPI = {
     }),
 };
 
+// ─── Gift Cards ──────────────────────────────────────────────────────────────
+
+export const giftCardsAPI = {
+  /** POST /api/gift-cards/check — balance/status preview, doesn't redeem anything */
+  check: (code) =>
+    request('/api/gift-cards/check', {
+      method: 'POST',
+      body: JSON.stringify({ code: code.toUpperCase() }),
+    }),
+
+  /** POST /api/gift-cards/purchase */
+  purchase: (payload) =>
+    request('/api/gift-cards/purchase', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+};
+
 // ─── User Account ────────────────────────────────────────────────────────────
 
 export const userAPI = {

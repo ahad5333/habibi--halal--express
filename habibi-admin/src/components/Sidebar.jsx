@@ -38,6 +38,7 @@ const NAV = [
   { to: '/roadie',            icon: <Route size={17} />,     label: 'Roadie Deliveries' },
   { to: '/cash-log',   icon: <DollarSign size={17} />,     label: 'Cash Log' },
   { to: '/coupons',      icon: <Tag size={17} />,           label: 'Coupons & Offers' },
+  { to: '/gift-cards',   icon: <Gift size={17} />,          label: 'Gift Cards' },
   { to: '/referrals',    icon: <Share2 size={17} />,        label: 'Referral Program' },
   { to: '/group-orders', icon: <Users2 size={17} />,        label: 'Group Orders' },
   { to: '/saved-customs',icon: <Bookmark size={17} />,      label: 'Saved Custom Orders' },

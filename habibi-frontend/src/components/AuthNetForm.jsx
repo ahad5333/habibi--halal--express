@@ -21,7 +21,7 @@ function detectCardBrand(rawNumber) {
   return CARD_BRANDS.find(b => b.test.test(digits)) || null;
 }
 
-export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {
+export default function AuthNetForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError, endpoint = '/api/payments/authnet/charge', extraFields = {} }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expMonth,   setExpMonth]   = useState('');
   const [expYear,    setExpYear]    = useState('');
@@ -101,7 +101,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
       // Send opaqueData to our backend to charge
       try {
         const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-        const res  = await fetch(`${BASE}/api/payments/authnet/charge`, {
+        const res  = await fetch(`${BASE}${endpoint}`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
@@ -113,6 +113,7 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
             billingZip: billingZip.trim(),
             reason,
             note,
+            ...extraFields,
           }),
         });
         const data = await res.json();
@@ -134,7 +135,9 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
 
         // Always fires even if the customer has since switched payment
         // methods -- see SquareCardForm.jsx's identical comment for why.
-        onSuccess?.(data.transactionId);
+        // Full response passed as a second arg for callers that need more
+        // than the transaction id -- existing callers just ignore it.
+        onSuccess?.(data.transactionId, data);
       } catch (err) {
         if (unmountedRef.current) {
           console.error('[AuthNetForm] charge failed after customer switched payment methods:', err.message);

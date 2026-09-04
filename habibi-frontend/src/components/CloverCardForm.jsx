@@ -24,7 +24,7 @@ const CLOVER_ELEMENT_STYLE = {
   input: { fontFamily: 'inherit', fontSize: '14px', color: '#1a1a1a', backgroundColor: '#ffffff' },
 };
 
-export default function CloverCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError }) {
+export default function CloverCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError, endpoint = '/api/payments/card/charge', extraFields = {} }) {
   const [cardName,   setCardName]   = useState('');
   const [saveCard,   setSaveCard]   = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -101,7 +101,7 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
       }
 
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const res  = await fetch(`${BASE}/api/payments/card/charge`, {
+      const res  = await fetch(`${BASE}${endpoint}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -112,6 +112,7 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
           customerPhone,
           reason,
           note,
+          ...extraFields,
         }),
       });
       const data = await res.json();
@@ -145,8 +146,10 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
       }
 
       // Always fires even if the customer has since switched payment
-      // methods -- see SquareCardForm.jsx's identical comment for why.
-      onSuccess?.(data.transactionId);
+      // methods -- see SquareCardForm.jsx's identical comment for why. Full
+      // response passed as a second arg for callers that need more than the
+      // transaction id -- existing callers just ignore it.
+      onSuccess?.(data.transactionId, data);
     } catch (err) {
       if (unmountedRef.current) {
         console.error('[CloverCardForm] charge failed after customer switched payment methods:', err.message);

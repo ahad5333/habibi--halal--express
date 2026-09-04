@@ -53,6 +53,7 @@ const Offers              = lazy(() => import('./pages/Offers'));
 const KitchenBehindScenes    = lazy(() => import('./pages/KitchenBehindScenes'));
 const CustomerStories        = lazy(() => import('./pages/CustomerStories'));
 const OurJourney             = lazy(() => import('./pages/OurJourney'));
+const BuyGiftCard            = lazy(() => import('./pages/BuyGiftCard'));
 const NotFound            = lazy(() => import('./pages/NotFound'));
 
 import { initGA, initPixel, trackPageView } from './utils/analytics';
@@ -152,6 +153,7 @@ function Layout() {
           <Route path="/partner" element={<PartnerPortal />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/catering" element={<Catering />} />
+          <Route path="/gift-cards" element={<BuyGiftCard />} />
           <Route path="/admin/broadcasts" element={<InternalGuard requireAdmin><Broadcasts /></InternalGuard>} />
 
           {/* Legal hub */}

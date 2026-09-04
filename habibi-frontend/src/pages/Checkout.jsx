@@ -4,7 +4,7 @@ import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, X, ChevronLe
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, couponsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard } from '../services/api';
+import { ordersAPI, couponsAPI, giftCardsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
@@ -87,6 +87,12 @@ const Checkout = () => {
   const [couponMsg, setCouponMsg]           = useState('');
   const [couponErr, setCouponErr]           = useState('');
   const [couponLoading, setCouponLoading]   = useState(false);
+  const [giftCardCode, setGiftCardCode]         = useState('');
+  const [giftCardApplied, setGiftCardApplied]   = useState(false);
+  const [giftCardBalance, setGiftCardBalance]   = useState(0);
+  const [giftCardMsg, setGiftCardMsg]           = useState('');
+  const [giftCardErr, setGiftCardErr]           = useState('');
+  const [giftCardLoading, setGiftCardLoading]   = useState(false);
   const [placing, setPlacing]               = useState(false);
   const [orderError, setOrderError]         = useState('');
   // Set only when payment already succeeded (card charged / PayPal captured)
@@ -151,7 +157,12 @@ const Checkout = () => {
   // redeem in full-dollar increments (e.g. rate 100 + 350 pts → 300 redeemable)
   const redeemablePts   = Math.floor(loyaltyPoints / loyaltyRedeemRate) * loyaltyRedeemRate;
   const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / loyaltyRedeemRate : 0;
-  const total           = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
+  const preGiftCardTotal = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
+  // Applying a gift card always uses as much of its balance as the order
+  // needs (capped at what's actually owed) -- not a customer-chosen partial
+  // amount, mirroring how coupon/loyalty already just apply their full value.
+  const giftCardAmount  = giftCardApplied ? parseFloat(Math.min(giftCardBalance, preGiftCardTotal).toFixed(2)) : 0;
+  const total            = Math.max(0, preGiftCardTotal - giftCardAmount);
 
   // Free-delivery gap stays live -- the progress bar must reflect real-time
   // progress as the cart changes.
@@ -586,6 +597,34 @@ const Checkout = () => {
     }
   };
 
+  // ── Gift card ─────────────────────────────────────────────────────────────
+  const handleApplyGiftCard = async (codeOverride) => {
+    const code = (codeOverride || giftCardCode).trim().toUpperCase();
+    if (!code) return;
+    if (codeOverride) setGiftCardCode(codeOverride);
+    setGiftCardLoading(true); setGiftCardErr(''); setGiftCardMsg(''); setGiftCardApplied(false); setGiftCardBalance(0);
+    try {
+      const res = await giftCardsAPI.check(code);
+      setGiftCardApplied(true);
+      setGiftCardBalance(res.balance || 0);
+      setGiftCardMsg(`Gift card applied — $${(res.balance || 0).toFixed(2)} available.`);
+    } catch (err) {
+      setGiftCardErr(err.message || 'Invalid gift card code.');
+      setGiftCardApplied(false);
+      setGiftCardBalance(0);
+    } finally {
+      setGiftCardLoading(false);
+    }
+  };
+
+  const handleRemoveGiftCard = () => {
+    setGiftCardApplied(false);
+    setGiftCardBalance(0);
+    setGiftCardCode('');
+    setGiftCardMsg('');
+    setGiftCardErr('');
+  };
+
   // ── Build order payload ────────────────────────────────────────────────────
   const buildPayload = (orderNumber, paymentReference) => ({
     order_number: orderNumber,
@@ -615,7 +654,11 @@ const Checkout = () => {
     extra_help_note:   extraHelpNeeded ? extraHelpNote.trim() : '',
     business_name:     businessName.trim(),
     table_number:          isDineIn ? (dineInTable?.table_name || '') : undefined,
-    payment_method:        paymentMethod,
+    // A gift card that covers the entire remaining total needs no card/
+    // PayPal charge at all -- 'gift_card' routes it through the same
+    // already-paid, straight-to-createGuestOrder path 'cash' uses (see
+    // orderController.js's payment_status ternary).
+    payment_method:        (giftCardApplied && giftCardAmount > 0 && total <= 0.005) ? 'gift_card' : paymentMethod,
     sub_total:    parseFloat(subtotal.toFixed(2)),
     tax:          parseFloat(tax.toFixed(2)),
     service_fee:  parseFloat(serviceFee.toFixed(2)),
@@ -624,6 +667,8 @@ const Checkout = () => {
     discount:     parseFloat((couponDiscount + loyaltyDiscount).toFixed(2)),
     total:        parseFloat(total.toFixed(2)),
     coupon_code:  couponApplied ? couponCode : null,
+    gift_card_code:   giftCardApplied ? giftCardCode.trim().toUpperCase() : null,
+    gift_card_amount: giftCardAmount > 0 ? parseFloat(giftCardAmount.toFixed(2)) : 0,
     loyalty_points_redeemed: useRewards ? redeemablePts : 0,
     is_gift:             isGift,
     gift_recipient_name: isGift ? giftRecipientName : null,
@@ -925,8 +970,28 @@ const Checkout = () => {
     );
   };
 
+  // A gift card that covers the whole remaining total needs no card/PayPal
+  // charge at all -- goes straight to createGuest like a $0-owed cash order
+  // (buildPayload already switches payment_method to 'gift_card' in this
+  // case, which orderController.js treats as paid immediately).
+  const giftCardCoversFull = giftCardApplied && giftCardAmount > 0 && total <= 0.005;
+
+  const handleGiftCardOnlyOrder = async () => {
+    if (items.length === 0) return;
+    if (!validateOrder()) return;
+    trackBeginCheckout(items, total);
+    const orderNumber = `HAB-${Date.now()}`;
+    setPendingOrderNum(orderNumber);
+    await attemptSaveOrder(
+      buildPayload(orderNumber),
+      giftCardCode.trim().toUpperCase(),
+      'We could not save your order.'
+    );
+  };
+
   // ── Main CTA logic ─────────────────────────────────────────────────────────
   const handlePlaceOrder = () => {
+    if (giftCardCoversFull) { handleGiftCardOnlyOrder(); return; }
     if (!paymentMethod) { setOrderError('Please select a payment method.'); return; }
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
     // PayPal/Google Pay are rendered inline — "Place Order" shouldn't fire for them
@@ -938,16 +1003,17 @@ const Checkout = () => {
     // AuthNetForm has its own submit button
   };
 
-  const showCardForm  = paymentMethod === 'card' && intentReady && !selectedSavedCardId;
+  const showCardForm  = !giftCardCoversFull && paymentMethod === 'card' && intentReady && !selectedSavedCardId;
   // Gated on intentReady, same as the card form -- the button can't render
   // until prepareGuest returns a real order_number to charge against.
-  const showPayPal    = paymentMethod === 'paypal' && intentReady;
-  const showGooglePay = paymentMethod === 'googlepay' && intentReady;
-  const showPaypalLoading = PAYPAL_METHODS.has(paymentMethod) && !intentReady && placing;
-  const showCTABtn    = !PAYPAL_METHODS.has(paymentMethod);
+  const showPayPal    = !giftCardCoversFull && paymentMethod === 'paypal' && intentReady;
+  const showGooglePay = !giftCardCoversFull && paymentMethod === 'googlepay' && intentReady;
+  const showPaypalLoading = !giftCardCoversFull && PAYPAL_METHODS.has(paymentMethod) && !intentReady && placing;
+  const showCTABtn    = giftCardCoversFull || !PAYPAL_METHODS.has(paymentMethod);
 
   const ctaLabel = () => {
     if (placing) return 'Please wait…';
+    if (giftCardCoversFull) return 'PLACE YOUR ORDER';
     if (!paymentMethod) return null; // nothing chosen yet -- no CTA to show
     if (OFFLINE_METHODS.has(paymentMethod)) return 'PLACE YOUR ORDER';
     if (paymentMethod === 'card' && selectedSavedCardId) return 'PLACE ORDER →';
@@ -1990,6 +2056,41 @@ const Checkout = () => {
                     )}
                   </div>
 
+                  {/* Gift card — reuses the coupon panel's markup/styling */}
+                  <div className={`coupon-panel${giftCardApplied ? ' coupon-panel--applied' : ''}`}>
+                    <div className="coupon-panel-hdr" style={{ cursor: 'default' }}>
+                      <div className="coupon-panel-hdr-left">
+                        <Tag size={15} className="coupon-panel-tag-icon" />
+                        <span className="coupon-panel-title">Gift Card</span>
+                        {giftCardApplied && (
+                          <span className="coupon-panel-saved">−${giftCardAmount.toFixed(2)} applied</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="coupon-panel-body">
+                      <div className="coupon-row">
+                        <div className="coupon-input-wrap">
+                          <Tag size={13} className="coupon-icon" />
+                          <input
+                            type="text" className="coupon-input" placeholder="Enter gift card code"
+                            value={giftCardCode}
+                            onChange={e => { setGiftCardCode(e.target.value.toUpperCase()); setGiftCardApplied(false); setGiftCardBalance(0); setGiftCardMsg(''); setGiftCardErr(''); }}
+                            disabled={giftCardApplied}
+                          />
+                        </div>
+                        <button
+                          className={`coupon-apply-btn${giftCardApplied ? ' applied' : ''}`}
+                          onClick={() => giftCardApplied ? handleRemoveGiftCard() : handleApplyGiftCard()}
+                          disabled={!giftCardApplied && (!giftCardCode.trim() || giftCardLoading)}
+                        >
+                          {giftCardLoading ? '…' : giftCardApplied ? 'Remove' : 'Apply'}
+                        </button>
+                      </div>
+                      {giftCardMsg && <p className="coupon-feedback coupon-feedback--ok" role="status">✓ {giftCardMsg}</p>}
+                      {giftCardErr && <p className="coupon-feedback coupon-feedback--err" role="alert">⚠ {giftCardErr}</p>}
+                    </div>
+                  </div>
+
                   {/* Loyalty rewards redemption */}
                   {isLoggedIn && redeemablePts > 0 && (
                     <div className="loyalty-redeem-row">
@@ -2102,6 +2203,12 @@ const Checkout = () => {
                       <div className="pb-row pb-row--discount">
                         <span className="pb-label">🏅 Rewards</span>
                         <span className="pb-value pb-value--green">−${loyaltyDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {giftCardAmount > 0 && (
+                      <div className="pb-row pb-row--discount">
+                        <span className="pb-label">Gift Card</span>
+                        <span className="pb-value pb-value--green">−${giftCardAmount.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="pb-divider" />
@@ -2217,7 +2324,7 @@ const Checkout = () => {
               onClick={handlePlaceOrder}
               disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
             >
-              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : !paymentMethod ? 'Select payment method' : placing ? 'Please wait…' : 'Place Order →'}
+              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : (!giftCardCoversFull && !paymentMethod) ? 'Select payment method' : placing ? 'Please wait…' : 'Place Order →'}
             </button>
           ) : null}
         </div>
