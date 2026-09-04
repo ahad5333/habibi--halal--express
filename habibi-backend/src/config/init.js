@@ -1395,6 +1395,14 @@ const createTables = async () => {
       ALTER TABLE menus ADD COLUMN IF NOT EXISTS exclude_global_addons BOOLEAN DEFAULT FALSE;
     `);
 
+    // Arabic name/description -- optional, CPanel-editable per item (see
+    // MenuBuilder.jsx). Always falls back to the English name/description on
+    // the frontend when blank; left empty by default, never auto-translated
+    // wholesale -- ingredient/spice-level wording on a halal-certified menu
+    // is exactly the kind of content a mistranslation could get wrong.
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS name_ar        VARCHAR(255)`);
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS description_ar TEXT`);
+
     // ── Site Settings (admin-editable business info) ──────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS site_settings (

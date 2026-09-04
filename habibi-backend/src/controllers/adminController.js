@@ -115,7 +115,7 @@ const getAllOrders = async (req, res) => {
 const getAllMenus = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, name, description, price, partner_price,
+      SELECT id, name, description, name_ar, description_ar, price, partner_price,
              image_url, category,
              COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
              sort_order, notes,

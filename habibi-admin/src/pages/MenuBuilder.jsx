@@ -10,7 +10,7 @@ const ALL_CATEGORIES = [
   'Extras','Drinks','Family Tray','Build Your Own','Build Your Own Sandwich',
 ];
 
-const EMPTY_FORM = { name: '', description: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '', sort_order: 0 };
+const EMPTY_FORM = { name: '', description: '', name_ar: '', description_ar: '', price: '', partner_price: '', categories: [], notes: '', is_active: true, is_spicy: false, is_vegetarian: false, is_gluten_free: false, is_featured: false, image: null, choices: [], addons: [], addons_max: '', temperature: 'hot', exclude_global_addons: false, quota_required: '', sort_order: 0 };
 
 function parseJsonSafe(v) {
   if (!v) return [];
@@ -31,6 +31,7 @@ function imgSrc(url) {
 function MenuModal({ item, categories, onClose, onSave }) {
   const [form, setForm] = useState(item ? {
     name: item.name || '', description: item.description || '',
+    name_ar: item.name_ar || '', description_ar: item.description_ar || '',
     price: item.price || '', partner_price: item.partner_price || '',
     categories: Array.isArray(item.categories) && item.categories.length
       ? item.categories
@@ -69,6 +70,8 @@ function MenuModal({ item, categories, onClose, onSave }) {
       const fd = new FormData();
       fd.append('name', form.name);
       fd.append('description', form.description);
+      fd.append('name_ar', form.name_ar);
+      fd.append('description_ar', form.description_ar);
       fd.append('price', form.price);
       fd.append('partner_price', form.partner_price || form.price);
       fd.append('category', form.categories[0] || '');
@@ -170,6 +173,16 @@ function MenuModal({ item, categories, onClose, onSave }) {
             <div className="field">
               <label>Description</label>
               <textarea className="input textarea" rows={3} placeholder="Short description..." value={form.description} onChange={e => set('description', e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>Arabic Name <span style={{ color: 'var(--color-text-dim)' }}>(optional — shown to customers browsing the site in Arabic; falls back to the English name above when blank)</span></label>
+              <input className="input" dir="rtl" placeholder="مثال: طبق لحم الشاورما" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>Arabic Description <span style={{ color: 'var(--color-text-dim)' }}>(optional — falls back to the English description above when blank)</span></label>
+              <textarea className="input textarea" dir="rtl" rows={3} placeholder="وصف قصير..." value={form.description_ar} onChange={e => set('description_ar', e.target.value)} />
             </div>
 
             <div className="field">

@@ -7,7 +7,7 @@ const getMenus = async (req, res) => {
     let result;
     try {
       result = await pool.query(`
-        SELECT id, name, description, price, partner_price,
+        SELECT id, name, description, name_ar, description_ar, price, partner_price,
                image_url AS image, category,
                COALESCE(categories, '{}'::TEXT[]) AS categories,
                is_available, choices, addons, dietary_info,
@@ -19,7 +19,7 @@ const getMenus = async (req, res) => {
       `);
     } catch {
       result = await pool.query(`
-        SELECT id, name, description, price, partner_price,
+        SELECT id, name, description, name_ar, description_ar, price, partner_price,
                image_url AS image, category,
                '{}'::TEXT[] AS categories,
                is_available, choices, addons, dietary_info,
@@ -45,7 +45,7 @@ const getMenuById = async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `SELECT id, name, description, price, partner_price,
+        `SELECT id, name, description, name_ar, description_ar, price, partner_price,
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
                 is_available, choices, addons, dietary_info, temperature, notes,
@@ -55,7 +55,7 @@ const getMenuById = async (req, res) => {
       );
     } catch {
       result = await pool.query(
-        `SELECT id, name, description, price, partner_price,
+        `SELECT id, name, description, name_ar, description_ar, price, partner_price,
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
                 is_available, choices, addons, dietary_info, temperature, notes,
@@ -85,7 +85,7 @@ const VALID_CATEGORIES = new Set([
 
 const createMenu = async (req, res) => {
   try {
-    const { name, description, category, price, partner_price, sort_order, notes,
+    const { name, description, name_ar, description_ar, category, price, partner_price, sort_order, notes,
             is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max,
             categories, temperature, exclude_global_addons, quota_required } = req.body;
 
@@ -122,14 +122,16 @@ const createMenu = async (req, res) => {
     const parsedQuotaRequired = quota_required ? parseInt(quota_required) || null : null;
 
     const result = await pool.query(
-      `INSERT INTO menus (name, description, category, categories, price, partner_price, image_url, sort_order, notes,
+      `INSERT INTO menus (name, description, name_ar, description_ar, category, categories, price, partner_price, image_url, sort_order, notes,
                           is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons, quota_required)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, true, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-       RETURNING id, name, description, category, categories, price, partner_price, image_url, sort_order, notes,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, true, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+       RETURNING id, name, description, name_ar, description_ar, category, categories, price, partner_price, image_url, sort_order, notes,
                  is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons, quota_required`,
       [
         name,
         description || null,
+        name_ar ? String(name_ar).trim().slice(0, 255) : null,
+        description_ar ? String(description_ar).trim() : null,
         primaryCategory,
         parsedCategories,
         parseFloat(price) || 0,
@@ -160,7 +162,7 @@ const createMenu = async (req, res) => {
 const updateMenu = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, category, price, partner_price, sort_order, notes, is_active,
+    const { name, description, name_ar, description_ar, category, price, partner_price, sort_order, notes, is_active,
             is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max,
             categories, temperature, exclude_global_addons, quota_required } = req.body;
 
@@ -176,7 +178,7 @@ const updateMenu = async (req, res) => {
 
     // Fetch current row so PATCH-style updates don't overwrite fields not in the request
     const current = await pool.query(
-      `SELECT name, description, category, categories, price, partner_price, image_url, sort_order, notes,
+      `SELECT name, description, name_ar, description_ar, category, categories, price, partner_price, image_url, sort_order, notes,
               is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons, quota_required
        FROM menus WHERE id = $1`, [id]
     );
@@ -215,17 +217,19 @@ const updateMenu = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE menus
-       SET name=$1, description=$2, category=$3, categories=$4, price=$5, partner_price=$6,
-           image_url=$7, sort_order=$8, notes=$9, is_active=$10,
-           is_spicy=$11, is_vegetarian=$12, is_gluten_free=$13, is_featured=$14,
-           choices=$15, addons=$16, addons_max=$17, temperature=$18, exclude_global_addons=$19,
-           quota_required=$20
-       WHERE id=$21
-       RETURNING id, name, description, category, categories, price, partner_price, image_url, sort_order, notes,
+       SET name=$1, description=$2, name_ar=$3, description_ar=$4, category=$5, categories=$6, price=$7, partner_price=$8,
+           image_url=$9, sort_order=$10, notes=$11, is_active=$12,
+           is_spicy=$13, is_vegetarian=$14, is_gluten_free=$15, is_featured=$16,
+           choices=$17, addons=$18, addons_max=$19, temperature=$20, exclude_global_addons=$21,
+           quota_required=$22
+       WHERE id=$23
+       RETURNING id, name, description, name_ar, description_ar, category, categories, price, partner_price, image_url, sort_order, notes,
                  is_available, is_active, is_spicy, is_vegetarian, is_gluten_free, is_featured, choices, addons, addons_max, temperature, exclude_global_addons, quota_required`,
       [
         name       !== undefined ? name.trim()                              : cur.name,
         description !== undefined ? (description || null)                  : cur.description,
+        name_ar !== undefined ? (name_ar ? String(name_ar).trim().slice(0, 255) : null) : cur.name_ar,
+        description_ar !== undefined ? (description_ar ? String(description_ar).trim() : null) : cur.description_ar,
         newPrimaryCategory,
         parsedCategories,
         price      !== undefined ? parseFloat(price)                       : parseFloat(cur.price),
