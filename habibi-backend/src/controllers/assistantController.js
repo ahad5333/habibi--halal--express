@@ -170,20 +170,22 @@ const assistantChat = async (req, res) => {
     let actions = [];
 
     if (GREETING_RE.test(norm)) {
-      text = "Hi! I'm the Habibi Assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart — try \"add two lamb platters\".";
-
-    } else if (VIEW_CART_RE.test(norm)) {
-      text = (!cart || cart.length === 0)
-        ? "Your cart is empty right now — tell me what you'd like and I'll add it!"
-        : `Here's what's in your cart: ${cart.map(c => `${c.qty}x ${c.name}`).join(', ')}.`;
+      text = "Hi! I'm the Habibi Assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart — try \"add two beef burgers\".";
 
     } else if (CLEAR_CART_RE.test(norm)) {
+      // Checked before VIEW_CART_RE — "clear my cart" contains the substring
+      // "my cart", which would otherwise match the view-cart intent instead.
       if (!cart || cart.length === 0) {
         text = 'Your cart is already empty.';
       } else {
         text = 'Are you sure you want to clear your whole cart?';
         actions.push({ type: 'confirm_clear_cart' });
       }
+
+    } else if (VIEW_CART_RE.test(norm)) {
+      text = (!cart || cart.length === 0)
+        ? "Your cart is empty right now — tell me what you'd like and I'll add it!"
+        : `Here's what's in your cart: ${cart.map(c => `${c.qty}x ${c.name}`).join(', ')}.`;
 
     } else if (CHECKOUT_RE.test(norm)) {
       if (!cart || cart.length === 0) {
@@ -224,9 +226,23 @@ const assistantChat = async (req, res) => {
         text = 'Everything we serve is 100% Hand-Zabiha Halal. We prioritize purity and quality in every single dish. ✅';
 
       } else if (BEST_RE.test(norm)) {
-        const plat = menu.filter(m => m.name.toLowerCase().includes('platter'));
-        text = "If it's your first time, you MUST try the Mixed Platter. It's what made us famous! 🌟";
-        items = plat.slice(0, 5).map(toItemPayload);
+        // Data-driven, not a hardcoded dish name — never claim a "best seller"
+        // that isn't actually backed by real order history.
+        const popRes = await pool.query(
+          `SELECT item->>'name' AS item_name, COUNT(*) AS freq
+           FROM guest_orders, jsonb_array_elements(items) AS item
+           WHERE placed_at > NOW() - INTERVAL '90 days'
+           GROUP BY item_name
+           ORDER BY freq DESC
+           LIMIT 8`
+        );
+        const popNames = new Set(popRes.rows.map(r => (r.item_name || '').toLowerCase()));
+        const popular = menu.filter(m => popNames.has(m.name.toLowerCase()));
+        const shown = popular.length ? popular : menu;
+        text = popular.length
+          ? "Here's what customers are ordering most right now: 🌟"
+          : 'Here are a few customer favorites:';
+        items = shown.slice(0, 5).map(toItemPayload);
 
       } else if (VEGAN_RE.test(norm)) {
         const veg = menu.filter(m =>
@@ -266,7 +282,7 @@ const assistantChat = async (req, res) => {
           text = `I found some items matching "${message}":`;
           items = searchMatch.slice(0, 5).map(toItemPayload);
         } else {
-          text = "That sounds delicious! I'd recommend checking out our Legendary Platters. Can I help you with anything else?";
+          text = "That sounds delicious! Ask me what's popular, or tell me what you'd like and I'll try to find it on our menu.";
         }
       }
     }
