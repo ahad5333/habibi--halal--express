@@ -4,7 +4,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const pool = require('../config/db');
 const emailService = require('../services/emailService');
-const { subscribeNewsletter, unsubscribeNewsletter, smsTwilioStop, submitFeedback } = require('../controllers/contactController');
+const { subscribeNewsletter, unsubscribeNewsletter, handleInboundSms, submitFeedback } = require('../controllers/contactController');
 
 const isDev = process.env.NODE_ENV !== 'production';
 // Applied only to the contact form / newsletter subscribe / feedback --
@@ -48,7 +48,7 @@ router.post('/', contactLimiter, async (req, res) => {
 
 router.post('/subscribe', contactLimiter, subscribeNewsletter);
 router.get('/unsubscribe', unsubscribeNewsletter);
-router.post('/sms-optout', smsTwilioStop);
+router.post('/sms-optout', handleInboundSms);
 router.post('/feedback', contactLimiter, submitFeedback);
 
 module.exports = router;

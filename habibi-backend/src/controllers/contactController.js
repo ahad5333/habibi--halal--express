@@ -73,14 +73,18 @@ const unsubscribeNewsletter = async (req, res) => {
   }
 };
 
-// Twilio inbound SMS webhook — handles STOP/START/HELP replies.
-// SmsTerms.jsx explicitly promises all three keywords work (opt out, re-enroll,
-// get help) — this used to treat *every* inbound message as a STOP unconditionally,
-// with no check on the actual message body. If this URL is Twilio's general inbound
-// webhook (rather than one that only ever receives pre-filtered STOP replies), that
-// meant replying HELP — literally what this page tells customers to do — would have
-// silently unsubscribed them instead. Keying off the real keyword fixes that either
-// way: it's a no-op if Twilio was already pre-filtering, and a real fix if not.
+// Twilio inbound SMS webhook — handles STOP/START/HELP/ORDER replies. This is
+// the ONLY inbound-SMS route in the codebase; Twilio only ever POSTs to the
+// one URL configured for the number, so every keyword this account needs to
+// respond to has to live in this same handler.
+// SmsTerms.jsx explicitly promises the STOP/START/HELP keywords work (opt out,
+// re-enroll, get help) — this used to treat *every* inbound message as a STOP
+// unconditionally, with no check on the actual message body. If this URL is
+// Twilio's general inbound webhook (rather than one that only ever receives
+// pre-filtered STOP replies), that meant replying HELP — literally what this
+// page tells customers to do — would have silently unsubscribed them instead.
+// Keying off the real keyword fixes that either way: it's a no-op if Twilio
+// was already pre-filtering, and a real fix if not.
 function escapeXml(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -88,8 +92,16 @@ function escapeXml(s) {
 const STOP_KEYWORDS  = ['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'];
 const START_KEYWORDS = ['start', 'unstop'];
 const HELP_KEYWORDS  = ['help', 'info'];
+const ORDER_KEYWORDS = ['order', 'usual', 'reorder'];
 
-const smsTwilioStop = async (req, res) => {
+// Phone-digits-keyed cooldown so repeatedly texting the ORDER keyword can't
+// trigger unlimited outbound SMS sends -- in-memory/per-process, same as
+// every other rate limiter in this codebase (express-rate-limit's default
+// store), not a weaker guarantee than what's already trusted elsewhere.
+const ORDER_COOLDOWN_MS = 3 * 60 * 1000;
+const orderRequestCooldown = new Map();
+
+const handleInboundSms = async (req, res) => {
   try {
     // This endpoint previously had no signature verification at all --
     // anyone who found the URL could POST fake From/Body form data to
@@ -153,6 +165,30 @@ const smsTwilioStop = async (req, res) => {
         email = s.rows[0]?.email_contact || '';
       } catch (_) {}
       reply = `Habibi Halal Express: For help, contact us${phone ? ` at ${phone}` : ''}${email ? ` or ${email}` : ''}. Msg&data rates may apply. Reply STOP to opt out.`;
+    } else if (from && ORDER_KEYWORDS.includes(body)) {
+      // Always replies regardless of sms_optouts status -- same reasoning as
+      // HELP above: a direct reply to a customer-initiated inbound text, not
+      // an outbound marketing send.
+      const digits = from.replace(/\D/g, '');
+      const lastRequest = orderRequestCooldown.get(digits);
+      if (lastRequest && Date.now() - lastRequest < ORDER_COOLDOWN_MS) {
+        reply = 'You can request your reorder link again in a few minutes -- check your last text for the link!';
+      } else {
+        orderRequestCooldown.set(digits, Date.now());
+        // guest_orders.customer_phone (not users.phone_number, which is
+        // inconsistently formatted and would miss guest-checkout regulars
+        // who never made an account) -- digits-normalized the same way the
+        // STOP/START handlers above already match phone numbers.
+        const lastOrder = await pool.query(
+          `SELECT order_number FROM guest_orders
+            WHERE regexp_replace(customer_phone, '[^0-9]', '', 'g') = $1
+            ORDER BY placed_at DESC LIMIT 1`,
+          [digits]
+        ).catch(() => ({ rows: [] }));
+        reply = lastOrder.rows[0]
+          ? `Reorder your last Habibi Halal Express order here: ${FRONTEND_URL}/reorder?order=${lastOrder.rows[0].order_number}`
+          : `We couldn't find a recent order for this number. Order online: ${FRONTEND_URL}/menu`;
+      }
     }
 
     // Twilio expects a TwiML response
@@ -180,6 +216,6 @@ const submitFeedback = async (req, res) => {
 module.exports = {
   subscribeNewsletter,
   unsubscribeNewsletter,
-  smsTwilioStop,
+  handleInboundSms,
   submitFeedback,
 };
