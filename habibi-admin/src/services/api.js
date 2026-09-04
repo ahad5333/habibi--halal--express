@@ -190,6 +190,7 @@ export const adminAPI = {
   restockItem:        (id, body) => req(`/api/admin/inventory/${id}/restock`, { method: 'POST', body: JSON.stringify(body) }),
   getRestockLog:      () => req('/api/admin/inventory/restock-log'),
   getOrderLog:        () => req('/api/admin/inventory/order-log'),
+  getWaitlistCounts:  () => req('/api/admin/waitlist/counts'),
 
   // Delivery Zones
   getZones:    () => req('/api/admin/zones'),

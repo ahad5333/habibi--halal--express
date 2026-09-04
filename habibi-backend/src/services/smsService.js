@@ -73,9 +73,16 @@ const sendUrgentSOS = async (adminPhone, details) => {
   return await sendSMS(adminPhone, body);
 };
 
+const sendBackInStockAlert = async (to, itemName) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const body = `Good news! "${itemName}" is back in stock. Order now before it sells out again: ${frontendUrl}/menu`;
+  return await sendSMS(to, body);
+};
+
 module.exports = {
   sendSMS,
   sendOrderUpdate,
   sendUrgentSOS,
+  sendBackInStockAlert,
   toE164
 };

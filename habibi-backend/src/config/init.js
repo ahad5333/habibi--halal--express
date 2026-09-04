@@ -825,6 +825,25 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_inventory_order_log_item ON inventory_order_log(item_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_inventory_order_log_order ON inventory_order_log(order_id)`);
 
+    // ── Sold-Out Item Waitlist ──────────────────────────────────────
+    // Guest-friendly (nullable user_id + contact fields), scoped to real
+    // menus rows only -- BYO/Custom Order cart items have no inventory
+    // linkage or sold-out concept. notified_at IS NULL means "still
+    // waiting"; a customer who wants another alert after a later restock
+    // just re-joins (a fresh row), rather than reusing an old one.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS item_waitlist (
+        id             SERIAL PRIMARY KEY,
+        menu_item_id   INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+        user_id        INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        email          VARCHAR(255),
+        phone          VARCHAR(20),
+        notified_at    TIMESTAMPTZ,
+        created_at     TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_item_waitlist_pending ON item_waitlist(menu_item_id) WHERE notified_at IS NULL`);
+
     // ── Delivery Zones ─────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS delivery_zones (

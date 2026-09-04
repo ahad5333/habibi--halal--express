@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
+const { notifyWaitlist } = require('./waitlistController');
 
 // Recomputes sold_out/available across all active locations for a menu item, based on
 // the MINIMUM stock across every inventory item currently linked to it -- not just the
@@ -16,6 +17,16 @@ async function syncMenuAvailability(menu_item_id) {
   );
   const { min_stock, linked_count } = stockRes.rows[0];
   const status = (linked_count > 0 && parseFloat(min_stock) <= 0) ? 'sold_out' : 'available';
+
+  // Any location's prior status reflects them all -- this function always
+  // writes the same status everywhere (see comment above), so checking one
+  // row is enough to detect a real sold_out -> available transition below.
+  const wasRes = await pool.query(
+    `SELECT status FROM menu_location_availability WHERE menu_id = $1 LIMIT 1`,
+    [menu_item_id]
+  );
+  const wasSoldOut = wasRes.rows[0]?.status === 'sold_out';
+
   const locs = await pool.query(`SELECT id FROM locations WHERE is_active = TRUE`);
   for (const loc of locs.rows) {
     await pool.query(
@@ -24,6 +35,12 @@ async function syncMenuAvailability(menu_item_id) {
        ON CONFLICT (menu_id, location_id) DO UPDATE SET status = $3, updated_at = NOW()`,
       [menu_item_id, loc.id, status]
     );
+  }
+
+  // Fire-and-forget: notify anyone waiting on this item now that it's back.
+  if (wasSoldOut && status === 'available') {
+    notifyWaitlist(menu_item_id)
+      .catch(err => console.error('[Waitlist] Notify on restock failed:', err.message));
   }
 }
 

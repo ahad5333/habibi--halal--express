@@ -34,21 +34,24 @@ export default function Inventory() {
   const [filterCat, setFilterCat] = useState('all');
   const [loadErr, setLoadErr]     = useState('');
   const [search, setSearch]       = useState('');
+  const [waitlistCounts, setWaitlistCounts] = useState({}); // { [menu_item_id]: count }
 
   const load = async () => {
     setLoading(true);
     setLoadErr('');
     try {
-      const [inv, lg, orderLg, menuList] = await Promise.all([
+      const [inv, lg, orderLg, menuList, waitlist] = await Promise.all([
         adminAPI.getInventory(),
         adminAPI.getRestockLog(),
         adminAPI.getOrderLog(),
         adminAPI.menus(),
+        adminAPI.getWaitlistCounts().catch(() => []), // informational only — never blocks the page
       ]);
       setItems(inv);
       setLog(lg);
       setOrderLog(orderLg);
       setMenus(Array.isArray(menuList) ? menuList : []);
+      setWaitlistCounts(Object.fromEntries((waitlist || []).map(w => [w.menu_item_id, w.count])));
     } catch (e) {
       setLoadErr(e.message || 'Failed to load inventory.');
     }
@@ -218,6 +221,11 @@ export default function Inventory() {
                               <Link size={11} />
                               {i.menu_item_name}
                               {isOut && <span className="inv-soldout-pill">Sold Out</span>}
+                              {isOut && waitlistCounts[i.menu_item_id] > 0 && (
+                                <span className="inv-waitlist-pill" title="Customers waiting to be notified when this is restocked">
+                                  {waitlistCounts[i.menu_item_id]} waiting
+                                </span>
+                              )}
                             </span>
                           ) : (
                             <span className="text-muted" style={{fontSize:'0.75rem'}}>—</span>

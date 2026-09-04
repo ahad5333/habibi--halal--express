@@ -209,6 +209,10 @@ router.get("/payments", async (req, res) => {
 const { refundOrder } = require("../controllers/paymentController");
 router.post("/payments/:orderNumber/refund", refundOrder);
 
+// Sold-out item waitlist — pending-signup counts for the Inventory page's "N waiting" badge
+const { getWaitlistCounts } = require("../controllers/waitlistController");
+router.get("/waitlist/counts", getWaitlistCounts);
+
 // Payment Method Settings (enable/disable)
 const { getAdminPaymentSettings, updatePaymentSetting, updateOfflineHandles, getOfflineHandles, getIntegrationStatus, updateSystemSettings } = require("../controllers/settingsController");
 router.get("/payment-settings", getAdminPaymentSettings);

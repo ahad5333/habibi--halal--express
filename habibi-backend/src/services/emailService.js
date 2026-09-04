@@ -474,6 +474,21 @@ const sendAdminOTP = async (email, code) => {
   return sendMailHelper(email, 'Admin Login Code - Habibi Halal Express', html);
 };
 
+const sendBackInStockEmail = async (email, itemName) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const name = escapeHtml(itemName);
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">Back in Stock!</h2>
+      <p style="margin:0 0 20px;font-size:15px"><strong>${name}</strong> is back on the menu — you asked us to let you know.</p>
+      <div style="text-align:center;margin:0 0 8px">
+        <a href="${frontendUrl}/menu" style="display:inline-block;background:#c9a84c;color:#0f0f0f;font-weight:700;padding:12px 28px;border-radius:6px;text-decoration:none">Order Now</a>
+      </div>
+      <p style="margin:24px 0 0;font-size:12px;color:#6b7280">Get it before it sells out again.</p>
+    </div>`;
+  return sendMailHelper(email, `"${itemName}" is back in stock!`, html);
+};
+
 module.exports = {
   sendTableReservationConfirmation,
   sendOrderConfirmation,
@@ -493,4 +508,5 @@ module.exports = {
   sendAdminOTP,
   sendReviewAdminAlert,
   sendGiftCardEmail,
+  sendBackInStockEmail,
 };
