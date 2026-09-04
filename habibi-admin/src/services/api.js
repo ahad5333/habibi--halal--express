@@ -70,6 +70,12 @@ export const adminAPI = {
 
   orders:      ({ page, limit } = {}) =>
     req(`/api/admin/orders${page ? `?page=${page}&limit=${limit || 100}` : ''}`),
+  unifiedOrders: ({ channel, bucket, limit = 100, offset = 0 } = {}) => {
+    const qs = new URLSearchParams({ limit, offset });
+    if (channel) qs.set('channel', channel);
+    if (bucket)  qs.set('bucket', bucket);
+    return req(`/api/admin/orders/unified?${qs.toString()}`);
+  },
   updateOrder: (id, status, cancellation_reason) => req(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...(cancellation_reason ? { cancellation_reason } : {}) }) }),
   updatePaymentStatus: (id, payment_status) => req(`/api/admin/orders/${id}/payment-status`, { method: 'PATCH', body: JSON.stringify({ payment_status }) }),
 

@@ -30,6 +30,7 @@ import Dashboard from './pages/Dashboard';
 
 // Lazy-loaded — split into separate chunks
 const Orders           = lazy(() => import('./pages/Orders'));
+const AllOrders         = lazy(() => import('./pages/AllOrders'));
 const MenuBuilder      = lazy(() => import('./pages/MenuBuilder'));
 const BuildYourOwnIngredients = lazy(() => import('./pages/BuildYourOwnIngredients'));
 const Customers        = lazy(() => import('./pages/Customers'));
@@ -88,6 +89,7 @@ function AdminLayout() {
           <Routes>
             <Route path="/"          element={<Dashboard />} />
             <Route path="/orders"    element={<Orders />} />
+            <Route path="/all-orders" element={<AllOrders />} />
             <Route path="/menu"      element={<MenuBuilder />} />
             <Route path="/byo-ingredients" element={<BuildYourOwnIngredients />} />
             <Route path="/customers" element={<Customers />} />

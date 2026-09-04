@@ -1,0 +1,25 @@
+.allord-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.allord-stat-box { background: var(--color-surface-2); border-radius: 8px; padding: 10px 14px; text-align: center; }
+.allord-stat-label { font-size: 0.65rem; color: var(--color-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.allord-stat-num { font-size: 1.2rem; font-weight: 700; }
+
+.allord-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+.allord-filter-group { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+
+.allord-channel-dot {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.68rem; font-weight: 700; color: #fff;
+  padding: 0.2rem 0.55rem; border-radius: 20px;
+  background: var(--color-text-muted);
+}

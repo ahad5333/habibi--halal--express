@@ -7,13 +7,14 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2, Layers,
+  Bookmark, Share2, Users2, Layers, LayoutGrid,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
 
 const NAV = [
   { to: '/',           icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
+  { to: '/all-orders', icon: <LayoutGrid size={17} />,      label: 'All Orders' },
   { to: '/orders',     icon: <ShoppingBag size={17} />,     label: 'Orders',          badge: 'live' },
   { to: '/urgent',     icon: <AlertTriangle size={17} />,   label: 'Urgent Requests' },
   { to: '/liveboard',  icon: <Monitor size={17} />,         label: 'Live Board',      badge: 'live' },

@@ -9,6 +9,7 @@ const {
   getDashboardStats,
   getMerchantOrders,
   getAllOrders,
+  getUnifiedOrders,
   getAllMenus,
   updateOrderStatus,
   updatePaymentStatus,
@@ -87,6 +88,7 @@ router.get("/analytics/growth", getCustomerGrowth);
 
 // Global Orders
 router.get("/orders", getAllOrders);
+router.get("/orders/unified", getUnifiedOrders);
 router.post("/orders/:id/add-item", protect, admin, addItemToOrder);
 router.patch("/orders/:id/provider", updateOrderProvider);
 

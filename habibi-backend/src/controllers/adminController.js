@@ -112,6 +112,86 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+// Unified all-channels order view -- merges guest_orders (native website/app)
+// and marketplace_orders (UberEats/GrubHub/Caviar webhooks) into one shape.
+// Deliberately excludes partner_orders (B2B/wholesale) -- a different
+// business function with its own dedicated admin page, not a consumer
+// ordering channel comparable to the other two. DoorDash/Roadie are NOT a
+// third order source -- they're pure delivery-courier metadata for an
+// existing guest_orders row (doordash_deliveries/roadie_deliveries have no
+// items/customer/total of their own), so they're surfaced here as each
+// native row's "fulfillment" method instead.
+// status_bucket normalizes the two tables' different status vocabularies
+// (guest_orders: pending/accepted/preparing/cooking/out_for_delivery/
+// delivered/cancelled; marketplace_orders: new/accepted/preparing/ready/
+// completed/cancelled) into active/completed/cancelled, so "what needs
+// attention right now" can be filtered consistently across channels despite
+// the differing raw vocabularies.
+const UNIFIED_ORDERS_UNION = `
+  SELECT 'native' AS channel, id::text AS id, order_number AS order_ref,
+         customer_name, COALESCE(total, 0)::numeric AS total, order_status AS raw_status,
+         CASE WHEN order_status IN ('delivered','completed') THEN 'completed'
+              WHEN order_status = 'cancelled' THEN 'cancelled'
+              ELSE 'active' END AS status_bucket,
+         placed_at,
+         jsonb_array_length(CASE WHEN jsonb_typeof(items) = 'array' THEN items ELSE '[]'::jsonb END) AS item_count
+  FROM guest_orders
+  UNION ALL
+  SELECT platform AS channel, id::text AS id, platform_order_id AS order_ref,
+         customer_name, COALESCE(total, 0)::numeric AS total, status AS raw_status,
+         CASE WHEN status = 'completed' THEN 'completed'
+              WHEN status = 'cancelled' THEN 'cancelled'
+              ELSE 'active' END AS status_bucket,
+         placed_at,
+         jsonb_array_length(CASE WHEN jsonb_typeof(items) = 'array' THEN items ELSE '[]'::jsonb END) AS item_count
+  FROM marketplace_orders
+`;
+
+const getUnifiedOrders = async (req, res) => {
+  const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  const channel = req.query.channel || null; // 'native' | 'ubereats' | 'grubhub' | 'caviar'
+  const bucket  = req.query.bucket  || null; // 'active' | 'completed' | 'cancelled'
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM (${UNIFIED_ORDERS_UNION}) unified
+        WHERE ($1::text IS NULL OR channel = $1)
+          AND ($2::text IS NULL OR status_bucket = $2)
+        ORDER BY placed_at DESC
+        LIMIT $3 OFFSET $4`,
+      [channel, bucket, limit, offset]
+    );
+
+    // Fulfillment method for the native-channel rows on this page only --
+    // in-house is the default when no courier dispatch row exists.
+    const nativeRefs = result.rows.filter(r => r.channel === 'native').map(r => r.order_ref);
+    const courierMap = {};
+    if (nativeRefs.length) {
+      const courierRes = await pool.query(
+        `SELECT order_number, 'doordash' AS courier FROM doordash_deliveries WHERE order_number = ANY($1)
+         UNION ALL
+         SELECT order_number, 'roadie' AS courier FROM roadie_deliveries WHERE order_number = ANY($1)`,
+        [nativeRefs]
+      );
+      courierRes.rows.forEach(r => { courierMap[r.order_number] = r.courier; });
+    }
+    const orders = result.rows.map(r => ({
+      ...r,
+      fulfillment: r.channel === 'native' ? (courierMap[r.order_ref] || 'in-house') : null,
+    }));
+
+    const summaryRes = await pool.query(
+      `SELECT channel, status_bucket, COUNT(*)::int AS n FROM (${UNIFIED_ORDERS_UNION}) unified
+        GROUP BY channel, status_bucket`
+    );
+
+    res.json({ orders, summary: summaryRes.rows });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 // 3. Admin Menu Management
 const getAllMenus = async (req, res) => {
   try {
@@ -1470,6 +1550,7 @@ module.exports = {
   getDashboardStats,
   getMerchantOrders,
   getAllOrders,
+  getUnifiedOrders,
   getAllMenus,
   updateOrderStatus,
   updatePaymentStatus,
