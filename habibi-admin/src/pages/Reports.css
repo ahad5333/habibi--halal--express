@@ -35,3 +35,36 @@
 .rpt-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
 .rpt-bar { height: 8px; background: var(--color-primary); border-radius: 4px; min-width: 2px; max-width: 120px; }
 .rpt-bar-wrap span { font-size: 0.72rem; color: var(--color-text-muted); white-space: nowrap; }
+
+/* ── Trends & Forecast tab ── */
+.rpt-trends-section { margin-bottom: 2rem; }
+.rpt-trends-section:last-child { margin-bottom: 0; }
+.rpt-trends-subhdr {
+  font-size: 0.85rem; font-weight: 700; color: var(--color-text-main);
+  margin: 0 0 0.75rem;
+}
+
+.rpt-trending-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.rpt-trending-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.6rem 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius);
+}
+
+.rpt-heatmap-wrap { overflow-x: auto; }
+.rpt-heatmap { display: flex; flex-direction: column; gap: 2px; min-width: 640px; }
+.rpt-heatmap-row { display: flex; align-items: center; gap: 2px; }
+.rpt-heatmap-daylabel { width: 32px; flex-shrink: 0; font-size: 0.68rem; color: var(--color-text-muted); }
+.rpt-heatmap-cell {
+  flex: 1; height: 16px; border-radius: 2px; min-width: 8px;
+}
+
+.rpt-prep-dow-picker { display: flex; gap: 0.35rem; margin-bottom: 0.875rem; flex-wrap: wrap; }
+.rpt-prep-blocks {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.rpt-prep-block { border: 1px solid var(--color-border); border-radius: var(--radius); padding: 0.65rem 0.75rem; }
+.rpt-prep-block-hdr { font-size: 0.72rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.4rem; }
+.rpt-prep-block-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.rpt-prep-block-list li { font-size: 0.78rem; color: var(--color-text-main); display: flex; justify-content: space-between; gap: 0.5rem; }
+.rpt-prep-block-list li strong { color: var(--color-text-muted); white-space: nowrap; }

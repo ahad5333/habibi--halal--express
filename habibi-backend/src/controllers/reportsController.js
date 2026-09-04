@@ -204,3 +204,123 @@ exports.getCouponUsageReport = async (req, res) => {
     res.status(500).json(safeError(err));
   }
 };
+
+// Shared JSONB-items unnest guard -- same defensive pattern already used by
+// getRevenueByCategory above (a non-array items value, e.g. null, would
+// otherwise error jsonb_array_elements instead of just contributing zero rows).
+const ITEMS_UNNEST = `jsonb_array_elements(CASE WHEN jsonb_typeof(items) = 'array' THEN items ELSE '[]'::jsonb END) AS item`;
+const ITEM_QTY = `COALESCE((item->>'quantity')::numeric, (item->>'qty')::numeric, 1)`;
+
+// Trending items -- quantity sold this window vs. the equal-length window
+// immediately before it, so admins can see real week-over-week movement
+// instead of just a raw popularity count. pct_change is NULL (not 0 or a
+// bogus Infinity%) when there's no prior-period data to compare against --
+// the frontend renders that as "new" rather than a fabricated percentage.
+exports.getTrendingItems = async (req, res) => {
+  const days = Math.min(30, Math.max(1, parseInt(req.query.days) || 7));
+  try {
+    const result = await pool.query(
+      `WITH recent AS (
+         SELECT COALESCE(item->>'name','Unknown') AS name,
+                COALESCE(item->>'category','Uncategorised') AS category,
+                SUM(${ITEM_QTY}) AS qty
+         FROM guest_orders, ${ITEMS_UNNEST}
+         WHERE ${COMPLETED} AND placed_at >= NOW() - ($1 || ' days')::interval
+         GROUP BY 1, 2
+       ),
+       previous AS (
+         SELECT COALESCE(item->>'name','Unknown') AS name,
+                SUM(${ITEM_QTY}) AS qty
+         FROM guest_orders, ${ITEMS_UNNEST}
+         WHERE ${COMPLETED}
+           AND placed_at >= NOW() - ($1 || ' days')::interval * 2
+           AND placed_at <  NOW() - ($1 || ' days')::interval
+         GROUP BY 1
+       )
+       SELECT recent.name, recent.category,
+              recent.qty::numeric AS qty_recent,
+              COALESCE(previous.qty, 0)::numeric AS qty_previous,
+              CASE WHEN COALESCE(previous.qty, 0) = 0 THEN NULL
+                   ELSE ROUND(((recent.qty - previous.qty) / previous.qty::numeric) * 100, 1)
+              END AS pct_change
+       FROM recent LEFT JOIN previous ON previous.name = recent.name
+       ORDER BY recent.qty DESC
+       LIMIT 20`,
+      [String(days)]
+    );
+    res.json({ trending: result.rows, window_days: days });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// Peak hours -- order counts by day-of-week x hour-of-day (America/New_York,
+// matching every other report's TZ-correctness convention above) over a
+// rolling window. Sparse (dow, hour, count) rows; the frontend builds the
+// 7x24 grid and shades cells relative to the max count it receives.
+exports.getPeakHours = async (req, res) => {
+  const days = Math.min(180, Math.max(7, parseInt(req.query.days) || 90));
+  try {
+    const result = await pool.query(
+      `SELECT EXTRACT(DOW  FROM placed_at AT TIME ZONE 'America/New_York')::int AS dow,
+              EXTRACT(HOUR FROM placed_at AT TIME ZONE 'America/New_York')::int AS hour,
+              COUNT(*)::int AS order_count
+       FROM guest_orders
+       WHERE ${COMPLETED} AND placed_at >= NOW() - ($1 || ' days')::interval
+       GROUP BY 1, 2`,
+      [String(days)]
+    );
+    res.json({ peak_hours: result.rows, window_days: days });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// Prep-ahead forecast -- for a given day-of-week (defaults to today,
+// America/New_York), the average quantity of each item sold per 2-hour
+// block, per ACTUAL OCCURRENCE of that weekday in the lookback window --
+// not per occurrence the item happened to sell on. An item sold on only 3 of
+// the last 8 Fridays should show ~3/8 of its per-sale average, not the full
+// per-sale average, so `occurrences` is counted separately from `sales` and
+// used as the fixed denominator for every item. sample_occurrences is
+// returned alongside every row so the UI can caveat a low-data estimate
+// (e.g. a newly-opened location with only 2 Fridays of history) instead of
+// presenting it with false confidence.
+exports.getPrepForecast = async (req, res) => {
+  const weeks = Math.min(16, Math.max(2, parseInt(req.query.weeks) || 8));
+  let dow = parseInt(req.query.dow);
+  try {
+    if (isNaN(dow) || dow < 0 || dow > 6) {
+      const todayRes = await pool.query(`SELECT EXTRACT(DOW FROM NOW() AT TIME ZONE 'America/New_York')::int AS dow`);
+      dow = todayRes.rows[0].dow;
+    }
+    const result = await pool.query(
+      `WITH occurrences AS (
+         SELECT COUNT(DISTINCT DATE(placed_at AT TIME ZONE 'America/New_York')) AS n
+         FROM guest_orders
+         WHERE EXTRACT(DOW FROM placed_at AT TIME ZONE 'America/New_York') = $1
+           AND placed_at >= NOW() - ($2 || ' weeks')::interval
+       ),
+       sales AS (
+         SELECT COALESCE(item->>'name','Unknown') AS name,
+                COALESCE(item->>'category','Uncategorised') AS category,
+                (FLOOR(EXTRACT(HOUR FROM placed_at AT TIME ZONE 'America/New_York') / 2) * 2)::int AS hour_block,
+                SUM(${ITEM_QTY}) AS total_qty
+         FROM guest_orders, ${ITEMS_UNNEST}
+         WHERE ${COMPLETED}
+           AND EXTRACT(DOW FROM placed_at AT TIME ZONE 'America/New_York') = $1
+           AND placed_at >= NOW() - ($2 || ' weeks')::interval
+         GROUP BY 1, 2, 3
+       )
+       SELECT sales.name, sales.category, sales.hour_block,
+              ROUND(sales.total_qty / GREATEST(1, occurrences.n), 1) AS avg_qty,
+              occurrences.n AS sample_occurrences
+       FROM sales, occurrences
+       ORDER BY hour_block, avg_qty DESC`,
+      [dow, String(weeks)]
+    );
+    res.json({ forecast: result.rows, dow, weeks });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};

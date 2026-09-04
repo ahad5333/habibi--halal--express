@@ -1,11 +1,14 @@
-import React, { useState, useCallback } from 'react';
-import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle, TrendingUp } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Reports.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
 const MONTH_AGO = new Date(Date.now() - 30 * 864e5).toISOString().split('T')[0];
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const fmtHour = (h) => { const n = parseInt(h, 10); const hr = n % 12 === 0 ? 12 : n % 12; return `${hr}${n < 12 ? 'AM' : 'PM'}`; };
+const fmtHourBlock = (h) => `${fmtHour(h)}–${fmtHour((parseInt(h, 10) + 2) % 24)}`;
 
 function StatCard({ label, value, sub, icon: Icon, color }) {
   return (
@@ -38,6 +41,49 @@ export default function Reports() {
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(false);
   const [err, setErr]           = useState('');
+
+  // Trends & Forecast tab -- independent of the date-range-scoped run()
+  // above (trending/peak-hours/prep-forecast all use their own rolling
+  // windows, not start/end), so it's fetched lazily on first open instead
+  // of joining the Promise.allSettled batch.
+  const [trendsLoaded, setTrendsLoaded]   = useState(false);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [trendsErr, setTrendsErr]         = useState('');
+  const [trending, setTrending]           = useState([]);
+  const [peakHours, setPeakHours]         = useState([]);
+  const [prepDow, setPrepDow]             = useState(new Date().getDay()); // 0=Sun..6=Sat, matches Postgres EXTRACT(DOW)
+  const [prepForecast, setPrepForecast]   = useState([]);
+  const [prepLoading, setPrepLoading]     = useState(false);
+
+  const loadTrendsCore = useCallback(async () => {
+    setTrendsLoading(true); setTrendsErr('');
+    try {
+      const [t, p] = await Promise.all([adminAPI.reportTrending(), adminAPI.reportPeakHours()]);
+      setTrending(t.trending || []);
+      setPeakHours(p.peak_hours || []);
+      setTrendsLoaded(true);
+    } catch (e) { setTrendsErr(e.message); }
+    setTrendsLoading(false);
+  }, []);
+
+  const loadPrepForecast = useCallback(async (dow) => {
+    setPrepLoading(true);
+    try {
+      const f = await adminAPI.reportPrepForecast(`?dow=${dow}`);
+      setPrepForecast(f.forecast || []);
+    } catch (e) { setTrendsErr(e.message); }
+    setPrepLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === 'trends' && !trendsLoaded && !trendsLoading) {
+      loadTrendsCore();
+      loadPrepForecast(prepDow);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  const selectPrepDow = (d) => { setPrepDow(d); loadPrepForecast(d); };
 
   const run = useCallback(async (overrideStart, overrideEnd) => {
     setLoading(true); setErr('');
@@ -72,6 +118,7 @@ export default function Reports() {
     { id: 'by_location',label: 'By Location' },
     { id: 'tax',        label: 'Tax Report' },
     { id: 'coupons',    label: 'Coupon Usage' },
+    { id: 'trends',     label: 'Trends & Forecast' },
   ];
 
   return (
@@ -290,6 +337,135 @@ export default function Reports() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {tab === 'trends' && (
+              <div>
+                <div className="rpt-section-hdr">
+                  <span>Trends &amp; Forecast</span>
+                </div>
+
+                {trendsLoading && <p className="text-muted" style={{padding:'1rem'}}>Loading…</p>}
+                {trendsErr && <p className="text-error" style={{padding:'1rem'}}>{trendsErr}</p>}
+
+                {trendsLoaded && (
+                  <>
+                    {/* Trending items -- real sales data, week-over-week */}
+                    <div className="rpt-trends-section">
+                      <p className="rpt-trends-subhdr">Trending This Week</p>
+                      {trending.length === 0 ? (
+                        <p className="text-muted" style={{fontSize:'0.82rem'}}>Not enough recent order history to show trends yet.</p>
+                      ) : (
+                        <div className="rpt-trending-list">
+                          {trending.map(t => (
+                            <div key={t.name} className="rpt-trending-row">
+                              <div>
+                                <p style={{fontWeight:600}}>{t.name}</p>
+                                <p className="text-muted" style={{fontSize:'0.72rem'}}>{t.category}</p>
+                              </div>
+                              <div style={{textAlign:'right'}}>
+                                <p style={{fontWeight:700}}>{parseFloat(t.qty_recent).toFixed(0)} sold</p>
+                                {t.pct_change === null ? (
+                                  <span className="badge badge-muted">New</span>
+                                ) : t.pct_change > 0 ? (
+                                  <span className="badge badge-success">🔥 +{t.pct_change}%</span>
+                                ) : t.pct_change < 0 ? (
+                                  <span className="badge badge-error">📉 {t.pct_change}%</span>
+                                ) : (
+                                  <span className="badge badge-muted">— flat</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Peak hours heatmap -- day of week x hour of day, last 90 days */}
+                    <div className="rpt-trends-section">
+                      <p className="rpt-trends-subhdr">Peak Hours <span className="text-muted" style={{fontWeight:400,fontSize:'0.75rem'}}>(last 90 days, orders placed)</span></p>
+                      {peakHours.length === 0 ? (
+                        <p className="text-muted" style={{fontSize:'0.82rem'}}>Not enough order history yet.</p>
+                      ) : (() => {
+                        const peakMap = {};
+                        let maxCount = 1;
+                        peakHours.forEach(p => { peakMap[`${p.dow}-${p.hour}`] = p.order_count; if (p.order_count > maxCount) maxCount = p.order_count; });
+                        return (
+                          <div className="rpt-heatmap-wrap">
+                            <div className="rpt-heatmap">
+                              {DOW_LABELS.map((label, dow) => (
+                                <div className="rpt-heatmap-row" key={dow}>
+                                  <span className="rpt-heatmap-daylabel">{label}</span>
+                                  {Array.from({ length: 24 }).map((_, h) => {
+                                    const count = peakMap[`${dow}-${h}`] || 0;
+                                    const intensity = count / maxCount;
+                                    return (
+                                      <span
+                                        key={h}
+                                        className="rpt-heatmap-cell"
+                                        style={{ background: count ? `rgba(249,115,22,${Math.max(0.12, intensity)})` : 'rgba(255,255,255,0.04)' }}
+                                        title={`${label} ${fmtHour(h)} — ${count} order${count===1?'':'s'}`}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Prep-ahead forecast -- historical average per 2-hour block for a chosen day of week */}
+                    <div className="rpt-trends-section">
+                      <p className="rpt-trends-subhdr">Prep Forecast</p>
+                      <div className="rpt-prep-dow-picker">
+                        {DOW_LABELS.map((label, d) => (
+                          <button
+                            key={d}
+                            className={`btn btn-sm ${prepDow === d ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => selectPrepDow(d)}
+                            disabled={prepLoading}
+                          >{label}</button>
+                        ))}
+                      </div>
+                      {prepLoading ? (
+                        <p className="text-muted" style={{fontSize:'0.82rem'}}>Loading…</p>
+                      ) : prepForecast.length === 0 ? (
+                        <p className="text-muted" style={{fontSize:'0.82rem'}}>Not enough {DOW_LABELS[prepDow]} order history yet to estimate prep quantities.</p>
+                      ) : (() => {
+                        const sample = prepForecast[0]?.sample_occurrences || 0;
+                        const byBlock = {};
+                        prepForecast.forEach(row => {
+                          if (!byBlock[row.hour_block]) byBlock[row.hour_block] = [];
+                          if (byBlock[row.hour_block].length < 5) byBlock[row.hour_block].push(row);
+                        });
+                        return (
+                          <>
+                            {sample < 3 && (
+                              <p className="text-muted" style={{fontSize:'0.78rem'}}>
+                                ⚠ Based on only {sample} {DOW_LABELS[prepDow]}{sample === 1 ? '' : 's'} of history — treat this as a rough estimate.
+                              </p>
+                            )}
+                            <div className="rpt-prep-blocks">
+                              {Object.keys(byBlock).sort((a, b) => a - b).map(block => (
+                                <div key={block} className="rpt-prep-block">
+                                  <p className="rpt-prep-block-hdr">{fmtHourBlock(block)}</p>
+                                  <ul className="rpt-prep-block-list">
+                                    {byBlock[block].map(item => (
+                                      <li key={item.name}>{item.name} <strong>× {Math.ceil(item.avg_qty)}</strong></li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

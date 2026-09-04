@@ -231,6 +231,9 @@ export const adminAPI = {
   reportByLocation:   (qs = '') => req(`/api/admin/reports/by-location${qs}`),
   reportTax:          (qs = '') => req(`/api/admin/reports/tax${qs}`),
   reportCouponUsage:  (qs = '') => req(`/api/admin/reports/coupon-usage${qs}`),
+  reportTrending:     (qs = '') => req(`/api/admin/reports/trending${qs}`),
+  reportPeakHours:    (qs = '') => req(`/api/admin/reports/peak-hours${qs}`),
+  reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 
   // Platform Integrations (Milestone 2)
   getPlatformSettings:    () => req('/api/admin/integrations'),
