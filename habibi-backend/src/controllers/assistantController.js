@@ -137,14 +137,17 @@ function matchMenuItems(message, candidates) {
 // turn) — used for "remove the coke", never against the full menu.
 function matchCartItem(message, cart) {
   const norm = normalize(message);
+  let best = null;
+  let bestScore = 0;
   for (const c of cart || []) {
     const name = normalize(c.name || '');
     if (!name) continue;
     if (norm.includes(name) || name.includes(norm)) return c;
     const words = name.split(' ').filter(w => w.length > 2);
-    if (words.length && words.every(w => norm.includes(w))) return c;
+    const score = words.filter(w => norm.includes(w)).length;
+    if (score > 0 && score > bestScore) { bestScore = score; best = c; }
   }
-  return null;
+  return best;
 }
 
 function toItemPayload(m) {
