@@ -41,6 +41,8 @@ const {
   adjustLoyaltyPoints,
   getLoyaltyConfig,
   updateLoyaltyConfig,
+  getLoyaltyTiers,
+  updateLoyaltyTiers,
 } = require("../controllers/adminController");
 const { changeAdminPassword } = require('../controllers/authController');
 const { getRevenueAnalytics, getCustomerGrowth } = require("../controllers/analyticsController");
@@ -425,6 +427,8 @@ router.get("/loyalty/customers",         getLoyaltyCustomers);
 router.post("/loyalty/adjust",           adjustLoyaltyPoints);
 router.get("/loyalty/config",            getLoyaltyConfig);
 router.put("/loyalty/config",            updateLoyaltyConfig);
+router.get("/loyalty/tiers",             getLoyaltyTiers);
+router.put("/loyalty/tiers",             updateLoyaltyTiers);
 
 // Business Hours
 const { getBusinessHours, saveBusinessHours } = require('../controllers/businessHoursController');

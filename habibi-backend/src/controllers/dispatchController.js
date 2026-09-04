@@ -841,7 +841,7 @@ const calculateDeliveryFee = async (req, res) => {
     // genuinely waives the fee instead of just implying it would.
     let freeDeliveryApplied = false;
     if (fee !== null && parseFloat(subtotal) > 0) {
-      const threshold = await getFreeDeliveryThreshold();
+      const threshold = await getFreeDeliveryThreshold(req.user?.id);
       if (parseFloat(subtotal) >= threshold) {
         fee = 0;
         freeDeliveryApplied = true;

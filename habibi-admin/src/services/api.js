@@ -356,4 +356,6 @@ export const loyaltyAPI = {
   adjustPoints:  (userId, points, reason = '')   => req('/api/admin/loyalty/adjust', { method: 'POST', body: JSON.stringify({ user_id: userId, points, reason }) }),
   getConfig:     ()                              => req('/api/admin/loyalty/config'),
   updateConfig:  (earn_rate, redeem_rate)        => req('/api/admin/loyalty/config', { method: 'PUT', body: JSON.stringify({ earn_rate, redeem_rate }) }),
+  getTiers:      ()                              => req('/api/admin/loyalty/tiers'),
+  updateTiers:   (tiers)                          => req('/api/admin/loyalty/tiers', { method: 'PUT', body: JSON.stringify({ tiers }) }),
 };

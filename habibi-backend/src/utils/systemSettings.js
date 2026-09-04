@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { getUserTier } = require('./loyaltyTiers');
 
 // system_settings.id=1 is the single row of DB-overridable checkout knobs.
 // A NULL column means "not overridden yet" -- fall back to the env var, same
@@ -27,10 +28,21 @@ async function getServiceFeeRate() {
   return parseFloat(process.env.SERVICE_FEE_RATE) || 0.04273;
 }
 
-async function getFreeDeliveryThreshold() {
+async function getFreeDeliveryThreshold(userId) {
   const row = await getSystemSettingsRow();
-  if (row.free_delivery_threshold != null) return parseFloat(row.free_delivery_threshold);
-  return parseFloat(process.env.FREE_DELIVERY_THRESHOLD) || 50;
+  const globalThreshold = row.free_delivery_threshold != null
+    ? parseFloat(row.free_delivery_threshold)
+    : (parseFloat(process.env.FREE_DELIVERY_THRESHOLD) || 50);
+
+  if (!userId) return globalThreshold;
+
+  // A tier's free_delivery_threshold is a perk override -- NULL means "no
+  // override, use the global threshold"; 0 means "always free" for that
+  // tier. Whichever is lower wins, so a tier perk can only ever help a
+  // customer, never require MORE spend than the global default would.
+  const tier = await getUserTier(userId).catch(() => null);
+  if (!tier || tier.free_delivery_threshold == null) return globalThreshold;
+  return Math.min(globalThreshold, parseFloat(tier.free_delivery_threshold));
 }
 
 module.exports = { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold };

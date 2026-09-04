@@ -3,6 +3,8 @@ const pool   = require("../config/db");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { revokeToken } = require('../middleware/authMiddleware');
+const { getTiers, resolveTier } = require('../utils/loyaltyTiers');
+const { getFreeDeliveryThreshold } = require('../utils/systemSettings');
 
 
 // ─── GET /api/users/me ───────────────────────────────────────────────────────
@@ -366,24 +368,28 @@ const registerDeviceToken = async (req, res) => {
 const getLoyalty = async (req, res) => {
   try {
     const userRes = await pool.query(
-      'SELECT loyalty_points FROM users WHERE id=$1',
+      'SELECT email, loyalty_points, lifetime_loyalty_points FROM users WHERE id=$1',
       [req.user.id]
     );
     const pts = userRes.rows[0]?.loyalty_points || 0;
+    const lifetimePts = userRes.rows[0]?.lifetime_loyalty_points || 0;
+    const email = userRes.rows[0]?.email;
 
-    // Tier thresholds
-    const tiers = [
-      { name: 'Bronze',   min: 0,    max: 999,  next: 1000, color: '#CD7F32', multiplier: 1.0 },
-      { name: 'Silver',   min: 1000, max: 2499, next: 2500, color: '#A8A9AD', multiplier: 1.25 },
-      { name: 'Gold',     min: 2500, max: 4999, next: 5000, color: '#F2C94C', multiplier: 1.5 },
-      { name: 'Platinum', min: 5000, max: Infinity, next: null, color: '#B9F2FF', multiplier: 2.0 },
-    ];
-    const tier = tiers.find(t => pts >= t.min && pts <= t.max) || tiers[0];
-    const tierIdx = tiers.findIndex(t => t.name === tier.name);
-    const nextTierName = tierIdx < tiers.length - 1 ? tiers[tierIdx + 1].name : null;
+    // Tier is now a real, admin-editable table (loyalty_tiers) instead of a
+    // hardcoded ladder duplicated across this file and the mobile app --
+    // and is based on lifetime points EARNED, not the spendable balance, so
+    // redeeming points down to 0 no longer demotes a loyal customer.
+    const [tiers, cfgRes, effectiveFreeDeliveryThreshold] = await Promise.all([
+      getTiers(),
+      pool.query(`SELECT earn_rate FROM loyalty_config WHERE id = 1`),
+      getFreeDeliveryThreshold(req.user.id),
+    ]);
+    const earnRate = parseFloat(cfgRes.rows[0]?.earn_rate) || 1;
+    const tier = resolveTier(lifetimePts, tiers);
+    const tierIdx = tiers.findIndex(t => t.id === tier?.id);
+    const nextTier = tierIdx >= 0 && tierIdx < tiers.length - 1 ? tiers[tierIdx + 1] : null;
 
     // Recent orders that earned points (delivered orders)
-    const email = (await pool.query('SELECT email FROM users WHERE id=$1', [req.user.id])).rows[0]?.email;
     let history = [];
     if (email) {
       const ordRes = await pool.query(
@@ -394,10 +400,15 @@ const getLoyalty = async (req, res) => {
           LIMIT 10`,
         [email]
       );
+      // Estimate only (the real award applies whatever tier the order was
+      // delivered under, and could differ from the customer's tier today) --
+      // now at least uses the real earn_rate * current tier multiplier
+      // instead of a flat, unrelated 1 pt/$1 guess.
+      const multiplier = tier ? parseFloat(tier.earn_multiplier) : 1;
       history = ordRes.rows.map(o => ({
         order_number: o.order_number,
         date: o.placed_at,
-        points_earned: o.order_status === 'delivered' ? Math.floor(parseFloat(o.total) || 0) : 0,
+        points_earned: o.order_status === 'delivered' ? Math.floor((parseFloat(o.total) || 0) * earnRate * multiplier) : 0,
         status: o.order_status,
         total: o.total,
       }));
@@ -405,13 +416,18 @@ const getLoyalty = async (req, res) => {
 
     res.json({
       points: pts,
-      tier: tier.name,
-      tier_color: tier.color,
-      tier_multiplier: tier.multiplier,
-      next_tier: tier.next,
-      next_tier_name: nextTierName,
-      next_tier_pts_needed: tier.next ? Math.max(0, tier.next - pts) : 0,
-      progress_pct: tier.next ? Math.min(100, Math.round(((pts - tier.min) / (tier.next - tier.min)) * 100)) : 100,
+      lifetime_points: lifetimePts,
+      tier: tier?.name || null,
+      tier_color: tier?.color || null,
+      tier_multiplier: tier ? parseFloat(tier.earn_multiplier) : 1,
+      tier_discount_pct: tier ? parseFloat(tier.discount_pct) : 0,
+      free_delivery_threshold: effectiveFreeDeliveryThreshold,
+      next_tier: nextTier ? nextTier.min_points : null,
+      next_tier_name: nextTier ? nextTier.name : null,
+      next_tier_pts_needed: nextTier ? Math.max(0, nextTier.min_points - lifetimePts) : 0,
+      progress_pct: nextTier
+        ? Math.min(100, Math.round(((lifetimePts - tier.min_points) / (nextTier.min_points - tier.min_points)) * 100))
+        : 100,
       history,
     });
   } catch (err) {

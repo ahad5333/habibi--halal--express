@@ -6,6 +6,7 @@ const { sendOrderUpdate } = require("../services/smsService");
 const emailService = require("../services/emailService");
 const fcmService = require("../services/fcmService");
 const { logAudit } = require('./auditController');
+const { getTiers, resolveTier } = require('../utils/loyaltyTiers');
 
 // 1. Dashboard Analytics
 const getDashboardStats = async (req, res) => {
@@ -278,17 +279,31 @@ const updateOrderStatus = async (req, res) => {
     if (normalizedStatus === 'delivered' && row.previous_status !== 'delivered' && customer_email && row.total) {
       // Previously hardcoded to 1 pt per $1 regardless of the Loyalty Program
       // admin page's "Configure Rates" setting (earn_rate) — that panel had
-      // zero real effect on what customers actually earned.
-      pool.query(`SELECT earn_rate FROM loyalty_config WHERE id = 1`).then(cfgRes => {
+      // zero real effect on what customers actually earned. Now also applies
+      // the customer's real VIP tier earn_multiplier (previously decorative
+      // — returned in API responses but never read by this award path) and
+      // tracks lifetime_loyalty_points (never decremented by redemption) so
+      // tier standing survives a customer spending their points down to 0.
+      (async () => {
+        const userRes = await pool.query('SELECT id, lifetime_loyalty_points FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [customer_email]);
+        if (!userRes.rows[0]) return;
+        const { id: userId, lifetime_loyalty_points: lifetimePts } = userRes.rows[0];
+
+        const [cfgRes, tiers] = await Promise.all([
+          pool.query(`SELECT earn_rate FROM loyalty_config WHERE id = 1`),
+          getTiers(),
+        ]);
         const earnRate = parseFloat(cfgRes.rows[0]?.earn_rate) || 1;
-        const pts = Math.floor((parseFloat(row.total) || 0) * earnRate);
+        const tier = resolveTier(lifetimePts || 0, tiers);
+        const multiplier = tier ? parseFloat(tier.earn_multiplier) : 1;
+        const pts = Math.floor((parseFloat(row.total) || 0) * earnRate * multiplier);
         if (pts > 0) {
-          pool.query(
-            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
-            [pts, customer_email]
-          ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
+          await pool.query(
+            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1, lifetime_loyalty_points = COALESCE(lifetime_loyalty_points, 0) + $1 WHERE id = $2`,
+            [pts, userId]
+          );
         }
-      }).catch(err => console.error('[Loyalty] Config lookup failed:', err.message));
+      })().catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
 
       pool.query(
         `SELECT id FROM guest_orders WHERE customer_email = $1 AND order_status = 'delivered'`,
@@ -309,8 +324,9 @@ const updateOrderStatus = async (req, res) => {
           `UPDATE referrals SET status = 'completed', points_awarded = $1, completed_at = NOW() WHERE id = $2`,
           [REFERRAL_BONUS, refId]
         );
+        // Flat bonus, not tier-scaled (kept simple — see plan notes).
         await pool.query(
-          `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE id = $2`,
+          `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1, lifetime_loyalty_points = COALESCE(lifetime_loyalty_points, 0) + $1 WHERE id = $2`,
           [REFERRAL_BONUS, referrer_id]
         );
         console.log(`[Referral] Awarded ${REFERRAL_BONUS} pts to user ${referrer_id} for referring user ${refereeId}`);
@@ -1192,6 +1208,47 @@ const updateLoyaltyConfig = async (req, res) => {
   } catch (err) { res.status(500).json(safeError(err)); }
 };
 
+const getLoyaltyTiers = async (req, res) => {
+  try {
+    const tiers = await getTiers();
+    res.json(tiers);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
+const updateLoyaltyTiers = async (req, res) => {
+  const { tiers } = req.body;
+  if (!Array.isArray(tiers) || !tiers.length) {
+    return res.status(400).json({ message: 'tiers array is required' });
+  }
+  for (const t of tiers) {
+    const minPts   = parseInt(t.min_points, 10);
+    const mult     = parseFloat(t.earn_multiplier);
+    const discount = parseFloat(t.discount_pct);
+    const freeDel  = t.free_delivery_threshold === '' || t.free_delivery_threshold == null
+      ? null : parseFloat(t.free_delivery_threshold);
+    if (!t.id || !t.name || !t.color || !(minPts >= 0) || !(mult > 0) || !(discount >= 0 && discount <= 100)
+        || (freeDel !== null && !(freeDel >= 0))) {
+      return res.status(400).json({ message: `Invalid values for tier "${t.name || t.id}".` });
+    }
+  }
+  try {
+    for (const t of tiers) {
+      const freeDel = t.free_delivery_threshold === '' || t.free_delivery_threshold == null
+        ? null : parseFloat(t.free_delivery_threshold);
+      await pool.query(
+        `UPDATE loyalty_tiers
+            SET name = $1, min_points = $2, color = $3, earn_multiplier = $4,
+                discount_pct = $5, free_delivery_threshold = $6, updated_at = NOW()
+          WHERE id = $7`,
+        [t.name.trim(), parseInt(t.min_points, 10), t.color, parseFloat(t.earn_multiplier),
+         parseFloat(t.discount_pct), freeDel, t.id]
+      );
+    }
+    const updated = await getTiers();
+    res.json(updated);
+  } catch (err) { res.status(500).json(safeError(err)); }
+};
+
 const addItemToOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1332,4 +1389,6 @@ module.exports = {
   adjustLoyaltyPoints,
   getLoyaltyConfig,
   updateLoyaltyConfig,
+  getLoyaltyTiers,
+  updateLoyaltyTiers,
 };

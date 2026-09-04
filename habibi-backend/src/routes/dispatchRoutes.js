@@ -142,7 +142,9 @@ function driverOrAdmin(req, res, next) {
 }
 
 // ── Public routes ──────────────────────────────────────────────────
-router.post ('/calculate-fee',            publicLimiter, calculateDeliveryFee);
+// optionalAuth so a logged-in VIP tier's free-delivery threshold override is
+// reflected in the quote too — still fully usable as a guest.
+router.post ('/calculate-fee',            publicLimiter, protect.optionalAuth, calculateDeliveryFee);
 router.get  ('/order/:order_number',      getAssignmentForOrder);
 router.patch('/order/:order_number/rate', publicLimiter, rateDelivery);
 

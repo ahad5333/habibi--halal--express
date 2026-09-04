@@ -17,18 +17,23 @@ export default function LoyaltyProgram() {
   const [config,    setConfig]    = useState({ earn_rate: 10, redeem_rate: 100 });
   const [cfgSaving, setCfgSaving] = useState(false);
   const [cfgMsg,    setCfgMsg]    = useState('');
+  const [tiers,       setTiers]       = useState([]);
+  const [tiersSaving, setTiersSaving] = useState(false);
+  const [tiersMsg,    setTiersMsg]    = useState('');
 
   const load = useCallback(async (q = search) => {
     setLoading(true);
     try {
-      const [s, c, cfg] = await Promise.all([
+      const [s, c, cfg, t] = await Promise.all([
         loyaltyAPI.getStats(),
         loyaltyAPI.getCustomers(q),
         loyaltyAPI.getConfig(),
+        loyaltyAPI.getTiers(),
       ]);
       setStats(s);
       setCustomers(c);
       setConfig({ earn_rate: cfg.earn_rate, redeem_rate: cfg.redeem_rate });
+      setTiers(t);
     } catch (_) {}
     setLoading(false);
   }, []);
@@ -75,6 +80,21 @@ export default function LoyaltyProgram() {
       load('');
     } catch (e) { setCfgMsg(e.message); }
     setCfgSaving(false);
+  };
+
+  const setTierField = (id, field, value) => {
+    setTiers(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const saveTiers = async () => {
+    setTiersSaving(true);
+    setTiersMsg('');
+    try {
+      const updated = await loyaltyAPI.updateTiers(tiers);
+      setTiers(updated);
+      setTiersMsg('Saved!');
+    } catch (e) { setTiersMsg(e.message); }
+    setTiersSaving(false);
   };
 
   return (
@@ -153,6 +173,87 @@ export default function LoyaltyProgram() {
           </div>
         </div>
       )}
+
+      {/* ── VIP Tiers ── */}
+      <div className="card">
+        <div className="lp-table-header">
+          <div>
+            <p className="section-title">VIP Tiers</p>
+            <p className="lp-sub" style={{ margin: '0.2rem 0 0' }}>
+              Real, enforced perks — customers automatically get their tier's discount on every order,
+              earn points at their tier's multiplier, and get their tier's free-delivery threshold (if lower than the site default).
+            </p>
+          </div>
+        </div>
+        <div className="lp-table-wrap">
+          <table className="lp-table">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Min. Lifetime Points</th>
+                <th>Color</th>
+                <th>Earn Multiplier</th>
+                <th>Order Discount %</th>
+                <th>Free Delivery Over $</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tiers.map(t => (
+                <tr key={t.id}>
+                  <td className="lp-name">{t.name}</td>
+                  <td>
+                    <input
+                      type="number" min="0" className="input" style={{ width: '7rem' }}
+                      value={t.min_points}
+                      onChange={e => setTierField(t.id, 'min_points', e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="color" style={{ width: '2.5rem', height: '2rem', padding: 0, border: 'none', background: 'none' }}
+                      value={t.color}
+                      onChange={e => setTierField(t.id, 'color', e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number" min="1" step="0.05" className="input" style={{ width: '6rem' }}
+                      value={t.earn_multiplier}
+                      onChange={e => setTierField(t.id, 'earn_multiplier', e.target.value)}
+                    />
+                    <span className="lp-muted" style={{ marginLeft: '0.3rem' }}>×</span>
+                  </td>
+                  <td>
+                    <input
+                      type="number" min="0" max="100" step="0.5" className="input" style={{ width: '6rem' }}
+                      value={t.discount_pct}
+                      onChange={e => setTierField(t.id, 'discount_pct', e.target.value)}
+                    />
+                    <span className="lp-muted" style={{ marginLeft: '0.3rem' }}>%</span>
+                  </td>
+                  <td>
+                    <input
+                      type="number" min="0" step="1" className="input" style={{ width: '6.5rem' }}
+                      placeholder="site default"
+                      value={t.free_delivery_threshold ?? ''}
+                      onChange={e => setTierField(t.id, 'free_delivery_threshold', e.target.value)}
+                    />
+                    <span className="lp-muted" style={{ marginLeft: '0.3rem' }}>
+                      {t.free_delivery_threshold === 0 || t.free_delivery_threshold === '0' ? '(always free)' : ''}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="lp-config-row" style={{ marginTop: '1rem' }}>
+          <button className="btn btn-primary" onClick={saveTiers} disabled={tiersSaving}>
+            <Save size={14} /> {tiersSaving ? 'Saving…' : 'Save Tiers'}
+          </button>
+          {tiersMsg && <p className={`lp-cfg-msg ${tiersMsg === 'Saved!' ? 'ok' : 'err'}`}>{tiersMsg}</p>}
+        </div>
+      </div>
 
       {/* ── Customer Table ── */}
       <div className="card">

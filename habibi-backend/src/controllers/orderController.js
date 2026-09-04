@@ -12,6 +12,7 @@ const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const { computeCouponDiscount } = require("./couponController");
 const { computeGiftCardRedemption } = require("./giftCardController");
+const { getUserTier } = require("../utils/loyaltyTiers");
 const emailService = require("../services/emailService");
 const smsService = require("../services/smsService");
 const fcmService = require("../services/fcmService");
@@ -325,7 +326,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           // already applied — recomputed server-side so a tampered client
           // can't claim $0 without actually qualifying, and a real qualifying
           // order isn't rejected for reporting the (correctly) waived fee.
-          const freeDeliveryThreshold = await getFreeDeliveryThreshold();
+          const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
           if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
             serverDelFee = 0;
           }
@@ -596,6 +597,12 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         const redeemRate = parseFloat(cfgRes.rows[0]?.redeem_rate) || 100;
         const maxLoyaltyDiscount = loyalty_points_redeemed / redeemRate;
 
+        // VIP tier discount -- a real, admin-configured per-tier % off every
+        // order, resolved server-side from the customer's own lifetime
+        // points (never trusted from the client). Guests/no account = 0.
+        const tier = await getUserTier(req.user?.id);
+        const tierAllowance = tier ? clientSubtotal * (parseFloat(tier.discount_pct) / 100) : 0;
+
         let couponAllowance = 0;
         if (coupon_code && !bdayMatch) {
           try {
@@ -615,14 +622,16 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           }
         } else if (bdayMatch) {
           // No admin-configured birthday-reward amount exists anywhere in
-          // the system (checked) -- this is a conservative placeholder cap,
-          // not a real business-decided value. The birthday itself is
-          // already verified for real above; this only bounds how much can
-          // be claimed once verified.
-          couponAllowance = 15;
+          // the system (checked) -- $15 is a conservative placeholder floor,
+          // not a real business-decided value. Doubled for VIP tiers (using
+          // the same per-tier discount% above) so a birthday reward never
+          // scales down for a loyal customer, only up. The birthday itself
+          // is already verified for real above; this only bounds how much
+          // can be claimed once verified.
+          couponAllowance = Math.max(15, tierAllowance * 2);
         }
 
-        if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
+        if (clientDiscount > maxLoyaltyDiscount + couponAllowance + tierAllowance + 0.02) {
           await client.query('ROLLBACK');
           return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
         }
@@ -1090,7 +1099,7 @@ const createPendingCheckout = async (req, res) => {
           if (serverDelFee === null) {
             return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
           }
-          const freeDeliveryThreshold = await getFreeDeliveryThreshold();
+          const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
           if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
             serverDelFee = 0;
           }
@@ -1158,6 +1167,10 @@ const createPendingCheckout = async (req, res) => {
       const redeemRate = parseFloat(cfgRes.rows[0]?.redeem_rate) || 100;
       const maxLoyaltyDiscount = loyalty_points_redeemed / redeemRate;
 
+      // VIP tier discount -- see the identical block/comment in createGuestOrder.
+      const tier = await getUserTier(req.user?.id);
+      const tierAllowance = tier ? clientSubtotal * (parseFloat(tier.discount_pct) / 100) : 0;
+
       let couponAllowance = 0;
       if (coupon_code && !bdayMatch) {
         try {
@@ -1171,10 +1184,10 @@ const createPendingCheckout = async (req, res) => {
         }
       } else if (bdayMatch) {
         // Placeholder cap -- see the identical comment in createGuestOrder.
-        couponAllowance = 15;
+        couponAllowance = Math.max(15, tierAllowance * 2);
       }
 
-      if (clientDiscount > maxLoyaltyDiscount + couponAllowance + 0.02) {
+      if (clientDiscount > maxLoyaltyDiscount + couponAllowance + tierAllowance + 0.02) {
         return res.status(400).json({ message: 'Discount amount is incorrect. Please refresh and retry.' });
       }
     }

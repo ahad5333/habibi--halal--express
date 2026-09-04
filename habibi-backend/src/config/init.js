@@ -1066,6 +1066,51 @@ const createTables = async () => {
     `);
     await client.query(`INSERT INTO loyalty_config (id, earn_rate, redeem_rate) VALUES (1, 10, 100) ON CONFLICT (id) DO NOTHING`);
 
+    // ── Loyalty Tiers (VIP program) ───────────────────────────────
+    // lifetime_loyalty_points tracks all-time points EARNED (order-delivered
+    // awards + referral bonuses only -- never touched by redemption or by
+    // admin manual adjustments, which are corrections/comps, not organic
+    // progress). Separate from the spendable loyalty_points balance so that
+    // redeeming points down to 0 no longer demotes a loyal customer back to
+    // Bronze -- previously the tier badge was computed from the spendable
+    // balance itself. Backfilled to each user's current balance below so no
+    // one's real progress resets on this migration.
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lifetime_loyalty_points INTEGER NOT NULL DEFAULT 0`);
+    await client.query(`UPDATE users SET lifetime_loyalty_points = loyalty_points WHERE lifetime_loyalty_points = 0 AND loyalty_points > 0`);
+
+    // A Bronze/Silver/Gold/Platinum tier ladder already existed as hardcoded
+    // JS constants (userController.js, and independently in habibi-mobile,
+    // already drifted from each other) purely for display -- the multiplier
+    // was never read by the real points-award code and no discount/free-
+    // delivery perk was ever enforced. This table makes the whole thing real
+    // and admin-editable; seed values match the previous hardcoded thresholds/
+    // colors plus the discount%/free-delivery perks the mobile app already
+    // (falsely) promised customers.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS loyalty_tiers (
+        id                       SERIAL PRIMARY KEY,
+        name                     VARCHAR(40) NOT NULL,
+        min_points               INTEGER NOT NULL,
+        color                    VARCHAR(20) NOT NULL,
+        earn_multiplier          NUMERIC(4,2) NOT NULL DEFAULT 1.0,
+        discount_pct             NUMERIC(5,2) NOT NULL DEFAULT 0,
+        free_delivery_threshold  NUMERIC(10,2),
+        sort_order               INTEGER NOT NULL DEFAULT 0,
+        created_at               TIMESTAMPTZ DEFAULT NOW(),
+        updated_at               TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    const tierSeedCount = await client.query(`SELECT COUNT(*)::int AS n FROM loyalty_tiers`);
+    if (tierSeedCount.rows[0].n === 0) {
+      await client.query(`
+        INSERT INTO loyalty_tiers (name, min_points, color, earn_multiplier, discount_pct, free_delivery_threshold, sort_order) VALUES
+          ('Bronze',   0,    '#CD7F32', 1.0, 0,  NULL, 0),
+          ('Silver',   1000, '#A8A9AD', 1.25, 5, NULL, 1),
+          ('Gold',     2500, '#F2C94C', 1.5, 10, 20,   2),
+          ('Platinum', 5000, '#B9F2FF', 2.0, 15, 0,    3)
+      `);
+    }
+
     // ── System Settings (tax rate / service fee rate) ────────────
     // NULL means "not overridden — fall back to the TAX_RATE/SERVICE_FEE_RATE
     // env vars", so a fresh deploy behaves identically until an admin
