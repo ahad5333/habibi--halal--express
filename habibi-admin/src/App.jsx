@@ -34,6 +34,7 @@ const AllOrders         = lazy(() => import('./pages/AllOrders'));
 const MenuBuilder      = lazy(() => import('./pages/MenuBuilder'));
 const BuildYourOwnIngredients = lazy(() => import('./pages/BuildYourOwnIngredients'));
 const Customers        = lazy(() => import('./pages/Customers'));
+const Subscriptions    = lazy(() => import('./pages/Subscriptions'));
 const Coupons          = lazy(() => import('./pages/Coupons'));
 const GiftCards        = lazy(() => import('./pages/GiftCards'));
 const Analytics        = lazy(() => import('./pages/Analytics'));
@@ -93,6 +94,7 @@ function AdminLayout() {
             <Route path="/menu"      element={<MenuBuilder />} />
             <Route path="/byo-ingredients" element={<BuildYourOwnIngredients />} />
             <Route path="/customers" element={<Customers />} />
+            <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/coupons"   element={<Coupons />} />
             <Route path="/gift-cards" element={<GiftCards />} />
             <Route path="/catering"         element={<CateringAdmin />} />

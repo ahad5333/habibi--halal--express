@@ -243,6 +243,11 @@ export const adminAPI = {
   reportPeakHours:    (qs = '') => req(`/api/admin/reports/peak-hours${qs}`),
   reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 
+  // Subscriptions ("Habibi Weekly")
+  subscriptions:       (status = '') => req(`/api/admin/subscriptions${status ? `?status=${status}` : ''}`),
+  pauseSubscription:   (id) => req(`/api/admin/subscriptions/${id}/pause`, { method: 'POST' }),
+  cancelSubscription:  (id) => req(`/api/admin/subscriptions/${id}/cancel`, { method: 'POST' }),
+
   // Platform Integrations (Milestone 2)
   getPlatformSettings:    () => req('/api/admin/integrations'),
   updatePlatformSettings: (platform, body) => req(`/api/admin/integrations/${platform}`, { method: 'PATCH', body: JSON.stringify(body) }),

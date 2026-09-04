@@ -7,6 +7,7 @@ const pool = require("./src/config/db");
 const createTables = require("./src/config/init");
 const { Server } = require("socket.io");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
+const { startScheduledSubscriptions } = require("./src/services/scheduledSubscriptions");
 const cron = require("node-cron");
 const { cleanupAbandonedPendingCheckouts } = require("./src/controllers/orderController");
 
@@ -43,6 +44,7 @@ pool.connect()
     server.listen(PORT, "127.0.0.1", () => {
       console.log(`Server running on port ${PORT} (localhost only)`);
       startScheduledDispatch(io);
+      startScheduledSubscriptions(io);
       cron.schedule("0 * * * *", cleanupAbandonedPendingCheckouts);
     });
   })

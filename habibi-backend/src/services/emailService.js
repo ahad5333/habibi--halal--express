@@ -489,6 +489,39 @@ const sendBackInStockEmail = async (email, itemName) => {
   return sendMailHelper(email, `"${itemName}" is back in stock!`, html);
 };
 
+const sendSubscriptionSkipped = async (email, reason) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">This Week's Order Was Skipped</h2>
+      <p style="margin:0 0 12px;font-size:15px">We didn't charge your card or place your weekly order this cycle: ${escapeHtml(reason)}.</p>
+      <p style="margin:0;font-size:13px;color:#9ca3af">Your subscription is still active — it'll resume automatically next cycle. No action needed.</p>
+    </div>`;
+  return sendMailHelper(email, "This week's Habibi Weekly order was skipped", html);
+};
+
+const sendSubscriptionChargeFailed = async (email, reason) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">Your Weekly Order Payment Failed</h2>
+      <p style="margin:0 0 12px;font-size:15px">We couldn't charge your saved card this cycle: ${escapeHtml(reason)}.</p>
+      <p style="margin:0;font-size:13px;color:#9ca3af">We'll try again next cycle. Update your payment method in your account if this keeps happening.</p>
+    </div>`;
+  return sendMailHelper(email, 'Your Habibi Weekly payment failed', html);
+};
+
+const sendSubscriptionPaused = async (email, reason) => {
+  if (!email) return { success: false, error: 'No email provided' };
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#f0ede8;border-radius:8px">
+      <h2 style="color:#c9a84c;margin:0 0 16px">Your Weekly Order Has Been Paused</h2>
+      <p style="margin:0 0 12px;font-size:15px">We've paused your Habibi Weekly subscription: ${escapeHtml(reason)}.</p>
+      <p style="margin:0;font-size:13px;color:#9ca3af">Update or resume it any time from your account, or set up a new one.</p>
+    </div>`;
+  return sendMailHelper(email, 'Your Habibi Weekly subscription has been paused', html);
+};
+
 module.exports = {
   sendTableReservationConfirmation,
   sendOrderConfirmation,
@@ -509,4 +542,7 @@ module.exports = {
   sendReviewAdminAlert,
   sendGiftCardEmail,
   sendBackInStockEmail,
+  sendSubscriptionSkipped,
+  sendSubscriptionChargeFailed,
+  sendSubscriptionPaused,
 };

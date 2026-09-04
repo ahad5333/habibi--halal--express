@@ -1,0 +1,7 @@
+.sub-filters {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}

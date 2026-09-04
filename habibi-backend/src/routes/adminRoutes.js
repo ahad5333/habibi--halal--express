@@ -219,6 +219,12 @@ router.post("/payments/:orderNumber/refund", refundOrder);
 const { getWaitlistCounts } = require("../controllers/waitlistController");
 router.get("/waitlist/counts", getWaitlistCounts);
 
+// Subscriptions ("Habibi Weekly") — view + pause/cancel on a customer's behalf
+const { getAllSubscriptionsAdmin, adminPauseSubscription, adminCancelSubscription } = require("../controllers/subscriptionController");
+router.get("/subscriptions", getAllSubscriptionsAdmin);
+router.post("/subscriptions/:id/pause", adminPauseSubscription);
+router.post("/subscriptions/:id/cancel", adminCancelSubscription);
+
 // Payment Method Settings (enable/disable)
 const { getAdminPaymentSettings, updatePaymentSetting, updateOfflineHandles, getOfflineHandles, getIntegrationStatus, updateSystemSettings } = require("../controllers/settingsController");
 router.get("/payment-settings", getAdminPaymentSettings);

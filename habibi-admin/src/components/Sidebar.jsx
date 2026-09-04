@@ -7,7 +7,7 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2, Layers, LayoutGrid,
+  Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -43,6 +43,7 @@ const NAV = [
   { to: '/referrals',    icon: <Share2 size={17} />,        label: 'Referral Program' },
   { to: '/group-orders', icon: <Users2 size={17} />,        label: 'Group Orders' },
   { to: '/saved-customs',icon: <Bookmark size={17} />,      label: 'Saved Custom Orders' },
+  { to: '/subscriptions', icon: <RefreshCw size={17} />,    label: 'Subscriptions' },
   { to: '/analytics',  icon: <BarChart2 size={17} />,       label: 'Analytics' },
   { to: '/reports',    icon: <FileText size={17} />,        label: 'Reports' },
   { to: '/payments',        icon: <CreditCard size={17} />, label: 'Payments' },

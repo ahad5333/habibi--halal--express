@@ -844,6 +844,57 @@ const createTables = async () => {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_item_waitlist_pending ON item_waitlist(menu_item_id) WHERE notified_at IS NULL`);
 
+    // ── Subscriptions ("Habibi Weekly") ──────────────────────────────
+    // items mirrors guest_orders.items' exact JSONB shape -- a subscription
+    // is just a durable template for that same shape, replayed by the
+    // scheduled-charge cron via the same createGuestOrder() every live
+    // checkout already goes through. interval_days (not day-of-week/
+    // day-of-month columns) is deliberately generic -- v1's UI only offers
+    // weekly (7), but next_charge_date + interval_days naturally preserves
+    // whatever weekday/time the subscription started on, and nothing here
+    // is hardcoded to "weekly" specifically.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id                 SERIAL PRIMARY KEY,
+        user_id            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        payment_method_id  INTEGER NOT NULL REFERENCES payment_methods(id) ON DELETE CASCADE,
+        items              JSONB NOT NULL,
+        delivery_method    VARCHAR(20) NOT NULL,
+        delivery_address   TEXT,
+        delivery_city      VARCHAR(100),
+        delivery_state     VARCHAR(2),
+        delivery_zip       VARCHAR(10),
+        location_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+        interval_days      INTEGER NOT NULL DEFAULT 7,
+        next_charge_date   TIMESTAMPTZ NOT NULL,
+        status             VARCHAR(20) NOT NULL DEFAULT 'active',
+        failed_attempts    INTEGER NOT NULL DEFAULT 0,
+        last_order_number  VARCHAR(60),
+        last_charged_at    TIMESTAMPTZ,
+        created_at         TIMESTAMPTZ DEFAULT NOW(),
+        updated_at         TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_due ON subscriptions(next_charge_date) WHERE status = 'active'`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)`);
+
+    // Audit trail for every scheduled charge attempt (success or failure) --
+    // matches this codebase's existing log-table convention (e.g.
+    // inventory_restock_log) rather than only keeping the latest state on
+    // the subscription row itself.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS subscription_charges (
+        id              SERIAL PRIMARY KEY,
+        subscription_id INTEGER NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+        order_number    VARCHAR(60),
+        amount          NUMERIC(10,2),
+        success         BOOLEAN NOT NULL,
+        error_message   TEXT,
+        created_at      TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_subscription_charges_sub ON subscription_charges(subscription_id)`);
+
     // ── Delivery Zones ─────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS delivery_zones (
