@@ -16,6 +16,7 @@
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "@sentry/node": "^10.53.1",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.10.0",
@@ -36,6 +37,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^9.0.1",
     "pg": "^8.13.3",
+    "redis": "^6.2.1",
     "socket.io": "^4.8.1",
     "twilio": "^5.4.5",
     "winston": "^3.19.0",

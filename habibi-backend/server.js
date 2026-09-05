@@ -6,6 +6,8 @@ const app = require("./src/app");
 const pool = require("./src/config/db");
 const createTables = require("./src/config/init");
 const { Server } = require("socket.io");
+const { createClient } = require("redis");
+const { createAdapter } = require("@socket.io/redis-adapter");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
 const { startScheduledSubscriptions } = require("./src/services/scheduledSubscriptions");
 const cron = require("node-cron");
@@ -29,8 +31,25 @@ const io = new Server(server, {
 app.set("io", io);
 initSocket(io);
 
+// Redis pub/sub adapter -- makes io.to(room).emit(...) reach sockets connected
+// to ANY PM2 cluster worker, not just the one that fired the broadcast.
+// Without this, running more than one instance would silently break every
+// real-time feature (order tracking, driver dispatch, kitchen display, admin
+// live views) whenever the emitting request and the listening socket happen
+// to land on different workers.
+const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+const pubClient = createClient({ url: REDIS_URL });
+const subClient = pubClient.duplicate();
+pubClient.on("error", (err) => console.error("[Redis pub] error:", err.message));
+subClient.on("error", (err) => console.error("[Redis sub] error:", err.message));
+
 // Start everything
-pool.connect()
+Promise.all([pubClient.connect(), subClient.connect()])
+  .then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("[Redis] Socket.IO adapter connected");
+    return pool.connect();
+  })
   .then(async () => {
     console.log("PostgreSQL Connected");
 
@@ -49,5 +68,5 @@ pool.connect()
     });
   })
   .catch((err) => {
-    console.log("Database connection failed:", err);
+    console.log("Startup failed (Redis or database connection):", err);
   });
