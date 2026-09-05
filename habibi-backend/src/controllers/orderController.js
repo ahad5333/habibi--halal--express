@@ -569,10 +569,18 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         }
       }
 
-      if (loyalty_points_redeemed > 0 && customer_email) {
+      if (loyalty_points_redeemed > 0) {
+        // Scoped to req.user.id (server-verified via JWT), never the
+        // client-supplied customer_email -- redeeming by email let anyone
+        // drain a real account's points onto their own order just by knowing
+        // that account's email address, with no login required.
+        if (!req.user?.id) {
+          await client.query('ROLLBACK');
+          return res.status(401).json({ message: 'Please log in to redeem loyalty points.' });
+        }
         const userRes = await client.query(
-          'SELECT loyalty_points FROM users WHERE LOWER(email) = LOWER($1) FOR UPDATE',
-          [customer_email]
+          'SELECT loyalty_points FROM users WHERE id = $1 FOR UPDATE',
+          [req.user.id]
         );
         const availablePoints = userRes.rows[0]?.loyalty_points || 0;
         if (loyalty_points_redeemed > availablePoints) {
@@ -616,6 +624,23 @@ const createGuestOrder = async (req, res, overrides = {}) => {
               locationId: resolvedLocationId, cart: items,
             });
             couponAllowance = computed.discount;
+
+            // Atomically lock + re-verify + increment usage_limit right here,
+            // inside the same transaction that will commit this order — the
+            // one real, unskippable enforcement point. computeCouponDiscount
+            // itself only read-checks usage_limit (no lock), so without this
+            // an order submitted directly to this endpoint could claim any
+            // coupon regardless of how many times it had already been used.
+            const lockedCoupon = await client.query(
+              'SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE',
+              [computed.coupon.id]
+            );
+            const lc = lockedCoupon.rows[0];
+            if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
+              await client.query('ROLLBACK');
+              return res.status(400).json({ message: 'This coupon has reached its usage limit.' });
+            }
+            await client.query('UPDATE coupons SET used_count = used_count + 1 WHERE id = $1', [lc.id]);
           } catch (err) {
             await client.query('ROLLBACK');
             return res.status(err.statusCode || 400).json({ message: err.message || 'Invalid coupon code.' });
@@ -745,11 +770,12 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         );
       }
 
-      // Deduct loyalty points inside the same transaction
-      if (loyalty_points_redeemed > 0 && customer_email) {
+      // Deduct loyalty points inside the same transaction — scoped to
+      // req.user.id, same reasoning as the balance check above.
+      if (loyalty_points_redeemed > 0 && req.user?.id) {
         await client.query(
-          `UPDATE users SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) - $1) WHERE LOWER(email) = LOWER($2)`,
-          [loyalty_points_redeemed, customer_email]
+          `UPDATE users SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) - $1) WHERE id = $2`,
+          [loyalty_points_redeemed, req.user.id]
         );
       }
 

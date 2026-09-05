@@ -60,9 +60,16 @@ async function chargeCard({ sourceToken, amount, orderNumber, privateToken, envi
 async function refundPayment({ chargeId, amount, privateToken, environment = 'production' }) {
   const base = API_BASES[environment] || API_BASES.production;
 
+  // Same reasoning as chargeCard's Idempotency-Key above -- this call had
+  // none, so a double-click or retried refund request could refund the same
+  // charge twice. Keyed off chargeId (one refund per charge, same as
+  // Square's refund-key convention here) rather than orderNumber, since this
+  // function isn't passed the order number at all.
+  const idempotencyKey = `rf${String(chargeId).replace(/[^a-zA-Z0-9]/g, '')}`.padEnd(13, '0');
+
   const res  = await fetch(`${base}/v1/refunds`, {
     method:  'POST',
-    headers: headers(privateToken),
+    headers: { ...headers(privateToken), 'Idempotency-Key': idempotencyKey },
     body:    JSON.stringify({
       charge: chargeId,
       amount: toCents(amount),

@@ -54,6 +54,19 @@ const saveFromTransaction = async (req, res) => {
     let processorCardRef         = null;
 
     if (provider === 'authorize_net') {
+      // transactionId was previously trusted verbatim with no check it
+      // belongs to this user -- Authorize.net's own auth only proves the
+      // MERCHANT's credentials are valid, not that this specific transaction
+      // was this customer's. Any logged-in customer could submit another
+      // customer's transaction id and have that card vaulted under their
+      // own account. Verify it against a real order this user actually placed.
+      const ownsTransaction = await pool.query(
+        'SELECT 1 FROM guest_orders WHERE payment_intent_id = $1 AND user_id = $2',
+        [transactionId, req.user.id]
+      );
+      if (!ownsTransaction.rows.length) {
+        return res.status(403).json({ message: 'This transaction does not belong to your account.' });
+      }
       const account = await getActiveAccount();
       if (!account) return res.status(503).json({ message: 'Payment processor not configured.' });
       const vaulted = await createCustomerProfileFromTransaction({

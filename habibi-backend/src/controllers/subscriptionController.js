@@ -61,7 +61,23 @@ const createSubscription = async (req, res) => {
     if (!cardRes.rows.length) {
       return res.status(400).json({ message: 'No saved card found. Pay with a saved card to set up a subscription.' });
     }
-    const paymentMethodId = req.body.payment_method_id || cardRes.rows[0].id;
+    // req.body.payment_method_id was previously trusted verbatim with no
+    // ownership check -- since payment_methods.id is a plain sequential
+    // integer, any logged-in customer could point a new subscription at
+    // another customer's card id and later read its brand/last-4 back via
+    // getMySubscriptions' join below. Only honor a client-supplied id if it
+    // actually belongs to this user; otherwise fall back to their own card.
+    let paymentMethodId = cardRes.rows[0].id;
+    if (req.body.payment_method_id) {
+      const ownCard = await pool.query(
+        'SELECT id FROM payment_methods WHERE id = $1 AND user_id = $2',
+        [req.body.payment_method_id, req.user.id]
+      );
+      if (!ownCard.rows.length) {
+        return res.status(400).json({ message: 'Invalid payment method.' });
+      }
+      paymentMethodId = ownCard.rows[0].id;
+    }
 
     const nextCharge = new Date(order.placed_at || Date.now());
     nextCharge.setDate(nextCharge.getDate() + intervalDays);
@@ -87,7 +103,7 @@ const getMySubscriptions = async (req, res) => {
     const result = await pool.query(
       `SELECT s.*, pm.type AS card_brand, pm.last_four AS card_last4
          FROM subscriptions s
-         LEFT JOIN payment_methods pm ON pm.id = s.payment_method_id
+         LEFT JOIN payment_methods pm ON pm.id = s.payment_method_id AND pm.user_id = s.user_id
         WHERE s.user_id = $1
         ORDER BY s.created_at DESC`,
       [req.user.id]
@@ -286,6 +302,16 @@ async function processSubscriptionCharge(sub, io) {
     [orderNumber, JSON.stringify(payload), pricing.total]
   );
 
+  // Reserve the next cycle BEFORE attempting the charge, not after. If this
+  // process crashes/restarts between a successful charge and the bookkeeping
+  // below committing, next_charge_date is already in the future, so the next
+  // hourly tick can't pick this subscription up again and charge the same
+  // cycle a second time. Every outcome below already ended up advancing it
+  // by the same interval anyway (except the final-failure pause, where it's
+  // moot since status stops being 'active') -- this just moves that one
+  // advance earlier instead of leaving a crash window before it happened.
+  await advanceNextCharge();
+
   const fakeApp = { get: (key) => (key === 'io' ? io : undefined) };
   const fakeReq = { user: { id: sub.user_id }, body: { paymentMethodId: sub.payment_method_id, orderNumber }, app: fakeApp, ip: null };
   let captured = { statusCode: 200, body: null };
@@ -306,7 +332,7 @@ async function processSubscriptionCharge(sub, io) {
       await pool.query(`UPDATE subscriptions SET status = 'paused', failed_attempts = $1, updated_at = NOW() WHERE id = $2`, [failCount, sub.id]);
       emailService.sendSubscriptionPaused(user.email, 'your card was declined 3 times in a row').catch(() => {});
     } else {
-      await pool.query(`UPDATE subscriptions SET failed_attempts = $1, next_charge_date = next_charge_date + (interval_days || ' days')::interval, updated_at = NOW() WHERE id = $2`, [failCount, sub.id]);
+      await pool.query(`UPDATE subscriptions SET failed_attempts = $1, updated_at = NOW() WHERE id = $2`, [failCount, sub.id]);
       emailService.sendSubscriptionChargeFailed(user.email, captured.body?.error || 'Payment failed.').catch(() => {});
     }
     return;
@@ -318,8 +344,7 @@ async function processSubscriptionCharge(sub, io) {
   );
   await pool.query(
     `UPDATE subscriptions
-        SET failed_attempts = 0, last_order_number = $1, last_charged_at = NOW(),
-            next_charge_date = next_charge_date + (interval_days || ' days')::interval, updated_at = NOW()
+        SET failed_attempts = 0, last_order_number = $1, last_charged_at = NOW(), updated_at = NOW()
       WHERE id = $2`,
     [orderNumber, sub.id]
   );

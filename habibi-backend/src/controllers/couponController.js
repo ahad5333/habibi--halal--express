@@ -172,31 +172,14 @@ const validateCoupon = async (req, res) => {
     }
     const { coupon, discount, isFreeDelivery, message } = result;
 
-    // All checks passed — now atomically lock + re-verify + increment in one
-    // transaction (computeCouponDiscount only read-checked usage_limit above;
-    // this is the real enforcement against a race between two concurrent
-    // validations of the same near-exhausted coupon).
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const lockedCoupon = await client.query(
-        "SELECT id, used_count, usage_limit FROM coupons WHERE id=$1 FOR UPDATE",
-        [coupon.id]
-      );
-      const lc = lockedCoupon.rows[0];
-      if (lc.usage_limit !== null && lc.used_count >= lc.usage_limit) {
-        await client.query('ROLLBACK');
-        client.release();
-        return res.status(400).json({ message: "This coupon has reached its usage limit." });
-      }
-      await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [coupon.id]);
-      await client.query('COMMIT');
-    } catch (txErr) {
-      await client.query('ROLLBACK');
-      client.release();
-      throw txErr;
-    }
-    client.release();
+    // Read-only preview — does NOT increment used_count. This is a cart
+    // "Apply Coupon" click, not a completed order; incrementing here let
+    // usage_limit get consumed by abandoned carts, and (the real problem)
+    // was also the ONLY place usage_limit was ever enforced with a lock —
+    // an order submitted directly to /api/orders/guest without ever calling
+    // this endpoint first skipped enforcement entirely. The real, atomic
+    // lock+increment now happens once, in createGuestOrder, at the point an
+    // order is actually committed.
 
     res.json({
       valid: true,
