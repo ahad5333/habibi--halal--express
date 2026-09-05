@@ -51,9 +51,13 @@ async function getHoursAndAddress() {
 async function findReorderLink(fromNumber) {
   const digits = (fromNumber || '').replace(/\D/g, '');
   if (!digits) return `${FRONTEND_URL}/menu`;
+  // RIGHT(...,10) on both sides -- Twilio's From always includes a country
+  // code, but guest_orders.customer_phone is a mix of 10- and 11-digit
+  // values; an exact-length match would silently miss real matches. Same
+  // fix applied to the identical lookup in contactController.js.
   const lastOrder = await pool.query(
     `SELECT order_number FROM guest_orders
-      WHERE regexp_replace(customer_phone, '[^0-9]', '', 'g') = $1
+      WHERE RIGHT(regexp_replace(customer_phone, '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)
       ORDER BY placed_at DESC LIMIT 1`,
     [digits]
   ).catch(() => ({ rows: [] }));

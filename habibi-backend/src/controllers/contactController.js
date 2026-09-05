@@ -122,16 +122,22 @@ const handleInboundSms = async (req, res) => {
     let reply = '';
 
     if (from && STOP_KEYWORDS.includes(body)) {
-      // Normalise E.164 to digits-only for flexible matching
+      // Normalise E.164 to digits-only for flexible matching. Twilio's From
+      // always includes the country code (11 digits), but phone_number here
+      // is a mix of 10- and 11-digit values depending on how it was entered
+      // -- an exact-length match silently failed to opt real customers out
+      // whenever their stored number lacked the leading 1. Comparing the
+      // last 10 digits on both sides makes the match length-agnostic; found
+      // while building the Voice IVR, which reuses this same lookup pattern.
       const digits = from.replace(/\D/g, '');
       await pool.query(
         `UPDATE users SET receive_sms_updates = FALSE
-         WHERE regexp_replace(phone_number, '[^0-9]', '', 'g') = $1`,
+         WHERE RIGHT(regexp_replace(phone_number, '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)`,
         [digits]
       ).catch(() => {});
       await pool.query(
         `UPDATE customers SET receive_sms_updates = FALSE
-         WHERE regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g') = $1`,
+         WHERE RIGHT(regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)`,
         [digits]
       ).catch(() => {});
       // Phone-number-keyed, independent of any account — covers guest
@@ -146,15 +152,15 @@ const handleInboundSms = async (req, res) => {
       const digits = from.replace(/\D/g, '');
       await pool.query(
         `UPDATE users SET receive_sms_updates = TRUE
-         WHERE regexp_replace(phone_number, '[^0-9]', '', 'g') = $1`,
+         WHERE RIGHT(regexp_replace(phone_number, '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)`,
         [digits]
       ).catch(() => {});
       await pool.query(
         `UPDATE customers SET receive_sms_updates = TRUE
-         WHERE regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g') = $1`,
+         WHERE RIGHT(regexp_replace((SELECT phone_number FROM users WHERE id = customers.user_id), '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)`,
         [digits]
       ).catch(() => {});
-      await pool.query(`DELETE FROM sms_optouts WHERE phone_digits = $1`, [digits]).catch(() => {});
+      await pool.query(`DELETE FROM sms_optouts WHERE RIGHT(phone_digits, 10) = RIGHT($1, 10)`, [digits]).catch(() => {});
       console.log(`[SMS Opt-in] ${from} re-subscribed via Twilio START webhook`);
       reply = 'You are re-subscribed to Habibi Halal Express texts. Reply STOP to opt out anytime.';
     } else if (from && HELP_KEYWORDS.includes(body)) {
@@ -177,11 +183,13 @@ const handleInboundSms = async (req, res) => {
         orderRequestCooldown.set(digits, Date.now());
         // guest_orders.customer_phone (not users.phone_number, which is
         // inconsistently formatted and would miss guest-checkout regulars
-        // who never made an account) -- digits-normalized the same way the
-        // STOP/START handlers above already match phone numbers.
+        // who never made an account) -- matched on the last 10 digits since
+        // Twilio's From arrives with a country code but stored numbers here
+        // are a mix of 10- and 11-digit (see the same RIGHT(...,10) fix in
+        // the STOP/START handlers above).
         const lastOrder = await pool.query(
           `SELECT order_number FROM guest_orders
-            WHERE regexp_replace(customer_phone, '[^0-9]', '', 'g') = $1
+            WHERE RIGHT(regexp_replace(customer_phone, '[^0-9]', '', 'g'), 10) = RIGHT($1, 10)
             ORDER BY placed_at DESC LIMIT 1`,
           [digits]
         ).catch(() => ({ rows: [] }));

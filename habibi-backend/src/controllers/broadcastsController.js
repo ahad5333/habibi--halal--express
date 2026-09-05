@@ -74,8 +74,16 @@ async function executeBroadcast(broadcast) {
       // or guest) recorded in sms_optouts by the Twilio STOP webhook. Without
       // this, a customer who already opted out would still get texted again
       // on the next broadcast.
+      // sms_optouts.phone_digits is a mix of 10- and 11-digit values (Twilio's
+      // STOP webhook stores 11-digit E.164; the one-time backfill from
+      // users.phone_number in init.js stored 10-digit) -- an exact-string
+      // match here would silently let an opted-out customer keep receiving
+      // broadcasts whenever the two sides' digit counts didn't line up.
+      // Comparing the last 10 digits makes the match length-agnostic. Same
+      // bug class found and fixed in contactController.js's STOP/START/ORDER
+      // handlers while building the Voice IVR.
       const OPTOUT_FILTER = `NOT EXISTS (
-        SELECT 1 FROM sms_optouts o WHERE o.phone_digits = regexp_replace(combined.phone, '[^0-9]', '', 'g')
+        SELECT 1 FROM sms_optouts o WHERE RIGHT(o.phone_digits, 10) = RIGHT(regexp_replace(combined.phone, '[^0-9]', '', 'g'), 10)
       )`;
       let phones = [];
       try {
@@ -255,8 +263,16 @@ exports.getRecipientCount = async (req, res) => {
     const counts = {};
 
     if (channels.includes('sms')) {
+      // sms_optouts.phone_digits is a mix of 10- and 11-digit values (Twilio's
+      // STOP webhook stores 11-digit E.164; the one-time backfill from
+      // users.phone_number in init.js stored 10-digit) -- an exact-string
+      // match here would silently let an opted-out customer keep receiving
+      // broadcasts whenever the two sides' digit counts didn't line up.
+      // Comparing the last 10 digits makes the match length-agnostic. Same
+      // bug class found and fixed in contactController.js's STOP/START/ORDER
+      // handlers while building the Voice IVR.
       const OPTOUT_FILTER = `NOT EXISTS (
-        SELECT 1 FROM sms_optouts o WHERE o.phone_digits = regexp_replace(combined.phone, '[^0-9]', '', 'g')
+        SELECT 1 FROM sms_optouts o WHERE RIGHT(o.phone_digits, 10) = RIGHT(regexp_replace(combined.phone, '[^0-9]', '', 'g'), 10)
       )`;
       if (audience === 'subscribers') {
         counts.sms = 0;
