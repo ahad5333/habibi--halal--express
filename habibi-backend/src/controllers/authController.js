@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const emailService = require("../services/emailService");
 const { sendAdminOTP } = require('../services/emailService');
 const { sendSMS } = require('../services/smsService');
+const { ALLOWED_ROLES: PRIVILEGED_ROLES } = require('../middleware/adminMiddleware');
 
 function setAuthCookie(res, token, maxAgeMs) {
   const isProd = process.env.NODE_ENV === 'production';
@@ -19,8 +20,13 @@ function setAuthCookie(res, token, maxAgeMs) {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, password, dob, first_name, last_name } = req.body;
+    const { name, password, dob, first_name, last_name, sms_consent } = req.body;
     let { email, phone } = req.body;
+    // receive_sms_updates defaults to TRUE at the DB level, so an explicit
+    // opt-in check is required here — otherwise unchecking the "I consent to
+    // SMS" box at signup silently has no effect and the account stays
+    // opted-in to broadcast texts regardless of what the user chose.
+    const smsConsentValue = sms_consent === true || sms_consent === 'true';
 
     if (!name || !password) {
       return res.status(400).json({ message: 'Name and password are required.' });
@@ -96,9 +102,9 @@ const registerUser = async (req, res) => {
       const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
       await pool.query(
-        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, verification_token, verification_token_expires)
-         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7)`,
-        [name, email, hashedPassword, phoneValue, dobValue, verificationToken, verificationExpires]
+        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, verification_token, verification_token_expires, receive_sms_updates)
+         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7,$8)`,
+        [name, email, hashedPassword, phoneValue, dobValue, verificationToken, verificationExpires, smsConsentValue]
       );
 
       const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
@@ -114,9 +120,9 @@ const registerUser = async (req, res) => {
       const otpHash = await bcrypt.hash(otp, 10);
 
       await pool.query(
-        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, sms_code_hash, sms_code_expires, sms_code_attempts)
-         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7,0)`,
-        [name, email, hashedPassword, phoneValue, dobValue, otpHash, otpExpires]
+        `INSERT INTO users(name, email, password_hash, phone_number, date_of_birth, email_verified, sms_code_hash, sms_code_expires, sms_code_attempts, receive_sms_updates)
+         VALUES($1,$2,$3,$4,$5,FALSE,$6,$7,0,$8)`,
+        [name, email, hashedPassword, phoneValue, dobValue, otpHash, otpExpires, smsConsentValue]
       );
 
       sendSMS(phoneValue, `Your Habibi verification code is: ${otp}. It expires in 10 minutes. Do not share it.`).catch(err => {
@@ -200,10 +206,13 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Admin MFA — always enforced regardless of SMTP config.
+    // Admin MFA — always enforced regardless of SMTP config, for every
+    // privileged role (not just the literal string 'admin' -- 'superadmin'
+    // is an equally-or-more privileged role recognized by adminMiddleware.js
+    // and was previously falling through to a normal password-only login).
     // If email is not configured the OTP is also printed to server stdout
     // so admins can retrieve it from `pm2 logs` until SendGrid is live.
-    if (user.role === 'admin') {
+    if (PRIVILEGED_ROLES.has(user.role)) {
       if (
         user.admin_otp_attempts >= 5 &&
         user.admin_otp_expires &&
@@ -335,15 +344,20 @@ const verifyAdminMfa = async (req, res) => {
     const result = await pool.query(
       `SELECT id, name, email, role, is_partner, partner_id,
               admin_otp_hash, admin_otp_expires, admin_otp_attempts
-       FROM users WHERE email=$1 AND role='admin'`,
-      [email]
+       FROM users WHERE email=$1 AND role = ANY($2)`,
+      [email, [...PRIVILEGED_ROLES]]
     );
 
-    if (result.rows.length === 0) return res.status(400).json({ message: 'Invalid request.' });
+    // Both "not an admin account" and "no pending MFA session" return the
+    // identical generic message -- a differing message here let anyone
+    // enumerate real admin email addresses with no password, by submitting
+    // arbitrary email/OTP pairs and watching which response came back.
+    const GENERIC_INVALID = { message: 'Invalid request.' };
+    if (result.rows.length === 0) return res.status(400).json(GENERIC_INVALID);
     const user = result.rows[0];
 
     if (!user.admin_otp_hash || !user.admin_otp_expires) {
-      return res.status(400).json({ message: 'No pending MFA session. Please log in again.' });
+      return res.status(400).json(GENERIC_INVALID);
     }
     if (new Date(user.admin_otp_expires) < new Date()) {
       return res.status(400).json({ message: 'OTP has expired. Please log in again.' });
@@ -603,6 +617,15 @@ const verifySmsRecoveryCode = async (req, res) => {
       [user.id]
     );
 
+    // Phone-based recovery is a lower-assurance channel than the mandatory
+    // admin email-OTP step (SIM-swap/carrier compromise/a glanced-at lock
+    // screen can all deliver an SMS code) -- previously this issued a full
+    // login token for ANY role, completely bypassing admin MFA. Privileged
+    // accounts must use the standard password + OTP login instead.
+    if (PRIVILEGED_ROLES.has(user.role)) {
+      return res.status(403).json({ message: 'Phone-based recovery is not available for this account. Please use the standard login.' });
+    }
+
     // Issue a short-lived recovery token (for password reset or direct login)
     const token = jwt.sign(
       { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, sms_verified: true, jti: crypto.randomUUID() },
@@ -761,6 +784,15 @@ const socialAuth = async (req, res) => {
         `UPDATE users SET provider = COALESCE(provider, $1), provider_id = COALESCE(provider_id, $2), email_verified = TRUE WHERE id = $3`,
         [provider, uid, user.id]
       );
+    }
+
+    // Social login has no admin-MFA step of its own -- previously this
+    // issued a full login token for ANY role, including admin/superadmin,
+    // completely bypassing the OTP-email step the password login path
+    // treats as mandatory. Privileged accounts must use the standard
+    // password + OTP login instead.
+    if (PRIVILEGED_ROLES.has(user.role)) {
+      return res.status(403).json({ message: 'Social login is not available for this account. Please use the standard login.' });
     }
 
     const token = jwt.sign(
