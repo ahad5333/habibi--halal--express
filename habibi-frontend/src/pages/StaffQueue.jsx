@@ -103,7 +103,12 @@ function readSession() {
 }
 
 export default function StaffQueue() {
-  const session = readSession();
+  // Read once on mount -- readSession() parses a fresh object every call, so
+  // storing it directly (without useState) breaks referential equality for
+  // every effect/callback below it depends on, causing an infinite re-fetch
+  // loop (each render creates a "new" session, retriggering the effect that
+  // re-renders, which reads session again...).
+  const [session] = useState(() => readSession());
 
   useEffect(() => {
     if (!session) window.location.replace('/staff/login');
