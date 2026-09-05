@@ -310,10 +310,10 @@ app.use((err, req, res, next) => {
 // ── Re-engagement push notifications ─────────────────────────────────────────
 // Runs daily at 12:00 noon. Finds users who haven't ordered in 5-7 days and
 // sends a personalised push nudge. Skips users with no push token.
-const cron       = require('node-cron');
+const { scheduleOnce } = require('./utils/clusterCron');
 const fcmService = require('./services/fcmService');
 
-cron.schedule('0 12 * * *', async () => {
+scheduleOnce('0 12 * * *', async () => {
   try {
     const { rows } = await pool.query(`
       SELECT DISTINCT u.id, u.name
@@ -369,7 +369,7 @@ cron.schedule('0 12 * * *', async () => {
 
 // ── Expired revoked-token cleanup ────────────────────────────────────────────
 // Runs daily. Removes rows whose token has naturally expired — keeps the table lean.
-cron.schedule('0 3 * * *', async () => {
+scheduleOnce('0 3 * * *', async () => {
   try {
     const { rowCount } = await pool.query('DELETE FROM revoked_tokens WHERE expires_at < NOW()');
     if (rowCount > 0) console.log(`[Cron] Purged ${rowCount} expired revoked token(s)`);
@@ -380,7 +380,7 @@ cron.schedule('0 3 * * *', async () => {
 
 // ── Expired group order session cleanup ───────────────────────────────────────
 // Runs every hour. Closes open sessions past their expires_at timestamp.
-cron.schedule('0 * * * *', async () => {
+scheduleOnce('0 * * * *', async () => {
   try {
     const { rowCount } = await pool.query(`
       UPDATE group_order_sessions
@@ -399,7 +399,7 @@ cron.schedule('0 * * * *', async () => {
 // ── Stale unverified account cleanup ─────────────────────────────────────────
 // Runs nightly at 4 AM. Deletes accounts that were never verified after 7 days.
 // These are either fake emails or users who never completed signup — safe to remove.
-cron.schedule('0 4 * * *', async () => {
+scheduleOnce('0 4 * * *', async () => {
   try {
     const { rowCount } = await pool.query(`
       DELETE FROM users
@@ -421,7 +421,7 @@ cron.schedule('0 4 * * *', async () => {
 // from clicking "Send Now" would have.
 const { executeBroadcast } = require('./controllers/broadcastsController');
 
-cron.schedule('* * * * *', async () => {
+scheduleOnce('* * * * *', async () => {
   try {
     const due = await pool.query(
       `SELECT * FROM broadcasts WHERE status='scheduled' AND scheduled_at <= NOW()`

@@ -10,7 +10,7 @@ const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
 const { startScheduledSubscriptions } = require("./src/services/scheduledSubscriptions");
-const cron = require("node-cron");
+const { scheduleOnce, isDesignatedInstance } = require("./src/utils/clusterCron");
 const { cleanupAbandonedPendingCheckouts } = require("./src/controllers/orderController");
 
 const PORT = process.env.PORT || 5001;
@@ -62,9 +62,17 @@ Promise.all([pubClient.connect(), subClient.connect()])
     // CORS, and security headers entirely.
     server.listen(PORT, "127.0.0.1", () => {
       console.log(`Server running on port ${PORT} (localhost only)`);
-      startScheduledDispatch(io);
-      startScheduledSubscriptions(io);
-      cron.schedule("0 * * * *", cleanupAbandonedPendingCheckouts);
+      // Cluster mode runs this callback once per worker -- without this
+      // guard, the per-minute dispatch cron would tick twice as often and
+      // the hourly subscription-charge cron could attempt to charge the
+      // same due subscription from two workers at once. Only the
+      // designated instance (or the only instance, outside cluster mode)
+      // registers these.
+      if (isDesignatedInstance) {
+        startScheduledDispatch(io);
+        startScheduledSubscriptions(io);
+      }
+      scheduleOnce("0 * * * *", cleanupAbandonedPendingCheckouts);
     });
   })
   .catch((err) => {
