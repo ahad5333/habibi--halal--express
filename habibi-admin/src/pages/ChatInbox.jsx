@@ -50,7 +50,7 @@ export default function ChatInbox() {
   // Socket.IO — join order room (open thread) + admins room (inbox-wide) for live messages
   useEffect(() => {
     const socket = io(BASE, {
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'],
       withCredentials: true,
       reconnectionAttempts: 10,
     });
