@@ -190,6 +190,10 @@ export const adminAPI = {
   updateStaff: (id, body) => req(`/api/admin/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteStaff: (id) => req(`/api/admin/staff/${id}`, { method: 'DELETE' }),
 
+  // Staff PIN login (kitchen/manager/cashier/server queue access)
+  sendStaffSetupSms: (staff_id) => req('/api/staff/send-setup-sms', { method: 'POST', body: JSON.stringify({ staff_id }) }),
+  resetStaffPin:     (id, pin)  => req(`/api/staff/${id}/reset-pin`, { method: 'PATCH', body: JSON.stringify({ pin }) }),
+
   // Inventory
   getInventory:       () => req('/api/admin/inventory'),
   createInventoryItem:(body) => req('/api/admin/inventory', { method: 'POST', body: JSON.stringify(body) }),

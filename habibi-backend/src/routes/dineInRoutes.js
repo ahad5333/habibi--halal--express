@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../config/db');
 const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
+const staffAuth = require('../middleware/staffMiddleware');
 const safeError = require('../utils/safeError');
 
 // Add verification audit columns if not present
@@ -12,10 +13,19 @@ pool.query(`
     ADD COLUMN IF NOT EXISTS payment_verified_by  VARCHAR(100)
 `).catch(() => {});
 
-// Kitchen tablets authenticate with X-Kitchen-Token header.
+// Kitchen tablets authenticate with X-Kitchen-Token header (one shared screen).
+// A personal staff PIN session (X-Staff-Id + X-Staff-Token, kitchen/manager/
+// cashier/server roles) is tried first as an alternative -- lets individual
+// staff use the exact same queue/bump endpoints without needing the shared
+// token or full admin access. See staffMiddleware.js for why that check
+// re-verifies role+active from the DB on every request rather than just the
+// HMAC, unlike the driver app's equivalent.
 // If KITCHEN_TOKEN env var is set, that header value is checked.
 // If KITCHEN_TOKEN is not set: dev allows all through; production falls back to admin JWT.
 function kitchenAuth(req, res, next) {
+  if (req.headers['x-staff-id'] && req.headers['x-staff-token']) {
+    return staffAuth(req, res, next);
+  }
   const token = process.env.KITCHEN_TOKEN;
   if (token) {
     if (req.headers['x-kitchen-token'] === token) return next();
@@ -46,7 +56,8 @@ router.get('/kitchen', kitchenAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, order_number, customer_name, table_number, items,
-              sub_total, total, order_status, payment_method, placed_at, updated_at
+              sub_total, total, order_status, payment_method, placed_at, updated_at,
+              delivery_instructions AS special_instructions
        FROM guest_orders
        WHERE delivery_method = 'dine_in'
          AND order_status NOT IN ('delivered', 'cancelled')
@@ -69,7 +80,7 @@ router.get('/kitchen-all', kitchenAuth, async (req, res) => {
     const result = await pool.query(
       `SELECT id, order_number, customer_name, table_number, delivery_method, items,
               sub_total, total, order_status, payment_method, placed_at, updated_at,
-              special_instructions, payment_verified_at, payment_verified_by
+              delivery_instructions AS special_instructions, payment_verified_at, payment_verified_by
        FROM guest_orders
        WHERE order_status NOT IN ('delivered', 'cancelled', 'refunded')
        ORDER BY placed_at ASC`
@@ -118,6 +129,13 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
         [status, req.params.id]
       );
     }
+    // Previously notified no one on update -- an admin/staff viewer only ever
+    // found out on their next poll. Cheap to emit now that another real
+    // consumer (the staff queue view, and the existing merchant app) can
+    // benefit from it, same event name already used for order tracking elsewhere.
+    const io = req.app.get('io');
+    if (io) io.to('admins').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
+
     res.json({ id: Number(req.params.id), order_status: status });
   } catch (err) {
     res.status(500).json(safeError(err));

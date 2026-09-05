@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AssistantWidget from './components/AssistantWidget';
 
 // Critical path — eagerly loaded
 import Home from './pages/Home';
@@ -16,6 +17,7 @@ import OrderConfirmation from './pages/OrderConfirmation';
 // Lazy-loaded — split into separate chunks
 const Locations        = lazy(() => import('./pages/Locations'));
 const OrderTracking    = lazy(() => import('./pages/OrderTracking'));
+const Reorder          = lazy(() => import('./pages/Reorder'));
 const About            = lazy(() => import('./pages/About'));
 const Careers          = lazy(() => import('./pages/Careers'));
 const DepartmentDetail  = lazy(() => import('./pages/DepartmentDetail'));
@@ -36,6 +38,9 @@ const DriverView       = lazy(() => import('./pages/DriverView'));
 const DriverLogin      = lazy(() => import('./pages/DriverLogin'));
 const DriverSetPin     = lazy(() => import('./pages/DriverSetPin'));
 const KitchenDisplay   = lazy(() => import('./pages/KitchenDisplay'));
+const StaffLogin       = lazy(() => import('./pages/StaffLogin'));
+const StaffSetPin      = lazy(() => import('./pages/StaffSetPin'));
+const StaffQueue       = lazy(() => import('./pages/StaffQueue'));
 const Catering         = lazy(() => import('./pages/Catering'));
 const Broadcasts       = lazy(() => import('./pages/Broadcasts'));
 const HealthSafety     = lazy(() => import('./pages/HealthSafety'));
@@ -59,14 +64,15 @@ const NotFound            = lazy(() => import('./pages/NotFound'));
 import { initGA, initPixel, trackPageView } from './utils/analytics';
 import { captureUtm } from './utils/utm';
 
-const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin'];
+const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin', '/staff', '/staff/login', '/staff/set-pin'];
 
 // Routes that must never appear in search results
 const NOINDEX_PATHS = new Set([
   '/login', '/signup', '/register', '/forgot-password', '/reset-password',
   '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver',
   '/checkout', '/payment', '/account', '/order-confirmation',
-  '/order-tracking', '/admin/broadcasts',
+  '/order-tracking', '/reorder', '/admin/broadcasts',
+  '/staff', '/staff/login', '/staff/set-pin',
 ]);
 function isNoIndexPath(pathname) {
   if (NOINDEX_PATHS.has(pathname)) return true;
@@ -127,6 +133,7 @@ function Layout() {
           <Route path="/menu/:cat?" element={<Menu />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/order-tracking" element={<OrderTracking />} />
+          <Route path="/reorder" element={<Reorder />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/careers/departments/:id" element={<DepartmentDetail />} />
@@ -187,6 +194,7 @@ function Layout() {
         </ErrorBoundary>
       </main>
       {!isFullscreen && <Footer />}
+      {!isFullscreen && <AssistantWidget />}
     </>
   );
 }
@@ -230,6 +238,9 @@ function App() {
           <Route path="/driver/login"    element={<DriverLogin />} />
           <Route path="/driver/set-pin"  element={<DriverSetPin />} />
           <Route path="/kitchen" element={<InternalGuard><KitchenDisplay /></InternalGuard>} />
+          <Route path="/staff/login"    element={<StaffLogin />} />
+          <Route path="/staff/set-pin"  element={<StaffSetPin />} />
+          <Route path="/staff"          element={<StaffQueue />} />
           <Route path="*" element={<Layout />} />
         </Routes>
       </Suspense>

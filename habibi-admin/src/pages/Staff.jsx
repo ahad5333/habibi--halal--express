@@ -4,6 +4,10 @@ import { adminAPI } from '../services/api';
 import './Staff.css';
 
 const ROLES = ['kitchen', 'delivery', 'manager', 'cashier', 'server'];
+// These 4 roles now get their own PIN login to the staff order-queue view
+// (/staff on the customer site) -- separate from delivery's driver app,
+// same underlying PIN mechanism (see staffAuthController.js).
+const STAFF_QUEUE_ROLES = ['kitchen', 'manager', 'cashier', 'server'];
 const ROLE_COLOR = {
   kitchen:  'badge-warning',
   delivery: 'badge-info',
@@ -149,7 +153,8 @@ export default function Staff() {
     if (!/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
     setPinSaving(true);
     try {
-      await adminAPI.resetDriverPin(pinTarget.id, newPin);
+      if (pinTarget.role === 'delivery') await adminAPI.resetDriverPin(pinTarget.id, newPin);
+      else await adminAPI.resetStaffPin(pinTarget.id, newPin);
       setPinTarget(null);
       setNewPin('');
       alert(`PIN updated for ${pinTarget.name}`);
@@ -286,7 +291,7 @@ export default function Staff() {
           style={{ maxWidth: 360 }}
         />
         <p className="staff-role-legend">
-          Only <strong>Delivery</strong> staff have app login (driver PIN). Kitchen, Manager, Cashier, and Server are roster entries only — no login or admin access.
+          <strong>Delivery</strong> staff log into the driver app; <strong>Kitchen, Manager, Cashier, and Server</strong> log into the staff order-queue view — both via a 4-digit PIN. Neither role gets admin/CPanel access.
         </p>
       </div>
 
@@ -375,11 +380,11 @@ export default function Staff() {
                         <td className="text-muted" style={{fontSize:'0.78rem',maxWidth:160}}>{s.notes || '—'}</td>
                         <td>
                           <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
-                            {s.role === 'delivery' && (
+                            {(s.role === 'delivery' || STAFF_QUEUE_ROLES.includes(s.role)) && (
                               <>
                                 <button
                                   className="btn btn-secondary btn-sm"
-                                  title="Reset driver PIN directly"
+                                  title="Reset PIN directly"
                                   onClick={() => { setPinTarget(s); setNewPin(''); }}
                                 >
                                   <KeyRound size={12} /> Reset PIN
@@ -387,10 +392,11 @@ export default function Staff() {
                                 {s.phone && (
                                   <button
                                     className="btn btn-secondary btn-sm"
-                                    title="Send driver PIN setup link via SMS"
+                                    title="Send PIN setup link via SMS"
                                     onClick={async () => {
                                       try {
-                                        await adminAPI.sendDriverSetupSms(s.id);
+                                        if (s.role === 'delivery') await adminAPI.sendDriverSetupSms(s.id);
+                                        else await adminAPI.sendStaffSetupSms(s.id);
                                         alert(`Setup SMS sent to ${s.name}`);
                                       } catch (e) { alert(e.message); }
                                     }}
@@ -475,6 +481,8 @@ export default function Staff() {
                   <p className="staff-role-hint">
                     {form.role === 'delivery'
                       ? 'Has PIN-based login to the driver app.'
+                      : STAFF_QUEUE_ROLES.includes(form.role)
+                      ? 'Has PIN-based login to the staff order-queue view (view + bump order status only).'
                       : 'Roster only — this role has no app login or admin access.'}
                   </p>
                 </div>
@@ -539,7 +547,9 @@ export default function Staff() {
                   autoFocus
                 />
                 <p style={{fontSize:'0.75rem',color:'var(--color-text-muted)',marginTop:'0.4rem'}}>
-                  Driver will use this PIN to log in at habibihe.com/driver/login
+                  {pinTarget.role === 'delivery'
+                    ? 'Driver will use this PIN to log in at habibihe.com/driver/login'
+                    : 'Staff member will use this PIN to log in at habibihe.com/staff/login'}
                 </p>
               </div>
             </div>

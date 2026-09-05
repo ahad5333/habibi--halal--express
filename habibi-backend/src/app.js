@@ -124,6 +124,7 @@ const adminRoutes = require("./routes/adminRoutes")
 const reservationRoutes = require("./routes/reservationRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
+const staffRoutes = require("./routes/staffRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const financeRoutes = require("./routes/financeRoutes");
@@ -215,6 +216,7 @@ app.use("/api/reservations", reservationRoutes);
 app.use("/api/admin", adminLimiter, adminRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/assistant", assistantRoutes);
+app.use("/api/staff", staffRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/coupons", couponLimiter, couponRoutes);
 app.use("/api/finance", financeRoutes);
