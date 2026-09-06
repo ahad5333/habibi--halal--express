@@ -1,29 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag } from 'lucide-react';
+import { COLUMN_MAP, BUMP_NEXT, COLUMNS, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const KITCHEN_TOKEN = import.meta.env.VITE_KITCHEN_TOKEN || '';
+const KITCHEN_HEADERS = KITCHEN_TOKEN ? { 'X-Kitchen-Token': KITCHEN_TOKEN } : {};
 const POLL_MS  = 15000;
-
-// Status → kanban column
-const COLUMN_MAP = {
-  pending_verification: 'new',
-  pending:   'new',
-  confirmed: 'new',
-  preparing: 'preparing',
-  cooking:   'preparing',
-  ready:     'ready',
-};
-
-// What the bump button does for each status
-const BUMP_NEXT = {
-  pending_verification: 'confirmed',
-  pending:   'preparing',
-  confirmed: 'preparing',
-  preparing: 'ready',
-  cooking:   'ready',
-  ready:     'delivered',
-};
 
 const DELIVERY_ICON = {
   dine_in:  <UtensilsCrossed size={12} />,
@@ -100,7 +83,7 @@ export default function KitchenDisplay() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`);
+      const res = await fetch(`${API_BASE}${endpoint}`, { headers: KITCHEN_HEADERS });
       if (!res.ok) throw new Error(`Server ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
@@ -140,12 +123,12 @@ export default function KitchenDisplay() {
 
   const bumpOrder = async (order) => {
     const next = BUMP_NEXT[order.order_status];
-    if (!next) return;
+    if (!next || !canStaffBump(order)) return;
     setBumping(p => ({ ...p, [order.id]: true }));
     try {
       const res = await fetch(`${API_BASE}/api/dine-in/kitchen/orders/${order.id}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...KITCHEN_HEADERS },
         body: JSON.stringify({ status: next }),
       });
       if (!res.ok) throw new Error();
@@ -166,11 +149,6 @@ export default function KitchenDisplay() {
     ? orders.filter(o => o.delivery_method === 'dine_in')
     : orders;
 
-  const cols = {
-    new:       filtered.filter(o => COLUMN_MAP[o.order_status] === 'new'),
-    preparing: filtered.filter(o => COLUMN_MAP[o.order_status] === 'preparing'),
-    ready:     filtered.filter(o => COLUMN_MAP[o.order_status] === 'ready'),
-  };
 
   if (error && orders.length === 0) return (
     <div className="kd-root kd-center">
@@ -221,44 +199,29 @@ export default function KitchenDisplay() {
           <p style={{ color: '#6b7280', marginTop: '1rem' }}>Loading orders…</p>
         </div>
       ) : (
-        <div className="kd-kanban">
-          <KanbanColumn
-            title="New Orders"
-            count={cols.new.length}
-            accent="#ca8a04"
-            orders={cols.new}
-            bumpLabel="Start"
-            onBump={bumpOrder}
-            bumping={bumping}
-            tick={tick}
-          />
-          <KanbanColumn
-            title="Preparing"
-            count={cols.preparing.length}
-            accent="#ea580c"
-            orders={cols.preparing}
-            bumpLabel="Mark Ready"
-            onBump={bumpOrder}
-            bumping={bumping}
-            tick={tick}
-          />
-          <KanbanColumn
-            title="Ready"
-            count={cols.ready.length}
-            accent="#16a34a"
-            orders={cols.ready}
-            bumpLabel="Done / Bump"
-            onBump={bumpOrder}
-            bumping={bumping}
-            tick={tick}
-          />
+        <div className="kd-kanban kd-kanban--4">
+          {COLUMNS.map(col => {
+            const colOrders = filtered.filter(o => COLUMN_MAP[o.order_status] === col.key);
+            return (
+              <KanbanColumn
+                key={col.key}
+                title={col.title}
+                count={colOrders.length}
+                accent={col.accent}
+                orders={colOrders}
+                onBump={bumpOrder}
+                bumping={bumping}
+                tick={tick}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping, tick }) {
+function KanbanColumn({ title, count, accent, orders, onBump, bumping, tick }) {
   return (
     <div className="kd-col">
       <div className="kd-col-header" style={{ borderBottomColor: accent }}>
@@ -276,7 +239,6 @@ function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping
           <OrderCard
             key={order.id}
             order={order}
-            bumpLabel={bumpLabel}
             onBump={onBump}
             bumping={bumping[order.id]}
             tick={tick}
@@ -287,11 +249,12 @@ function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping
   );
 }
 
-function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
+function OrderCard({ order, onBump, bumping, tick }) {
   const mins = minutesOld(order.placed_at);
   const urgency = mins >= 20 ? 'urgent' : mins >= 10 ? 'warn' : '';
   const isPaymentPending = order.order_status === 'pending_verification';
-  const effectiveBumpLabel = isPaymentPending ? 'Confirm Payment ✓' : bumpLabel;
+  const label   = bumpLabel(order);
+  const blocked = blockedReason(order);
 
   return (
     <div className={`kd-card kd-status--${order.order_status} ${urgency ? `kd-urgency--${urgency}` : ''}`}>
@@ -349,14 +312,18 @@ function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
           {elapsedLabel(order.placed_at)}
           {urgency === 'urgent' && ' ⚠'}
         </span>
-        <button
-          className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
-          onClick={() => onBump(order)}
-          disabled={bumping}
-        >
-          {bumping ? '…' : effectiveBumpLabel}
-          {!bumping && <ChevronRight size={13} />}
-        </button>
+        {blocked ? (
+          <span className="kd-awaiting-driver"><Truck size={12} /> {blocked}</span>
+        ) : label && (
+          <button
+            className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
+            onClick={() => onBump(order)}
+            disabled={bumping}
+          >
+            {bumping ? '…' : label}
+            {!bumping && <ChevronRight size={13} />}
+          </button>
+        )}
       </div>
     </div>
   );

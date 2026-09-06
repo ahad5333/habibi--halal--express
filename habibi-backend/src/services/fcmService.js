@@ -209,16 +209,28 @@ const sendPushToAdmins = async (title, body, data = {}) => {
   }
 };
 
-// ─── Send to all staff order-queue devices (kitchen/manager/cashier/server) ──
+// ─── Send to staff order-queue devices (kitchen/manager/cashier/server) ─────
 // Separate from sendPushToAdmins -- staff_members is not the users table, and
 // this deliberately excludes role='delivery' (drivers get their own broadcast
 // via dispatchController.js, not a generic new-order alert).
-const sendPushToStaff = async (title, body, data = {}) => {
+//
+// `roles` narrows it to whoever's turn it actually is: the counter is alerted
+// for a new order, the kitchen when it's accepted, and so on -- so nobody gets
+// pinged for a stage that isn't theirs. This targets notifications only; it is
+// NOT a permission boundary (the queue deliberately lets anyone advance any
+// order, since one person often covers several roles).
+const STAFF_QUEUE_ROLES = ['kitchen', 'manager', 'cashier', 'server'];
+
+const sendPushToStaff = async (title, body, data = {}, roles = STAFF_QUEUE_ROLES) => {
   try {
+    const targetRoles = (Array.isArray(roles) && roles.length ? roles : STAFF_QUEUE_ROLES)
+      .filter(r => STAFF_QUEUE_ROLES.includes(r));
+    if (targetRoles.length === 0) return { success: true, sent_count: 0 };
     const result = await pool.query(
       `SELECT driver_fcm_token FROM staff_members
-       WHERE role IN ('kitchen','manager','cashier','server')
-         AND is_active=TRUE AND driver_fcm_token IS NOT NULL`
+       WHERE role = ANY($1)
+         AND is_active=TRUE AND driver_fcm_token IS NOT NULL`,
+      [targetRoles]
     );
     if (result.rows.length === 0) return { success: true, sent_count: 0 };
     let successCount = 0;

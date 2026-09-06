@@ -4,6 +4,7 @@ const pool = require('../config/db');
 const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
 const staffAuth = require('../middleware/staffMiddleware');
+const fcmService = require('../services/fcmService');
 const safeError = require('../utils/safeError');
 
 // Add verification audit columns if not present
@@ -112,21 +113,57 @@ router.get('/kitchen-all', kitchenAuth, async (req, res) => {
 });
 
 // ── Kitchen bump: advance order status ────────────────────────────────────────
+// 'accepted' is a REAL stage here, not a formality: it is the only trigger for
+// driver dispatch anywhere in the app (adminController broadcasts to on-duty
+// drivers on 'accepted', and dispatchController's getAvailableOrders -- the
+// driver app's missed-broadcast safety net -- filters on order_status =
+// 'accepted' AND delivery_method = 'delivery'). The previous flow here went
+// pending -> preparing directly, skipping 'accepted' entirely, so a delivery
+// order worked through this screen was NEVER offered to any driver, and its
+// last step (ready -> delivered) let counter staff mark it delivered while it
+// still sat on the counter with no driver ever assigned. Both fixed below.
 const KITCHEN_STATUS_FLOW = {
-  pending_verification: 'confirmed',
-  pending:    'preparing',
-  confirmed:  'preparing',
+  pending_verification: 'accepted',   // counter verifies payment AND accepts in one step
+  pending:    'accepted',
+  confirmed:  'accepted',             // legacy rows already sitting in 'confirmed'
+  accepted:   'preparing',
   preparing:  'ready',
-  ready:      'delivered',
+  cooking:    'ready',                // legacy alias for 'preparing'
+  ready:      'delivered',            // PICKUP ONLY -- see deliveryMethod guard below
 };
+
+// Stages that belong to the counter vs the kitchen. Used only to decide who
+// gets *notified* and what each role sees highlighted -- deliberately NOT
+// enforced as a permission, since in a small operation one person covers
+// several of these roles and hard-gating would deadlock the queue. Every
+// action is attributed in order_status_log either way.
+const COUNTER_ROLES = ['manager', 'cashier', 'server'];
+const KITCHEN_ROLES = ['kitchen'];
+
 router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
   try {
     const { status } = req.body;
     // Validate that the requested status is a valid forward transition
-    const current = await pool.query('SELECT order_status FROM guest_orders WHERE id=$1', [req.params.id]);
+    const current = await pool.query(
+      'SELECT order_status, order_number, delivery_method FROM guest_orders WHERE id=$1',
+      [req.params.id]
+    );
     if (!current.rows.length) return res.status(404).json({ message: 'Order not found.' });
-    const currentStatus = current.rows[0].order_status;
+    const currentStatus  = current.rows[0].order_status;
+    const orderNumber    = current.rows[0].order_number;
+    const deliveryMethod = current.rows[0].delivery_method;
     const allowed = KITCHEN_STATUS_FLOW[currentStatus];
+
+    // A delivery order's terminal staff stage is 'ready' -- the driver app owns
+    // picked_up/delivered, together with GPS tracking and proof-of-delivery.
+    // Letting staff mark it delivered from here would close the order before a
+    // driver ever touched it.
+    if (currentStatus === 'ready' && deliveryMethod === 'delivery') {
+      return res.status(400).json({
+        message: 'This order is ready for driver pickup. The driver marks it picked up and delivered from the driver app.',
+      });
+    }
+
     if (!status || status !== allowed) {
       return res.status(400).json({ message: `Cannot transition from '${currentStatus}' to '${status}'. Expected: '${allowed}'.` });
     }
@@ -168,6 +205,69 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     // benefit from it, same event name already used for order tracking elsewhere.
     const io = req.app.get('io');
     if (io) io.to('admins').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
+
+    // ── Hand off to the next station / channel ────────────────────────────
+    // Fire-and-forget: none of this should be able to fail the bump itself.
+    void (async () => {
+      try {
+        if (status === 'accepted') {
+          // Kitchen's turn. Also the moment delivery orders become visible to
+          // drivers -- this same broadcast already runs from adminController
+          // on 'accepted'; the staff queue simply never reached this status
+          // before, which is why orders worked from this screen were never
+          // dispatched to anyone.
+          fcmService.sendPushToStaff(
+            '👨‍🍳 Start Preparing',
+            `Order #${orderNumber} was accepted — begin preparing.`,
+            { orderNumber, type: 'start_preparing', url: '/staff' },
+            KITCHEN_ROLES
+          ).catch(() => {});
+
+          if (deliveryMethod === 'delivery') {
+            const ord = await pool.query(
+              `SELECT order_number, customer_name, delivery_address, delivery_city, total, tip, items
+                 FROM guest_orders WHERE id=$1 LIMIT 1`,
+              [req.params.id]
+            );
+            if (ord.rows[0]) {
+              const { broadcastOrderToNearestDrivers } = require('../controllers/dispatchController');
+              await broadcastOrderToNearestDrivers(io, ord.rows[0]);
+            }
+          }
+        } else if (status === 'ready') {
+          if (deliveryMethod === 'delivery') {
+            // Tell whoever is actually carrying this order that the food is up.
+            const asg = await pool.query(
+              `SELECT sm.driver_fcm_token
+                 FROM delivery_assignments da
+                 JOIN staff_members sm ON sm.id = da.driver_id
+                WHERE da.order_number = $1 AND da.status NOT IN ('cancelled','delivered')
+                  AND sm.driver_fcm_token IS NOT NULL
+                LIMIT 1`,
+              [orderNumber]
+            );
+            if (asg.rows[0]) {
+              fcmService.sendPushNotification(
+                asg.rows[0].driver_fcm_token,
+                '🍜 Order Ready for Pickup',
+                `Order #${orderNumber} is ready — collect it from the counter.`,
+                { orderNumber, type: 'order_ready', url: '/driver' }
+              ).catch(() => {});
+            }
+          } else {
+            // Pickup: the counter hands it to the customer, so that's whose turn it is.
+            fcmService.sendPushToStaff(
+              '🔔 Ready for Handoff',
+              `Order #${orderNumber} is ready for the customer.`,
+              { orderNumber, type: 'ready_for_handoff', url: '/staff' },
+              COUNTER_ROLES
+            ).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error('[kitchen bump] handoff notification failed:', err.message);
+      }
+    })();
 
     res.json({ id: Number(req.params.id), order_status: status });
   } catch (err) {

@@ -382,6 +382,48 @@
   cursor: not-allowed;
 }
 
+/* Four-stage pipeline: New → Accepted → Preparing → Ready */
+.kd-kanban--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) {
+  .kd-kanban--4 {
+    grid-template-columns: repeat(2, 1fr);
+    height: auto;
+    overflow: auto;
+  }
+}
+
+/* "Your step" emphasis — highlights whose turn it is without locking anyone
+   out of the other stages (one person often covers several roles). */
+.kd-col--mine { background: #0f1210; }
+.kd-col-mine-tag {
+  margin-left: auto;
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #16a34a;
+  border: 1px solid #16a34a55;
+  background: #16a34a15;
+  border-radius: 100px;
+  padding: .12rem .45rem;
+  white-space: nowrap;
+}
+
+/* Delivery orders stop at 'ready' on the staff side — the driver app owns
+   pickup and delivery from here. */
+.kd-awaiting-driver {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .72rem;
+  font-weight: 600;
+  color: #60a5fa;
+  background: #1d4ed822;
+  border: 1px solid #3b82f655;
+  border-radius: 100px;
+  padding: .35rem .7rem;
+  white-space: nowrap;
+}
+
 /* Manager-only status-history button + modal (StaffQueue.jsx) */
 .kd-history-btn {
   display: flex;
