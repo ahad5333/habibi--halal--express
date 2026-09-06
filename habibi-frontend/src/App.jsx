@@ -194,7 +194,10 @@ function Layout() {
         </ErrorBoundary>
       </main>
       {!isFullscreen && <Footer />}
-      {!isFullscreen && <AssistantWidget />}
+      {/* Home page only, by request -- the assistant used to float on every
+          page, which put a chat bubble over checkout and account screens where
+          it competes with the actual task. */}
+      {location.pathname === '/' && <AssistantWidget />}
     </>
   );
 }

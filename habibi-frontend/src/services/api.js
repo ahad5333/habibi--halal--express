@@ -403,6 +403,28 @@ export const favoritesAPI = {
   remove:  (menuItemId) => request(`/api/favorites/${menuItemId}`, { method: 'DELETE' }),
 };
 
+export const waitlistAPI = {
+  join: ({ menu_item_id, email, phone }) =>
+    request('/api/waitlist', { method: 'POST', body: JSON.stringify({ menu_item_id, email, phone }) }),
+};
+
+export const subscriptionsAPI = {
+  getAll: () => request('/api/subscriptions'),
+  create: ({ order_number, payment_method_id, interval_days }) =>
+    request('/api/subscriptions', { method: 'POST', body: JSON.stringify({ order_number, payment_method_id, interval_days }) }),
+  pause:  (id) => request(`/api/subscriptions/${id}/pause`, { method: 'POST' }),
+  resume: (id) => request(`/api/subscriptions/${id}/resume`, { method: 'POST' }),
+  cancel: (id) => request(`/api/subscriptions/${id}/cancel`, { method: 'POST' }),
+};
+
+export const assistantAPI = {
+  chat: (message, cart, history, lastItems) =>
+    request('/api/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, cart, history, lastItems }),
+    }),
+};
+
 // ─── Saved Custom Orders ─────────────────────────────────────────────────────
 
 export const savedCustomAPI = {

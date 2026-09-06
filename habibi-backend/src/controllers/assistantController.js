@@ -31,9 +31,157 @@ const VEGAN_RE       = /vegan|vegetarian|meatless/i;
 const BURGER_RE      = /burger/i;
 const SPICY_RE       = /spicy|\bheat\b|\bhot\b/i;
 const ADD_CUE_RE     = /\badd\b|\border\b|\bwant\b|get me|i.?ll have|give me|i want/i;
+// Follow-ups that only make sense against whatever was just added, e.g.
+// "make that 3", "actually two", "no, 4 of those".
+const FOLLOWUP_QTY_RE = /^(?:no,?\s*)?(?:make (?:that|it)|actually|change (?:that|it) to|just)\s+(\w+)/i;
 
 const ALLERGY_DISCLAIMER =
   "For allergy or dietary-safety questions, please contact the restaurant directly so our kitchen team can confirm — I can't make that call myself.";
+
+// ── Typo tolerance ────────────────────────────────────────────────────────────
+// Customers type "shwarma", "burgur", "falafal". Bounded Levenshtein against
+// menu words only -- never against arbitrary text -- so a near-miss still lands
+// on a real menu item rather than falling through to "I couldn't find that".
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length || !b.length) return Math.max(a.length, b.length);
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+// Allowed edit distance scales with word length: short words must match almost
+// exactly (so "rice" never becomes "nice"), longer ones get more slack.
+function tolerance(word) {
+  if (word.length <= 4) return 0;
+  if (word.length <= 7) return 1;
+  return 2;
+}
+
+// Rewrites message words that are near-misses for a distinctive menu word into
+// the correct spelling, so the existing exact matcher can do its job.
+function correctTypos(norm, candidates) {
+  const menuWords = new Set();
+  candidates.forEach(c => c.words.forEach(w => { if (w.length > 3) menuWords.add(w); }));
+  if (menuWords.size === 0) return norm;
+
+  return norm.split(' ').map(word => {
+    if (word.length < 4 || menuWords.has(word)) return word;
+    let best = null, bestDist = Infinity;
+    for (const mw of menuWords) {
+      if (Math.abs(mw.length - word.length) > 2) continue;
+      const d = levenshtein(word, mw);
+      if (d < bestDist) { bestDist = d; best = mw; }
+    }
+    return best && bestDist <= tolerance(word) ? best : word;
+  }).join(' ');
+}
+
+// ── Upsell, grounded in real order history ───────────────────────────────────
+// "Goes well with" is computed from what customers actually ordered alongside
+// these items, never a hardcoded pairing. Returns [] when there isn't enough
+// real history to say anything honest.
+async function getPairings(itemNames, menu, excludeNames) {
+  if (!itemNames.length) return [];
+  try {
+    const res = await pool.query(
+      `SELECT other->>'name' AS name, COUNT(*)::int AS freq
+         FROM guest_orders o,
+              jsonb_array_elements(o.items) AS anchor,
+              jsonb_array_elements(o.items) AS other
+        WHERE o.placed_at > NOW() - INTERVAL '180 days'
+          AND o.order_status NOT IN ('cancelled', 'refunded')
+          AND lower(anchor->>'name') = ANY($1)
+          AND lower(other->>'name') <> lower(anchor->>'name')
+        GROUP BY name
+        ORDER BY freq DESC
+        LIMIT 4`,
+      [itemNames.map(n => n.toLowerCase())]
+    );
+    const exclude = new Set((excludeNames || []).map(n => n.toLowerCase()));
+    const wanted = res.rows
+      .map(r => (r.name || '').toLowerCase())
+      .filter(n => n && !exclude.has(n));
+    return menu.filter(m => wanted.includes(m.name.toLowerCase())).slice(0, 3);
+  } catch (_) {
+    return [];
+  }
+}
+
+// ── AI fallback ───────────────────────────────────────────────────────────────
+// Only reached when the rule engine has nothing useful. The model is given the
+// real menu and is required to answer with exact menu names; anything it names
+// that isn't on the menu is dropped before it reaches the customer, so it can
+// never invent a dish or a price. No key configured = feature simply stays off.
+const AI_SYSTEM = `You are the Habibi Halal Express ordering assistant on a Bronx halal restaurant's website.
+Be warm, brief (1-2 sentences), and never use markdown.
+You may ONLY reference dishes from the menu provided. Never invent a dish, price, or claim.
+Never give allergy, dietary-safety or medical advice - tell the customer to contact the restaurant instead.
+Reply as JSON only: {"reply":"your text","item_names":["Exact Menu Name"]}
+Put a dish in item_names only when showing or suggesting it. Use [] when none apply.`;
+
+async function aiFallback(message, history, menu) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+
+  const menuList = menu.map(m => `${m.name} ($${parseFloat(m.price || 0).toFixed(2)})`).join('\n');
+  const turns = (history || [])
+    .slice(-6)
+    .filter(h => h && h.text)
+    .map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: String(h.text).slice(0, 500) }));
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: process.env.ASSISTANT_AI_MODEL || 'claude-sonnet-5',
+        max_tokens: 400,
+        system: `${AI_SYSTEM}\n\nTODAY'S MENU:\n${menuList}`,
+        messages: [...turns, { role: 'user', content: String(message).slice(0, 500) }],
+      }),
+    });
+    clearTimeout(timeout);
+    if (!r.ok) {
+      console.error('[Assistant] AI fallback HTTP', r.status);
+      return null;
+    }
+    const data = await r.json();
+    const raw = (data.content || []).map(c => c.text || '').join('').trim();
+    const jsonStart = raw.indexOf('{');
+    if (jsonStart === -1) return null;
+    const parsed = JSON.parse(raw.slice(jsonStart, raw.lastIndexOf('}') + 1));
+    if (!parsed || typeof parsed.reply !== 'string') return null;
+
+    // Ground every named dish against the real menu; silently drop the rest.
+    const byName = new Map(menu.map(m => [m.name.toLowerCase(), m]));
+    const items = (Array.isArray(parsed.item_names) ? parsed.item_names : [])
+      .map(n => byName.get(String(n).toLowerCase()))
+      .filter(Boolean)
+      .slice(0, 5);
+    return { text: parsed.reply.slice(0, 600), items };
+  } catch (err) {
+    console.error('[Assistant] AI fallback failed:', err.message);
+    return null;
+  }
+}
 
 function normalize(s) {
   return (s || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -156,11 +304,10 @@ function toItemPayload(m) {
 
 const assistantChat = async (req, res) => {
   try {
-    const { message, cart } = req.body;
+    const { message, cart, history, lastItems } = req.body;
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
-    const norm = normalize(message);
 
     const menuRes = await pool.query(
       `SELECT id, name, price, image_url, description FROM menus WHERE is_available = TRUE AND is_active = TRUE`
@@ -168,11 +315,29 @@ const assistantChat = async (req, res) => {
     const menu = menuRes.rows;
     const candidates = buildCandidates(menu);
 
+    // Typo-corrected text is used for intent/menu matching only; the original
+    // message is still what allergy detection and cart matching see.
+    const norm = correctTypos(normalize(message), candidates);
+
     let text = '';
     let items = [];
     let actions = [];
+    let suggestions = [];
 
-    if (GREETING_RE.test(norm)) {
+    // "make that 3" -- only meaningful against whatever was just added, so it's
+    // checked before anything else and skipped entirely when there's no prior
+    // turn to attach it to.
+    const followup = message.match(FOLLOWUP_QTY_RE);
+    const followupQty = followup
+      ? (NUMBER_WORDS[followup[1].toLowerCase()] ?? (/^\d{1,2}$/.test(followup[1]) ? parseInt(followup[1], 10) : null))
+      : null;
+
+    if (followupQty != null && followupQty > 0 && followupQty <= 50 && Array.isArray(lastItems) && lastItems.length > 0) {
+      const target = lastItems[lastItems.length - 1];
+      text = `Updated — ${followupQty}x ${target.name}.`;
+      actions.push({ type: 'set_cart_qty', item: target, qty: followupQty });
+
+    } else if (GREETING_RE.test(norm)) {
       text = "Hi! I'm the Habibi Assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart — try \"add two beef burgers\".";
 
     } else if (CLEAR_CART_RE.test(norm)) {
@@ -208,13 +373,21 @@ const assistantChat = async (req, res) => {
       }
 
     } else {
-      const found = matchMenuItems(message, candidates);
+      const found = matchMenuItems(norm, candidates);
       if (found.length > 0) {
         text = found.length === 1
           ? `Added ${found[0].qty}x ${found[0].item.name} to your cart!`
           : `Added to your cart: ${found.map(f => `${f.qty}x ${f.item.name}`).join(', ')}.`;
         items = found.map(f => toItemPayload(f.item));
         actions = found.map(f => ({ type: 'add_to_cart', item: toItemPayload(f.item), qty: f.qty }));
+
+        // What customers actually order alongside this, from real history.
+        const inCart = (cart || []).map(c => c.name).concat(found.map(f => f.item.name));
+        const pairs = await getPairings(found.map(f => f.item.name), menu, inCart);
+        if (pairs.length) {
+          suggestions = pairs.map(toItemPayload);
+          text += ` Customers usually add ${pairs.map(p => p.name).join(' or ')} with that — want one?`;
+        }
 
       } else if (TRACK_RE.test(norm)) {
         text = 'You can track your order in real-time on our tracking page — enter your order number (HAB-...) to see live updates!';
@@ -285,7 +458,17 @@ const assistantChat = async (req, res) => {
           text = `I found some items matching "${message}":`;
           items = searchMatch.slice(0, 5).map(toItemPayload);
         } else {
-          text = "That sounds delicious! Ask me what's popular, or tell me what you'd like and I'll try to find it on our menu.";
+          // Last resort: hand the open-ended question to the AI, which knows the
+          // real menu and whose dish names are re-validated against it. Falls
+          // back to the old canned line whenever AI isn't configured or errors,
+          // so the assistant never gets worse than it was.
+          const ai = ALLERGY_RE.test(message) ? null : await aiFallback(message, history, menu);
+          if (ai) {
+            text = ai.text;
+            items = ai.items.map(toItemPayload);
+          } else {
+            text = "That sounds delicious! Ask me what's popular, or tell me what you'd like and I'll try to find it on our menu.";
+          }
         }
       }
     }
@@ -294,7 +477,7 @@ const assistantChat = async (req, res) => {
       text = `${text} ${ALLERGY_DISCLAIMER}`.trim();
     }
 
-    res.json({ role: 'bot', text, items, actions });
+    res.json({ role: 'bot', text, items, actions, suggestions });
   } catch (error) {
     console.error('[Assistant] Error:', error);
     res.status(500).json(safeError(error));
