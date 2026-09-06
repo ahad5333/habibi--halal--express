@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
+import usePageFavicon from '../utils/usePageFavicon';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -72,6 +73,8 @@ function zelleChime() {
 }
 
 export default function KitchenDisplay() {
+  usePageFavicon('/images/icons/kitchen.png');
+
   const [orders,    setOrders]    = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);

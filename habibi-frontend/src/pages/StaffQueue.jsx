@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, ROLE_STATION, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
+import usePageFavicon from '../utils/usePageFavicon';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -92,6 +93,8 @@ export default function StaffQueue() {
   // loop (each render creates a "new" session, retriggering the effect that
   // re-renders, which reads session again...).
   const [session] = useState(() => readSession());
+
+  usePageFavicon('/images/icons/serving.png');
 
   useEffect(() => {
     if (!session) window.location.replace('/staff/login');
