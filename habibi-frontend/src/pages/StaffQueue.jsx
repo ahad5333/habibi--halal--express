@@ -123,6 +123,13 @@ export default function StaffQueue() {
   const [historyOrder, setHistoryOrder] = useState(null);   // order card whose history modal is open
   const [historyLog,   setHistoryLog]   = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  // Phone layout shows one stage at a time (see .kd-stage-tabs); ignored above
+  // 640px, where all four columns are visible at once. Opens on the viewer's
+  // own station -- kitchen shouldn't land on the counter's accept queue.
+  const [activeStage, setActiveStage] = useState(() => {
+    const station = ROLE_STATION[session?.role];
+    return COLUMNS.find(c => c.station === station)?.key || 'new';
+  });
   const prevIds = useRef(new Set());
   const isManager = session?.role === 'manager';
 
@@ -237,7 +244,7 @@ export default function StaffQueue() {
           <span className="kd-header-title">Order Queue</span>
         </div>
         <div className="kd-header-right">
-          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+          <span className="kd-staff-who" style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
             {session.name || 'Staff'} · {ROLE_LABEL[session.role] || session.role}
           </span>
           <button className="kd-manual-refresh" onClick={fetchOrders}>
@@ -256,6 +263,28 @@ export default function StaffQueue() {
           </button>
         </div>
       </header>
+
+      {!loading && (
+        <div className="kd-stage-tabs" role="tablist" aria-label="Order stage">
+          {COLUMNS.map(col => {
+            const n = filtered.filter(o => COLUMN_MAP[o.order_status] === col.key).length;
+            const mine = myStation != null && col.station === myStation;
+            return (
+              <button
+                key={col.key}
+                role="tab"
+                aria-selected={activeStage === col.key}
+                className="kd-stage-tab"
+                onClick={() => setActiveStage(col.key)}
+              >
+                {col.title}
+                <span className="kd-stage-tab-count">{n}</span>
+                {mine && <span className="kd-stage-tab-mine">●</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {loading ? (
         <div className="kd-center" style={{ flex: 1 }}>
@@ -279,6 +308,7 @@ export default function StaffQueue() {
                 isManager={isManager}
                 onHistory={openHistory}
                 isMine={myStation != null && col.station === myStation}
+                active={activeStage === col.key}
               />
             );
           })}
@@ -324,9 +354,9 @@ export default function StaffQueue() {
   );
 }
 
-function KanbanColumn({ title, count, accent, orders, onBump, bumping, tick, isManager, onHistory, isMine }) {
+function KanbanColumn({ title, count, accent, orders, onBump, bumping, tick, isManager, onHistory, isMine, active = true }) {
   return (
-    <div className={`kd-col${isMine ? ' kd-col--mine' : ''}`}>
+    <div className={`kd-col${isMine ? ' kd-col--mine' : ''}`} data-active={active}>
       <div className="kd-col-header" style={{ borderBottomColor: accent }}>
         <span className="kd-col-title">{title}</span>
         {count > 0 && <span className="kd-col-count" style={{ background: accent }}>{count}</span>}

@@ -384,12 +384,122 @@
 
 /* Four-stage pipeline: New → Accepted → Preparing → Ready */
 .kd-kanban--4 { grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 900px) {
+
+/* Tablet / small laptop: two stages side by side, page scrolls. */
+@media (max-width: 1100px) {
   .kd-kanban--4 {
     grid-template-columns: repeat(2, 1fr);
     height: auto;
     overflow: auto;
   }
+}
+
+/* Phone: four columns in 390px gave ~170px cards with the bump button
+   clipped off the edge, and forced scrolling past two empty stages to reach
+   real orders. One stage at a time instead, chosen with the switcher above
+   (.kd-stage-tabs, rendered only by StaffQueue). */
+@media (max-width: 639px) {
+  .kd-kanban--4 {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .kd-kanban--4 .kd-col { border-right: none; }
+  /* Only the selected stage is shown; the rest stay mounted so counts in the
+     switcher stay live without refetching. */
+  .kd-kanban--4 .kd-col[data-active="false"] { display: none; }
+  .kd-col-body { padding: .6rem; }
+  .kd-card { padding: .8rem; }
+}
+
+/* Long order numbers (#HBB-1785337460304-2A819F) were wrapping onto three
+   lines in a narrow column. */
+.kd-order-num {
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* The footer's buttons were being clipped by the column's overflow at narrow
+   widths — "Mark Ready" rendered as "Mar Reac". Let it wrap instead. */
+.kd-card-footer { flex-wrap: wrap; gap: .5rem; }
+.kd-bump-btn, .kd-history-btn, .kd-awaiting-driver { white-space: nowrap; }
+
+/* Header on a phone: the title wrapped to two lines and the staff name to
+   three, eating 83px before a single order was visible. */
+@media (max-width: 639px) {
+  .kd-header { padding: .5rem .7rem; gap: .5rem; }
+  .kd-header-title { font-size: .95rem; white-space: nowrap; }
+  .kd-header-left { min-width: 0; gap: .4rem; }
+  .kd-header-right { gap: .45rem; flex-shrink: 0; }
+  /* Name is nice-to-have; the role badge and controls are not. */
+  .kd-staff-who {
+    max-width: 8.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kd-sync-time { display: none; }
+}
+
+/* ── Mobile stage switcher (StaffQueue only) ── */
+.kd-stage-tabs {
+  display: none;
+  gap: .4rem;
+  padding: .55rem .6rem;
+  background: #0f0f0f;
+  border-bottom: 1px solid #1f1f1f;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.kd-stage-tabs::-webkit-scrollbar { display: none; }
+.kd-stage-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  flex: 1 0 auto;
+  justify-content: center;
+  padding: .5rem .7rem;
+  border-radius: 100px;
+  border: 1px solid #262626;
+  background: #161616;
+  color: #9ca3af;
+  font-size: .74rem;
+  font-weight: 700;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kd-stage-tab[aria-selected="true"] {
+  background: #241d0c;
+  border-color: #b8a06a;
+  color: #E5B64E;
+}
+.kd-stage-tab-count {
+  min-width: 1.15rem;
+  padding: 0 .3rem;
+  border-radius: 100px;
+  background: #2a2a2a;
+  color: #e5e7eb;
+  font-size: .68rem;
+  font-variant-numeric: tabular-nums;
+}
+.kd-stage-tab[aria-selected="true"] .kd-stage-tab-count { background: #E5B64E; color: #17130a; }
+.kd-stage-tab-mine { color: #16a34a; font-size: .62rem; }
+
+@media (max-width: 639px) {
+  .kd-stage-tabs { display: flex; }
+  /* The column's own header is redundant once the switcher names the stage. */
+  .kd-kanban--4 .kd-col-header { display: none; }
+}
+
+/* Narrow phones: tighten so all four stages fit without the last one being
+   half-cut at the edge (the strip still scrolls if a stage name grows). */
+@media (max-width: 430px) {
+  .kd-stage-tabs { gap: .22rem; padding: .5rem .3rem; }
+  .kd-stage-tab { padding: .45rem .42rem; font-size: .68rem; gap: .24rem; }
+  .kd-stage-tab-count { font-size: .63rem; min-width: .95rem; padding: 0 .2rem; }
+  .kd-stage-tab-mine { font-size: .55rem; }
 }
 
 /* "Your step" emphasis — highlights whose turn it is without locking anyone
