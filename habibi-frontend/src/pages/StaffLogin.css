@@ -1,0 +1,164 @@
+/* Staff / kitchen PIN login. Used on wall-mounted touch terminals and on
+   staff phones, so the keypad stays on every breakpoint — but the layout,
+   not just the card width, changes between them. Previously this page was
+   inline-styled, which meant no media queries and a 360px mobile column
+   stretched down a 1280px desktop screen. */
+
+.sl-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(1100px 620px at 50% -12%, rgba(229, 182, 78, 0.10), transparent 60%),
+    #0a0a0a;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  color: #f1f1f1;
+  box-sizing: border-box;
+}
+
+.sl-card {
+  width: 100%;
+  max-width: 380px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.sl-head { text-align: center; margin-bottom: 1.35rem; }
+.sl-logo { width: 60px; height: 60px; object-fit: contain; margin-bottom: 0.75rem; }
+.sl-title {
+  font-size: 1.35rem; font-weight: 800; color: #E5B64E;
+  margin: 0 0 0.2rem; letter-spacing: -0.01em;
+}
+.sl-sub { font-size: 0.78rem; color: rgba(255, 255, 255, 0.42); margin: 0; }
+
+/* Returning staff — phone remembered, so they only tap a PIN. */
+.sl-welcome {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  flex-wrap: wrap; margin-top: 0.7rem;
+}
+.sl-welcome-phone {
+  font-size: 0.85rem; font-weight: 600; color: #f1f1f1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px; padding: 0.28rem 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.sl-switch {
+  background: none; border: none; padding: 0.2rem;
+  color: rgba(229, 182, 78, 0.85); font-size: 0.76rem;
+  cursor: pointer; text-decoration: underline; font-family: inherit;
+}
+.sl-switch:hover { color: #E5B64E; }
+
+/* ── Phone field ── */
+.sl-label {
+  display: block; font-size: 0.68rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 0.4rem; font-weight: 600;
+}
+.sl-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px; padding: 0.8rem 1rem;
+  color: #fff; font-size: 1.05rem; font-family: inherit;
+  outline: none; transition: border-color 0.15s, background 0.15s;
+  font-variant-numeric: tabular-nums;
+}
+.sl-input::placeholder { color: rgba(255, 255, 255, 0.25); }
+.sl-input:focus { border-color: rgba(229, 182, 78, 0.6); background: rgba(255, 255, 255, 0.07); }
+
+/* ── PIN dots ── */
+.sl-dots { display: flex; justify-content: center; gap: 0.85rem; margin: 0.9rem 0 1.15rem; }
+.sl-dot {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  transition: transform 0.14s ease, background 0.14s, border-color 0.14s;
+}
+.sl-dot.filled {
+  background: #E5B64E; border-color: #E5B64E;
+  transform: scale(1.15);
+}
+/* Wrong PIN — shake the dots rather than only swapping text, so it reads
+   instantly on a busy counter. */
+.sl-dots.shake { animation: slShake 0.42s cubic-bezier(.36,.07,.19,.97); }
+@keyframes slShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl-dots.shake { animation: none; }
+  .sl-dot { transition: none; }
+}
+
+/* ── Keypad ── */
+.sl-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
+.sl-key {
+  appearance: none; font-family: inherit;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 0.85rem 0;
+  font-size: 1.3rem; font-weight: 600; color: #fff;
+  cursor: pointer; user-select: none;
+  transition: background 0.12s, transform 0.06s;
+  font-variant-numeric: tabular-nums;
+}
+.sl-key:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.sl-key:active:not(:disabled) { transform: scale(0.96); background: rgba(229, 182, 78, 0.18); }
+.sl-key:focus-visible { outline: 2px solid #E5B64E; outline-offset: 2px; }
+.sl-key:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Backspace is a routine keystroke, not a destructive action — it used to be
+   styled red like a delete button. */
+.sl-key--back { color: rgba(255, 255, 255, 0.6); font-size: 1.15rem; }
+.sl-key--ghost { visibility: hidden; pointer-events: none; }
+
+/* ── Submit + messages ── */
+.sl-submit {
+  width: 100%; margin-top: 1.15rem; font-family: inherit;
+  background: linear-gradient(180deg, #E5B64E, #cf9f37);
+  color: #17130a; border: none; border-radius: 12px;
+  padding: 0.9rem; font-weight: 800; font-size: 1rem;
+  cursor: pointer; transition: opacity 0.15s, transform 0.06s;
+}
+.sl-submit:active:not(:disabled) { transform: scale(0.99); }
+.sl-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.sl-submit:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Reserved height so an error appearing doesn't shove the keypad down
+   under the user's finger mid-tap. */
+.sl-msg {
+  min-height: 1.15rem; margin: 0.6rem 0 0;
+  text-align: center; font-size: 0.8rem; line-height: 1.15rem;
+}
+.sl-msg.err { color: #f87171; }
+.sl-hint { text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.3); margin: 1rem 0 0; }
+
+/* ── Desktop / terminal ── */
+@media (min-width: 720px) {
+  .sl-card { max-width: 400px; padding: 2rem 1.9rem 1.75rem; }
+  .sl-key { padding: 0.78rem 0; font-size: 1.2rem; }
+}
+
+/* Short screens (landscape phone, small POS terminal): tighten vertically
+   so the Sign In button stays reachable without scrolling. */
+@media (max-height: 700px) {
+  .sl-page { padding: 0.75rem; align-items: flex-start; }
+  .sl-card { padding: 1.15rem 1.15rem 1rem; border-radius: 18px; }
+  .sl-logo { width: 42px; height: 42px; margin-bottom: 0.4rem; }
+  .sl-title { font-size: 1.1rem; }
+  .sl-dots { margin: 0.6rem 0 0.8rem; }
+  .sl-key { padding: 0.6rem 0; font-size: 1.1rem; }
+  .sl-submit { padding: 0.75rem; margin-top: 0.85rem; }
+}

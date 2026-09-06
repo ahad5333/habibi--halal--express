@@ -1,115 +1,206 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import usePageFavicon from '../utils/usePageFavicon';
+import './StaffLogin.css';
 
 const API = import.meta.env.VITE_API_URL || '';
+const PHONE_KEY = 'habibi_staff_phone';
+
+// (718) 555-0100 as you type. Staff read their own number back to check it,
+// so it's formatted rather than left as a raw digit run.
+function formatPhone(raw) {
+  const d = (raw || '').replace(/\D/g, '').slice(0, 10);
+  if (d.length < 4) return d;
+  if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+function maskPhone(raw) {
+  const d = (raw || '').replace(/\D/g, '');
+  return d.length >= 4 ? `••• ••• ${d.slice(-4)}` : d;
+}
 
 export default function StaffLogin() {
   const navigate = useNavigate();
+  usePageFavicon('/images/icons/serving.png');
+
+  // Staff sign in on the same device every shift, so the number is remembered
+  // and they land straight on the PIN pad. "Not you?" clears it.
+  const [remembered, setRemembered] = useState(() => {
+    try { return localStorage.getItem(PHONE_KEY) || ''; } catch (_) { return ''; }
+  });
   const [phone, setPhone]     = useState('');
   const [pin, setPin]         = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [shake, setShake]     = useState(false);
+  const phoneRef = useRef(null);
 
-  const handleKey = (digit) => {
-    if (pin.length < 4) setPin(p => p + digit);
-  };
-  const handleDel = () => setPin(p => p.slice(0, -1));
+  const activePhone = remembered || phone;
+  const phoneReady = activePhone.replace(/\D/g, '').length >= 10;
 
-  const handleLogin = async (e) => {
-    e?.preventDefault();
-    if (!phone.trim()) { setError('Enter your phone number.'); return; }
-    if (pin.length !== 4) { setError('Enter your 4-digit PIN.'); return; }
+  useEffect(() => {
+    if (!remembered) phoneRef.current?.focus();
+  }, [remembered]);
+
+  const submit = useCallback(async (pinValue) => {
+    const code = pinValue ?? pin;
+    if (loading) return;
+    if (!phoneReady) {
+      setError('Enter your phone number first.');
+      phoneRef.current?.focus();
+      return;
+    }
+    if (code.length !== 4) { setError('Enter your 4-digit PIN.'); return; }
+
     setLoading(true);
     setError('');
     try {
-      const res  = await fetch(`${API}/api/staff/login`, {
+      const res = await fetch(`${API}/api/staff/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim(), pin }),
+        body: JSON.stringify({ phone: activePhone, pin: code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed.');
+
       localStorage.setItem('habibi_staff_session', JSON.stringify({
         staff_id: String(data.staff_id),
         token: data.token,
         name: data.name || '',
         role: data.role || '',
       }));
+      try { localStorage.setItem(PHONE_KEY, activePhone); } catch (_) {}
       navigate('/staff');
     } catch (err) {
       setError(err.message);
       setPin('');
+      setShake(true);
+      setTimeout(() => setShake(false), 450);
     } finally {
       setLoading(false);
     }
+  }, [pin, loading, phoneReady, activePhone, navigate]);
+
+  // Entering the fourth digit signs in. Reaching for a separate button after
+  // the pad is finished is the kind of friction that adds up over a shift.
+  const pushDigit = useCallback((d) => {
+    setPin(prev => {
+      if (prev.length >= 4 || loading) return prev;
+      const next = prev + d;
+      if (next.length === 4) setTimeout(() => submit(next), 120);
+      return next;
+    });
+    setError('');
+  }, [loading, submit]);
+
+  const popDigit = useCallback(() => setPin(p => p.slice(0, -1)), []);
+
+  // Physical keyboard: these terminals often have one, and the page previously
+  // ignored it entirely — the PIN could only be entered by clicking.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (document.activeElement === phoneRef.current) return;
+      if (/^\d$/.test(e.key)) { e.preventDefault(); pushDigit(e.key); }
+      else if (e.key === 'Backspace') { e.preventDefault(); popDigit(); }
+      else if (e.key === 'Enter' && pin.length === 4) { e.preventDefault(); submit(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pushDigit, popDigit, submit, pin.length]);
+
+  const forgetPhone = () => {
+    try { localStorage.removeItem(PHONE_KEY); } catch (_) {}
+    setRemembered('');
+    setPhone('');
+    setPin('');
+    setError('');
   };
 
-  const s = {
-    page:    { minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '1rem' },
-    card:    { width: '100%', maxWidth: 360, background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem 1.5rem', color: '#f1f1f1' },
-    logo:    { textAlign: 'center', marginBottom: '1.5rem' },
-    title:   { fontSize: '1.3rem', fontWeight: 700, color: '#E5B64E', marginBottom: '0.25rem', textAlign: 'center' },
-    sub:     { fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '1.5rem' },
-    label:   { fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.4rem', display: 'block' },
-    input:   { width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', fontSize: '1rem', outline: 'none', boxSizing: 'border-box', marginBottom: '1.25rem' },
-    dots:    { display: 'flex', justifyContent: 'center', gap: '0.75rem', margin: '0.5rem 0 1.25rem' },
-    dot:     (filled) => ({ width: 16, height: 16, borderRadius: '50%', background: filled ? '#E5B64E' : 'rgba(255,255,255,0.15)', border: filled ? 'none' : '1px solid rgba(255,255,255,0.25)', transition: 'background 0.15s' }),
-    grid:    { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1rem' },
-    key:     { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '1rem', fontSize: '1.3rem', fontWeight: 600, color: '#fff', cursor: 'pointer', textAlign: 'center', userSelect: 'none', transition: 'background 0.12s' },
-    del:     { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '1rem', fontSize: '1rem', fontWeight: 600, color: '#f87171', cursor: 'pointer', textAlign: 'center', userSelect: 'none' },
-    btn:     { width: '100%', background: '#E5B64E', color: '#0a0a0a', border: 'none', borderRadius: 10, padding: '0.9rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem' },
-    error:   { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '0.65rem 1rem', color: '#f87171', fontSize: '0.82rem', marginBottom: '1rem', textAlign: 'center' },
-    hint:    { textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', marginTop: '1.25rem' },
-  };
-
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ghost', '0', 'back'];
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <div style={s.logo}>
-          <img src="/images/logos/logo-badge.webp" alt="Habibi" style={{ width: 56, height: 56, objectFit: 'contain' }} onError={e => e.target.style.display='none'} />
-        </div>
-        <p style={s.title}>Staff Login</p>
-        <p style={s.sub}>Habibi Halal Express · Order Queue</p>
+    <div className="sl-page">
+      <div className="sl-card">
+        <div className="sl-head">
+          <img
+            src="/images/logos/logo-badge.webp"
+            alt=""
+            className="sl-logo"
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+          <h1 className="sl-title">Staff Login</h1>
+          <p className="sl-sub">Habibi Halal Express · Order Queue</p>
 
-        {error && <div style={s.error}>{error}</div>}
-
-        <label style={s.label}>PHONE NUMBER</label>
-        <input
-          style={s.input}
-          type="tel"
-          inputMode="tel"
-          placeholder="(718) 555-0100"
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          disabled={loading}
-        />
-
-        <label style={s.label}>4-DIGIT PIN</label>
-        <div style={s.dots}>
-          {[0,1,2,3].map(i => <div key={i} style={s.dot(i < pin.length)} />)}
+          {remembered && (
+            <div className="sl-welcome">
+              <span className="sl-welcome-phone">{maskPhone(remembered)}</span>
+              <button type="button" className="sl-switch" onClick={forgetPhone}>
+                Not you?
+              </button>
+            </div>
+          )}
         </div>
 
-        <div style={s.grid}>
+        {!remembered && (
+          <>
+            <label className="sl-label" htmlFor="sl-phone">Phone number</label>
+            <input
+              id="sl-phone"
+              ref={phoneRef}
+              className="sl-input"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(718) 555-0100"
+              value={formatPhone(phone)}
+              onChange={e => { setPhone(e.target.value); setError(''); }}
+              disabled={loading}
+            />
+          </>
+        )}
+
+        <div className={`sl-dots${shake ? ' shake' : ''}`} role="status" aria-live="polite"
+             aria-label={`${pin.length} of 4 digits entered`}>
+          {[0, 1, 2, 3].map(i => (
+            <span key={i} className={`sl-dot${i < pin.length ? ' filled' : ''}`} />
+          ))}
+        </div>
+
+        <div className="sl-pad">
           {KEYS.map((k, i) => {
-            if (k === '') return <div key={i} />;
-            if (k === '⌫') return <div key={i} style={s.del} onClick={handleDel}>{k}</div>;
-            return <div key={i} style={s.key} onClick={() => handleKey(k)}>{k}</div>;
+            if (k === 'ghost') return <div key={i} className="sl-key sl-key--ghost" aria-hidden="true" />;
+            if (k === 'back') {
+              return (
+                <button
+                  key={i} type="button" className="sl-key sl-key--back"
+                  onClick={popDigit} disabled={loading || pin.length === 0}
+                  aria-label="Delete last digit"
+                >⌫</button>
+              );
+            }
+            return (
+              <button
+                key={i} type="button" className="sl-key"
+                onClick={() => pushDigit(k)} disabled={loading || pin.length >= 4}
+                aria-label={`Digit ${k}`}
+              >{k}</button>
+            );
           })}
         </div>
 
         <button
-          style={{ ...s.btn, opacity: loading || pin.length < 4 ? 0.6 : 1 }}
-          onClick={handleLogin}
+          type="button"
+          className="sl-submit"
+          onClick={() => submit()}
           disabled={loading || pin.length < 4}
         >
           {loading ? 'Signing in…' : 'Sign In'}
         </button>
 
-        <p style={s.hint}>
-          First time? Ask your manager to send your setup link via SMS.
-        </p>
+        <p className={`sl-msg${error ? ' err' : ''}`} role="alert">{error}</p>
+
+        <p className="sl-hint">First time? Ask your manager to text you a setup link.</p>
       </div>
     </div>
   );
