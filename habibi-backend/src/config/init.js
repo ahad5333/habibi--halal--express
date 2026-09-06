@@ -1638,6 +1638,35 @@ const createTables = async () => {
     // When the current on-duty shift started -- lets the driver app show a
     // live shift timer; NULL whenever the driver is off duty.
     await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS duty_started_at   TIMESTAMPTZ`);
+    // Bumped by admin's "Sign Out All Devices" action for the staff order-queue
+    // login (kitchen/manager/cashier/server) -- staffToken() mixes this into the
+    // HMAC it signs, so incrementing it invalidates every previously-issued
+    // session token for that person without touching anyone else's or forcing
+    // a PIN reset. Not used by the driver app's own token scheme.
+    await client.query(`ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS session_epoch     INTEGER NOT NULL DEFAULT 0`);
+
+    // ── order_status_log: who changed an order's status, and how ──────────
+    // Added because the staff order-queue login gave individual kitchen/manager/
+    // cashier/server accounts the ability to bump orders, but nothing recorded
+    // WHO did it -- the shared /kitchen screen's KITCHEN_TOKEN path is logged
+    // too (changed_by_type='shared_kitchen_screen', no staff identity) so an
+    // anonymous bump is visibly distinguishable from a personal one, not just
+    // silently indistinguishable.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS order_status_log (
+        id               SERIAL PRIMARY KEY,
+        order_id         INTEGER NOT NULL,
+        order_number     VARCHAR(64),
+        from_status      VARCHAR(40),
+        to_status        VARCHAR(40) NOT NULL,
+        changed_by_type  VARCHAR(30) NOT NULL,
+        changed_by_id    INTEGER,
+        changed_by_name  VARCHAR(100),
+        changed_by_role  VARCHAR(20),
+        changed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_order_status_log_order_id ON order_status_log(order_id)`);
 
     // ── driver_messages: driver ↔ dispatch chat ───────────────────
     await client.query(`

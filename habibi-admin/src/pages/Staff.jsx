@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound, Upload, Download, FileSpreadsheet, UserCheck, UserX } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, X, Check, Clock, Smartphone, KeyRound, Upload, Download, FileSpreadsheet, UserCheck, UserX, LogOut } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import './Staff.css';
 
@@ -404,6 +404,21 @@ export default function Staff() {
                                     <Smartphone size={12} /> PIN SMS
                                   </button>
                                 )}
+                                {STAFF_QUEUE_ROLES.includes(s.role) && (
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    title="Invalidate every device currently signed in as this person (lost/stolen phone, offboarding) without changing their PIN"
+                                    onClick={async () => {
+                                      if (!window.confirm(`Sign ${s.name} out of every device? They'll need to log in again, but their PIN stays the same.`)) return;
+                                      try {
+                                        await adminAPI.signOutStaffEverywhere(s.id);
+                                        alert(`${s.name} signed out of all devices.`);
+                                      } catch (e) { alert(e.message); }
+                                    }}
+                                  >
+                                    <LogOut size={12} /> Sign Out
+                                  </button>
+                                )}
                               </>
                             )}
                             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(s)} title="Edit"><Pencil size={13} /></button>
@@ -481,6 +496,8 @@ export default function Staff() {
                   <p className="staff-role-hint">
                     {form.role === 'delivery'
                       ? 'Has PIN-based login to the driver app.'
+                      : form.role === 'manager'
+                      ? 'Has PIN-based login to the staff order-queue view (view + bump order status), plus a "History" button on each order showing who changed its status and when — the one thing kitchen/cashier/server can\'t see.'
                       : STAFF_QUEUE_ROLES.includes(form.role)
                       ? 'Has PIN-based login to the staff order-queue view (view + bump order status only).'
                       : 'Roster only — this role has no app login or admin access.'}

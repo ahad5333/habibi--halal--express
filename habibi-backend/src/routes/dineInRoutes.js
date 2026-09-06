@@ -37,6 +37,21 @@ function kitchenAuth(req, res, next) {
   next();
 }
 
+// Order-history view is manager-tier-only among staff sessions (the one
+// deliberate permission gap between "manager" and kitchen/cashier/server --
+// everyone else in the staff-queue tier gets the identical view otherwise).
+// Full admin can also see it; the shared KITCHEN_TOKEN screen cannot, since
+// it has no notion of "who" is looking at it.
+function managerOrAdmin(req, res, next) {
+  if (req.headers['x-staff-id'] && req.headers['x-staff-token']) {
+    return staffAuth(req, res, () => {
+      if (req.staffRole !== 'manager') return res.status(403).json({ message: 'Manager access required.' });
+      next();
+    });
+  }
+  return protect(req, res, () => admin(req, res, next));
+}
+
 // â”€â”€ Public: get table info by slug (QR scan landing page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/tables/by-slug/:slug', async (req, res) => {
   try {
@@ -129,6 +144,24 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
         [status, req.params.id]
       );
     }
+
+    // Who made this change -- staff session, full admin, or the shared
+    // kitchen-screen token (no personal identity at all). Recorded so an
+    // anonymous shared-screen bump is visible as such, not indistinguishable
+    // from a personal one.
+    let changedByType = 'shared_kitchen_screen', changedById = null, changedByName = null, changedByRole = null;
+    if (req.staffId) {
+      changedByType = 'staff'; changedById = req.staffId; changedByName = req.staffName; changedByRole = req.staffRole;
+    } else if (req.user) {
+      changedByType = 'admin'; changedById = req.user.id; changedByRole = req.user.role;
+    }
+    await pool.query(
+      `INSERT INTO order_status_log
+         (order_id, order_number, from_status, to_status, changed_by_type, changed_by_id, changed_by_name, changed_by_role)
+       VALUES ($1, (SELECT order_number FROM guest_orders WHERE id=$1), $2, $3, $4, $5, $6, $7)`,
+      [req.params.id, currentStatus, status, changedByType, changedById, changedByName, changedByRole]
+    ).catch(err => console.error('[order_status_log] insert failed:', err.message));
+
     // Previously notified no one on update -- an admin/staff viewer only ever
     // found out on their next poll. Cheap to emit now that another real
     // consumer (the staff queue view, and the existing merchant app) can
@@ -137,6 +170,20 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     if (io) io.to('admins').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
 
     res.json({ id: Number(req.params.id), order_status: status });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
+// ── Manager/admin: status-change history for one order ────────────────────────
+router.get('/kitchen/orders/:id/history', managerOrAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT from_status, to_status, changed_by_type, changed_by_name, changed_by_role, changed_at
+       FROM order_status_log WHERE order_id=$1 ORDER BY changed_at ASC`,
+      [req.params.id]
+    );
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json(safeError(err));
   }

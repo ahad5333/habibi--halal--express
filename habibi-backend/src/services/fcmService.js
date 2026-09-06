@@ -209,9 +209,34 @@ const sendPushToAdmins = async (title, body, data = {}) => {
   }
 };
 
+// ─── Send to all staff order-queue devices (kitchen/manager/cashier/server) ──
+// Separate from sendPushToAdmins -- staff_members is not the users table, and
+// this deliberately excludes role='delivery' (drivers get their own broadcast
+// via dispatchController.js, not a generic new-order alert).
+const sendPushToStaff = async (title, body, data = {}) => {
+  try {
+    const result = await pool.query(
+      `SELECT driver_fcm_token FROM staff_members
+       WHERE role IN ('kitchen','manager','cashier','server')
+         AND is_active=TRUE AND driver_fcm_token IS NOT NULL`
+    );
+    if (result.rows.length === 0) return { success: true, sent_count: 0 };
+    let successCount = 0;
+    for (const { driver_fcm_token } of result.rows) {
+      const r = await sendPushNotification(driver_fcm_token, title, body, data);
+      if (r.success) successCount++;
+    }
+    return { success: true, sent_count: successCount };
+  } catch (err) {
+    console.error(`[Push] Staff dispatch error: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+};
+
 module.exports = {
   sendPushNotification,
   sendPushToUser,
   sendOrderPushNotification,
   sendPushToAdmins,
+  sendPushToStaff,
 };

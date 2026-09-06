@@ -193,6 +193,7 @@ export const adminAPI = {
   // Staff PIN login (kitchen/manager/cashier/server queue access)
   sendStaffSetupSms: (staff_id) => req('/api/staff/send-setup-sms', { method: 'POST', body: JSON.stringify({ staff_id }) }),
   resetStaffPin:     (id, pin)  => req(`/api/staff/${id}/reset-pin`, { method: 'PATCH', body: JSON.stringify({ pin }) }),
+  signOutStaffEverywhere: (id)  => req(`/api/staff/${id}/sign-out-everywhere`, { method: 'POST' }),
 
   // Inventory
   getInventory:       () => req('/api/admin/inventory'),

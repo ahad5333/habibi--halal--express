@@ -987,6 +987,16 @@ const createGuestOrder = async (req, res, overrides = {}) => {
       { orderNumber: order_number, type: 'new_order', channelId: 'new-orders' }
     ).catch(err => console.error('[Push] Merchant alert failed:', err.message));
 
+    // Same alert to any staff order-queue devices (kitchen/manager/cashier/
+    // server) that have registered for push -- this is the actual fix for
+    // "how does staff find out" when their phone is locked/backgrounded,
+    // since the staff queue page itself only polls while open and visible.
+    fcmService.sendPushToStaff(
+      '🔔 New Order!',
+      `Order #${order_number} just came in — tap to review.`,
+      { orderNumber: order_number, type: 'new_order', url: '/staff', channelId: 'new-orders' }
+    ).catch(err => console.error('[Push] Staff alert failed:', err.message));
+
     res.status(201).json({ success: true, db_id, order_number });
   } catch (err) {
     console.error("createGuestOrder error:", err.message);

@@ -114,6 +114,20 @@ export default function StaffQueue() {
     if (!session) window.location.replace('/staff/login');
   }, [session]);
 
+  // Fire-and-forget push registration so new orders reach this device even
+  // when the tab is backgrounded/screen locked -- polling alone only works
+  // while the page is open and visible. Same delayed pattern as DriverView.jsx.
+  useEffect(() => {
+    if (!session) return;
+    const t = setTimeout(async () => {
+      try {
+        const { registerStaffPush, isFirebaseConfigured } = await import('../utils/pushNotifications.js');
+        if (isFirebaseConfigured()) await registerStaffPush(session.staff_id, session.token);
+      } catch (_) {}
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [session]);
+
   const [orders,    setOrders]    = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -121,7 +135,11 @@ export default function StaffQueue() {
   const [tick,      setTick]      = useState(0);
   const [scope,     setScope]     = useState('all');   // 'all' | 'dine_in'
   const [bumping,   setBumping]   = useState({});       // id → true
+  const [historyOrder, setHistoryOrder] = useState(null);   // order card whose history modal is open
+  const [historyLog,   setHistoryLog]   = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const prevIds = useRef(new Set());
+  const isManager = session?.role === 'manager';
 
   const endpoint = scope === 'dine_in' ? '/api/dine-in/kitchen' : '/api/dine-in/kitchen-all';
   const staffHeaders = session ? { 'X-Staff-Id': session.staff_id, 'X-Staff-Token': session.token } : {};
@@ -192,6 +210,21 @@ export default function StaffQueue() {
       fetchOrders();
     } finally {
       setBumping(p => { const { [order.id]: _, ...rest } = p; return rest; });
+    }
+  };
+
+  const openHistory = async (order) => {
+    setHistoryOrder(order);
+    setHistoryLoading(true);
+    setHistoryLog([]);
+    try {
+      const res = await fetch(`${API_BASE}/api/dine-in/kitchen/orders/${order.id}/history`, { headers: staffHeaders });
+      const data = await res.json();
+      setHistoryLog(Array.isArray(data) ? data : []);
+    } catch (_) {
+      setHistoryLog([]);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -270,6 +303,8 @@ export default function StaffQueue() {
             onBump={bumpOrder}
             bumping={bumping}
             tick={tick}
+            isManager={isManager}
+            onHistory={openHistory}
           />
           <KanbanColumn
             title="Preparing"
@@ -280,6 +315,8 @@ export default function StaffQueue() {
             onBump={bumpOrder}
             bumping={bumping}
             tick={tick}
+            isManager={isManager}
+            onHistory={openHistory}
           />
           <KanbanColumn
             title="Ready"
@@ -290,14 +327,52 @@ export default function StaffQueue() {
             onBump={bumpOrder}
             bumping={bumping}
             tick={tick}
+            isManager={isManager}
+            onHistory={openHistory}
           />
+        </div>
+      )}
+
+      {historyOrder && (
+        <div className="kd-history-overlay" onClick={() => setHistoryOrder(null)}>
+          <div className="kd-history-modal" onClick={e => e.stopPropagation()}>
+            <div className="kd-history-hdr">
+              <span>Order #{historyOrder.order_number} — History</span>
+              <button className="kd-manual-refresh" onClick={() => setHistoryOrder(null)}>✕</button>
+            </div>
+            {historyLoading ? (
+              <p style={{ color: '#6b7280', padding: '1rem' }}>Loading…</p>
+            ) : historyLog.length === 0 ? (
+              <p style={{ color: '#6b7280', padding: '1rem' }}>No status changes recorded yet.</p>
+            ) : (
+              <ul className="kd-history-list">
+                {historyLog.map((h, i) => (
+                  <li key={i} className="kd-history-item">
+                    <span className="kd-history-transition">
+                      {h.from_status ? `${h.from_status.replace(/_/g, ' ')} → ` : ''}{h.to_status.replace(/_/g, ' ')}
+                    </span>
+                    <span className="kd-history-who">
+                      {h.changed_by_type === 'staff'
+                        ? `${h.changed_by_name || 'Staff'} (${h.changed_by_role})`
+                        : h.changed_by_type === 'admin'
+                        ? 'Admin'
+                        : 'Shared Kitchen Screen'}
+                    </span>
+                    <span className="kd-history-time">
+                      {new Date(h.changed_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping, tick }) {
+function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping, tick, isManager, onHistory }) {
   return (
     <div className="kd-col">
       <div className="kd-col-header" style={{ borderBottomColor: accent }}>
@@ -319,6 +394,8 @@ function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping
             onBump={onBump}
             bumping={bumping[order.id]}
             tick={tick}
+            isManager={isManager}
+            onHistory={onHistory}
           />
         ))}
       </div>
@@ -326,7 +403,7 @@ function KanbanColumn({ title, count, accent, orders, bumpLabel, onBump, bumping
   );
 }
 
-function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
+function OrderCard({ order, bumpLabel, onBump, bumping, tick, isManager, onHistory }) {
   const mins = minutesOld(order.placed_at);
   const urgency = mins >= 20 ? 'urgent' : mins >= 10 ? 'warn' : '';
   const isPaymentPending = order.order_status === 'pending_verification';
@@ -388,14 +465,21 @@ function OrderCard({ order, bumpLabel, onBump, bumping, tick }) {
           {elapsedLabel(order.placed_at)}
           {urgency === 'urgent' && ' ⚠'}
         </span>
-        <button
-          className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
-          onClick={() => onBump(order)}
-          disabled={bumping}
-        >
-          {bumping ? '…' : effectiveBumpLabel}
-          {!bumping && <ChevronRight size={13} />}
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {isManager && (
+            <button className="kd-history-btn" onClick={() => onHistory(order)} title="View status history">
+              History
+            </button>
+          )}
+          <button
+            className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
+            onClick={() => onBump(order)}
+            disabled={bumping}
+          >
+            {bumping ? '…' : effectiveBumpLabel}
+            {!bumping && <ChevronRight size={13} />}
+          </button>
+        </div>
       </div>
     </div>
   );
