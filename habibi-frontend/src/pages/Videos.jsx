@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Film, Eye } from 'lucide-react';
+import { Film } from 'lucide-react';
 import SEO from '../components/SEO';
 import './Videos.css';
 import { VIDEOS, VideoCard } from './videoData';
@@ -18,8 +18,13 @@ const Videos = () => {
   const [activeCategory, setActiveCategory] = useState('All');
 
   const featured = VIDEOS.filter(v => v.featured);
+  // "All" previously meant "everything NOT featured", which only looked right
+  // while the six placeholder entries padded this grid out. With those removed
+  // and every real video featured, "All" rendered "No videos in this category
+  // yet" while the individual category tabs still showed videos -- inconsistent
+  // and broken-looking. "All" now means all.
   const filtered = VIDEOS.filter(v =>
-    activeCategory === 'All' ? !v.featured : v.category === activeCategory
+    activeCategory === 'All' ? true : v.category === activeCategory
   );
 
   return (
@@ -41,9 +46,16 @@ const Videos = () => {
           <p className="vid-hero-sub">
             Go behind the counter, meet our team, and see why the Bronx calls Habibi home.
           </p>
+          {/* Hardcoded "50+ Videos / 200K+ Views" removed: there are four
+              videos, so both figures were plainly false to any visitor who
+              scrolled. Counting the real list keeps it honest as videos are
+              added; view counts aren't tracked anywhere, so that claim is gone
+              rather than replaced with another invented number. */}
           <div className="vid-hero-stats">
-            <div className="vid-stat"><Film size={14} /><span>50+ Videos</span></div>
-            <div className="vid-stat"><Eye size={14} /><span>200K+ Views</span></div>
+            <div className="vid-stat">
+              <Film size={14} />
+              <span>{VIDEOS.length} {VIDEOS.length === 1 ? 'Video' : 'Videos'}</span>
+            </div>
           </div>
         </div>
       </section>
