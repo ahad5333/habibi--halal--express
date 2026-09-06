@@ -6,13 +6,12 @@ const API_BASE  = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const FRONT_URL = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
 
 // ── Tiny pure-JS QR matrix renderer ─────────────────────────────────────────
-// Uses the qrcode-svg approach: calls backend /qr endpoint which returns URL,
-// then we render as an <img> that shows a QR via the Google Charts API fallback.
-// This avoids any npm package — we just embed the URL and display it visually.
+// Renders as an <img> pointing at a public QR-generation API — no npm package
+// needed. Google's old "Image Charts" API (chart.googleapis.com/chart?cht=qr)
+// was shut down years ago and now 404s on every request; api.qrserver.com is
+// a still-live, free, no-key-required equivalent.
 function QRDisplay({ url, size = 180 }) {
-  // Encode url into a Google Charts QR code image URL (public API, no key required)
-  // Using data URI approach: we render a canvas-based QR or fallback to a known source.
-  const chartUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+  const chartUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
   return (
     <img
       src={chartUrl}
@@ -113,7 +112,7 @@ export default function TableManager() {
         img { margin: 0 auto 12px; display: block; }
       </style></head>
       <body>
-        <img src="https://chart.googleapis.com/chart?cht=qr&chs=260x260&chl=${encodeURIComponent(url)}&choe=UTF-8" width="260" height="260" />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(url)}" width="260" height="260" />
         <h1>${qrModal.table_name}</h1>
         <p>Scan to order · Habibi Halal Express</p>
         <script>window.onload=()=>window.print();<\/script>
