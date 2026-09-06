@@ -8,13 +8,15 @@ const KITCHEN_TOKEN = import.meta.env.VITE_KITCHEN_TOKEN || '';
 const KITCHEN_HEADERS = KITCHEN_TOKEN ? { 'X-Kitchen-Token': KITCHEN_TOKEN } : {};
 const POLL_MS  = 15000;
 
+// No dine_in entry: the client doesn't offer dine-in service, the QR-landing
+// route that was the only way to create such an order is gone, and there are
+// no dine_in orders in the database. UtensilsCrossed stays as the fallback
+// icon for anything unrecognised.
 const DELIVERY_ICON = {
-  dine_in:  <UtensilsCrossed size={12} />,
   pickup:   <ShoppingBag size={12} />,
   delivery: <Truck size={12} />,
 };
 const DELIVERY_LABEL = {
-  dine_in:  'Dine-In',
   pickup:   'Pickup',
   delivery: 'Delivery',
 };
@@ -75,11 +77,10 @@ export default function KitchenDisplay() {
   const [error,     setError]     = useState(null);
   const [lastSync,  setLastSync]  = useState(null);
   const [tick,      setTick]      = useState(0);
-  const [scope,     setScope]     = useState('all');   // 'all' | 'dine_in'
   const [bumping,   setBumping]   = useState({});       // id → true
   const prevIds = useRef(new Set());
 
-  const endpoint = scope === 'dine_in' ? '/api/dine-in/kitchen' : '/api/dine-in/kitchen-all';
+  const endpoint = '/api/dine-in/kitchen-all';
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -145,10 +146,7 @@ export default function KitchenDisplay() {
     }
   };
 
-  const filtered = scope === 'dine_in'
-    ? orders.filter(o => o.delivery_method === 'dine_in')
-    : orders;
-
+  const filtered = orders;
 
   if (error && orders.length === 0) return (
     <div className="kd-root kd-center">
@@ -168,14 +166,6 @@ export default function KitchenDisplay() {
         <div className="kd-header-left">
           <UtensilsCrossed size={22} />
           <span className="kd-header-title">Kitchen Display</span>
-          <button
-            className={`kd-scope-btn${scope === 'all' ? ' kd-scope-active' : ''}`}
-            onClick={() => setScope('all')}
-          >All Orders</button>
-          <button
-            className={`kd-scope-btn${scope === 'dine_in' ? ' kd-scope-active' : ''}`}
-            onClick={() => setScope('dine_in')}
-          >Dine-In</button>
         </div>
         <div className="kd-header-right">
           <button className="kd-manual-refresh" onClick={fetchOrders}>

@@ -26,7 +26,7 @@ export const BUMP_NEXT = {
   accepted:  'preparing',
   preparing: 'ready',
   cooking:   'ready',
-  ready:     'delivered',   // pickup/dine-in only -- see canStaffBump below
+  ready:     'delivered',   // pickup only -- see canStaffBump below
 };
 
 export const COLUMNS = [
