@@ -3,12 +3,53 @@ const nodemailer = require('nodemailer');
 const { renderBody, renderEmail } = require('./templateRenderer');
 
 const sendgridKey = process.env.SENDGRID_API_KEY;
+const zeptoToken  = process.env.ZEPTOMAIL_TOKEN;
+const zeptoHost   = process.env.ZEPTOMAIL_HOST || 'api.zeptomail.com';
 const smtpHost   = process.env.SMTP_HOST;
 const smtpPort   = process.env.SMTP_PORT || 587;
 const smtpUser   = process.env.SMTP_USER;
 const smtpPass   = process.env.SMTP_PASS;
 const emailFrom  = process.env.EMAIL_FROM || 'noreply@habibihe.com';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// ZeptoMail HTTP API (Zoho's transactional service). Like SendGrid below, this
+// is deliberately HTTP rather than SMTP: DigitalOcean blocks outbound SMTP on
+// this droplet (ports 25/465/587/2525 all time out), so any SMTP-based sender
+// -- including Zoho Mail's own -- cannot work from here.
+//
+// ZEPTOMAIL_TOKEN must include the "Zoho-enczapikey " prefix, exactly as the
+// ZeptoMail console shows it; that whole string is the Authorization header.
+const sendViaZeptoMail = (to, subject, html) => new Promise((resolve, reject) => {
+  const body = JSON.stringify({
+    from: { address: emailFrom, name: 'Habibi Halal Express' },
+    to: [{ email_address: { address: to } }],
+    subject,
+    htmlbody: html,
+  });
+  const req = https.request({
+    hostname: zeptoHost,
+    path: '/v1.1/email',
+    method: 'POST',
+    headers: {
+      'Authorization': zeptoToken,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+    },
+  }, res => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        resolve({ statusCode: res.statusCode });
+      } else {
+        reject(new Error(`ZeptoMail API ${res.statusCode}: ${data.slice(0, 300)}`));
+      }
+    });
+  });
+  req.on('error', reject);
+  req.write(body);
+  req.end();
+});
 
 // SendGrid HTTP API — avoids SMTP port blocks on VPS hosts
 const sendViaSendGridAPI = (to, subject, html) => new Promise((resolve, reject) => {
@@ -51,6 +92,8 @@ if (smtpHost && smtpUser && smtpPass) {
     auth: { user: smtpUser, pass: smtpPass },
   });
   console.log(`[Email Service] Configured via custom SMTP (${smtpHost}).`);
+} else if (zeptoToken) {
+  console.log(`[Email Service] Configured via ZeptoMail HTTP API (${zeptoHost})${sendgridKey ? ', SendGrid as fallback' : ''}.`);
 } else if (sendgridKey) {
   console.log('[Email Service] Configured via SendGrid HTTP API.');
 } else {
@@ -102,6 +145,21 @@ const logSimulatedEmail = (to, subject, html) => {
 };
 
 const sendMailHelper = async (to, subject, html) => {
+  // ZeptoMail first when configured: it's the account that can actually send.
+  // Falls through to SendGrid on failure rather than dropping the message, so
+  // a ZeptoMail outage degrades instead of losing the email outright.
+  if (zeptoToken) {
+    try {
+      await sendViaZeptoMail(to, subject, html);
+      console.log(`[Email Service] Sent to ${to} via ZeptoMail.`);
+      return { success: true };
+    } catch (err) {
+      console.error(`[Email Service] ZeptoMail failed for ${to}: ${err.message}`);
+      if (!sendgridKey || transporter) return { success: false, error: err.message };
+      console.log('[Email Service] Falling back to SendGrid…');
+    }
+  }
+
   if (sendgridKey && !transporter) {
     try {
       await sendViaSendGridAPI(to, subject, html);
