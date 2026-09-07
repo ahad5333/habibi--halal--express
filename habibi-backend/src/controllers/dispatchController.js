@@ -387,13 +387,21 @@ const getAvailableOrders = async (req, res) => {
       `SELECT go.order_number, go.customer_name, go.delivery_address, go.delivery_city,
               go.total, go.tip, go.items, go.placed_at
          FROM guest_orders go
-        WHERE go.order_status = 'accepted'
+        WHERE go.order_status IN ('accepted', 'preparing', 'cooking', 'ready')
           AND go.delivery_method = 'delivery'
           AND NOT EXISTS (
             SELECT 1 FROM delivery_assignments da
-             WHERE da.order_number = go.order_number AND da.status != 'cancelled'
+             WHERE da.order_number = go.order_number
+               AND da.status != 'cancelled'
+               AND da.driver_id IS NOT NULL
           )
-        ORDER BY go.placed_at ASC
+        ORDER BY CASE go.order_status
+                   WHEN 'ready'     THEN 0
+                   WHEN 'cooking'   THEN 1
+                   WHEN 'preparing' THEN 1
+                   ELSE 2
+                 END,
+                 go.placed_at ASC
         LIMIT 10`
     );
     const orders = result.rows.map(o => {
@@ -424,10 +432,15 @@ const claimOrder = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Lock: check if already claimed by another driver
+    // Lock: check if already claimed by another driver.
+    // `driver_id IS NOT NULL` matters -- the auto-dispatch tier router inserts
+    // an UNASSIGNED placeholder row (driver_id NULL, status 'pending') at order
+    // creation meaning "this needs a driver". Without this condition that
+    // placeholder was read as "already taken", so claiming returned
+    // 409 "Order already taken by another driver" when nobody had it.
     const existing = await client.query(
       `SELECT id, driver_id FROM delivery_assignments
-        WHERE order_number=$1 AND status NOT IN ('cancelled')
+        WHERE order_number=$1 AND status NOT IN ('cancelled') AND driver_id IS NOT NULL
         FOR UPDATE`,
       [order_number]
     );
@@ -461,7 +474,26 @@ const claimOrder = async (req, res) => {
     );
     const dName = driverRes.rows[0]?.name || driver_name || 'Driver';
 
-    const result = await client.query(
+    // Fill the unassigned placeholder in place when one exists, rather than
+    // inserting a second row for the same order (which would leave a stale
+    // "Unassigned / pending" row on the dispatch board forever).
+    const placeholder = await client.query(
+      `SELECT id FROM delivery_assignments
+        WHERE order_number=$1 AND driver_id IS NULL AND status NOT IN ('cancelled')
+        ORDER BY id ASC LIMIT 1 FOR UPDATE`,
+      [order_number]
+    );
+
+    const result = placeholder.rows.length
+      ? await client.query(
+          `UPDATE delivery_assignments
+              SET driver_id=$1, driver_name=$2, status='assigned',
+                  delivery_address=$3, customer_name=$4, customer_phone=$5, tip_amount=$6
+            WHERE id=$7
+        RETURNING id`,
+          [driver_id, dName, deliveryAddress, o.customer_name, o.customer_phone, o.tip || 0, placeholder.rows[0].id]
+        )
+      : await client.query(
       `INSERT INTO delivery_assignments
          (order_id, order_number, driver_id, driver_name, status,
           delivery_address, customer_name, customer_phone, tip_amount)
