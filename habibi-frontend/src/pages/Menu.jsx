@@ -266,6 +266,12 @@ const Menu = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Un-hearting the last favourite while viewing them would otherwise leave an
+  // empty list with the tab that got you there already gone.
+  useEffect(() => {
+    if (activeCategory === 'favorites' && favoriteIds.size === 0) setActiveCategory('grid');
+  }, [favoriteIds, activeCategory]);
+
   // The service worker serves the menu catalogue from cache when the network
   // is gone, so the page still works offline -- but per-location sold-out data
   // is deliberately never cached, because showing yesterday's availability as
@@ -293,12 +299,25 @@ const Menu = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catParam, searchParams.toString(), loading]);
 
-  const activeCatObj = CATEGORIES.find(c => c.value === activeCategory);
+  // Favourites is a real filter but not a menu category, so it isn't in
+  // CATEGORIES. Without a stand-in the hero renders the raw i18n key
+  // ("menu.categories.undefined.label") as its title.
+  const FAVORITES_CAT = {
+    label: 'Your Favourites', shortLabel: 'Favourites', value: 'favorites',
+    match: null, emoji: '❤️', tagline: 'the ones you keep coming back to',
+  };
+  const activeCatObj = activeCategory === 'favorites'
+    ? FAVORITES_CAT
+    : CATEGORIES.find(c => c.value === activeCategory);
 
   const filtered = items.filter(item => {
     if ((locAvailMap[item.id] || 'available') === 'inactive') return false;
     let catMatch = false;
-    if (activeCategory === 'all' || activeCategory === 'grid') {
+    if (activeCategory === 'favorites') {
+      // Saving a favourite already worked; there was just no way to see them
+      // from the menu itself -- you had to leave and open Account.
+      catMatch = favoriteIds.has(item.id);
+    } else if (activeCategory === 'all' || activeCategory === 'grid') {
       catMatch = true;
     } else if (activeCategory === 'breakfast') {
       catMatch = (item.category || '').toLowerCase().includes('breakfast');
@@ -829,6 +848,18 @@ const Menu = () => {
         style={cartItems.length > 0 ? { bottom: '62px' } : {}}
       >
         <div className="menu-cats-track" ref={tabsRef}>
+          {/* Only shown to someone who actually has favourites — an empty
+              "Favourites" tab is just a dead end. */}
+          {favoriteIds.size > 0 && (
+            <button
+              data-val="favorites"
+              className={`menu-cat-tab${activeCategory === 'favorites' ? ' active' : ''}`}
+              onClick={() => setActiveCategory('favorites')}
+            >
+              <span className="menu-cat-emoji">❤️</span>
+              <span className="menu-cat-label-mobile">Favourites</span>
+            </button>
+          )}
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
               ? activeCategory === 'byo'
@@ -860,6 +891,18 @@ const Menu = () => {
       <aside className="menu-sidebar">
         <div className="menu-sidebar-inner">
           <p className="menu-sidebar-heading">{t('menu.categoriesHeading')}</p>
+          {favoriteIds.size > 0 && (
+            <button
+              className={`menu-sidebar-item${activeCategory === 'favorites' ? ' active' : ''}`}
+              onClick={() => setActiveCategory('favorites')}
+            >
+              <span className="menu-sidebar-emoji">❤️</span>
+              <span className="menu-sidebar-label">
+                Favourites
+                <span className="menu-sidebar-sublabel">{favoriteIds.size} saved</span>
+              </span>
+            </button>
+          )}
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
               ? activeCategory === 'byo'
