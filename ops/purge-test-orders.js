@@ -49,14 +49,20 @@ const DEPENDENTS = [
   { table: 'subscription_charges',   col: 'order_number', by: 'number' },
   { table: 'chat_messages',          col: 'order_number', by: 'number' },
   { table: 'reviews',                col: 'order_number', by: 'number' },
-  { table: 'urgent_requests',        col: 'order_id',     by: 'id'     },
   { table: 'quick_payments',         col: 'order_number', by: 'number' },
   { table: 'pending_checkouts',      col: 'order_number', by: 'number' },
 ];
 
-// Deliberately NOT touched -- these are separate order streams, not website
-// orders, and nobody has confirmed they're test data. Reported only.
-const REPORT_ONLY = ['business_orders', 'partner_orders', 'orders'];
+// Deliberately NOT touched. Two different reasons:
+//   - business_orders / partner_orders / orders: separate order streams
+//     (wholesale, marketplace, legacy), not website orders, and nobody has
+//     confirmed they're test data.
+//   - urgent_requests: its order_id is a varchar holding free text, not a
+//     reference -- observed values include NULL, '' and a full tracking URL.
+//     There's no reliable way to match it to an order, and these are the
+//     medical / food-safety SOS alerts, so they get reviewed by hand rather
+//     than matched by a guess.
+const REPORT_ONLY = ['business_orders', 'partner_orders', 'orders', 'urgent_requests'];
 
 // Quote-safe: every table/column name here is a literal from the arrays above,
 // never user input.
