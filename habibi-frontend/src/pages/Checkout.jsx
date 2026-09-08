@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, X, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, couponsAPI, giftCardsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard } from '../services/api';
+import { ordersAPI, couponsAPI, giftCardsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard, subscriptionsAPI } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { getStoredUtm } from '../utils/utm';
 import { useDineIn } from '../context/DineInContext';
@@ -28,10 +29,15 @@ const ALT_PAYMENTS = [
   { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay-v2.png' },
   { id: 'zelle',     label: 'Zelle',            img: '/images/partners/zelle.png' },
   { id: 'cashapp',   label: 'Cash App',         img: '/images/partners/cashapp.png' },
-  { id: 'cash',      label: 'Cash on Delivery', img: '/images/partners/cash-on-delivery-v2.png' },
+  // Cash on Delivery is deliberately absent: the owner confirmed (2026-09-08)
+  // that cash is a wholesale arrangement for business customers, not a website
+  // payment option. The driver-side cash handling (collection, photo proof,
+  // hand-in reconciliation) is left intact because wholesale still uses it.
 ];
 
-// Methods that go through an offline/modal flow
+// Methods that go through an offline/modal flow. 'cash' stays listed so any
+// historical order still renders correctly, even though it can no longer be
+// chosen at checkout.
 const OFFLINE_METHODS = new Set(['cash', 'zelle', 'cashapp']);
 
 // Methods that render their own SDK button inline instead of using the
@@ -60,6 +66,7 @@ const scheduleDateLabel = (dateStr) => {
 };
 
 const Checkout = () => {
+  const { t } = useTranslation();
   const [deliveryMode, setDeliveryMode]   = useState('delivery');
   const [timing, setTiming]               = useState('asap');
   const [scheduleDate, setScheduleDate]   = useState(() => toDateStr(new Date()));
@@ -112,6 +119,8 @@ const Checkout = () => {
   const [giftRecipientPhone, setGiftRecipientPhone] = useState('');
   const [giftMessage, setGiftMessage]           = useState('');
   const [deliveryFee, setDeliveryFee]           = useState(0);
+  // Server-issued reference to the exact quote the customer was shown.
+  const [deliveryQuoteRef, setDeliveryQuoteRef] = useState(null);
   const [deliveryDuration, setDeliveryDuration] = useState('');
   const [addressValidated, setAddressValidated] = useState(false);
   const [addressLatLng, setAddressLatLng]       = useState(null);
@@ -123,6 +132,7 @@ const Checkout = () => {
   const [savedAddresses, setSavedAddresses]     = useState([]);
   const [savedCards, setSavedCards]             = useState([]);
   const [selectedSavedCardId, setSelectedSavedCardId] = useState(null); // null = pay with a new card
+  const [makeRecurring, setMakeRecurring] = useState(false); // "Make this a weekly order" (Habibi Weekly)
   const [upsellItems, setUpsellItems]           = useState([]);
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
@@ -131,6 +141,8 @@ const Checkout = () => {
   const [taxRate, setTaxRate]                     = useState(0.08875); // overwritten from Settings below
   const [serviceFeeRate, setServiceFeeRate]       = useState(0.04273); // overwritten from Settings below
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0); // overwritten from Settings below; 0 = not configured, don't show the bar
+  const [tierDiscountPct, setTierDiscountPct] = useState(0); // VIP tier's real per-order discount %, logged-in customers only
+  const [tierName, setTierName]               = useState(null);
   const [activePaymentProviders, setActivePaymentProviders] = useState(null); // null = not loaded yet, show everything
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -157,7 +169,10 @@ const Checkout = () => {
   // redeem in full-dollar increments (e.g. rate 100 + 350 pts → 300 redeemable)
   const redeemablePts   = Math.floor(loyaltyPoints / loyaltyRedeemRate) * loyaltyRedeemRate;
   const loyaltyDiscount = useRewards && redeemablePts > 0 ? redeemablePts / loyaltyRedeemRate : 0;
-  const preGiftCardTotal = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount);
+  // VIP tier discount — real, automatic, server-validated the same way the
+  // coupon/loyalty discounts above already are (see orderController.js).
+  const tierDiscount = tierDiscountPct > 0 ? subtotal * (tierDiscountPct / 100) : 0;
+  const preGiftCardTotal = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount - tierDiscount);
   // Applying a gift card always uses as much of its balance as the order
   // needs (capped at what's actually owed) -- not a customer-chosen partial
   // amount, mirroring how coupon/loyalty already just apply their full value.
@@ -320,6 +335,23 @@ const Checkout = () => {
       });
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // VIP tier perks (real, automatic checkout discount % + free-delivery
+  // threshold override) — logged-in customers only, resolved server-side
+  // from their own lifetime points, never client-computed. The effective
+  // free-delivery threshold already accounts for the tier override (it's
+  // already MIN'd against the site-wide default server-side), so it's safe
+  // to just replace the global value fetched above once this resolves.
+  useEffect(() => {
+    if (!isLoggedIn) { setTierDiscountPct(0); setTierName(null); return; }
+    userAPI.getLoyalty()
+      .then(l => {
+        setTierDiscountPct(l?.tier_discount_pct || 0);
+        setTierName(l?.tier || null);
+        if (l?.free_delivery_threshold != null) setFreeDeliveryThreshold(l.free_delivery_threshold);
+      })
+      .catch(() => {}); // fail open — no tier perk shown/applied
+  }, [isLoggedIn]);
+
   // Saved addresses (Account > Saved Addresses) — logged-in users previously had
   // to retype their address every order despite this already existing for them
   // to manage on the Account page; this just surfaces it at checkout too.
@@ -407,6 +439,7 @@ const Checkout = () => {
   useEffect(() => {
     if (deliveryMode !== 'delivery' || !address.trim() || !selectedLocation) {
       setDeliveryFee(0);
+      setDeliveryQuoteRef(null);
       setDeliveryDuration('');
       setFeeMsg('');
       setAddressOutOfRange(false);
@@ -445,22 +478,30 @@ const Checkout = () => {
           body: JSON.stringify({ customer_address: address, location_id: selectedLocation?.id, subtotal }),
         });
         const data = await res.json();
-        if (data.out_of_range) {
+        if (data.out_of_range || data.delivery_unavailable) {
+          // No price is invented when a courier refuses or can't be reached —
+          // the order must not proceed as delivery, so clear the quote ref too.
           setDeliveryFee(0);
+          setDeliveryQuoteRef(null);
           setAddressOutOfRange(true);
-          setFeeMsg('⚠ This address is outside our delivery area. Please enter a Bronx/NYC address.');
+          setFeeMsg(`⚠ ${data.message || 'Delivery isn’t available for this address. Pickup is still available.'}`);
         } else if (data.fee != null) {
           setDeliveryFee(parseFloat(data.fee));
+          // Held so placing the order honours the price actually shown here,
+          // rather than a courier quote that moved in the meantime.
+          setDeliveryQuoteRef(data.quote_ref || null);
           if (data.estimated_delivery_text) setDeliveryDuration(data.estimated_delivery_text);
           // When no Maps key (dev), allow fee API to validate; on prod autocomplete handles it
           if (!import.meta.env.VITE_GOOGLE_MAPS_KEY) setAddressValidated(true);
           setFeeMsg(`📍 ${data.distance_text || ''} — delivery fee applied`);
         } else {
           setDeliveryFee(0);
+          setDeliveryQuoteRef(null);
           setFeeMsg('');
         }
       } catch (_) {
         setDeliveryFee(0);
+        setDeliveryQuoteRef(null);
       } finally {
         setFeeLoading(false);
       }
@@ -587,9 +628,9 @@ const Checkout = () => {
       const res = await couponsAPI.validate(code, subtotal, items);
       setCouponApplied(true);
       setCouponDiscount(res.discount || 0);
-      setCouponMsg(res.message || 'Coupon applied!');
+      setCouponMsg(res.message || t('checkout.couponApplied'));
     } catch (err) {
-      setCouponErr(err.message || 'Invalid coupon code.');
+      setCouponErr(err.message || t('checkout.errInvalidCoupon'));
       setCouponApplied(false);
       setCouponDiscount(0);
     } finally {
@@ -607,9 +648,9 @@ const Checkout = () => {
       const res = await giftCardsAPI.check(code);
       setGiftCardApplied(true);
       setGiftCardBalance(res.balance || 0);
-      setGiftCardMsg(`Gift card applied — $${(res.balance || 0).toFixed(2)} available.`);
+      setGiftCardMsg(t('checkout.giftCardAppliedMsg', { balance: (res.balance || 0).toFixed(2) }));
     } catch (err) {
-      setGiftCardErr(err.message || 'Invalid gift card code.');
+      setGiftCardErr(err.message || t('checkout.errInvalidGiftCard'));
       setGiftCardApplied(false);
       setGiftCardBalance(0);
     } finally {
@@ -663,8 +704,12 @@ const Checkout = () => {
     tax:          parseFloat(tax.toFixed(2)),
     service_fee:  parseFloat(serviceFee.toFixed(2)),
     delivery_fee: isDineIn ? 0 : parseFloat(deliveryFee.toFixed(2)),
+    // Lets the server validate against the price this checkout actually
+    // displayed instead of re-quoting the courier and rejecting the order
+    // over a difference the customer never saw.
+    delivery_quote_ref: (!isDineIn && deliveryMode === 'delivery') ? deliveryQuoteRef : undefined,
     tip:          parseFloat(tip.toFixed(2)),
-    discount:     parseFloat((couponDiscount + loyaltyDiscount).toFixed(2)),
+    discount:     parseFloat((couponDiscount + loyaltyDiscount + tierDiscount).toFixed(2)),
     total:        parseFloat(total.toFixed(2)),
     coupon_code:  couponApplied ? couponCode : null,
     gift_card_code:   giftCardApplied ? giftCardCode.trim().toUpperCase() : null,
@@ -716,6 +761,14 @@ const Checkout = () => {
   }, [orderError]);
 
   const finishOrder = async (orderNumber) => {
+    // Fire-and-forget -- the real order already succeeded regardless of
+    // whether this follow-up call does; never block/alarm the customer over
+    // a subscription-setup failure the same way saving a card never blocks
+    // the order it rode in on.
+    if (makeRecurring && selectedSavedCardId) {
+      subscriptionsAPI.create({ order_number: orderNumber, payment_method_id: selectedSavedCardId, interval_days: 7 })
+        .catch(err => console.error('[Subscription] Could not set up weekly order:', err.message));
+    }
     // Snapshot cart before clearing so OrderConfirmation can fire the purchase event
     localStorage.setItem('last_order_track', JSON.stringify({ items, total }));
     clearCart();
@@ -735,7 +788,7 @@ const Checkout = () => {
   // Use browser geolocation → reverse geocode → fill address
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
-      setLocationError('Location not supported by your browser.');
+      setLocationError(t('checkout.errLocationNotSupported'));
       return;
     }
     setLocating(true);
@@ -755,7 +808,7 @@ const Checkout = () => {
               setAddressValidated(true);
               setLocationError('');
             } else {
-              setLocationError('Could not resolve your address. Please type it manually.');
+              setLocationError(t('checkout.errCouldNotResolveAddress'));
             }
           });
         };
@@ -764,13 +817,13 @@ const Checkout = () => {
         } else {
           const script = document.getElementById('gm-places-script');
           if (script) { script.addEventListener('load', geocode); }
-          else { setLocating(false); setLocationError('Maps not loaded. Please type your address.'); }
+          else { setLocating(false); setLocationError(t('checkout.errMapsNotLoaded')); }
         }
       },
       (err) => {
         setLocating(false);
-        if (err.code === 1) setLocationError('Location access denied. Please type your address or allow location in browser settings.');
-        else setLocationError('Could not get your location. Please type your address.');
+        if (err.code === 1) setLocationError(t('checkout.errLocationDenied'));
+        else setLocationError(t('checkout.errCouldNotGetLocation'));
       },
       { timeout: 10000, maximumAge: 60000 }
     );
@@ -825,15 +878,22 @@ const Checkout = () => {
 
   // Shared pre-flight validation — run before any payment path fires
   const validateOrder = () => {
-    if (!receiverName.trim()) { setOrderError('Please enter your name.'); return false; }
-    if (!customerPhone.trim()) { setOrderError('Please enter a US phone number.'); return false; }
+    if (!receiverName.trim()) { setOrderError(t('checkout.errPleaseEnterName')); return false; }
+    if (!customerPhone.trim()) { setOrderError(t('checkout.errPleaseEnterPhone')); return false; }
     const digits = (customerPhone.match(/\d/g) || []).join('');
     const usDigits = digits.startsWith('1') && digits.length === 11 ? digits.slice(1) : digits;
-    if (usDigits.length !== 10) { setOrderError('Please enter a valid 10-digit US phone number, e.g. (718) 555-0100.'); return false; }
+    if (usDigits.length !== 10) { setOrderError(t('checkout.errInvalidPhone')); return false; }
     if (!isDineIn && deliveryMode === 'delivery') {
-      if (!address.trim()) { setOrderError('Please enter your delivery address.'); return false; }
-      if (feeLoading) { setOrderError('Please wait while we calculate the delivery fee.'); return false; }
-      if (!addressValidated) { setOrderError('Please enter a complete delivery address so we can calculate your fee.'); return false; }
+      if (!address.trim()) { setOrderError(t('checkout.errPleaseEnterAddress')); return false; }
+      if (feeLoading) { setOrderError(t('checkout.errWaitForFee')); return false; }
+      if (!addressValidated) { setOrderError(t('checkout.errCompleteAddress')); return false; }
+      // No courier would price this address (or none could be reached), so
+      // there is no delivery to sell. The server rejects it too, but letting
+      // the button stay live just produces a failed payment attempt.
+      if (addressOutOfRange) {
+        setOrderError('Delivery isn’t available for this address. Please switch to Pickup.');
+        return false;
+      }
     }
     setOrderError('');
     return true;
@@ -858,11 +918,11 @@ const Checkout = () => {
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const res  = await fetch(`${BASE}/api/payments/card/config`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Payment setup failed.');
+      if (!res.ok) throw new Error(data.error || t('checkout.errPaymentSetupFailed'));
       setActiveCardConfig(data);
       setIntentReady(true);
     } catch (err) {
-      setOrderError(err.message || 'Failed to initiate payment.');
+      setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
     } finally {
       setPlacing(false);
     }
@@ -886,7 +946,7 @@ const Checkout = () => {
     } catch (err) {
       setOrderError(
         `${failureMessage}${err.message ? ` (${err.message})` : ''} ` +
-        `Please tap Retry below, or contact us with reference ${reference} if this keeps happening.`
+        t('checkout.retryOrContactUs', { reference })
       );
       setOrderSaveFailure({ reference, retry: () => attemptSaveOrder(payload, reference, failureMessage) });
     } finally {
@@ -915,7 +975,7 @@ const Checkout = () => {
       orderNumber = prepared.order_number;
       setPendingOrderNum(orderNumber);
     } catch (err) {
-      setOrderError(err.message || 'Failed to initiate payment.');
+      setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
       setPlacing(false);
       return;
     }
@@ -924,7 +984,7 @@ const Checkout = () => {
     try {
       result = await chargeSavedCard({ paymentMethodId, amount: total, orderNumber });
     } catch (err) {
-      setOrderError(err.message || 'Payment failed. Please try again.');
+      setOrderError(err.message || t('checkout.errPaymentFailed'));
       setPlacing(false);
       return;
     }
@@ -943,7 +1003,7 @@ const Checkout = () => {
     await finishOrder(pendingOrderNum);
   };
 
-  const handleCardError = (msg) => setOrderError(msg || 'Payment failed. Please try again.');
+  const handleCardError = (msg) => setOrderError(msg || t('checkout.errPaymentFailed'));
 
   // ── PayPal success ── same reasoning: the order already exists, paid, by
   // the time this fires (finalizePendingCheckout ran inside paypalCapture).
@@ -966,7 +1026,7 @@ const Checkout = () => {
     await attemptSaveOrder(
       buildPayload(pendingOrderNum, paymentReference),
       paymentReference || pendingOrderNum,
-      'We could not save your order.'
+      t('checkout.errCouldNotSaveOrder')
     );
   };
 
@@ -985,14 +1045,14 @@ const Checkout = () => {
     await attemptSaveOrder(
       buildPayload(orderNumber),
       giftCardCode.trim().toUpperCase(),
-      'We could not save your order.'
+      t('checkout.errCouldNotSaveOrder')
     );
   };
 
   // ── Main CTA logic ─────────────────────────────────────────────────────────
   const handlePlaceOrder = () => {
     if (giftCardCoversFull) { handleGiftCardOnlyOrder(); return; }
-    if (!paymentMethod) { setOrderError('Please select a payment method.'); return; }
+    if (!paymentMethod) { setOrderError(t('checkout.errPleaseSelectPaymentMethod')); return; }
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
     // PayPal/Google Pay are rendered inline — "Place Order" shouldn't fire for them
     if (PAYPAL_METHODS.has(paymentMethod)) return;
@@ -1012,12 +1072,12 @@ const Checkout = () => {
   const showCTABtn    = giftCardCoversFull || !PAYPAL_METHODS.has(paymentMethod);
 
   const ctaLabel = () => {
-    if (placing) return 'Please wait…';
-    if (giftCardCoversFull) return 'PLACE YOUR ORDER';
+    if (placing) return t('checkout.pleaseWait');
+    if (giftCardCoversFull) return t('checkout.placeYourOrder');
     if (!paymentMethod) return null; // nothing chosen yet -- no CTA to show
-    if (OFFLINE_METHODS.has(paymentMethod)) return 'PLACE YOUR ORDER';
-    if (paymentMethod === 'card' && selectedSavedCardId) return 'PLACE ORDER →';
-    if (!intentReady) return 'CONTINUE TO PAYMENT';
+    if (OFFLINE_METHODS.has(paymentMethod)) return t('checkout.placeYourOrder');
+    if (paymentMethod === 'card' && selectedSavedCardId) return t('checkout.placeOrderArrow');
+    if (!intentReady) return t('checkout.continueToPayment');
     return null; // AuthNetForm has its own submit button
   };
 
@@ -1031,9 +1091,9 @@ const Checkout = () => {
           <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
             <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>🔒</span>
             <div>
-              <p style={{ color: '#f87171', fontWeight: 700, margin: '0 0 0.2rem', fontSize: '0.95rem' }}>We're currently closed</p>
+              <p style={{ color: '#f87171', fontWeight: 700, margin: '0 0 0.2rem', fontSize: '0.95rem' }}>{t('checkout.closedTitle')}</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '0.85rem' }}>
-                We are not accepting orders right now. Please check our <a href="/locations" style={{ color: '#E5B64E' }}>hours</a> and try again when we open.
+                {t('checkout.closedDescBefore')} <a href="/locations" style={{ color: '#E5B64E' }}>{t('checkout.hoursLinkText')}</a> {t('checkout.closedDescAfter')}
               </p>
             </div>
           </div>
@@ -1047,26 +1107,26 @@ const Checkout = () => {
           <div className="dine-in-banner">
             <span className="dine-in-banner-icon">🍽️</span>
             <div>
-              <p className="dine-in-banner-title">Dine-In Order, {dineInTable?.table_name || 'Your Table'}</p>
-              <p className="dine-in-banner-sub">Food will be brought to your table · No delivery fee</p>
+              <p className="dine-in-banner-title">{t('checkout.dineInOrder', { table: dineInTable?.table_name || t('checkout.yourTable') })}</p>
+              <p className="dine-in-banner-sub">{t('checkout.dineInSub')}</p>
             </div>
             <button
               type="button"
               onClick={clearTable}
               style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', textDecoration: 'underline', cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
-              Not at this table?
+              {t('checkout.notAtThisTable')}
             </button>
           </div>
         )}
 
         {/* Breadcrumbs */}
         <div className="checkout-breadcrumbs">
-          <span className="crumb active">① Details</span>
+          <span className="crumb active">{t('checkout.stepDetails')}</span>
           <span className="crumb-arrow">›</span>
-          <span className={`crumb ${intentReady ? 'active' : ''}`}>② Payment</span>
+          <span className={`crumb ${intentReady ? 'active' : ''}`}>{t('checkout.stepPayment')}</span>
           <span className="crumb-arrow">›</span>
-          <span className="crumb">③ Confirmation</span>
+          <span className="crumb">{t('checkout.stepConfirmation')}</span>
         </div>
 
         <div className="checkout-layout">
@@ -1077,14 +1137,14 @@ const Checkout = () => {
             {/* Cart Items */}
             <div className="checkout-section">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="checkout-section-title">Your Selection</h2>
-                <span className="text-muted text-sm">{items.length} items</span>
+                <h2 className="checkout-section-title">{t('checkout.yourSelection')}</h2>
+                <span className="text-muted text-sm">{t('checkout.itemsCount', { count: items.length })}</span>
               </div>
               {items.length === 0 ? (
                 <div className="empty-cart">
                   <ShoppingBag size={40} className="text-muted mb-4" />
-                  <p className="text-muted">Your cart is empty.</p>
-                  <Link to="/menu" className="btn btn-outline mt-4">Browse Menu</Link>
+                  <p className="text-muted">{t('checkout.cartEmpty')}</p>
+                  <Link to="/menu" className="btn btn-outline mt-4">{t('checkout.browseMenu')}</Link>
                 </div>
               ) : (
                 <div className="cart-items">
@@ -1154,9 +1214,9 @@ const Checkout = () => {
                           </div>
                           <div className="cart-item-controls">
                             <div className="qty-control">
-                              <button aria-label={`Decrease quantity of ${item.name}`} onClick={() => updateQty(itemKey, item.qty - 1)}>−</button>
+                              <button aria-label={t('checkout.decreaseQtyOf', { name: item.name })} onClick={() => updateQty(itemKey, item.qty - 1)}>−</button>
                               <span>{item.qty}</span>
-                              <button aria-label={`Increase quantity of ${item.name}`} onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
+                              <button aria-label={t('checkout.increaseQtyOf', { name: item.name })} onClick={() => updateQty(itemKey, item.qty + 1)}>+</button>
                             </div>
                             <span className="cart-item-price text-primary font-bold">${(mainPrice * item.qty).toFixed(2)}</span>
                             {/* Edit button */}
@@ -1165,8 +1225,8 @@ const Checkout = () => {
                                 <button
                                   className="cart-edit-btn"
                                   onClick={() => navigate('/menu/byo', { state: { editBowl: { config: item.bowlConfig, cartKey: itemKey } } })}
-                                  title="Edit bowl"
-                                  aria-label={`Edit ${item.name}`}
+                                  title={t('checkout.editBowl')}
+                                  aria-label={t('checkout.editName', { name: item.name })}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -1174,8 +1234,8 @@ const Checkout = () => {
                                 <button
                                   className="cart-edit-btn"
                                   onClick={() => navigate('/customize', { state: { editCustom: { cfg: item.customCfg, cartKey: itemKey } } })}
-                                  title="Edit custom order"
-                                  aria-label={`Edit ${item.name}`}
+                                  title={t('checkout.editCustomOrder')}
+                                  aria-label={t('checkout.editName', { name: item.name })}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -1183,8 +1243,8 @@ const Checkout = () => {
                                 <button
                                   className="cart-edit-btn"
                                   onClick={() => setEditingItem({ item, itemKey })}
-                                  title="Edit item"
-                                  aria-label={`Edit ${item.name}`}
+                                  title={t('checkout.editItem')}
+                                  aria-label={t('checkout.editName', { name: item.name })}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -1193,8 +1253,8 @@ const Checkout = () => {
                             <button
                               className="cart-delete-btn"
                               onClick={() => removeItem(itemKey)}
-                              title="Remove item"
-                              aria-label={`Remove ${item.name} from cart`}
+                              title={t('checkout.removeItem')}
+                              aria-label={t('checkout.removeFromCart', { name: item.name })}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -1207,14 +1267,14 @@ const Checkout = () => {
                               <span className="cart-addon-price">
                                 {parseFloat(addon.price) > 0
                                   ? `$${(addon.price * (addon.qty || 1) * item.qty).toFixed(2)}`
-                                  : 'Free'}
+                                  : t('checkout.free')}
                               </span>
                               {parseFloat(addon.price) > 0 && (
                                 <button
                                   className="cart-addon-remove"
                                   onClick={() => removeAddon(itemKey, idx)}
-                                  title="Remove add-on"
-                                  aria-label={`Remove ${addon.name}`}
+                                  title={t('checkout.removeItem')}
+                                  aria-label={t('checkout.removeAddon', { name: addon.name })}
                                 ><X size={12} /></button>
                               )}
                             </div>
@@ -1240,19 +1300,19 @@ const Checkout = () => {
                     </div>
                     <p className="free-delivery-bar-text">
                       {freeDeliveryGap === 0
-                        ? '🎉 You’ve unlocked FREE delivery!'
-                        : <>Add <strong>${freeDeliveryGap.toFixed(2)}</strong> more for <strong>FREE delivery</strong> 🚚</>}
+                        ? t('checkout.freeDeliveryUnlocked')
+                        : <Trans i18nKey="checkout.freeDeliveryProgress" values={{ amount: freeDeliveryGap.toFixed(2) }} components={{ bold: <strong /> }} />}
                     </p>
                   </div>
                 )}
                 <div className="upsell-header">
                   <div className="upsell-header-left">
                     <span className="upsell-fire">🔥</span>
-                    <h2 className="checkout-section-title upsell-title">Complete Your Meal</h2>
+                    <h2 className="checkout-section-title upsell-title">{t('checkout.completeYourMeal')}</h2>
                   </div>
                   <div className="upsell-arrows">
-                    <button className="upsell-arrow" aria-label="Scroll left" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: -200, behavior: 'smooth' }); }}><ChevronLeft size={16} /></button>
-                    <button className="upsell-arrow" aria-label="Scroll right" onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: 200, behavior: 'smooth' }); }}><ChevronRight size={16} /></button>
+                    <button className="upsell-arrow" aria-label={t('checkout.scrollLeft')} onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: -200, behavior: 'smooth' }); }}><ChevronLeft size={16} /></button>
+                    <button className="upsell-arrow" aria-label={t('checkout.scrollRight')} onClick={() => { const el = upsellRef.current; if (el) el.scrollBy({ left: 200, behavior: 'smooth' }); }}><ChevronRight size={16} /></button>
                   </div>
                 </div>
                 <div className="upsell-clip">
@@ -1295,16 +1355,16 @@ const Checkout = () => {
                           <p className="upsell-price"><span className="upsell-price-pill">${parseFloat(u.price || 0).toFixed(2)}</span></p>
                           {cartQty > 0 ? (
                             <div className="upsell-stepper">
-                              <button aria-label="Decrease quantity" onClick={() => updateQty(u.id, cartQty - 1)}><Minus size={12} /></button>
+                              <button aria-label={t('checkout.decreaseQuantity')} onClick={() => updateQty(u.id, cartQty - 1)}><Minus size={12} /></button>
                               <span>{cartQty}</span>
-                              <button aria-label="Increase quantity" onClick={() => updateQty(u.id, cartQty + 1)}><Plus size={12} /></button>
+                              <button aria-label={t('checkout.increaseQuantity')} onClick={() => updateQty(u.id, cartQty + 1)}><Plus size={12} /></button>
                             </div>
                           ) : (
                             <button
                               className="upsell-add-btn"
                               onClick={() => addItem({ id: u.id, name: u.name || u.title, price: parseFloat(u.price || 0), img: imgSrc, tag: cat, note: '', qty: 1 })}
                             >
-                              <Plus size={12} /> Add
+                              <Plus size={12} /> {t('checkout.add')}
                             </button>
                           )}
                         </div>
@@ -1317,37 +1377,37 @@ const Checkout = () => {
 
             {/* Delivery Details */}
             <div className="checkout-section">
-              <h2 className="checkout-section-title mb-6">{isDineIn ? 'Your Details' : 'Delivery Details'}</h2>
+              <h2 className="checkout-section-title mb-6">{isDineIn ? t('checkout.yourDetails') : t('checkout.deliveryDetails')}</h2>
 
               {/* Optional, non-blocking nudge — guests can still order without an account */}
               {!isLoggedIn && (
                 <div className="checkout-guest-nudge">
-                  <span>Already have an account?</span>
-                  <Link to="/login?redirect=/checkout">Log in for faster checkout</Link>
+                  <span>{t('checkout.alreadyHaveAccount')}</span>
+                  <Link to="/login?redirect=/checkout">{t('checkout.logInForFasterCheckout')}</Link>
                 </div>
               )}
 
               {(isDineIn ? (
                 <div className="form-row two-col mb-6">
                   <div className="form-group">
-                    <label className="form-label" htmlFor="ck-dinein-name">YOUR NAME (for the kitchen)</label>
+                    <label className="form-label" htmlFor="ck-dinein-name">{t('checkout.yourNameKitchen')}</label>
                     <input id="ck-dinein-name" type="text" autoComplete="name" className="form-input" placeholder="e.g. Ahmed" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" htmlFor="ck-dinein-phone">PHONE (optional)</label>
+                    <label className="form-label" htmlFor="ck-dinein-phone">{t('checkout.phoneOptional')}</label>
                     <input id="ck-dinein-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="delivery-toggle mb-6">
-                    <button className={`delivery-tab ${deliveryMode === 'delivery' ? 'active' : ''}`} onClick={() => setDeliveryMode('delivery')}>Delivery</button>
-                    <button className={`delivery-tab ${deliveryMode === 'pickup' ? 'active' : ''}`} onClick={() => setDeliveryMode('pickup')}>Pickup</button>
+                    <button className={`delivery-tab ${deliveryMode === 'delivery' ? 'active' : ''}`} onClick={() => setDeliveryMode('delivery')}>{t('checkout.delivery')}</button>
+                    <button className={`delivery-tab ${deliveryMode === 'pickup' ? 'active' : ''}`} onClick={() => setDeliveryMode('pickup')}>{t('checkout.pickup')}</button>
                   </div>
                   {deliveryMode === 'delivery' && (
                     <>
                       <div className="form-group mb-4">
-                        <label className="form-label" htmlFor="ck-select-restaurant">SELECT RESTAURANT <span style={{ color: '#f87171' }}>*</span></label>
+                        <label className="form-label" htmlFor="ck-select-restaurant">{t('checkout.selectRestaurant')} <span style={{ color: '#f87171' }}>*</span></label>
                         <select
                           id="ck-select-restaurant"
                           className="form-input form-select"
@@ -1361,20 +1421,20 @@ const Checkout = () => {
                           }}
                           required
                         >
-                          <option value="" disabled>Select a restaurant…</option>
+                          <option value="" disabled>{t('checkout.selectRestaurantPlaceholder')}</option>
                           {locations.map(loc => (
                             <option key={loc.id} value={loc.id}>{loc.title} — {loc.brief_address}</option>
                           ))}
                         </select>
                         {!selectedLocation && (
                           <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
-                            Choose which restaurant will prepare your delivery
+                            {t('checkout.chooseRestaurantHint')}
                           </p>
                         )}
                       </div>
                       <div className="form-group mb-4">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <label className="form-label" style={{ margin: 0 }} htmlFor="ck-delivery-address">DELIVERY ADDRESS</label>
+                          <label className="form-label" style={{ margin: 0 }} htmlFor="ck-delivery-address">{t('checkout.deliveryAddress')}</label>
                           {'geolocation' in navigator && (
                             <button
                               type="button"
@@ -1388,7 +1448,7 @@ const Checkout = () => {
                               }}
                             >
                               <MapPin size={12} />
-                              {locating ? 'Locating…' : 'Use my location'}
+                              {locating ? t('checkout.locating') : t('checkout.useMyLocation')}
                             </button>
                           )}
                         </div>
@@ -1398,7 +1458,7 @@ const Checkout = () => {
                         {/* Saved addresses (Account > Saved Addresses) quick-pick */}
                         {savedAddresses.length > 0 && (
                           <div className="preset-addr-list">
-                            <p className="preset-addr-hint">Use a saved address:</p>
+                            <p className="preset-addr-hint">{t('checkout.useSavedAddress')}</p>
                             <div className="preset-addr-chips">
                               {savedAddresses.map(a => {
                                 const line = [a.street_address, a.second_line, a.city, a.state, a.zip_code].filter(Boolean).join(', ');
@@ -1412,7 +1472,7 @@ const Checkout = () => {
                                   >
                                     <MapPin size={11} />
                                     {a.receiver_name ? `${a.receiver_name} — ` : ''}{a.street_address}
-                                    {a.is_default ? ' (Default)' : ''}
+                                    {a.is_default ? ` (${t('checkout.default')})` : ''}
                                   </button>
                                 );
                               })}
@@ -1422,7 +1482,7 @@ const Checkout = () => {
                         {/* Pre-selected addresses quick-pick */}
                         {selectedLocation && Array.isArray(selectedLocation.delivery_addresses) && selectedLocation.delivery_addresses.length > 0 && (
                           <div className="preset-addr-list">
-                            <p className="preset-addr-hint">Quick-select a nearby address:</p>
+                            <p className="preset-addr-hint">{t('checkout.quickSelectNearby')}</p>
                             <div className="preset-addr-chips">
                               {selectedLocation.delivery_addresses.map((a, i) => (
                                 <button
@@ -1439,11 +1499,11 @@ const Checkout = () => {
                         )}
                         <div className="address-input-wrapper">
                           <MapPin size={14} className="address-icon text-muted" />
-                          <input id="ck-delivery-address" ref={addressInputRef} type="text" className="form-input address-input" placeholder="Start typing your address…" value={address} onChange={e => { setAddress(e.target.value); setAddressValidated(false); setAddressLatLng(null); if (mapInstanceRef.current) { mapInstanceRef.current = null; } }} autoComplete="off" />
+                          <input id="ck-delivery-address" ref={addressInputRef} type="text" className="form-input address-input" placeholder={t('checkout.addressPlaceholder')} value={address} onChange={e => { setAddress(e.target.value); setAddressValidated(false); setAddressLatLng(null); if (mapInstanceRef.current) { mapInstanceRef.current = null; } }} autoComplete="off" />
                         </div>
                         {address.trim() && !addressValidated && !feeLoading && import.meta.env.VITE_GOOGLE_MAPS_KEY && (
                           <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
-                            Select your address from the dropdown to confirm it
+                            {t('checkout.selectAddressToConfirm')}
                           </p>
                         )}
                         {!import.meta.env.VITE_GOOGLE_MAPS_KEY && import.meta.env.DEV && (
@@ -1468,40 +1528,40 @@ const Checkout = () => {
                       {!addressLatLng && (
                         <div className="address-map-placeholder mb-4">
                           <div className="map-pin-center"><MapPin size={24} className="text-primary" fill="currentColor" /></div>
-                          <p className="text-xs text-muted absolute bottom-2 left-2">SELECT ADDRESS FROM SUGGESTIONS</p>
+                          <p className="text-xs text-muted absolute bottom-2 left-2">{t('checkout.selectAddressFromSuggestions')}</p>
                         </div>
                       )}
                       {addressLatLng && (
                         <p className="text-xs text-muted mb-4" style={{ marginTop: '-0.75rem' }}>
-                          📍 Drag the pin to fine-tune your exact delivery location
+                          {t('checkout.dragPinHint')}
                         </p>
                       )}
 
                       {/* Apt / Suite / Gate / Floor */}
                       <div className="form-group mb-4">
-                        <label className="form-label" htmlFor="ck-apt-unit">APT / SUITE / FLOOR / GATE #</label>
+                        <label className="form-label" htmlFor="ck-apt-unit">{t('checkout.aptSuiteFloorGate')}</label>
                         <input
                           id="ck-apt-unit"
                           type="text"
                           className="form-input"
-                          placeholder="e.g. Apt 4B, Floor 3, Gate 12"
+                          placeholder={t('checkout.aptPlaceholder')}
                           value={aptUnit}
                           onChange={e => setAptUnit(e.target.value)}
                           autoComplete="address-line2"
                         />
                         <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                          Helps your driver find you faster
+                          {t('checkout.driverFindHint')}
                         </p>
                       </div>
 
                       {/* Business name (optional) */}
                       <div className="form-group mb-4">
-                        <label className="form-label" htmlFor="ck-business-name">BUSINESS NAME (OPTIONAL)</label>
+                        <label className="form-label" htmlFor="ck-business-name">{t('checkout.businessNameOptional')}</label>
                         <input
                           id="ck-business-name"
                           type="text"
                           className="form-input"
-                          placeholder="e.g. Acme Corp"
+                          placeholder={t('checkout.businessNamePlaceholder')}
                           value={businessName}
                           onChange={e => setBusinessName(e.target.value)}
                           autoComplete="organization"
@@ -1515,47 +1575,47 @@ const Checkout = () => {
                         </div>
                         <div className="eta-badge-text">
                           {feeLoading ? (
-                            <span className="eta-badge-time">Calculating…</span>
+                            <span className="eta-badge-time">{t('checkout.calculating')}</span>
                           ) : addressValidated && deliveryDuration ? (
                             <>
                               <span className="eta-badge-time">{deliveryDuration}</span>
-                              <span className="eta-badge-label">estimated delivery</span>
+                              <span className="eta-badge-label">{t('checkout.estimatedDelivery')}</span>
                             </>
                           ) : addressOutOfRange ? (
                             <>
                               <span className="eta-badge-time" style={{ color: '#f59e0b' }}>⚠</span>
-                              <span className="eta-badge-label" style={{ color: '#f59e0b' }}>outside our delivery area</span>
+                              <span className="eta-badge-label" style={{ color: '#f59e0b' }}>{t('checkout.outsideDeliveryArea')}</span>
                             </>
                           ) : (
                             <>
                               <span className="eta-badge-time">—</span>
-                              <span className="eta-badge-label">enter your address to see ETA</span>
+                              <span className="eta-badge-label">{t('checkout.enterAddressForEta')}</span>
                             </>
                           )}
                         </div>
                         {addressValidated && deliveryDuration && !feeLoading && (
-                          <span className="eta-badge-live">LIVE</span>
+                          <span className="eta-badge-live">{t('checkout.live')}</span>
                         )}
                       </div>
 
                       <div className="form-row two-col mb-4">
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-receiver-name">RECEIVER NAME</label>
+                          <label className="form-label" htmlFor="ck-receiver-name">{t('checkout.receiverName')}</label>
                           <input id="ck-receiver-name" type="text" autoComplete="name" className="form-input" placeholder="John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-phone">US PHONE NUMBER</label>
+                          <label className="form-label" htmlFor="ck-phone">{t('checkout.usPhoneNumber')}</label>
                           <input id="ck-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={15} />
                         </div>
                       </div>
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-email">EMAIL ADDRESS</label>
+                          <label className="form-label" htmlFor="ck-email">{t('checkout.emailAddress')}</label>
                           <input id="ck-email" type="email" autoComplete="email" className="form-input" placeholder="you@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-driver-note">DRIVER INSTRUCTIONS</label>
-                          <input id="ck-driver-note" type="text" className="form-input" placeholder="Gate code, floor, etc." value={driverNote} onChange={e => setDriverNote(e.target.value)} />
+                          <label className="form-label" htmlFor="ck-driver-note">{t('checkout.driverInstructions')}</label>
+                          <input id="ck-driver-note" type="text" className="form-input" placeholder={t('checkout.driverInstructionsPlaceholder')} value={driverNote} onChange={e => setDriverNote(e.target.value)} />
                         </div>
                       </div>
 
@@ -1564,8 +1624,8 @@ const Checkout = () => {
                         <div className="gift-toggle-left">
                           <span className="gift-toggle-icon">🚪</span>
                           <div>
-                            <p className="gift-toggle-title">Leave at My Door</p>
-                            <p className="gift-toggle-sub">Contactless drop-off — no need to meet the driver</p>
+                            <p className="gift-toggle-title">{t('checkout.leaveAtMyDoor')}</p>
+                            <p className="gift-toggle-sub">{t('checkout.contactlessDropoff')}</p>
                           </div>
                         </div>
                         <div className={`gift-toggle-switch ${leaveAtDoor ? 'on' : ''}`}>
@@ -1578,8 +1638,8 @@ const Checkout = () => {
                         <div className="gift-toggle-left">
                           <span className="gift-toggle-icon">🎀</span>
                           <div>
-                            <p className="gift-toggle-title">This is a Gift Order</p>
-                            <p className="gift-toggle-sub">Send this order as a gift to someone else</p>
+                            <p className="gift-toggle-title">{t('checkout.giftOrderTitle')}</p>
+                            <p className="gift-toggle-sub">{t('checkout.giftOrderSub')}</p>
                           </div>
                         </div>
                         <div className={`gift-toggle-switch ${isGift ? 'on' : ''}`}>
@@ -1591,22 +1651,22 @@ const Checkout = () => {
                         <div className="gift-order-section mb-6">
                           <div className="gift-section-header">
                             <span>🎁</span>
-                            <span>Gift Recipient Details</span>
+                            <span>{t('checkout.giftRecipientDetails')}</span>
                           </div>
                           <div className="form-row two-col mb-4">
                             <div className="form-group">
-                              <label className="form-label" htmlFor="ck-gift-recipient-name">RECIPIENT NAME</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-name">{t('checkout.recipientName')}</label>
                               <input
                                 id="ck-gift-recipient-name"
                                 type="text"
                                 className="form-input"
-                                placeholder="Who are you gifting this to?"
+                                placeholder={t('checkout.recipientNamePlaceholder')}
                                 value={giftRecipientName}
                                 onChange={e => setGiftRecipientName(e.target.value)}
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label" htmlFor="ck-gift-recipient-phone">RECIPIENT PHONE</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-phone">{t('checkout.recipientPhone')}</label>
                               <input
                                 id="ck-gift-recipient-phone"
                                 type="tel"
@@ -1619,11 +1679,11 @@ const Checkout = () => {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label" htmlFor="ck-gift-message">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <label className="form-label" htmlFor="ck-gift-message">{t('checkout.giftMessage')} <span className="form-label-optional">{t('checkout.optional')}</span></label>
                             <textarea
                               id="ck-gift-message"
                               className="form-input gift-message-input"
-                              placeholder="Write a personal message for the recipient…"
+                              placeholder={t('checkout.giftMessagePlaceholder')}
                               value={giftMessage}
                               onChange={e => setGiftMessage(e.target.value)}
                               rows={3}
@@ -1638,9 +1698,9 @@ const Checkout = () => {
                   {deliveryMode === 'pickup' && (
                     <>
                       <div className="form-group mb-6">
-                        <label className="form-label" id="ck-pickup-location-label">SELECT PICKUP LOCATION</label>
+                        <label className="form-label" id="ck-pickup-location-label">{t('checkout.selectPickupLocation')}</label>
                         {locations.length === 0 ? (
-                          <p className="text-muted text-sm" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>Loading pickup locations...</p>
+                          <p className="text-muted text-sm" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>{t('checkout.loadingPickupLocations')}</p>
                         ) : (
                           <div role="group" aria-labelledby="ck-pickup-location-label" className="pickup-locations-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
                             {locations.map(loc => {
@@ -1673,17 +1733,17 @@ const Checkout = () => {
                         </div>
                         <div className="eta-badge-text">
                           <span className="eta-badge-time">10–20 min</span>
-                          <span className="eta-badge-label">ready for pickup</span>
+                          <span className="eta-badge-label">{t('checkout.readyForPickup')}</span>
                         </div>
                       </div>
 
                       <div className="form-row two-col mb-6">
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-pickup-name">YOUR NAME</label>
+                          <label className="form-label" htmlFor="ck-pickup-name">{t('checkout.yourName')}</label>
                           <input id="ck-pickup-name" type="text" autoComplete="name" className="form-input" placeholder="e.g. John Doe" value={receiverName} onChange={e => setReceiverName(e.target.value)} />
                         </div>
                         <div className="form-group">
-                          <label className="form-label" htmlFor="ck-pickup-phone">PHONE NUMBER (for notification)</label>
+                          <label className="form-label" htmlFor="ck-pickup-phone">{t('checkout.phoneForNotification')}</label>
                           <input id="ck-pickup-phone" type="tel" autoComplete="tel" className="form-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                         </div>
                       </div>
@@ -1693,8 +1753,8 @@ const Checkout = () => {
                         <div className="gift-toggle-left">
                           <span className="gift-toggle-icon">🎀</span>
                           <div>
-                            <p className="gift-toggle-title">This is a Gift Order</p>
-                            <p className="gift-toggle-sub">Send this order as a gift to someone else</p>
+                            <p className="gift-toggle-title">{t('checkout.giftOrderTitle')}</p>
+                            <p className="gift-toggle-sub">{t('checkout.giftOrderSub')}</p>
                           </div>
                         </div>
                         <div className={`gift-toggle-switch ${isGift ? 'on' : ''}`}>
@@ -1706,22 +1766,22 @@ const Checkout = () => {
                         <div className="gift-order-section mb-6">
                           <div className="gift-section-header">
                             <span>🎁</span>
-                            <span>Gift Recipient Details</span>
+                            <span>{t('checkout.giftRecipientDetails')}</span>
                           </div>
                           <div className="form-row two-col mb-4">
                             <div className="form-group">
-                              <label className="form-label" htmlFor="ck-gift-recipient-name">RECIPIENT NAME</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-name">{t('checkout.recipientName')}</label>
                               <input
                                 id="ck-gift-recipient-name"
                                 type="text"
                                 className="form-input"
-                                placeholder="Who are you gifting this to?"
+                                placeholder={t('checkout.recipientNamePlaceholder')}
                                 value={giftRecipientName}
                                 onChange={e => setGiftRecipientName(e.target.value)}
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label" htmlFor="ck-gift-recipient-phone">RECIPIENT PHONE</label>
+                              <label className="form-label" htmlFor="ck-gift-recipient-phone">{t('checkout.recipientPhone')}</label>
                               <input
                                 id="ck-gift-recipient-phone"
                                 type="tel"
@@ -1734,11 +1794,11 @@ const Checkout = () => {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label" htmlFor="ck-gift-message">GIFT MESSAGE <span className="form-label-optional">(optional)</span></label>
+                            <label className="form-label" htmlFor="ck-gift-message">{t('checkout.giftMessage')} <span className="form-label-optional">{t('checkout.optional')}</span></label>
                             <textarea
                               id="ck-gift-message"
                               className="form-input gift-message-input"
-                              placeholder="Write a personal message for the recipient…"
+                              placeholder={t('checkout.giftMessagePlaceholder')}
                               value={giftMessage}
                               onChange={e => setGiftMessage(e.target.value)}
                               rows={3}
@@ -1754,21 +1814,21 @@ const Checkout = () => {
               ))}
 
               {<>
-                <h4 className="font-bold mb-4">Order Timing</h4>
+                <h4 className="font-bold mb-4">{t('checkout.orderTiming')}</h4>
                 <div className="timing-options flex gap-4 mb-6">
                   <button className={`timing-card ${timing === 'asap' ? 'active' : ''}`} onClick={() => setTiming('asap')}>
                     <span className="timing-icon">⚡</span>
-                    <div><p className="font-bold text-sm">As Soon As Possible</p><p className="text-xs text-muted">Est. 25-35 min</p></div>
+                    <div><p className="font-bold text-sm">{t('checkout.asSoonAsPossible')}</p><p className="text-xs text-muted">{t('checkout.estMinutes')}</p></div>
                   </button>
                   <button className={`timing-card ${timing === 'later' ? 'active' : ''}`} onClick={() => setTiming('later')}>
                     <span className="timing-icon">🕐</span>
-                    <div><p className="font-bold text-sm">For Later</p><p className="text-xs text-muted">Select date and time</p></div>
+                    <div><p className="font-bold text-sm">{t('checkout.forLater')}</p><p className="text-xs text-muted">{t('checkout.selectDateAndTime')}</p></div>
                   </button>
                 </div>
                 {timing === 'later' && (
                   <div className="form-row two-col mb-6">
                     <div className="form-group">
-                      <label className="form-label" htmlFor="ck-schedule-date">DATE</label>
+                      <label className="form-label" htmlFor="ck-schedule-date">{t('checkout.date')}</label>
                       <input
                         type="date"
                         id="ck-schedule-date"
@@ -1780,7 +1840,7 @@ const Checkout = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="ck-schedule-time">TIME (EST)</label>
+                      <label className="form-label" htmlFor="ck-schedule-time">{t('checkout.timeEst')}</label>
                       <select
                         id="ck-schedule-time"
                         className="form-input form-select"
@@ -1818,7 +1878,7 @@ const Checkout = () => {
 
             {/* Payment */}
             {<div className="checkout-section">
-              <h2 className="checkout-section-title mb-6">Secure Payment</h2>
+              <h2 className="checkout-section-title mb-6">{t('checkout.securePayment')}</h2>
               <div className="payment-options">
 
                 {/* Card option -- also requires a real Authorize.net account
@@ -1849,7 +1909,7 @@ const Checkout = () => {
                       {/* Deliberately processor-agnostic — the admin can switch
                           which merchant account is behind "Card" at any time,
                           and the customer should never see which one it is. */}
-                      <div><p className="font-bold text-sm">Credit or Debit Card</p><p className="text-xs text-muted">Secure &amp; encrypted checkout</p></div>
+                      <div><p className="font-bold text-sm">{t('checkout.creditOrDebitCard')}</p><p className="text-xs text-muted">{t('checkout.secureEncryptedCheckout')}</p></div>
                     </div>
                     <div className="flex items-center gap-2">
                       <img src="/images/partners/visa.png" alt="Visa" className="pay-brand-icon" />
@@ -1872,7 +1932,7 @@ const Checkout = () => {
                         <CreditCard size={14} />
                         <span>{(c.brand || 'Card').toUpperCase()} •••• {c.last4}</span>
                         {c.expiry && <span className="saved-card-expiry">{c.expiry}</span>}
-                        {c.is_default && <span className="saved-card-default-tag">Default</span>}
+                        {c.is_default && <span className="saved-card-default-tag">{t('checkout.default')}</span>}
                         {selectedSavedCardId === c.id && <span className="check-badge">✓</span>}
                       </button>
                     ))}
@@ -1881,9 +1941,26 @@ const Checkout = () => {
                       className={`saved-card-chip saved-card-new ${!selectedSavedCardId ? 'active' : ''}`}
                       onClick={() => { setSelectedSavedCardId(null); handlePrepareCardPayment(); }}
                     >
-                      <Plus size={14} /> Use a new card
+                      <Plus size={14} /> {t('checkout.useNewCard')}
                     </button>
                   </div>
+                )}
+
+                {/* Subscriptions ("Habibi Weekly") -- only offered when paying
+                    with an already-saved card. A brand-new card in this same
+                    checkout gets auto-vaulted as a fire-and-forget side effect
+                    with no id returned here, so there's nothing reliable to
+                    build a subscription on yet -- their next order (now with
+                    a saved card available) can turn into one instead. */}
+                {paymentMethod === 'card' && selectedSavedCardId && (
+                  <label className="recurring-order-toggle">
+                    <input
+                      type="checkbox"
+                      checked={makeRecurring}
+                      onChange={e => setMakeRecurring(e.target.checked)}
+                    />
+                    <span>🔄 {t('checkout.makeThisWeekly')}</span>
+                  </label>
                 )}
 
                 {/* Alt payment buttons */}
@@ -1909,7 +1986,7 @@ const Checkout = () => {
                             setPendingOrderNum(prepared.order_number);
                             setIntentReady(true);
                           } catch (err) {
-                            setOrderError(err.message || 'Failed to initiate payment.');
+                            setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
                           } finally {
                             setPlacing(false);
                           }
@@ -1967,7 +2044,7 @@ const Checkout = () => {
                     before either button below can even render -- see the
                     alt-payment tile's onClick above. */}
                 {showPaypalLoading && (
-                  <p className="alt-pay-loading">Preparing your order…</p>
+                  <p className="alt-pay-loading">{t('checkout.preparingYourOrder')}</p>
                 )}
 
                 {/* PayPal inline buttons */}
@@ -1996,9 +2073,9 @@ const Checkout = () => {
                 {/* Offline method note */}
                 {OFFLINE_METHODS.has(paymentMethod) && (
                   <div className="offline-pay-note">
-                    {paymentMethod === 'cash' && <p>💵 Have exact change ready upon delivery. Your order will be confirmed immediately.</p>}
-                    {paymentMethod === 'zelle' && <p>📲 You'll be shown Zelle payment instructions before your order is placed.</p>}
-                    {paymentMethod === 'cashapp' && <p>💸 You'll be shown Cash App payment instructions before your order is placed.</p>}
+                    {paymentMethod === 'cash' && <p>{t('checkout.cashNote')}</p>}
+                    {paymentMethod === 'zelle' && <p>{t('checkout.zelleNote')}</p>}
+                    {paymentMethod === 'cashapp' && <p>{t('checkout.cashappNote')}</p>}
                   </div>
                 )}
 
@@ -2009,7 +2086,7 @@ const Checkout = () => {
 
           {/* ── Right — Order Summary ── */}
           <div className="order-summary-card">
-            <h3 className="summary-title">Order Summary</h3>
+            <h3 className="summary-title">{t('checkout.summaryTitle')}</h3>
 
             {(() => {
               const needsLocation = !isDineIn && deliveryMode === 'delivery' && !selectedLocation;
@@ -2021,9 +2098,9 @@ const Checkout = () => {
                     <button className="coupon-panel-hdr" onClick={() => setShowCouponPanel(v => !v)}>
                       <div className="coupon-panel-hdr-left">
                         <Tag size={15} className="coupon-panel-tag-icon" />
-                        <span className="coupon-panel-title">Offers &amp; Coupons</span>
+                        <span className="coupon-panel-title">{t('checkout.offersAndCoupons')}</span>
                         {couponApplied && (
-                          <span className="coupon-panel-saved">−${couponDiscount.toFixed(2)} saved</span>
+                          <span className="coupon-panel-saved">−${couponDiscount.toFixed(2)} {t('checkout.saved')}</span>
                         )}
                       </div>
                       <ChevronDown size={16} className={`coupon-panel-chevron${showCouponPanel ? ' open' : ''}`} />
@@ -2036,7 +2113,7 @@ const Checkout = () => {
                           <div className="coupon-input-wrap">
                             <Tag size={13} className="coupon-icon" />
                             <input
-                              type="text" className="coupon-input" placeholder="Enter coupon code"
+                              type="text" className="coupon-input" placeholder={t('checkout.enterCouponCode')}
                               value={couponCode}
                               onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
                               disabled={couponApplied}
@@ -2047,7 +2124,7 @@ const Checkout = () => {
                             onClick={() => handleApplyCoupon()}
                             disabled={couponApplied || !couponCode.trim() || couponLoading}
                           >
-                            {couponLoading ? '…' : couponApplied ? '✓' : 'Apply'}
+                            {couponLoading ? '…' : couponApplied ? '✓' : t('checkout.apply')}
                           </button>
                         </div>
                         {couponMsg && <p className="coupon-feedback coupon-feedback--ok" role="status">✓ {couponMsg}</p>}
@@ -2061,9 +2138,9 @@ const Checkout = () => {
                     <div className="coupon-panel-hdr" style={{ cursor: 'default' }}>
                       <div className="coupon-panel-hdr-left">
                         <Tag size={15} className="coupon-panel-tag-icon" />
-                        <span className="coupon-panel-title">Gift Card</span>
+                        <span className="coupon-panel-title">{t('checkout.giftCard')}</span>
                         {giftCardApplied && (
-                          <span className="coupon-panel-saved">−${giftCardAmount.toFixed(2)} applied</span>
+                          <span className="coupon-panel-saved">−${giftCardAmount.toFixed(2)} {t('checkout.applied')}</span>
                         )}
                       </div>
                     </div>
@@ -2072,7 +2149,7 @@ const Checkout = () => {
                         <div className="coupon-input-wrap">
                           <Tag size={13} className="coupon-icon" />
                           <input
-                            type="text" className="coupon-input" placeholder="Enter gift card code"
+                            type="text" className="coupon-input" placeholder={t('checkout.enterGiftCardCode')}
                             value={giftCardCode}
                             onChange={e => { setGiftCardCode(e.target.value.toUpperCase()); setGiftCardApplied(false); setGiftCardBalance(0); setGiftCardMsg(''); setGiftCardErr(''); }}
                             disabled={giftCardApplied}
@@ -2083,7 +2160,7 @@ const Checkout = () => {
                           onClick={() => giftCardApplied ? handleRemoveGiftCard() : handleApplyGiftCard()}
                           disabled={!giftCardApplied && (!giftCardCode.trim() || giftCardLoading)}
                         >
-                          {giftCardLoading ? '…' : giftCardApplied ? 'Remove' : 'Apply'}
+                          {giftCardLoading ? '…' : giftCardApplied ? t('checkout.remove') : t('checkout.apply')}
                         </button>
                       </div>
                       {giftCardMsg && <p className="coupon-feedback coupon-feedback--ok" role="status">✓ {giftCardMsg}</p>}
@@ -2097,9 +2174,9 @@ const Checkout = () => {
                       <div className="loyalty-redeem-info">
                         <span className="loyalty-redeem-icon">🏅</span>
                         <div>
-                          <p className="loyalty-redeem-label">Habibi Rewards</p>
+                          <p className="loyalty-redeem-label">{t('checkout.habibiRewards')}</p>
                           <p className="loyalty-redeem-sub">
-                            {loyaltyPoints.toLocaleString()} pts available · Redeem {redeemablePts} pts for <strong>${loyaltyDiscount > 0 ? loyaltyDiscount.toFixed(2) : (redeemablePts / 100).toFixed(2)} off</strong>
+                            {t('checkout.ptsAvailable', { points: loyaltyPoints.toLocaleString(), redeemable: redeemablePts })} <strong>${loyaltyDiscount > 0 ? loyaltyDiscount.toFixed(2) : (redeemablePts / 100).toFixed(2)} {t('checkout.off')}</strong>
                           </p>
                         </div>
                       </div>
@@ -2108,14 +2185,14 @@ const Checkout = () => {
                         className={`loyalty-redeem-btn${useRewards ? ' active' : ''}`}
                         onClick={() => setUseRewards(v => !v)}
                       >
-                        {useRewards ? '✓ Applied' : 'Redeem'}
+                        {useRewards ? t('checkout.rewardsApplied') : t('checkout.redeem')}
                       </button>
                     </div>
                   )}
 
                   {/* Tip */}
                   <div className="tip-section">
-                    <p className="text-xs text-muted uppercase tracking-wider mb-3">ADD A TIP</p>
+                    <p className="text-xs text-muted uppercase tracking-wider mb-3">{t('checkout.addATip')}</p>
                     <div className="tip-options flex gap-2">
                       {TIP_OPTIONS.map((t, i) => (
                         <button key={t} className={`tip-btn ${tipIndex === i ? 'active' : ''}`} onClick={() => setTipIndex(i)}>{t}</button>
@@ -2128,7 +2205,7 @@ const Checkout = () => {
                           type="number"
                           min="0"
                           step="0.01"
-                          placeholder="Enter tip amount"
+                          placeholder={t('checkout.enterTipAmount')}
                           value={customTip}
                           onChange={e => setCustomTip(e.target.value)}
                           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.4rem 0.65rem', color: '#fff', fontSize: '0.9rem', flex: 1, minWidth: 0 }}
@@ -2138,11 +2215,11 @@ const Checkout = () => {
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
                       <input type="checkbox" checked={extraHelpNeeded} onChange={e => setExtraHelpNeeded(e.target.checked)} />
-                      Extra Help is needed
+                      {t('checkout.extraHelpNeeded')}
                     </label>
                     {extraHelpNeeded && (
                       <textarea
-                        placeholder="Please explain here"
+                        placeholder={t('checkout.pleaseExplainHere')}
                         value={extraHelpNote}
                         onChange={e => setExtraHelpNote(e.target.value)}
                         maxLength={300}
@@ -2155,21 +2232,21 @@ const Checkout = () => {
                   {/* ── Price breakdown table ── */}
                   <div className="price-breakdown">
                     <div className="pb-row">
-                      <span className="pb-label">Item Total</span>
+                      <span className="pb-label">{t('checkout.itemTotal')}</span>
                       <span className="pb-value">${subtotal.toFixed(2)}</span>
                     </div>
                     {deliveryMode === 'delivery' && (
                       <div className="pb-row">
-                        <span className="pb-label">Delivery Fee</span>
+                        <span className="pb-label">{t('checkout.deliveryFee')}</span>
                         <span className="pb-value">
                           {needsLocation ? (
-                            <span className="pb-value-hint">Select restaurant above</span>
+                            <span className="pb-value-hint">{t('checkout.selectRestaurantAbove')}</span>
                           ) : needsAddress ? (
-                            <span className="pb-value-hint">Enter address above</span>
+                            <span className="pb-value-hint">{t('checkout.enterAddressAbove')}</span>
                           ) : feeLoading ? (
-                            <span className="pb-value-hint">Calculating…</span>
+                            <span className="pb-value-hint">{t('checkout.calculating')}</span>
                           ) : deliveryFee === 0 ? (
-                            <span className="pb-free">Free</span>
+                            <span className="pb-free">{t('checkout.free')}</span>
                           ) : (
                             `$${deliveryFee.toFixed(2)}`
                           )}
@@ -2180,40 +2257,46 @@ const Checkout = () => {
                       <p style={{ fontSize: '0.72rem', color: feeMsg.startsWith('⚠') ? '#f59e0b' : 'var(--color-text-muted)', margin: '-0.35rem 0 0.35rem', lineHeight: 1.4 }}>{feeMsg}</p>
                     )}
                     <div className="pb-row">
-                      <span className="pb-label">Service Fee</span>
+                      <span className="pb-label">{t('checkout.serviceFee')}</span>
                       <span className="pb-value">${serviceFee.toFixed(2)}</span>
                     </div>
                     <div className="pb-row">
-                      <span className="pb-label">Tax (8.875%)</span>
+                      <span className="pb-label">{t('checkout.taxRate')}</span>
                       <span className="pb-value">${tax.toFixed(2)}</span>
                     </div>
                     {tip > 0 && (
                       <div className="pb-row">
-                        <span className="pb-label">Tip</span>
+                        <span className="pb-label">{t('checkout.tip')}</span>
                         <span className="pb-value">${tip.toFixed(2)}</span>
                       </div>
                     )}
                     {couponDiscount > 0 && (
                       <div className="pb-row pb-row--discount">
-                        <span className="pb-label">Coupon Discount</span>
+                        <span className="pb-label">{t('checkout.couponDiscount')}</span>
                         <span className="pb-value pb-value--green">−${couponDiscount.toFixed(2)}</span>
                       </div>
                     )}
                     {loyaltyDiscount > 0 && (
                       <div className="pb-row pb-row--discount">
-                        <span className="pb-label">🏅 Rewards</span>
+                        <span className="pb-label">{t('checkout.rewards')}</span>
                         <span className="pb-value pb-value--green">−${loyaltyDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {tierDiscount > 0 && (
+                      <div className="pb-row pb-row--discount">
+                        <span className="pb-label">{t('checkout.tierDiscount', { tier: tierName })}</span>
+                        <span className="pb-value pb-value--green">−${tierDiscount.toFixed(2)}</span>
                       </div>
                     )}
                     {giftCardAmount > 0 && (
                       <div className="pb-row pb-row--discount">
-                        <span className="pb-label">Gift Card</span>
+                        <span className="pb-label">{t('checkout.giftCard')}</span>
                         <span className="pb-value pb-value--green">−${giftCardAmount.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="pb-divider" />
                     <div className="pb-total-row">
-                      <span className="pb-total-label">Total</span>
+                      <span className="pb-total-label">{t('checkout.total')}</span>
                       <span className="pb-total-value">${total.toFixed(2)}</span>
                     </div>
                   </div>
@@ -2228,7 +2311,7 @@ const Checkout = () => {
                           onClick={handleRetrySaveOrder}
                           disabled={retrying}
                         >
-                          {retrying ? 'Retrying…' : 'Retry'}
+                          {retrying ? t('checkout.retrying') : t('checkout.retry')}
                         </button>
                       )}
                     </div>
@@ -2237,21 +2320,21 @@ const Checkout = () => {
                   {/* ── Trust badges ── */}
                   <div className="trust-badges">
                     <div className="trust-badge">
-                      <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="trust-badge-img" />
+                      <img src="/images/logos/halal-certified-premium.webp" alt={t('checkout.halalCertifiedFull')} className="trust-badge-img" />
                       <div className="trust-badge-text">
                         <span className="trust-badge-label">
-                          <span className="tbl-full">Halal Certified</span>
-                          <span className="tbl-short">Halal</span>
+                          <span className="tbl-full">{t('checkout.halalCertifiedFull')}</span>
+                          <span className="tbl-short">{t('checkout.halalShort')}</span>
                         </span>
-                        <span className="trust-badge-sub">1000+ endorsements</span>
+                        <span className="trust-badge-sub">{t('checkout.endorsements')}</span>
                       </div>
                     </div>
                     <div className="trust-badge-sep" />
                     <div className="trust-badge">
                       <img src="/images/logos/grade-a-badge.png" alt="Grade A" className="trust-badge-img" />
                       <div className="trust-badge-text">
-                        <span className="trust-badge-label">Grade A</span>
-                        <span className="trust-badge-sub">NYC Health Dept.</span>
+                        <span className="trust-badge-label">{t('checkout.gradeA')}</span>
+                        <span className="trust-badge-sub">{t('checkout.nycHealthDept')}</span>
                       </div>
                     </div>
                     <div className="trust-badge-sep" />
@@ -2259,10 +2342,10 @@ const Checkout = () => {
                       <span className="trust-badge-emoji">🔒</span>
                       <div className="trust-badge-text">
                         <span className="trust-badge-label">
-                          <span className="tbl-full">Secure Checkout</span>
-                          <span className="tbl-short">Secure</span>
+                          <span className="tbl-full">{t('checkout.secureCheckoutFull')}</span>
+                          <span className="tbl-short">{t('checkout.secureShort')}</span>
                         </span>
-                        <span className="trust-badge-sub">SSL encrypted</span>
+                        <span className="trust-badge-sub">{t('checkout.sslEncrypted')}</span>
                       </div>
                     </div>
                   </div>
@@ -2272,9 +2355,9 @@ const Checkout = () => {
                       className="btn btn-primary place-order-btn"
                       onClick={handlePlaceOrder}
                       disabled={placing || items.length === 0 || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
-                      title={!storeOpen ? "We're currently closed" : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant to continue' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter a valid delivery address to continue' : undefined}
+                      title={!storeOpen ? t('checkout.closedTitle') : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? t('checkout.selectRestaurantToContinue') : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? t('checkout.enterValidAddressToContinue') : undefined}
                     >
-                      {!storeOpen ? "Currently Closed" : ctaLabel()}
+                      {!storeOpen ? t('checkout.currentlyClosed') : ctaLabel()}
                     </button>
                   )}
                 </>
@@ -2282,16 +2365,16 @@ const Checkout = () => {
             })()}
 
             <p className="text-center text-xs text-muted mt-4">
-              By placing this order you agree to our{' '}
-              <Link to="/terms" className="text-primary">Terms of Service</Link> and{' '}
-              <Link to="/privacy-policy" className="text-primary">Privacy Policy</Link>.
+              {t('checkout.agreeToTerms')}{' '}
+              <Link to="/terms" className="text-primary">{t('checkout.termsOfService')}</Link> {t('checkout.and')}{' '}
+              <Link to="/privacy-policy" className="text-primary">{t('checkout.privacyPolicy')}</Link>.
             </p>
 
             <div className="halal-seal">
-              <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="halal-seal-img" />
+              <img src="/images/logos/halal-certified-premium.webp" alt={t('checkout.halalCertifiedFull')} className="halal-seal-img" />
               <div>
-                <p className="halal-seal-title">HALAL CERTIFIED</p>
-                <p className="halal-seal-sub">Premium by 1000+ Halal endorsements.</p>
+                <p className="halal-seal-title">{t('checkout.halalCertifiedSeal')}</p>
+                <p className="halal-seal-sub">{t('checkout.premiumEndorsements')}</p>
               </div>
             </div>
           </div>
@@ -2324,7 +2407,7 @@ const Checkout = () => {
               onClick={handlePlaceOrder}
               disabled={placing || !storeOpen || (!isDineIn && deliveryMode === 'delivery' && (!selectedLocation || !addressValidated || feeLoading))}
             >
-              {!storeOpen ? 'Currently Closed' : feeLoading ? 'Calculating fee…' : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? 'Select a restaurant' : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? 'Enter delivery address' : (!giftCardCoversFull && !paymentMethod) ? 'Select payment method' : placing ? 'Please wait…' : 'Place Order →'}
+              {!storeOpen ? t('checkout.currentlyClosed') : feeLoading ? t('checkout.calculatingFee') : (!isDineIn && deliveryMode === 'delivery' && !selectedLocation) ? t('checkout.selectARestaurant') : (!isDineIn && deliveryMode === 'delivery' && !addressValidated) ? t('checkout.enterDeliveryAddress') : (!giftCardCoversFull && !paymentMethod) ? t('checkout.selectPaymentMethod') : placing ? t('checkout.pleaseWait') : t('checkout.placeOrderArrow')}
             </button>
           ) : null}
         </div>

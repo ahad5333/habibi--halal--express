@@ -6,8 +6,13 @@ const { logAudit } = require('./auditController');
 const { syncMenuAvailability, restockOrderItems } = require('./inventoryController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance, geocodeCountry, feeFromMiles } = require("../utils/googleMaps");
+const { getDistance, geocodeCountry, geocodeAddress, feeFromMiles } = require("../utils/googleMaps");
+const {
+  isConfigured: uberConfigured,
+  createDelivery: uberCreateDelivery,
+} = require("../utils/uberDirect");
 const { getFeeForDistance } = require("../utils/deliveryFee");
+const { validateClientDeliveryFee, loadQuote, markQuoteConsumed } = require("../utils/deliveryPricing");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const { computeCouponDiscount } = require("./couponController");
@@ -75,6 +80,62 @@ async function autoDispatchDoorDash(order_id, order) {
   } catch (err) {
     // Non-fatal: log and continue
     console.error('DoorDash auto-dispatch failed:', err.message);
+  }
+}
+
+// Uber Direct is the courier the customer was actually priced against (its
+// live quote + 20%), so it's also the one that has to carry the order.
+// `quoteId` is the very quote the price came from — creating the delivery from
+// it commits Uber to that price instead of whatever it costs a few minutes
+// later, which is the whole reason the quote is persisted at checkout.
+async function autoDispatchUber(order_id, order, quoteId = null) {
+  if (!uberConfigured()) return false;
+  if ((order.delivery_method || '').toLowerCase() !== 'delivery') return false;
+  try {
+    const dropoffAddress = [order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_zip]
+      .filter(Boolean).join(', ');
+
+    const [pickupGeo, dropoffGeo] = await Promise.all([
+      geocodeAddress(RESTAURANT_ADDRESS),
+      geocodeAddress(dropoffAddress),
+    ]);
+    if (!pickupGeo || !dropoffGeo) {
+      console.error(`[Dispatch] Uber: could not geocode ${!pickupGeo ? 'pickup' : 'dropoff'} for ${order.order_number}`);
+      return false;
+    }
+
+    const data = await uberCreateDelivery({
+      quoteId,
+      pickup:  { street: pickupGeo.street,  city: pickupGeo.city,  state: pickupGeo.state,  zip: pickupGeo.zip },
+      dropoff: { street: dropoffGeo.street, city: dropoffGeo.city, state: dropoffGeo.state, zip: dropoffGeo.zip },
+      pickupName:   RESTAURANT_NAME,
+      dropoffName:  order.customer_name || 'Customer',
+      pickupPhone:  RESTAURANT_PHONE,
+      dropoffPhone: order.customer_phone || RESTAURANT_PHONE,
+      pickupNotes:  'Pick up at counter. Ask for the order number.',
+      dropoffNotes: order.delivery_instructions || '',
+      items: [{ name: `Order ${order.order_number}`, qty: 1 }],
+      orderValueCents: Math.round(parseFloat(order.total || 0) * 100),
+      externalId: `habibi-${order.order_number}`,
+    });
+
+    await pool.query(
+      `INSERT INTO uber_deliveries
+         (order_id, order_number, uber_delivery_id, tracking_url, status, fee)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (uber_delivery_id) DO NOTHING`,
+      [
+        order_id, order.order_number,
+        data.id, data.tracking_url || null,
+        data.status || 'pending',
+        data.fee ? data.fee / 100 : 0,
+      ]
+    );
+    console.log(`[Dispatch] Uber delivery created for ${order.order_number} (${data.id})`);
+    return true;
+  } catch (err) {
+    console.error('Uber auto-dispatch failed:', err.message);
+    return false;
   }
 }
 
@@ -158,6 +219,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
       delivery_method, delivery_address, delivery_city, delivery_zip,
       delivery_state, delivery_instructions, payment_method,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
+      delivery_quote_ref,
       coupon_code, expected_time, items,
       gift_card_code, gift_card_amount: gift_card_amount_raw,
       location_id,
@@ -315,23 +377,22 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           // non-existent addresses) through as long as the client sent >=$2.99.
           return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
         } else {
-          // No per-location radius cutoff — per owner decision (2026-07-27), every
-          // address is accepted regardless of distance. getFeeForDistance's own
-          // tier table (null beyond 350mi) is the only remaining ceiling.
-          let serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
-          if (serverDelFee === null) {
-            return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
-          }
-          // Mirrors the same waiver dispatchController's /calculate-fee quote
-          // already applied — recomputed server-side so a tampered client
-          // can't claim $0 without actually qualifying, and a real qualifying
-          // order isn't rejected for reporting the (correctly) waived fee.
+          // Own driver inside the location's CPanel radius, else the courier's
+          // live quote + 20%. Validated against the quote the customer was
+          // actually shown so a moving courier price can't reject a real order.
           const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
-          if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
-            serverDelFee = 0;
-          }
-          if (clientDelFee < serverDelFee - 0.10) {
-            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          const feeCheck = await validateClientDeliveryFee({
+            quoteRef: delivery_quote_ref,
+            locationId: feeLocationId,
+            destinationAddress: addrStr,
+            originAddress: origin,
+            miles: dist.miles,
+            subtotal: sub_total,
+            clientFee: clientDelFee,
+            freeDeliveryThreshold,
+          });
+          if (!feeCheck.ok) {
+            return res.status(400).json({ message: feeCheck.message });
           }
 
           // Distance alone doesn't rule out a real, road-reachable address just
@@ -843,24 +904,58 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           const dist  = await getDistance(origin, destination);
           const miles = dist?.miles ?? 7; // default to DoorDash range if Maps unavailable
 
-          // Load tiers from DB (ordered by min_distance ASC)
-          const tiersRes = await pool.query(
-            `SELECT provider_type, min_distance, max_distance
-               FROM delivery_tiers
-              WHERE is_active = TRUE
-              ORDER BY min_distance ASC`
-          );
-          const tiers = tiersRes.rows;
+          // Route to whoever actually priced this order. The customer was
+          // charged either the location's own-driver rate or a courier quote
+          // +20%; sending it to the other one would mean collecting a price we
+          // aren't paying. The persisted quote is the authority — the global
+          // delivery_tiers table it replaces couldn't express "own driver" as
+          // a per-location, off-by-default option at all.
+          const savedQuote = await loadQuote(delivery_quote_ref).catch(() => null);
+          let provider = savedQuote?.source === 'self' ? 'in_house'
+                       : savedQuote?.source === 'partner' ? 'uber'
+                       : null;
+          const partnerQuoteId = savedQuote?.quoteId || null;
 
-          // Find the matching tier for this distance
-          const tier = tiers.find(t =>
-            miles >= parseFloat(t.min_distance) && miles < parseFloat(t.max_distance)
-          );
-          const provider = tier?.provider_type || 'doordash'; // safe fallback
+          if (!provider) {
+            // Quote expired or a non-web client placed the order: decide the
+            // same way the pricing resolver would have.
+            let locRow = null;
+            if (resolvedLocationId) {
+              const lr = await pool.query(
+                `SELECT self_delivery_enabled, delivery_radius_miles FROM locations WHERE id = $1`,
+                [resolvedLocationId]
+              );
+              locRow = lr.rows[0] || null;
+            }
+            const radius = parseFloat(locRow?.delivery_radius_miles);
+            provider = (locRow?.self_delivery_enabled && Number.isFinite(radius) && miles <= radius)
+              ? 'in_house' : 'uber';
+          }
 
-          console.log(`[Dispatch] ${order_number}: ${miles} mi → ${provider}`);
+          console.log(`[Dispatch] ${order_number}: ${miles} mi → ${provider}${partnerQuoteId ? ' (quoted)' : ''}`);
 
-          if (provider === 'in_house') {
+          if (provider === 'uber') {
+            const sent = await autoDispatchUber(db_id, dispatchPayload, partnerQuoteId);
+            if (!sent) {
+              // The courier we priced against couldn't be handed the order.
+              // Surface it on the dispatch board rather than letting it sit
+              // with no delivery arranged and nobody aware of it.
+              console.warn(`[Dispatch] ${order_number}: Uber dispatch failed — flagging for manual arrangement`);
+              await pool.query(
+                `INSERT INTO delivery_assignments
+                   (order_id, order_number, driver_id, driver_name, status,
+                    delivery_address, customer_name, customer_phone, delivery_note)
+                 VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5,$6)
+                 ON CONFLICT DO NOTHING`,
+                [db_id, order_number,
+                 [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
+                 customer_name || 'Guest', customer_phone || '',
+                 `Courier dispatch failed (${miles.toFixed(1)} mi) — needs manual delivery arrangement.`]
+              ).catch(e => console.error('[Dispatch] uber-fallback assignment insert failed:', e.message));
+              const io = req.app.get('io');
+              if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+            }
+          } else if (provider === 'in_house') {
             // Create an unassigned delivery_assignment so admin can pick a driver
             await pool.query(
               `INSERT INTO delivery_assignments
@@ -874,31 +969,13 @@ const createGuestOrder = async (req, res, overrides = {}) => {
             ).catch(e => console.error('[Dispatch] delivery_assignment insert failed:', e.message));
             const io = req.app.get('io');
             if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
-          } else if (provider === 'doordash') {
-            autoDispatchDoorDash(db_id, dispatchPayload);
-          } else if (provider === 'roadie' && roadieConfigured()) {
-            autoDispatchRoadie(db_id, dispatchPayload);
-          } else if (provider === 'roadie') {
-            // Roadie is the right tier for this distance but credentials aren't
-            // configured yet — without this, the order would get no delivery
-            // dispatch of any kind and no one would know. Surface it the same
-            // way an in-house order does, so it lands on the admin dispatch board.
-            console.warn(`[Dispatch] ${order_number}: ${miles} mi wants Roadie but it's not configured — flagging for manual dispatch`);
-            await pool.query(
-              `INSERT INTO delivery_assignments
-                 (order_id, order_number, driver_id, driver_name, status,
-                  delivery_address, customer_name, customer_phone, delivery_note)
-               VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5,$6)
-               ON CONFLICT DO NOTHING`,
-              [db_id, order_number,
-               [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
-               customer_name || 'Guest', customer_phone || '',
-               `Long-distance order (${miles.toFixed(1)} mi) — Roadie not yet configured, needs manual delivery arrangement.`]
-            ).catch(e => console.error('[Dispatch] roadie-fallback assignment insert failed:', e.message));
-            const io = req.app.get('io');
-            if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+          // DoorDash and Roadie kept their autoDispatch* helpers but are no
+          // longer routed to: neither has live credentials, and the customer's
+          // price now comes from whichever courier actually quoted it. Adding
+          // them back means quoting them in deliveryPricing first, so that the
+          // price charged and the courier used stay the same decision.
           } else {
-            // pickup_only or unknown — just log
+            // unknown — just log
             console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);
           }
 
@@ -908,7 +985,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           ).catch(() => {});
         } catch (err) {
           console.error('[Dispatch] Routing error:', err.message);
-          autoDispatchDoorDash(db_id, dispatchPayload); // safe fallback
+          autoDispatchUber(db_id, dispatchPayload); // safe fallback: the only live courier
           await pool.query(
             `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
           ).catch(() => {});
@@ -1045,6 +1122,7 @@ const createPendingCheckout = async (req, res) => {
       delivery_method, delivery_address, delivery_city, delivery_zip,
       delivery_state, customer_email,
       sub_total, tax, service_fee, delivery_fee, tip, discount, total,
+      delivery_quote_ref,
       coupon_code, items, location_id, customer_name, delivery_instructions,
       loyalty_points_redeemed: loyalty_points_raw,
       gift_card_code, gift_card_amount: gift_card_amount_raw,
@@ -1134,16 +1212,19 @@ const createPendingCheckout = async (req, res) => {
         } else if (!dist) {
           return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
         } else {
-          let serverDelFee = await getFeeForDistance(dist.miles, feeLocationId);
-          if (serverDelFee === null) {
-            return res.status(400).json({ message: 'Delivery address is outside our delivery range.' });
-          }
           const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
-          if ((parseFloat(sub_total) || 0) >= freeDeliveryThreshold) {
-            serverDelFee = 0;
-          }
-          if (clientDelFee < serverDelFee - 0.10) {
-            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
+          const feeCheck = await validateClientDeliveryFee({
+            quoteRef: delivery_quote_ref,
+            locationId: feeLocationId,
+            destinationAddress: addrStr,
+            originAddress: origin,
+            miles: dist.miles,
+            subtotal: sub_total,
+            clientFee: clientDelFee,
+            freeDeliveryThreshold,
+          });
+          if (!feeCheck.ok) {
+            return res.status(400).json({ message: feeCheck.message });
           }
           const country = await geocodeCountry(addrStr);
           if (country && country !== 'US') {

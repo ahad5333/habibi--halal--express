@@ -909,6 +909,56 @@ const createTables = async () => {
       );
     `);
 
+    // ── Uber Direct deliveries ─────────────────────────────────────
+    // Mirrors doordash_deliveries. Uber is the courier that actually prices
+    // and carries non-local orders, so its dispatches need the same record.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS uber_deliveries (
+        id                     SERIAL PRIMARY KEY,
+        order_id               INTEGER,
+        order_number           VARCHAR(100),
+        uber_delivery_id       VARCHAR(255) UNIQUE,
+        tracking_url           TEXT,
+        status                 VARCHAR(50) DEFAULT 'pending',
+        courier_name           VARCHAR(255),
+        courier_phone          VARCHAR(50),
+        estimated_pickup_time  TIMESTAMPTZ,
+        estimated_dropoff_time TIMESTAMPTZ,
+        fee                    NUMERIC(10,2) DEFAULT 0,
+        created_at             TIMESTAMPTZ DEFAULT NOW(),
+        updated_at             TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // ── Delivery Quotes ────────────────────────────────────────────
+    // A courier's price is live and moves between the moment checkout shows it
+    // and the moment the order is placed, so the quote the customer actually
+    // saw is persisted and re-read at placement instead of being re-quoted.
+    // Without this the server-side fee check (which rejects anything more than
+    // $0.10 under its own recomputation) would bounce legitimate orders purely
+    // because traffic shifted. partner_quote_id is kept so dispatch can create
+    // the delivery from the same quote rather than paying a newer price.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS delivery_quotes (
+        id               SERIAL PRIMARY KEY,
+        quote_ref        VARCHAR(64) UNIQUE NOT NULL,
+        location_id      INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+        address_hash     VARCHAR(64) NOT NULL,
+        miles            NUMERIC(8,2),
+        source           VARCHAR(16),
+        provider         VARCHAR(24),
+        partner_quote_id TEXT,
+        partner_fee      NUMERIC(10,2),
+        customer_fee     NUMERIC(10,2) NOT NULL,
+        subtotal         NUMERIC(10,2),
+        expires_at       TIMESTAMPTZ NOT NULL,
+        consumed_at      TIMESTAMPTZ,
+        created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_delivery_quotes_ref ON delivery_quotes(quote_ref)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_delivery_quotes_expires ON delivery_quotes(expires_at)`);
+
     // ── Notification Broadcasts ────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS broadcasts (
@@ -1077,6 +1127,16 @@ const createTables = async () => {
     // defaulted to FALSE instead of the spec'd "all checked by default."
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_instacart BOOLEAN DEFAULT TRUE`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS partner_hhe       BOOLEAN DEFAULT TRUE`);
+
+    // ── Own-driver ("local") delivery pricing, per location ──────────────
+    // self_delivery_enabled / delivery_radius_miles / delivery_cost already
+    // existed but were never read by checkout. The owner's rule is a fixed
+    // charge OR a percentage of the food subtotal with a minimum, so the mode
+    // and the two percentage fields are what was missing. Default 'fixed'
+    // keeps every existing row behaving exactly as its delivery_cost says.
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_pricing_mode VARCHAR(10) DEFAULT 'fixed'`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_percent      NUMERIC(5,2)  DEFAULT 0`);
+    await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS delivery_min_charge   NUMERIC(10,2) DEFAULT 0`);
     await client.query(`ALTER TABLE locations ALTER COLUMN partner_ubereats SET DEFAULT TRUE`);
     await client.query(`ALTER TABLE locations ALTER COLUMN partner_doordash SET DEFAULT TRUE`);
     await client.query(`ALTER TABLE locations ALTER COLUMN partner_grubhub  SET DEFAULT TRUE`);

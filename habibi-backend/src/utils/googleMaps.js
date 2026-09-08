@@ -125,6 +125,52 @@ async function geocodeCountry(address) {
   }
 }
 
+// Full structured geocode: street / city / state / zip plus coordinates.
+//
+// Courier APIs (Uber Direct) need the address broken into components, but
+// checkout only ever collects one free-text line (delivery_city/zip are sent
+// empty), so the components have to be recovered here rather than parsed out
+// of the string by hand. Returns null when the key is missing or the address
+// doesn't resolve — callers treat that as "can't quote a courier for this".
+async function geocodeAddress(address) {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+
+  const url =
+    `${MAPS_BASE}/geocode/json` +
+    `?address=${encodeURIComponent(address)}` +
+    `&key=${key}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status !== 'OK' || !data.results?.length) return null;
+
+    const result     = data.results[0];
+    const components = result.address_components || [];
+    const pick = (type, form = 'long_name') =>
+      components.find(c => c.types?.includes(type))?.[form] || '';
+
+    const streetNumber = pick('street_number');
+    const route        = pick('route');
+
+    return {
+      street: [streetNumber, route].filter(Boolean).join(' '),
+      // Some NYC addresses geocode with only a sublocality (e.g. "Bronx")
+      // rather than a locality, which would otherwise leave city empty.
+      city:  pick('locality') || pick('sublocality') || pick('sublocality_level_1'),
+      state: pick('administrative_area_level_1', 'short_name'),
+      zip:   pick('postal_code'),
+      country: pick('country', 'short_name') || 'US',
+      lat: result.geometry?.location?.lat ?? null,
+      lng: result.geometry?.location?.lng ?? null,
+      formatted: result.formatted_address || address,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Tiered delivery fee based on distance (miles).
 // 350+ miles = pickup only (returns null).
 function feeFromMiles(miles) {
@@ -159,4 +205,4 @@ function formatMinutes(totalMinutes) {
   return rem === 0 ? `${hrs} hr` : `${hrs} hr ${rem} min`;
 }
 
-module.exports = { getDistance, getDirections, geocodeCountry, feeFromMiles, providerFromMiles, formatMinutes };
+module.exports = { getDistance, getDirections, geocodeCountry, geocodeAddress, feeFromMiles, providerFromMiles, formatMinutes };

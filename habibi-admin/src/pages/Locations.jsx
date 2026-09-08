@@ -10,6 +10,7 @@ const BLANK_NEW_LOCATION = {
   holidays: '', location_note: '', roadie_pickup_message: '', image_url: '',
   tablet_username: '', tablet_password: '',
   self_delivery_enabled: false,
+  delivery_pricing_mode: 'fixed', delivery_percent: 0, delivery_min_charge: 0,
   partner_ubereats: true, partner_doordash: true, partner_grubhub: true,
   partner_roadie: true, partner_instacart: true, partner_hhe: true,
 };
@@ -18,6 +19,68 @@ const PARTNER_OPTIONS = [
   ['ubereats', 'Uber Eats'], ['doordash', 'DoorDash'], ['grubhub', 'Grubhub'],
   ['instacart', 'Instacart'], ['roadie', 'Roadie'], ['hhe', 'HHE'],
 ];
+
+// Own-driver delivery settings. Shown only when Self Delivery is ticked, and
+// shared by the edit and add forms so the two can't drift apart.
+//
+// These fields decide what the customer is actually charged inside the radius:
+// a flat amount, or a percentage of the food subtotal with a floor. Outside
+// the radius the order falls through to a courier, which prices itself.
+function SelfDeliveryFields({ values, onChange }) {
+  const mode = values.delivery_pricing_mode || 'fixed';
+  const set  = (patch) => onChange({ ...values, ...patch });
+
+  return (
+    <div style={{ display: 'grid', gap: '0.875rem', marginBottom: '0.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+        <div className="field">
+          <label>Delivery Radius (miles)</label>
+          <input className="input" type="number" min="0" step="0.5"
+                 value={values.delivery_radius_miles}
+                 onChange={e => set({ delivery_radius_miles: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Charge Type</label>
+          <select className="input" value={mode}
+                  onChange={e => set({ delivery_pricing_mode: e.target.value })}>
+            <option value="fixed">Fixed amount</option>
+            <option value="percent">Percentage of order</option>
+          </select>
+        </div>
+      </div>
+
+      {mode === 'percent' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+          <div className="field">
+            <label>Percentage of Order (%)</label>
+            <input className="input" type="number" min="0" max="100" step="0.5"
+                   value={values.delivery_percent ?? 0}
+                   onChange={e => set({ delivery_percent: e.target.value })} />
+          </div>
+          <div className="field">
+            <label>Minimum Charge ($)</label>
+            <input className="input" type="number" min="0" step="0.50"
+                   value={values.delivery_min_charge ?? 0}
+                   onChange={e => set({ delivery_min_charge: e.target.value })} />
+          </div>
+        </div>
+      ) : (
+        <div className="field">
+          <label>Delivery Fee ($)</label>
+          <input className="input" type="number" min="0" step="0.50"
+                 value={values.delivery_cost}
+                 onChange={e => set({ delivery_cost: e.target.value })} />
+        </div>
+      )}
+
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted, #888)', margin: 0, lineHeight: 1.5 }}>
+        Applies to addresses within the radius above. Set to 0 to show customers
+        “Free”. Anything outside the radius is quoted by the delivery partner
+        instead, plus 20%.
+      </p>
+    </div>
+  );
+}
 
 export default function Locations() {
   const [locations, setLocations] = useState([]);
@@ -59,6 +122,9 @@ export default function Locations() {
       accepting_orders:      loc.accepting_orders !== false,
       delivery_radius_miles: loc.delivery_radius_miles || 5,
       delivery_cost:         loc.delivery_cost || 0,
+      delivery_pricing_mode: loc.delivery_pricing_mode || 'fixed',
+      delivery_percent:      loc.delivery_percent || 0,
+      delivery_min_charge:   loc.delivery_min_charge || 0,
       preference_level:      loc.preference_level || 1,
       // delivery partner checkboxes
       partner_ubereats:  !!(loc.delivery_partners?.includes?.('ubereats')  || loc.partner_ubereats),
@@ -286,16 +352,7 @@ export default function Locations() {
                 <span>Self Delivery (in-house driver)</span>
               </label>
               {form.self_delivery_enabled && (
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
-                  <div className="field">
-                    <label>Delivery Radius (miles)</label>
-                    <input className="input" type="number" min="0" step="0.5" value={form.delivery_radius_miles} onChange={e => setForm({...form,delivery_radius_miles:e.target.value})} />
-                  </div>
-                  <div className="field">
-                    <label>Delivery Fee ($)</label>
-                    <input className="input" type="number" min="0" step="0.50" value={form.delivery_cost} onChange={e => setForm({...form,delivery_cost:e.target.value})} />
-                  </div>
-                </div>
+                <SelfDeliveryFields values={form} onChange={setForm} />
               )}
               <div className="field">
                 <label>Delivery Partners</label>
@@ -481,16 +538,7 @@ export default function Locations() {
                 <span>Self Delivery (in-house driver)</span>
               </label>
               {addForm.self_delivery_enabled && (
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem'}}>
-                  <div className="field">
-                    <label>Delivery Radius (miles)</label>
-                    <input className="input" type="number" min="0" step="0.5" value={addForm.delivery_radius_miles} onChange={e => setAddForm({...addForm,delivery_radius_miles:e.target.value})} />
-                  </div>
-                  <div className="field">
-                    <label>Delivery Fee ($)</label>
-                    <input className="input" type="number" min="0" step="0.50" value={addForm.delivery_cost} onChange={e => setAddForm({...addForm,delivery_cost:e.target.value})} />
-                  </div>
-                </div>
+                <SelfDeliveryFields values={addForm} onChange={setAddForm} />
               )}
               <div className="field">
                 <label>Delivery Partners</label>

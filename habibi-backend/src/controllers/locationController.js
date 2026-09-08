@@ -64,6 +64,7 @@ const createLocation = async (req, res) => {
     delivery_radius_miles, delivery_cost, is_active, preference_level,
     image_url, holidays, location_note, roadie_pickup_message, tablet_username, tablet_password,
     self_delivery_enabled,
+    delivery_pricing_mode, delivery_percent, delivery_min_charge,
     partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe,
   } = req.body;
 
@@ -93,9 +94,10 @@ const createLocation = async (req, res) => {
          delivery_radius_miles, delivery_cost, is_active, preference_level,
          image_url, holidays, location_note, roadie_pickup_message, tablet_username, tablet_password_hash,
          self_delivery_enabled,
-         partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe
+         partner_ubereats, partner_doordash, partner_grubhub, partner_roadie, partner_instacart, partner_hhe,
+         delivery_pricing_mode, delivery_percent, delivery_min_charge
        )
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
        RETURNING *`,
       [
         title, exact_address, brief_address || exact_address, latitude, longitude, phone_number, working_days_hours,
@@ -104,6 +106,9 @@ const createLocation = async (req, res) => {
         !!self_delivery_enabled,
         partner_ubereats !== false, partner_doordash !== false, partner_grubhub !== false,
         partner_roadie !== false, partner_instacart !== false, partner_hhe !== false,
+        delivery_pricing_mode === 'percent' ? 'percent' : 'fixed',
+        Math.min(100, Math.max(0, parseFloat(delivery_percent) || 0)),
+        Math.max(0, parseFloat(delivery_min_charge) || 0),
       ]
     );
     const row = { ...result.rows[0] };

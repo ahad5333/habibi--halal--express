@@ -5,6 +5,7 @@ const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
 const { getDistance, formatMinutes } = require('../utils/googleMaps');
 const { getFeeForDistance } = require('../utils/deliveryFee');
+const { resolveDeliveryFee, saveQuote } = require('../utils/deliveryPricing');
 const { getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { sendSMS, toE164 } = require('../services/smsService');
 const { sendPushNotification } = require('../services/fcmService');
@@ -862,22 +863,67 @@ const calculateDeliveryFee = async (req, res) => {
 
     const dist = await getDistance(origin, customer_address);
     if (!dist) return res.json({ fee: null, message: 'Could not calculate distance' });
+    if (dist.unavailable) {
+      // Maps isn't configured at all, so neither the own-driver radius check
+      // nor a courier geocode can run. Quoting a number here would be a guess.
+      return res.json({ fee: null, delivery_unavailable: true, message: 'Delivery pricing is temporarily unavailable.' });
+    }
 
-    // No per-location radius cutoff — per owner decision (2026-07-27), every
-    // address gets a fee/ETA quote regardless of distance. getFeeForDistance's
-    // own tier table (null beyond 350mi) is the only remaining ceiling.
-    let fee = await getFeeForDistance(dist.miles, location_id || null);
+    // Owner's rule: own driver inside the location's configured radius at the
+    // CPanel price, otherwise the courier's live quote + 20%. No band table,
+    // no cap, no minimum. A null fee means delivery isn't offered here at all.
+    const resolved = await resolveDeliveryFee({
+      locationId: location_id || null,
+      destinationAddress: customer_address,
+      originAddress: origin,
+      miles: dist.miles,
+      subtotal,
+    });
+
+    if (resolved.fee === null) {
+      return res.json({
+        fee: null,
+        distance_miles: dist.miles,
+        distance_text:  dist.text,
+        // 'not_serviceable' is the courier genuinely refusing the address;
+        // anything else means we couldn't get a price right now.
+        out_of_range:         resolved.reason === 'not_serviceable',
+        delivery_unavailable: resolved.reason !== 'not_serviceable',
+        message: resolved.reason === 'not_serviceable'
+          ? 'We can’t deliver to this address. Pickup is still available.'
+          : 'Delivery pricing is temporarily unavailable. Pickup is still available.',
+      });
+    }
+
+    let fee = resolved.fee;
 
     // free_delivery_threshold was previously dormant -- exposed as a public
     // setting but never actually checked anywhere. A qualifying subtotal now
-    // genuinely waives the fee instead of just implying it would.
+    // genuinely waives the fee instead of just implying it would. The courier
+    // still charges us, so the quote row keeps partner_fee for accounting even
+    // when the customer is charged nothing.
     let freeDeliveryApplied = false;
-    if (fee !== null && parseFloat(subtotal) > 0) {
+    if (parseFloat(subtotal) > 0) {
       const threshold = await getFreeDeliveryThreshold(req.user?.id);
       if (parseFloat(subtotal) >= threshold) {
         fee = 0;
         freeDeliveryApplied = true;
       }
+    }
+
+    // Persist exactly what the customer is being shown, so placing the order
+    // a minute later isn't rejected because the courier's live price moved.
+    let quoteRef = null;
+    try {
+      quoteRef = await saveQuote({
+        locationId: location_id || null,
+        destinationAddress: customer_address,
+        miles: dist.miles,
+        subtotal,
+        resolved: { ...resolved, fee },
+      });
+    } catch (e) {
+      console.error('[DeliveryPricing] could not persist quote:', e.message);
     }
 
     // Raw driving duration alone understates delivery time — it ignores
@@ -900,7 +946,12 @@ const calculateDeliveryFee = async (req, res) => {
       estimated_delivery_text:    formatMinutes(estimatedMinutes),
       fee,
       free_delivery_applied: freeDeliveryApplied,
-      out_of_range: fee === null,
+      out_of_range: false,
+      // Returned so order placement can honour this exact price instead of
+      // re-quoting the courier and rejecting the customer over the difference.
+      quote_ref:   quoteRef,
+      fee_source:  resolved.source,   // 'self' (own driver) | 'partner'
+      fee_provider: resolved.provider, // 'uber' when a courier priced it
     });
   } catch (err) {
     res.status(500).json(safeError(err));

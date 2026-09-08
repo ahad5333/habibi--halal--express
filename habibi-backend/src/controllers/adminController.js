@@ -1019,6 +1019,7 @@ const getAdminLocations = async (req, res) => {
               preference_level, image_url, tablet_username, delivery_addresses,
               partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
               partner_instacart, partner_hhe,
+              delivery_pricing_mode, delivery_percent, delivery_min_charge,
               self_delivery_enabled AS partner_self
        FROM locations ORDER BY preference_level ASC, id`
     );
@@ -1039,6 +1040,7 @@ const updateAdminLocation = async (req, res) => {
       exact_address, brief_address, latitude, longitude,
       partner_ubereats, partner_doordash, partner_grubhub, partner_roadie,
       partner_instacart, partner_hhe, self_delivery_enabled,
+      delivery_pricing_mode, delivery_percent, delivery_min_charge,
     } = req.body;
 
     if (brief_address !== undefined && !brief_address?.trim()) {
@@ -1085,6 +1087,9 @@ const updateAdminLocation = async (req, res) => {
            location_note = $24,
            partner_instacart = $25, partner_hhe = $26,
            roadie_pickup_message = $27,
+           delivery_pricing_mode = $28,
+           delivery_percent      = $29,
+           delivery_min_charge   = $30,
            updated_at=NOW()
        WHERE id=$13 RETURNING *`,
       [
@@ -1106,6 +1111,12 @@ const updateAdminLocation = async (req, res) => {
         location_note || null,
         !!partner_instacart, !!partner_hhe,
         roadie_pickup_message || '',
+        // Only 'percent' switches behaviour; anything else stays on the flat
+        // delivery_cost, so a bad value can't silently start charging a share
+        // of every order.
+        delivery_pricing_mode === 'percent' ? 'percent' : 'fixed',
+        Math.min(100, Math.max(0, parseFloat(delivery_percent) || 0)),
+        Math.max(0, parseFloat(delivery_min_charge) || 0),
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Location not found' });
