@@ -161,7 +161,6 @@ const sendInvoice = async (req, res) => {
     const result = await pool.query(
       `UPDATE reservations
        SET quoted_price = COALESCE($1, estimated_total),
-           invoice_sent = TRUE,
            admin_notes  = COALESCE($2, admin_notes),
            status       = CASE WHEN status = 'pending' THEN 'quoted' ELSE status END,
            updated_at   = NOW()
@@ -171,14 +170,29 @@ const sendInvoice = async (req, res) => {
     );
 
     if (result.rows.length === 0) return res.status(404).json({ message: 'Quote not found' });
-    const quote = result.rows[0];
+    let quote = result.rows[0];
 
-    await emailService.sendCateringInvoice(
+    const emailResult = await emailService.sendCateringInvoice(
       quote.email,
       quote.name,
       quote,
       invoice_notes || ''
     );
+
+    // Don't mark invoice_sent (which hides the retry button in the admin UI)
+    // unless the email actually went out — sendMailHelper swallows send
+    // failures internally and returns { success: false } rather than throwing.
+    if (!emailResult?.success) {
+      return res.status(502).json({
+        message: `Quote saved, but the invoice email failed to send: ${emailResult?.error || 'unknown error'}. Please retry.`,
+      });
+    }
+
+    const sentResult = await pool.query(
+      `UPDATE reservations SET invoice_sent = TRUE, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    quote = sentResult.rows[0];
 
     res.json({ message: 'Invoice sent successfully', data: quote });
   } catch (error) {

@@ -33,5 +33,10 @@ exports.logAudit = async (pool, adminId, adminName, action, entityType, entityId
       [adminId || null, adminName || 'Admin', action, entityType || null,
        String(entityId || ''), JSON.stringify(details || {}), ip || null]
     );
-  } catch (_) {}
+  } catch (err) {
+    // Fire-and-forget by design (an audit-log failure must never block the
+    // real admin action) — but a silent catch here means the audit trail
+    // could develop gaps with zero indication anything went wrong. Log it.
+    console.error('[AuditLog] Failed to record entry:', action, entityType, err.message);
+  }
 };

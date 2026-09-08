@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Share2, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { contactAPI } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
 import './Footer.css';
 
 const Footer = () => {
+  const { t } = useTranslation();
   const settings = useSettings();
   const [email, setEmail] = useState('');
   const [subStatus, setSubStatus] = useState(''); // '' | 'loading' | 'ok' | 'error'
@@ -31,7 +33,7 @@ const Footer = () => {
             <img src="/images/logos/logo-full.jpg" alt="Habibi Halal Express" className="footer-logo-img" />
           </Link>
           <p className="footer-tagline">
-            Authentic Halal Dining. Every dish crafted with tradition, precision, and passion, 365 days a year.
+            {t('footer.tagline')}
           </p>
           <div className="social-icons mt-4">
             {settings.social_facebook && (
@@ -64,7 +66,7 @@ const Footer = () => {
               { label: 'TikTok',    src: '/images/qr/qr-tiktok.svg',    href: settings.social_tiktok    || 'https://tiktok.com/@habibihalalexpress' },
               { label: 'YouTube',   src: '/images/qr/qr-youtube.svg',   href: 'https://youtube.com/habibihalalexpress' },
             ].map(({ label, src, href }) => (
-              <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="footer-qr-item" title={`Scan to follow on ${label}`}>
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="footer-qr-item" title={t('footer.scanToFollow', { platform: label })}>
                 <img
                   src={src}
                   alt={`QR code for ${label}`}
@@ -78,20 +80,20 @@ const Footer = () => {
           {/* Certification & service badges */}
           <div className="footer-cert-badges">
             <div className="footer-badge-card">
-              <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">Halal<br/>Certified</span>
+              <img src="/images/logos/halal-certified-premium.webp" alt={t('footer.badges.halalCertified')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">{t('footer.badges.halalCertified')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/grade-a-badge.png" alt="NYC Grade A" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">NYC Health<br/>Grade A</span>
+              <img src="/images/logos/grade-a-badge.png" alt={t('footer.badges.gradeA')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">{t('footer.badges.gradeA')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/delivery-badge.png" alt="Delivery Service" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">Fast<br/>Delivery</span>
+              <img src="/images/logos/delivery-badge.png" alt={t('footer.badges.fastDelivery')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">{t('footer.badges.fastDelivery')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/pickup-badge.png" alt="Online Order Pick Up" className="footer-badge-card-img footer-badge-card-img--circle" />
-              <span className="footer-badge-card-label">Online<br/>Pick Up</span>
+              <img src="/images/logos/pickup-badge.png" alt={t('footer.badges.onlinePickup')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <span className="footer-badge-card-label">{t('footer.badges.onlinePickup')}</span>
             </div>
           </div>
 
@@ -99,41 +101,41 @@ const Footer = () => {
 
         <div className="footer-links">
           <div className="footer-column">
-            <h4>Discover</h4>
-            <Link to="/menu">Our Menu</Link>
-            <Link to="/locations">Locations</Link>
-            <Link to="/offers">Special Offers</Link>
-            <Link to="/group-order">Group Order</Link>
-            <Link to="/delivery-coverage">Delivery Coverage</Link>
-            <Link to="/checkout">Order Online</Link>
-            <Link to="/gift-cards">Gift Cards</Link>
-            <Link to="/wholesale">Wholesale</Link>
+            <h4>{t('footer.columns.discover')}</h4>
+            <Link to="/menu">{t('footer.links.ourMenu')}</Link>
+            <Link to="/locations">{t('footer.links.locations')}</Link>
+            <Link to="/offers">{t('footer.links.specialOffers')}</Link>
+            <Link to="/group-order">{t('footer.links.groupOrder')}</Link>
+            <Link to="/delivery-coverage">{t('footer.links.deliveryCoverage')}</Link>
+            <Link to="/checkout">{t('footer.links.orderOnline')}</Link>
+            <Link to="/gift-cards">{t('footer.links.giftCards')}</Link>
+            <Link to="/wholesale">{t('footer.links.wholesale')}</Link>
           </div>
           <div className="footer-column">
-            <h4>Company</h4>
-            <Link to="/about">Our Story</Link>
-            <Link to="/careers">Careers</Link>
-            <Link to="/contact?type=media">Press Kit</Link>
+            <h4>{t('footer.columns.company')}</h4>
+            <Link to="/about">{t('footer.links.ourStory')}</Link>
+            <Link to="/careers">{t('footer.links.careers')}</Link>
+            <Link to="/contact?type=media">{t('footer.links.pressKit')}</Link>
           </div>
           <div className="footer-column">
-            <h4>Legal &amp; Support</h4>
-            <Link to="/contact">Contact Us</Link>
-            <Link to="/health-safety">Our Standards</Link>
-            <Link to="/privacy-policy">Privacy Policy</Link>
-            <Link to="/terms">Terms of Service</Link>
-            <Link to="/sms-terms">SMS Terms</Link>
-            <Link to="/accessibility">Accessibility</Link>
+            <h4>{t('footer.columns.legal')}</h4>
+            <Link to="/contact">{t('footer.links.contactUs')}</Link>
+            <Link to="/health-safety">{t('footer.links.ourStandards')}</Link>
+            <Link to="/privacy-policy">{t('footer.links.privacyPolicy')}</Link>
+            <Link to="/terms">{t('footer.links.termsOfService')}</Link>
+            <Link to="/sms-terms">{t('footer.links.smsTerms')}</Link>
+            <Link to="/accessibility">{t('footer.links.accessibility')}</Link>
           </div>
           <div className="footer-newsletter">
-            <h4>Newsletter</h4>
-            <p>Join our inner circle for exclusive tastings.</p>
+            <h4>{t('footer.columns.newsletter')}</h4>
+            <p>{t('footer.newsletterBlurb')}</p>
             {subStatus === 'ok' ? (
-              <p className="newsletter-success">✓ You're on the list!</p>
+              <p className="newsletter-success">{t('footer.newsletterSuccess')}</p>
             ) : (
               <form className="newsletter-form" onSubmit={handleSubscribe}>
                 <input
                   type="email"
-                  placeholder="Email Address"
+                  placeholder={t('footer.newsletterPlaceholder')}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
@@ -144,7 +146,7 @@ const Footer = () => {
               </form>
             )}
             {subStatus === 'error' && (
-              <p className="newsletter-error">Failed to subscribe. Try again.</p>
+              <p className="newsletter-error">{t('footer.newsletterError')}</p>
             )}
           </div>
         </div>
@@ -161,26 +163,26 @@ const Footer = () => {
             <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="footer-badge-google-icon">
               <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.579-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 5.92 1 1 5.92 1 12.2s4.92 11.2 11.24 11.2c6.6 0 11-4.64 11-11.2 0-.753-.08-1.325-.2-1.915H12.24z"/>
             </svg>
-            <span className="footer-badge-card-label">Order<br/>on Google</span>
+            <span className="footer-badge-card-label">{t('footer.badges.orderOnGoogle')}</span>
           </a>
           <div className="footer-badge-card footer-badge-card--ssl">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="footer-badge-ssl-icon">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <span className="footer-badge-card-label">SSL<br/>Secured</span>
+            <span className="footer-badge-card-label">{t('footer.badges.sslSecured')}</span>
           </div>
           <div className="footer-badge-card footer-badge-card--authnet">
             <img src="/images/partners/authorize-net.png" alt="Authorize.Net" className="footer-badge-partner-img" />
-            <span className="footer-badge-card-label">Secure<br/>Payments</span>
+            <span className="footer-badge-card-label">{t('footer.badges.securePayments')}</span>
           </div>
           <div className="footer-badge-card footer-badge-card--paypal">
             <img src="/images/partners/paypal.png" alt="PayPal" className="footer-badge-partner-img" />
-            <span className="footer-badge-card-label">Pay<br/>with PayPal</span>
+            <span className="footer-badge-card-label">{t('footer.badges.payWithPaypal')}</span>
           </div>
         </div>
         <div className="footer-delivery-badges">
-          <span className="footer-delivery-label">Order via:</span>
+          <span className="footer-delivery-label">{t('footer.orderVia')}</span>
           <img src="/images/partners/ubereats.png" alt="UberEats" className="delivery-partner-logo" title="UberEats" onError={e => { e.target.style.display='none'; }} />
           <img src="/images/partners/doordash.png" alt="DoorDash" className="delivery-partner-logo" title="DoorDash" onError={e => { e.target.style.display='none'; }} />
           <img src="/images/partners/grubhub.png" alt="GrubHub" className="delivery-partner-logo" title="GrubHub" onError={e => { e.target.style.display='none'; }} />
@@ -189,11 +191,11 @@ const Footer = () => {
 
       <div className="footer-bottom">
         <p className="footer-urgent-contact">
-          Get Urgent Reply: <a href={`mailto:${settings.email_contact}`}>{settings.email_contact}</a>
+          {t('footer.urgentReply')} <a href={`mailto:${settings.email_contact}`}>{settings.email_contact}</a>
         </p>
-        <p>© {new Date().getFullYear()} Habibi Halal Express, INC. All rights reserved.</p>
+        <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         <div className="footer-payments">
-          <span className="payment-label">We Accept:</span>
+          <span className="payment-label">{t('footer.weAccept')}</span>
           <img src="/images/partners/visa.png" alt="Visa" className="payment-logo" title="Visa" />
           <img src="/images/partners/apple-pay.png" alt="Apple Pay" className="payment-logo" title="Apple Pay" />
           <img src="/images/partners/google-pay-v2.png" alt="Google Pay" className="payment-logo" title="Google Pay" />
@@ -202,7 +204,9 @@ const Footer = () => {
           <span className="payment-badge">Amex</span>
           <img src="/images/partners/cashapp.png" alt="Cash App" className="payment-logo" title="Cash App" />
           <img src="/images/partners/zelle.png" alt="Zelle" className="payment-logo" title="Zelle" />
-          <img src="/images/partners/cash-on-delivery-v2.png" alt="Cash on Delivery" className="payment-logo" title="Cash on Delivery" />
+          {/* Cash on Delivery removed 2026-09-08 — it's a wholesale arrangement
+              for business customers, not a website payment option, so "We
+              Accept" must not advertise it to retail customers. */}
         </div>
       </div>
     </footer>

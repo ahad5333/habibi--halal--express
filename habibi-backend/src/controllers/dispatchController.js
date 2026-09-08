@@ -4,7 +4,6 @@ const fs        = require('fs');
 const safeError = require('../utils/safeError');
 const pool      = require('../config/db');
 const { getDistance, formatMinutes } = require('../utils/googleMaps');
-const { getFeeForDistance } = require('../utils/deliveryFee');
 const { resolveDeliveryFee, saveQuote } = require('../utils/deliveryPricing');
 const { getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { sendSMS, toE164 } = require('../services/smsService');

@@ -8,6 +8,12 @@ const BLANK = { location_id: '', name: '', min_radius_mi: 0, max_radius_mi: 5, d
 // Active zones for a location should tile 0 -> max with no gaps; getFeeForDistance
 // rejects any distance that doesn't fall in an active zone ("outside delivery range"),
 // so a gap here silently turns away real customers with no warning unless we surface it.
+// The owner explicitly reversed all distance-based rejection ("it does not matter the
+// miles we have we deliver the order") — so the top end matters just as much as gaps
+// in the middle: any zone set that doesn't extend to a high ceiling silently rejects
+// every order beyond its last zone, undoing that decision through this page alone.
+const EFFECTIVELY_UNLIMITED_MI = 500;
+
 function findCoverageGaps(zoneList) {
   const active = [...zoneList]
     .filter(z => z.is_active)
@@ -22,6 +28,10 @@ function findCoverageGaps(zoneList) {
     const curMax = parseFloat(active[i].max_radius_mi);
     const nextMin = parseFloat(active[i + 1].min_radius_mi);
     if (nextMin > curMax) gaps.push(`${curMax}–${nextMin} mi`);
+  }
+  const topMax = Math.max(...active.map(z => parseFloat(z.max_radius_mi)));
+  if (topMax < EFFECTIVELY_UNLIMITED_MI) {
+    gaps.push(`${topMax}+ mi`);
   }
   return gaps;
 }
@@ -91,6 +101,23 @@ export default function DeliveryZones() {
           <p className="page-sub">{zones.length} zone{zones.length!==1?'s':''} · {zones.filter(z=>z.is_active).length} active</p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Zone</button>
+      </div>
+
+      {/* Zones no longer set delivery prices (2026-09-08). Leaving the page
+          silently inert would repeat the exact problem it used to cause: a
+          CPanel screen saying one thing while checkout charges another. */}
+      <div style={{
+        background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.35)',
+        borderRadius: 10, padding: '0.85rem 1rem', marginBottom: '1.25rem',
+        fontSize: '0.83rem', lineHeight: 1.6,
+      }}>
+        <strong style={{ color: '#f59e0b' }}>These zones no longer set delivery prices.</strong>
+        <div style={{ marginTop: '0.35rem', opacity: 0.9 }}>
+          Delivery is now priced per location: your own driver’s rate within the
+          radius set on <strong>Locations</strong>, and the delivery partner’s live
+          quote plus 20% outside it. Editing zones here has no effect on what
+          customers are charged.
+        </div>
       </div>
 
       {loading ? (

@@ -11,7 +11,6 @@ const {
   isConfigured: uberConfigured,
   createDelivery: uberCreateDelivery,
 } = require("../utils/uberDirect");
-const { getFeeForDistance } = require("../utils/deliveryFee");
 const { validateClientDeliveryFee, loadQuote, markQuoteConsumed } = require("../utils/deliveryPricing");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
@@ -26,12 +25,11 @@ const RESTAURANT_ADDRESS = process.env.RESTAURANT_ADDRESS || '2974 Jerome Ave, B
 const RESTAURANT_NAME    = process.env.RESTAURANT_NAME    || 'Habibi Halal Express';
 const RESTAURANT_PHONE   = process.env.RESTAURANT_PHONE   || '+13477033731';
 
-// Delivery fee is always measured from this one fixed address (multi-location fulfillment
-// isn't wired into checkout at all yet), but delivery_zones can still be scoped to a
-// specific location -- getFeeForDistance() prefers that over a global zone. Without
-// resolving which location this address actually is, that scoping is silently dead:
-// every call defaults to "global zones only." Resolved once and cached for the process
-// lifetime since RESTAURANT_ADDRESS is a fixed env var, not something that changes mid-run.
+// Falls back to the location matching RESTAURANT_ADDRESS when the order didn't
+// name one, so pricing still knows which location's own-driver settings apply
+// rather than silently treating every order as "no location". Resolved once and
+// cached for the process lifetime since RESTAURANT_ADDRESS is a fixed env var,
+// not something that changes mid-run.
 let _originLocationId;
 async function getOriginLocationId() {
   if (_originLocationId !== undefined) return _originLocationId;

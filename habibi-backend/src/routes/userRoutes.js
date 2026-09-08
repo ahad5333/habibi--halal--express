@@ -2,7 +2,7 @@ const express = require("express");
 const router  = express.Router();
 const protect = require("../middleware/authMiddleware");
 const uploadAvatarMw = require("../middleware/uploadAvatarMiddleware");
-const { handleValidation, rules, body } = require('../middleware/validate');
+const { handleValidation, body } = require('../middleware/validate');
 const {
   getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
   getMyOrders, getLoyalty, cancelMyOrder,
@@ -28,7 +28,12 @@ router.put ("/me",
 
 router.put ("/me/password",
   body('current_password').notEmpty().withMessage('Current password is required.'),
-  rules.password(8),
+  // Was rules.password(8), which validates a field literally named "password" —
+  // this route (and the frontend/controller) uses new_password, so that check
+  // always failed on the missing "password" field and rejected every request
+  // before it ever reached the controller.
+  body('new_password').notEmpty().withMessage('New password is required.')
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters.'),
   handleValidation,
   changePassword
 );

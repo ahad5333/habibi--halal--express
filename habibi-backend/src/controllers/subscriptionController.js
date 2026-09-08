@@ -3,7 +3,7 @@ const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { isOpenNow } = require('../utils/businessHours');
 const { getDistance } = require('../utils/googleMaps');
-const { getFeeForDistance } = require('../utils/deliveryFee');
+const { resolveDeliveryFee } = require('../utils/deliveryPricing');
 const { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { getUserTier } = require('../utils/loyaltyTiers');
 const { chargeSavedCardEndpoint } = require('./cardProcessorController');
@@ -228,9 +228,24 @@ async function computeSubscriptionPricing(sub) {
     }
     const dist = await getDistance(origin, addrStr);
     if (!dist || dist.unavailable) return { error: "Couldn't verify the delivery address for this cycle." };
-    const fee = await getFeeForDistance(dist.miles, sub.location_id);
-    if (fee === null) return { error: 'Delivery address is now outside our delivery range.' };
-    deliveryFee = fee;
+    // Same resolver checkout uses, so a recurring order is never priced by a
+    // different rule than the identical one-off order would be.
+    const resolved = await resolveDeliveryFee({
+      locationId: sub.location_id,
+      destinationAddress: addrStr,
+      originAddress: origin,
+      miles: dist.miles,
+      subtotal: subTotal,
+      dropoffPhone: sub.customer_phone || null,
+    });
+    if (resolved.fee === null) {
+      return {
+        error: resolved.reason === 'not_serviceable'
+          ? 'Delivery address is no longer serviceable for this cycle.'
+          : 'Delivery pricing is temporarily unavailable for this cycle.',
+      };
+    }
+    deliveryFee = resolved.fee;
     const freeThreshold = await getFreeDeliveryThreshold(sub.user_id);
     if (subTotal >= freeThreshold) deliveryFee = 0;
   }

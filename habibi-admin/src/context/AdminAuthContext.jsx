@@ -16,29 +16,36 @@ export function AdminAuthProvider({ children }) {
   const [loading, setLoading]     = useState(!cached || cached?.role !== 'admin');
 
   useEffect(() => {
-    // Always re-validate with the server (cookie-based) to confirm session is still live
-    authAPI.me()
-      .then(userData => {
-        if (userData.role !== 'admin') {
-          // Server says this user is not an admin — clear everything
-          localStorage.removeItem('habibi_admin_user');
-          setAdmin(null);
-        } else {
-          setAdmin(userData);
-          localStorage.setItem('habibi_admin_user', JSON.stringify(userData));
-        }
-      })
-      .catch(err => {
-        // Only force logout on explicit auth rejection (401/403)
-        // Network errors or server errors (5xx) should not boot the user out
-        const status = err?.status || (err?.message?.match(/^(\d{3})$/) ? parseInt(err.message) : null);
-        if (status === 401 || status === 403) {
-          localStorage.removeItem('habibi_admin_user');
-          setAdmin(null);
-        }
-        // On 5xx / network error: keep the cached session, user stays logged in
-      })
-      .finally(() => setLoading(false));
+    const revalidate = () =>
+      authAPI.me()
+        .then(userData => {
+          if (userData.role !== 'admin') {
+            // Server says this user is not an admin — clear everything
+            localStorage.removeItem('habibi_admin_user');
+            setAdmin(null);
+          } else {
+            setAdmin(userData);
+            localStorage.setItem('habibi_admin_user', JSON.stringify(userData));
+          }
+        })
+        .catch(err => {
+          // Only force logout on explicit auth rejection (401/403)
+          // Network errors or server errors (5xx) should not boot the user out
+          const status = err?.status || (err?.message?.match(/^(\d{3})$/) ? parseInt(err.message) : null);
+          if (status === 401 || status === 403) {
+            localStorage.removeItem('habibi_admin_user');
+            setAdmin(null);
+          }
+          // On 5xx / network error: keep the cached session, user stays logged in
+        });
+
+    // Validate immediately on mount, then keep re-checking periodically —
+    // otherwise a session that expires/gets revoked while the tab stays open
+    // (e.g. left logged in on a shared/kiosk computer) is never detected
+    // until some unrelated action happens to trigger a 401.
+    revalidate().finally(() => setLoading(false));
+    const interval = setInterval(revalidate, 15 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const login = async (email, password) => {

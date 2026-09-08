@@ -169,6 +169,12 @@ export default function Broadcasts() {
   const send = async () => {
     if (!form.title.trim() || !form.message.trim()) return;
     if (scheduleMode === 'later' && !scheduledAt) return;
+    if (scheduleMode !== 'later') {
+      const audienceDesc = counts
+        ? form.channels.map(ch => `${counts[ch] ?? 0} ${ch}`).join(' · ')
+        : 'the selected audience';
+      if (!confirm(`Send this broadcast right now to ${audienceDesc}? This cannot be undone.`)) return;
+    }
     setSending(true); setResult(null);
     try {
       const payload = {
