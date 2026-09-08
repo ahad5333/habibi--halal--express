@@ -6,7 +6,7 @@ const { logAudit } = require('./auditController');
 const { syncMenuAvailability, restockOrderItems } = require('./inventoryController');
 const { ddRequest, isConfigured: ddConfigured } = require("../utils/doordash");
 const { roadieRequest, isConfigured: roadieConfigured } = require("../utils/roadie");
-const { getDistance, geocodeCountry, geocodeAddress, feeFromMiles } = require("../utils/googleMaps");
+const { getDistance, geocodeCountry, geocodeAddress } = require("../utils/googleMaps");
 const {
   isConfigured: uberConfigured,
   createDelivery: uberCreateDelivery,
@@ -360,19 +360,21 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         }
         const dist = await getDistance(origin, addrStr);
         if (dist?.unavailable) {
-          // Maps service itself isn't reachable/configured — not evidence the
-          // address is bad, so fail open with the same minimum fee floor as
-          // before (prevents a $0 delivery fee, nothing stronger available).
-          const minFee = feeFromMiles(0) ?? 2.99;
-          if (clientDelFee < minFee - 0.10) {
-            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
-          }
+          // Maps is down, so neither the own-driver radius check nor a courier
+          // geocode can run. There is no honest price to charge: the owner's
+          // rule is that the customer pays what the partner charges, and there
+          // is no automatic minimum to fall back on. Refuse the delivery rather
+          // than invent a floor — /calculate-fee already refuses for the same
+          // reason, so checkout can't have shown a price here either.
+          return res.status(400).json({
+            message: 'Delivery pricing is temporarily unavailable. Please choose pickup or try again shortly.',
+          });
         } else if (!dist) {
           // Maps IS reachable and configured, but couldn't find or route to
           // this specific address at all — this is what used to silently fall
-          // through to the minimum-fee-floor check below, letting orders with
-          // bogus/unresolvable addresses (e.g. gibberish, or genuinely
-          // non-existent addresses) through as long as the client sent >=$2.99.
+          // through to a minimum-fee floor, letting orders with bogus or
+          // unresolvable addresses (gibberish, genuinely non-existent ones)
+          // through as long as the client sent enough. That floor is gone now.
           return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
         } else {
           // Own driver inside the location's CPanel radius, else the courier's
@@ -1203,10 +1205,11 @@ const createPendingCheckout = async (req, res) => {
         }
         const dist = await getDistance(origin, addrStr);
         if (dist?.unavailable) {
-          const minFee = feeFromMiles(0) ?? 2.99;
-          if (clientDelFee < minFee - 0.10) {
-            return res.status(400).json({ message: 'Delivery fee is incorrect. Please refresh and retry.' });
-          }
+          // Same as the guest path above: no distance, no courier quote, and no
+          // automatic minimum to fall back on, so there is no price to charge.
+          return res.status(400).json({
+            message: 'Delivery pricing is temporarily unavailable. Please choose pickup or try again shortly.',
+          });
         } else if (!dist) {
           return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
         } else {
