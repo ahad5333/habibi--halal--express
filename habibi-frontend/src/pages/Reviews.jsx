@@ -41,9 +41,9 @@ function ReviewCard({ review }) {
         <div className="rv-featured-badge"><Award size={12} /> Featured</div>
       )}
       <div className="rv-card-header">
-        <div className="rv-avatar">{review.customer_name.charAt(0).toUpperCase()}</div>
+        <div className="rv-avatar">{(review.customer_name || '?').charAt(0).toUpperCase()}</div>
         <div className="rv-card-meta">
-          <span className="rv-card-name">{review.customer_name}</span>
+          <span className="rv-card-name">{review.customer_name || 'Anonymous'}</span>
           <span className="rv-card-date">{date}</span>
         </div>
         <div className="rv-card-stars">

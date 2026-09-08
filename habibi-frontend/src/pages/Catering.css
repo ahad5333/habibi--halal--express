@@ -8,7 +8,7 @@
 .cat-hero {
   position: relative;
   height: 320px;
-  background: url('/images/banners/catering-bg.jpg') center/cover no-repeat, #111;
+  background: url('/images/banners/catering-hero.webp') center/cover no-repeat, #111;
   display: flex;
   align-items: flex-end;
   padding-bottom: 3rem;
@@ -16,7 +16,7 @@
 .cat-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.3) 100%);
+  background: linear-gradient(to top, rgba(0,0,0,.5) 0%, rgba(0,0,0,0) 55%);
 }
 .cat-hero-content {
   position: relative;
@@ -42,8 +42,9 @@
   color: #fff;
   margin: 0 0 .5rem;
   line-height: 1.1;
+  text-shadow: 0 2px 14px rgba(0,0,0,.7);
 }
-.cat-hero p { font-size: .95rem; color: rgba(255,255,255,.7); margin: 0; max-width: 480px; }
+.cat-hero p { font-size: .95rem; color: rgba(255,255,255,.85); margin: 0; max-width: 480px; text-shadow: 0 1px 8px rgba(0,0,0,.65); }
 
 /* Pricing bar */
 .cat-pricing-bar {

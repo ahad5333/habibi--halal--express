@@ -1,0 +1,38 @@
+.reorder-page {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--color-bg);
+}
+
+.reorder-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  max-width: 380px;
+}
+
+.reorder-box p {
+  color: var(--color-text-main);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.reorder-spinner {
+  color: var(--color-primary);
+  animation: reorder-spin 1s linear infinite;
+}
+
+@keyframes reorder-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.reorder-actions {
+  display: flex;
+  gap: 0.75rem;
+}

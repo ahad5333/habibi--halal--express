@@ -62,6 +62,47 @@
 }
 
 /* Department Grid */
+.dept-header {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 3rem;
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.dept-header.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dept-eyebrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #E5B64E;
+  background: rgba(229,182,78,0.1);
+  border: 1px solid rgba(229,182,78,0.3);
+  border-radius: 20px;
+  padding: 5px 16px;
+  margin-bottom: 1rem;
+}
+
+.dept-heading {
+  font-family: var(--font-serif);
+  font-size: 2.6rem;
+  color: var(--color-text-main);
+  margin-bottom: 0.75rem;
+}
+
+.dept-subheading {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
 .dept-grid {
   display: flex;
   flex-direction: column;
@@ -82,31 +123,96 @@
 }
 
 .dept-card {
+  display: block;
   position: relative;
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
   border: 1px solid var(--color-border);
+  opacity: 0;
+  transform: translateY(42px) scale(0.97);
+  transition:
+    opacity 0.7s cubic-bezier(0.16,1,0.3,1),
+    transform 0.7s cubic-bezier(0.16,1,0.3,1),
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.dept-card.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dept-card:hover {
+  transform: translateY(-10px) scale(1.01);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 0 0 1px rgba(229,182,78,0.25);
+  border-color: rgba(229,182,78,0.4);
 }
 
 .dept-card-large { height: 340px; }
 .dept-card-small { height: 240px; }
+
+.dept-index {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  z-index: 2;
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(229,182,78,0.35);
+  border-radius: 20px;
+  padding: 4px 11px;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+}
+
+.dept-card.in-view .dept-index {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 .dept-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s ease;
+  transition: transform 0.7s cubic-bezier(0.16,1,0.3,1);
 }
 
 .dept-card:hover .dept-img {
-  transform: scale(1.05);
+  transform: scale(1.08);
+}
+
+/* Diagonal light sweep on hover */
+.dept-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
+  transform: translateX(-120%);
+}
+
+.dept-card:hover .dept-shine {
+  animation: deptShine 1.1s ease;
+}
+
+@keyframes deptShine {
+  to { transform: translateX(120%); }
 }
 
 .dept-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.1) 60%);
   display: flex;
   flex-direction: column;
@@ -128,6 +234,8 @@
 }
 
 .dept-title {
+  position: relative;
+  display: inline-block;
   font-family: var(--font-serif);
   font-size: 1.75rem;
   color: #ffffff;
@@ -135,10 +243,68 @@
   text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
+.dept-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 2px;
+  width: 0;
+  background: #E5B64E;
+  transition: width 0.4s ease;
+}
+
+.dept-card:hover .dept-title::after {
+  width: 100%;
+}
+
 .dept-desc {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.5;
+}
+
+.dept-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(229,182,78,0.4);
+  color: #E5B64E;
+  font-size: 0.95rem;
+  margin-top: 0.85rem;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.35s ease, transform 0.35s ease, background 0.3s ease, border-color 0.3s ease;
+}
+
+.dept-card:hover .dept-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  background: rgba(229,182,78,0.18);
+  border-color: #E5B64E;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dept-header,
+  .dept-card,
+  .dept-index,
+  .dept-img,
+  .dept-arrow,
+  .dept-title::after {
+    transition: none !important;
+  }
+  .dept-header,
+  .dept-card,
+  .dept-index {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .dept-card:hover .dept-shine {
+    animation: none;
+  }
 }
 
 /* Hiring Section */

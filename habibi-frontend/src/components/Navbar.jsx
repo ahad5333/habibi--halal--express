@@ -1,127 +1,131 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { notificationsAPI } from '../services/api';
 import './Navbar.css';
 
-const LEFT_ITEMS = [
+// Built as functions (not module-level constants) so labels/captions can
+// pull from the active i18n language -- path/id/highlight/icon metadata
+// stays hardcoded, it's not translatable content.
+const buildLeftItems = (t) => [
   {
     id: 'menu',
-    label: 'Menu',
+    label: t('nav.left.menu.label'),
     path: '/menu',
-    panel: { bg: 'linear-gradient(160deg,#eff6ff 0%,#bfdbfe 100%)', emoji: '🍽️', caption: 'Fresh & Flavorful' },
+    panel: { bg: 'linear-gradient(160deg,#eff6ff 0%,#bfdbfe 100%)', emoji: '🍽️', caption: t('nav.left.menu.caption') },
     sub: [
-      { label: 'Breakfast',       path: '/menu/breakfast' },
-      { label: 'Platter',         path: '/menu/platter' },
-      { label: 'Sandwiches',      path: '/menu/sandwich' },
-      { label: 'Bergers',         path: '/menu/burgers' },
-      { label: 'Tacos',           path: '/menu/tacos' },
-      { label: 'Habibi Specials', path: '/menu/specials' },
-      { label: 'Extras',          path: '/menu/extras' },
-      { label: 'Drinks',          path: '/menu/drinks' },
-      { label: 'Family Tray',     path: '/menu/family' },
-      { label: 'Build Your Own! ✨', path: '/menu/byo' },
+      { label: t('nav.left.menu.sub.breakfast'), path: '/menu/breakfast' },
+      { label: t('nav.left.menu.sub.platter'),   path: '/menu/platter' },
+      { label: t('nav.left.menu.sub.sandwich'),  path: '/menu/sandwich' },
+      { label: t('nav.left.menu.sub.burgers'),   path: '/menu/burgers' },
+      { label: t('nav.left.menu.sub.tacos'),     path: '/menu/tacos' },
+      { label: t('nav.left.menu.sub.specials'),  path: '/menu/specials' },
+      { label: t('nav.left.menu.sub.extras'),    path: '/menu/extras' },
+      { label: t('nav.left.menu.sub.drinks'),    path: '/menu/drinks' },
+      { label: t('nav.left.menu.sub.family'),    path: '/menu/family' },
+      { label: t('nav.left.menu.sub.byo'),       path: '/menu/byo' },
     ],
   },
   {
     id: 'about',
-    label: 'About',
+    label: t('nav.left.about.label'),
     path: '/about',
-    panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fecaca 100%)', emoji: '⭐', caption: 'Our Story & Values' },
+    panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fecaca 100%)', emoji: '⭐', caption: t('nav.left.about.caption') },
     sub: [
-      { label: 'Why Us?', path: '/about' },
-      { label: 'Customer Reviews', path: '/reviews' },
-      { label: 'Facebook', path: 'https://facebook.com/habibihalalexpress', external: true, icon: '📘' },
-      { label: 'Instagram', path: 'https://instagram.com/habibihalalexpress', external: true, icon: '📸' },
-      { label: 'YouTube', path: 'https://youtube.com/habibihalalexpress', external: true, icon: '▶️' },
-      { label: 'TikTok', path: 'https://tiktok.com/@habibihalalexpress', external: true, icon: '🎵' },
+      { label: t('nav.left.about.sub.why'), path: '/about' },
+      { label: t('nav.left.about.sub.reviews'), path: '/reviews' },
+      { label: t('nav.left.about.sub.facebook'), path: 'https://facebook.com/habibihalalexpress', external: true, icon: '📘' },
+      { label: t('nav.left.about.sub.instagram'), path: 'https://instagram.com/habibihalalexpress', external: true, icon: '📸' },
+      { label: t('nav.left.about.sub.youtube'), path: 'https://youtube.com/habibihalalexpress', external: true, icon: '▶️' },
+      { label: t('nav.left.about.sub.tiktok'), path: 'https://tiktok.com/@habibihalalexpress', external: true, icon: '🎵' },
     ],
   },
   {
     id: 'articles',
-    label: 'Articles',
+    label: t('nav.left.articles.label'),
     path: '/articles',
-    panel: { bg: 'linear-gradient(160deg,#1a0a00 0%,#2d1500 100%)', emoji: '✍️', caption: 'Stories from Our Kitchen' },
+    panel: { bg: 'linear-gradient(160deg,#1a0a00 0%,#2d1500 100%)', emoji: '✍️', caption: t('nav.left.articles.caption') },
     sub: [
-      { label: 'Kitchen Behind the Scenes', path: '/kitchen-behind-the-scenes' },
-      { label: 'Customer Stories',          path: '/customer-stories' },
-      { label: 'Our Journey',               path: '/our-journey' },
-      { label: 'Introducing Habibi Tacos',  path: '/articles/habibi-tacos' },
-      { label: 'Videos & Reels',            path: '/videos' },
+      { label: t('nav.left.articles.sub.kitchen'), path: '/kitchen-behind-the-scenes' },
+      { label: t('nav.left.articles.sub.stories'), path: '/customer-stories' },
+      { label: t('nav.left.articles.sub.journey'), path: '/our-journey' },
+      { label: t('nav.left.articles.sub.tacosArticle'), path: '/articles/habibi-tacos' },
+      { label: t('nav.left.articles.sub.videos'), path: '/videos' },
     ],
   },
   {
     id: 'locations',
-    label: 'Locations',
+    label: t('nav.left.locations.label'),
     path: '/locations',
-    panel: { bg: 'linear-gradient(160deg,#faf5ff 0%,#e9d5ff 100%)', emoji: '📍', caption: 'Find Your Nearest Location' },
+    panel: { bg: 'linear-gradient(160deg,#faf5ff 0%,#e9d5ff 100%)', emoji: '📍', caption: t('nav.left.locations.caption') },
     sub: [
-      { label: 'Bedford Park & Jerome Ave', path: '/locations#bedford' },
-      { label: 'Kingsbridge Road', path: '/locations#kingsbridge' },
-      { label: 'White Plains Road', path: '/locations#white-plains' },
+      { label: t('nav.left.locations.sub.bedford'), path: '/locations#bedford' },
+      { label: t('nav.left.locations.sub.kingsbridge'), path: '/locations#kingsbridge' },
+      { label: t('nav.left.locations.sub.whitePlains'), path: '/locations#white-plains' },
     ],
   },
 ];
 
-const CENTER_ITEM = {
+const buildCenterItem = (t) => ({
   id: 'order',
-  label: 'Order Now',
+  label: t('nav.center.order.label'),
   path: '/order',
-  panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fca5a5 100%)', emoji: '🛵', caption: 'Super Express Delivery\nFriendly Online Tracking' },
+  panel: { bg: 'linear-gradient(160deg,#fef2f2 0%,#fca5a5 100%)', emoji: '🛵', caption: t('nav.center.order.caption') },
   sub: [
-    { label: 'Halal Food Delivery',    path: '/order?type=delivery' },
-    { label: 'Pickup Order',           path: '/order?type=pickup' },
-    { label: '👥 Group Order',         path: '/group-order',      highlight: true },
-    { label: '🎁 Special Offers',      path: '/offers',           highlight: true },
-    { label: '🎀 Gift Order',          path: '/checkout?gift=true', highlight: true },
-    { label: 'Catering & Events',      path: '/catering' },
-    { label: 'Delivery Coverage Area', path: '/delivery-coverage' },
+    { label: t('nav.center.order.sub.delivery'), path: '/order?type=delivery' },
+    { label: t('nav.center.order.sub.pickup'),   path: '/order?type=pickup' },
+    { label: t('nav.center.order.sub.group'),    path: '/group-order',      highlight: true },
+    { label: t('nav.center.order.sub.offers'),   path: '/offers',           highlight: true },
+    { label: t('nav.center.order.sub.gift'),     path: '/checkout?gift=true', highlight: true },
+    { label: t('nav.center.order.sub.catering'), path: '/catering' },
+    { label: t('nav.center.order.sub.coverage'), path: '/delivery-coverage' },
   ],
-};
+});
 
-const RIGHT_ITEMS = [
+const buildRightItems = (t) => [
   {
     id: 'payment',
-    label: 'Make a Payment',
+    label: t('nav.right.payment.label'),
     path: '/payment',
-    panel: { bg: 'linear-gradient(160deg,#f0fdf4 0%,#bbf7d0 100%)', emoji: '💳', caption: 'Fast & Secure Payments' },
+    panel: { bg: 'linear-gradient(160deg,#f0fdf4 0%,#bbf7d0 100%)', emoji: '💳', caption: t('nav.right.payment.caption') },
     sub: [
-      { label: 'Quick Pay', path: '/payment' },
-      { label: 'Pay My Balance', path: '/payment?type=balance' },
-      { label: 'Manage Payment Methods', path: '/payment?type=manage' },
+      { label: t('nav.right.payment.sub.quickPay'), path: '/payment' },
+      { label: t('nav.right.payment.sub.balance'), path: '/payment?type=balance' },
+      { label: t('nav.right.payment.sub.manage'), path: '/payment?type=manage' },
     ],
   },
   {
     id: 'staff',
-    label: 'Staff',
+    label: t('nav.right.staff.label'),
     path: '/staff',
-    panel: { bg: 'linear-gradient(160deg,#fffbeb 0%,#fde68a 100%)', emoji: '👨‍🍳', caption: 'Meet Our Amazing Team' },
+    panel: { bg: 'linear-gradient(160deg,#fffbeb 0%,#fde68a 100%)', emoji: '👨‍🍳', caption: t('nav.right.staff.caption') },
     sub: [
-      { label: 'Management Staff', path: '/staff#management' },
-      { label: 'Kitchen Staff',    path: '/staff#kitchen' },
-      { label: 'Serving Staff',    path: '/staff#serving' },
-      { label: 'Delivery Staff',   path: '/staff#delivery' },
-      { label: 'Stock Staff',      path: '/staff#stock' },
-      { label: 'We Are Hiring! 🌟', path: '/careers' },
+      { label: t('nav.right.staff.sub.management'), path: '/staff#management' },
+      { label: t('nav.right.staff.sub.kitchen'),    path: '/staff#kitchen' },
+      { label: t('nav.right.staff.sub.serving'),    path: '/staff#serving' },
+      { label: t('nav.right.staff.sub.delivery'),   path: '/staff#delivery' },
+      { label: t('nav.right.staff.sub.stock'),      path: '/staff#stock' },
+      { label: t('nav.right.staff.sub.hiring'), path: '/careers' },
     ],
   },
   {
     id: 'contact',
-    label: 'Contact Us',
+    label: t('nav.right.contact.label'),
     path: '/contact',
-    panel: { bg: 'linear-gradient(160deg,#eff6ff 0%,#bfdbfe 100%)', emoji: '📬', caption: 'We Love Hearing from You' },
+    panel: { bg: 'linear-gradient(160deg,#eff6ff 0%,#bfdbfe 100%)', emoji: '📬', caption: t('nav.right.contact.caption') },
     sub: [
-      { label: '📬 Get in Touch', path: '/contact', highlight: true },
-      { label: '🚨 Urgent Order Help', path: '/urgent', highlight: true },
-      { label: 'Send a Suggestion', path: '/contact?type=suggestion' },
-      { label: 'Leave a Comment', path: '/contact?type=comment' },
-      { label: 'Submit a Review', path: '/contact?type=review' },
-      { label: 'Make a Complaint', path: '/contact?type=complaint' },
-      { label: 'Become a Partner', path: '/contact?type=partner' },
-      { label: 'Media Inquiries', path: '/contact?type=media' },
-      { label: 'Email Us', path: '/contact?type=email' },
+      { label: t('nav.right.contact.sub.getInTouch'), path: '/contact', highlight: true },
+      { label: t('nav.right.contact.sub.urgent'), path: '/urgent', highlight: true },
+      { label: t('nav.right.contact.sub.suggestion'), path: '/contact?type=suggestion' },
+      { label: t('nav.right.contact.sub.comment'), path: '/contact?type=comment' },
+      { label: t('nav.right.contact.sub.review'), path: '/contact?type=review' },
+      { label: t('nav.right.contact.sub.complaint'), path: '/contact?type=complaint' },
+      { label: t('nav.right.contact.sub.partner'), path: '/contact?type=partner' },
+      { label: t('nav.right.contact.sub.media'), path: '/contact?type=media' },
+      { label: t('nav.right.contact.sub.email'), path: '/contact?type=email' },
     ],
   },
 ];
@@ -186,6 +190,7 @@ function NavItem({ item, openId, setOpenId }) {
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user, logout, isLoggedIn } = useAuth();
   const { totalItems } = useCart();
   const [openId, setOpenId] = useState(null);
@@ -194,6 +199,12 @@ const Navbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
+
+  // Rebuilt whenever the language changes so every label/caption re-resolves.
+  const LEFT_ITEMS   = useMemo(() => buildLeftItems(t),   [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
+  const CENTER_ITEM  = useMemo(() => buildCenterItem(t),  [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
+  const RIGHT_ITEMS  = useMemo(() => buildRightItems(t),  [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const bellRef = useRef(null);
 
   // The Halal badge (top row) and the Order Now badge (main nav row directly
@@ -352,13 +363,13 @@ const Navbar = () => {
           <div className="navbar-center-badges" ref={centerBadgesRef}>
             <img
               src="/images/logos/halal-certified-nav.webp"
-              alt="Halal Certified"
+              alt={t('common.halalCertified')}
               className="navbar-halal-badge"
             />
-            <Link to="/order" className="navbar-order-badge" title="Order Now">
+            <Link to="/order" className="navbar-order-badge" title={t('common.orderNow')}>
               <img
                 src="/images/logos/order-now-badge.webp"
-                alt="Order Now"
+                alt={t('common.orderNow')}
                 className="navbar-order-badge-img"
               />
             </Link>
@@ -367,7 +378,7 @@ const Navbar = () => {
           <div className="navbar-top-right" ref={topRightRef}>
             {isLoggedIn && (
               <div className="notif-wrap" ref={bellRef}>
-                <button className="cart-btn-wrap notif-bell-btn" onClick={openBell} aria-label="Notifications">
+                <button className="cart-btn-wrap notif-bell-btn" onClick={openBell} aria-label={t('common.notifications')}>
                   <Bell size={20} />
                   {unreadCount > 0 && (
                     <span className="cart-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
@@ -377,14 +388,14 @@ const Navbar = () => {
                 {bellOpen && (
                   <div className="notif-dropdown">
                     <div className="notif-dropdown-hd">
-                      <span className="notif-dropdown-title">Notifications</span>
+                      <span className="notif-dropdown-title">{t('common.notifications')}</span>
                       {unreadCount > 0 && (
-                        <button className="notif-mark-all" onClick={markAllRead}>Mark all read</button>
+                        <button className="notif-mark-all" onClick={markAllRead}>{t('common.markAllRead')}</button>
                       )}
                     </div>
 
                     {notifications.length === 0 ? (
-                      <p className="notif-empty">No notifications yet</p>
+                      <p className="notif-empty">{t('common.noNotifications')}</p>
                     ) : (
                       <div className="notif-list">
                         {notifications.map(n => (
@@ -409,22 +420,22 @@ const Navbar = () => {
                     )}
 
                     <Link to="/account?tab=notifications" className="notif-footer" onClick={() => setBellOpen(false)}>
-                      View all notifications
+                      {t('common.viewAllNotifications')}
                     </Link>
                   </div>
                 )}
               </div>
             )}
-            <Link to="/customize" className="navbar-customize-btn" title="Build Your Own">
-              <img src="/images/byo/customize-icon.webp" alt="Build Your Own Meal" className="navbar-customize-icon" />
+            <Link to="/customize" className="navbar-customize-btn" title={t('common.buildYourOwn')}>
+              <img src="/images/byo/customize-icon.webp" alt={t('common.buildYourOwn')} className="navbar-customize-icon" />
               <span className="navbar-customize-label">
                 <span className="cust-lbl-spark">✦</span>
-                <span className="cust-lbl-text">Build Your Own</span>
+                <span className="cust-lbl-text">{t('common.buildYourOwn')}</span>
                 <span className="cust-lbl-spark">✦</span>
               </span>
             </Link>
 
-            <Link to="/checkout" className="cart-btn-wrap" title="View Cart">
+            <Link to="/checkout" className="cart-btn-wrap" title={t('common.viewCart')}>
               <ShoppingBag size={24} />
               {totalItems > 0 && (
                 <span className="cart-badge">{totalItems > 9 ? '9+' : totalItems}</span>
@@ -438,34 +449,34 @@ const Navbar = () => {
                     {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
                   </span>
                   <span className="user-greeting">
-                    <span className="user-greeting-hi">Hi,</span>
-                    <strong>{user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'Friend'}</strong>
+                    <span className="user-greeting-hi">{t('common.hi')}</span>
+                    <strong>{user?.name?.split(' ')[0] || user?.email?.split('@')[0] || t('common.friend')}</strong>
                   </span>
                   <ChevronDown size={11} />
                 </button>
                 <div className="user-dropdown">
                   <div className="user-dropdown-header">
-                    <p className="user-dropdown-name">{user?.name || 'Account'}</p>
+                    <p className="user-dropdown-name">{user?.name || t('common.myAccount')}</p>
                     <p className="user-dropdown-email">{user?.email || ''}</p>
                   </div>
-                  <Link to="/order-tracking">My Orders</Link>
-                  <Link to="/account">My Account</Link>
+                  <Link to="/order-tracking">{t('common.myOrders')}</Link>
+                  <Link to="/account">{t('common.myAccount')}</Link>
                   <button onClick={handleLogout} className="logout-item">
-                    <LogOut size={13} /> Sign Out
+                    <LogOut size={13} /> {t('common.signOut')}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="auth-btns">
-                <Link to="/login" className="btn-nav-login">Login</Link>
-                <Link to="/signup" className="btn-nav-signup">Sign Up</Link>
+                <Link to="/login" className="btn-nav-login">{t('common.login')}</Link>
+                <Link to="/signup" className="btn-nav-signup">{t('common.signUp')}</Link>
               </div>
             )}
 
             <button
               className="mobile-toggle"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
+              aria-label={t('common.toggleMenu')}
             >
               {mobileOpen ? <X size={26} /> : <MenuIcon size={26} />}
             </button>
@@ -491,9 +502,9 @@ const Navbar = () => {
             onMouseEnter={() => setOpenId(CENTER_ITEM.id)}
             onMouseLeave={() => setOpenId(null)}
           >
-            <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label" title="Order Now">
+            <Link to={CENTER_ITEM.path} className="nav-item-label nav-order-label" title={t('common.orderNow')}>
               <span className="nav-order-logo-wrap">
-                <img src="/images/logos/order-now-badge.webp" alt="Order Now" className="nav-order-logo-img" />
+                <img src="/images/logos/order-now-badge.webp" alt={t('common.orderNow')} className="nav-order-logo-img" />
               </span>
             </Link>
             {openId === CENTER_ITEM.id && <DropdownPanel item={CENTER_ITEM} />}
@@ -562,15 +573,15 @@ const Navbar = () => {
           <div className="mobile-auth-row">
             {isLoggedIn ? (
               <button onClick={handleLogout} className="btn btn-outline" style={{ width: '100%' }}>
-                Sign Out
+                {t('common.signOut')}
               </button>
             ) : (
               <>
                 <Link to="/login" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setMobileOpen(false)}>
-                  Login
+                  {t('common.login')}
                 </Link>
                 <Link to="/signup" className="btn btn-primary" style={{ flex: 1 }} onClick={() => setMobileOpen(false)}>
-                  Sign Up
+                  {t('common.signUp')}
                 </Link>
               </>
             )}

@@ -109,7 +109,7 @@ function CatalogTab({ catalog, cart, onAdd, onRemove, onQuotaAdd }) {
               <div key={key} className={`pp-catalog-card ${qty > 0 ? 'in-cart' : ''}`}>
                 <div className="pp-catalog-img">
                   {item.image_url
-                    ? <img src={item.image_url.startsWith('http') ? item.image_url : `${API_BASE}${item.image_url}`} alt={name} />
+                    ? <img src={item.image_url.startsWith('http') ? item.image_url : `${API_BASE}${item.image_url}`} alt={name} loading="lazy" />
                     : <Package size={32} />
                   }
                 </div>
@@ -160,20 +160,32 @@ function CatalogTab({ catalog, cart, onAdd, onRemove, onQuotaAdd }) {
   );
 }
 
-// ── CartTab ────────────────────────────────────────────────────────
-function CartTab({ cart, onQtyChange, onRemove, onClear, onSubmit, submitting }) {
-  const [address, setAddress] = useState('');
-  const [notes, setNotes]     = useState('');
-  const [err, setErr]         = useState('');
+// Must match PAYMENT_OPTIONS in habibi-admin's Partners.jsx — that's the
+// exact list an admin picks from when approving a partner's account.
+const ALL_PAYMENT_METHODS = ['Net 30', 'Net 60', 'Prepaid', 'Cash on Delivery', 'Credit Card', 'ACH / Bank Transfer'];
 
+// ── CartTab ────────────────────────────────────────────────────────
+function CartTab({ cart, onQtyChange, onRemove, onClear, onSubmit, submitting, approvedPaymentMethods }) {
+  const [address, setAddress]             = useState('');
+  const [notes, setNotes]                 = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [err, setErr]                     = useState('');
+
+  // Only restrict the choices if this partner has specific approved methods
+  // on file — otherwise (nothing configured yet) offer the full standard list.
+  const methodOptions = approvedPaymentMethods?.length ? approvedPaymentMethods : ALL_PAYMENT_METHODS;
+
+  // No tax line here — the backend never charges tax on partner orders
+  // (wholesale orders are invoiced tax-exempt), so showing an estimated
+  // tax during cart review would just be a number that never actually
+  // gets charged. Subtotal is the real total.
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const tax      = subtotal * 0.08875; // NYC tax
-  const total    = subtotal + tax;
 
   const submit = async () => {
     if (!address.trim()) { setErr('Delivery address is required'); return; }
+    if (!paymentMethod) { setErr('Please select a payment method'); return; }
     setErr('');
-    await onSubmit({ items: cart, delivery_address: address, notes, sub_total: subtotal, tax, total });
+    await onSubmit({ items: cart, delivery_address: address, notes, payment_method: paymentMethod, sub_total: subtotal, total: subtotal });
   };
 
   if (cart.length === 0) {
@@ -214,8 +226,7 @@ function CartTab({ cart, onQtyChange, onRemove, onClear, onSubmit, submitting })
         <div className="pp-order-summary">
           <h3>Order Summary</h3>
           <div className="pp-summary-row"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-          <div className="pp-summary-row"><span>Tax (8.875%)</span><span>${tax.toFixed(2)}</span></div>
-          <div className="pp-summary-row pp-summary-total"><span>Total</span><span>${total.toFixed(2)}</span></div>
+          <div className="pp-summary-row pp-summary-total"><span>Total</span><span>${subtotal.toFixed(2)}</span></div>
         </div>
 
         <div className="pp-order-fields">
@@ -228,6 +239,17 @@ function CartTab({ cart, onQtyChange, onRemove, onClear, onSubmit, submitting })
               onChange={e => setAddress(e.target.value)}
               placeholder="Full delivery address"
             />
+          </div>
+          <div className="pp-field">
+            <label>Payment Method *</label>
+            <select
+              className="pp-input"
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+            >
+              <option value="">Select a payment method</option>
+              {methodOptions.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
           </div>
           <div className="pp-field">
             <label>Special Instructions</label>
@@ -282,7 +304,7 @@ function OrdersTab({ orders, loading, onRefresh, onInvoice }) {
                 </div>
                 <div className="pp-order-items-row">
                   {(o.items||[]).slice(0, 4).map((item, i) => (
-                    <span key={i} className="pp-order-item-pill">{item.qty}× {item.name}</span>
+                    <span key={i} className="pp-order-item-pill">{item.quantity ?? item.qty}× {item.name}</span>
                   ))}
                   {o.items?.length > 4 && <span className="pp-order-item-pill pp-more">+{o.items.length - 4} more</span>}
                 </div>
@@ -325,6 +347,7 @@ function InvoiceModal({ order, onClose }) {
               <p><strong>Date</strong> {new Date(order.placed_at).toLocaleDateString()}</p>
               <p><strong>Status</strong> {order.status}</p>
               {order.price_tier && <p><strong>Tier</strong> {TIER_LABELS[order.price_tier] || order.price_tier}</p>}
+              {order.payment_method && <p><strong>Payment</strong> {order.payment_method}</p>}
             </div>
           </div>
 
@@ -341,14 +364,18 @@ function InvoiceModal({ order, onClose }) {
               <tr><th>Item</th><th>Unit Price</th><th>Qty</th><th>Total</th></tr>
             </thead>
             <tbody>
-              {(order.items||[]).map((item, i) => (
-                <tr key={i}>
-                  <td>{item.name}</td>
-                  <td>${parseFloat(item.price||0).toFixed(2)}</td>
-                  <td>{item.qty}</td>
-                  <td>${(parseFloat(item.price||0) * item.qty).toFixed(2)}</td>
-                </tr>
-              ))}
+              {(order.items||[]).map((item, i) => {
+                const unitPrice = parseFloat(item.unit_price ?? item.price ?? 0);
+                const qty = item.quantity ?? item.qty ?? 0;
+                return (
+                  <tr key={i}>
+                    <td>{item.name}</td>
+                    <td>${unitPrice.toFixed(2)}</td>
+                    <td>{qty}</td>
+                    <td>${(unitPrice * qty).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -619,6 +646,7 @@ export default function PartnerPortal() {
               onClear={() => setCart([])}
               onSubmit={submitOrder}
               submitting={submitting}
+              approvedPaymentMethods={profile?.application?.payment_methods}
             />
           )}
 

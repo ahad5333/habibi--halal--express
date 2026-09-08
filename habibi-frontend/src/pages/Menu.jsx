@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Check, Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { menuAPI, favoritesAPI, reviewsAPI, byoIngredientsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +9,12 @@ import BuildYourOwn from '../components/BuildYourOwn';
 import MenuItemModal from '../components/MenuItemModal';
 import SEO from '../components/SEO';
 import './Menu.css';
+
+// Arabic name/description are optional per-item admin fields (see
+// MenuBuilder.jsx) -- always fall back to the English field, whether blank
+// (not filled in yet) or when browsing in English.
+const localizedName = (item, lang) => (lang === 'ar' && item?.name_ar) ? item.name_ar : (item?.name || item?.title || '');
+const localizedDesc = (item, lang) => (lang === 'ar' && item?.description_ar) ? item.description_ar : (item?.description || '');
 
 const CATEGORIES = [
   { label: 'All Categories',  shortLabel: 'All',      value: 'grid',      match: null,             emoji: '🍽️', tagline: '' },
@@ -22,6 +29,14 @@ const CATEGORIES = [
   { label: 'Family Tray',     shortLabel: 'Family',    value: 'family',    match: 'Family Tray',    emoji: '🍽️', tagline: 'feed the whole family' },
   { label: 'Build your Bowl', shortLabel: 'BYO',       value: 'byo',       match: 'Build Your Own', emoji: '🏗️', special: true, tagline: 'your perfect bowl' },
 ];
+
+// Section headers group items by the raw DB category string (e.g. "Bergers")
+// -- translate it via the matching CATEGORIES entry when one exists, else
+// show the raw string as-is (an admin-added category with no nav entry).
+const categoryDisplayName = (rawCategory, t) => {
+  const match = CATEGORIES.find(c => c.match === rawCategory);
+  return match ? t(`menu.categories.${match.value}.label`, match.label) : rawCategory;
+};
 
 const CATEGORY_IMAGES = {
   breakfast: '/images/menu/breakfast-banner.webp',
@@ -158,6 +173,7 @@ const getItemTemp = (item, resolvedName) => {
 };
 
 const Menu = () => {
+  const { t, i18n } = useTranslation();
   const { cat: catParam } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -562,7 +578,8 @@ const Menu = () => {
     if (locStatus === 'inactive') return null;
 
     const imgSrc   = item.image || item.image_url || categoryFallback(item);
-    const name     = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
+    const name     = (localizedName(item, i18n.language) || 'Menu Item').replace(/\s*\(.*$/, '').trim();
+    const desc     = localizedDesc(item, i18n.language);
     const price    = parseFloat(item.price || 0);
     const isFav    = favoriteIds.has(item.id);
     const isSpicy  = !!item.is_spicy;
@@ -586,12 +603,12 @@ const Menu = () => {
         <div className="menu-item-row-content">
           {item.is_spicy && (
             <div className="menu-item-row-badges">
-              <span className="menu-item-spicy-pill">Spicy</span>
+              <span className="menu-item-spicy-pill">{t('menu.spicy')}</span>
             </div>
           )}
           <h3 className="menu-item-row-name">{name}</h3>
-          {item.description && (
-            <p className="menu-item-row-desc">{item.description}</p>
+          {desc && (
+            <p className="menu-item-row-desc">{desc}</p>
           )}
           <div className="menu-item-row-footer">
             <span className="menu-item-row-price">${price.toFixed(2)}</span>
@@ -621,12 +638,12 @@ const Menu = () => {
                 t.closest('.menu-item-row-img-wrap')?.classList.add('img-loaded');
               }}
             />
-            {isSoldOut && <div className="menu-item-sold-out-overlay">SOLD OUT</div>}
+            {isSoldOut && <div className="menu-item-sold-out-overlay">{t('menu.soldOut')}</div>}
             {isLoggedIn && (
               <button
                 className={`menu-item-fav-btn${isFav ? ' active' : ''}`}
                 onClick={e => toggleFavorite(e, item.id)}
-                aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
+                aria-label={isFav ? t('menu.removeFromFavorites') : t('menu.saveToFavorites')}
               >
                 <Heart size={11} fill={isFav ? 'currentColor' : 'none'} />
               </button>
@@ -694,8 +711,8 @@ const Menu = () => {
         <div className="menu-header">
           <div className="menu-header-overlay" />
           <div className="menu-header-content">
-            <h1 className="menu-header-title">Menu</h1>
-            <p className="menu-header-sub">Every dish tells a story — written in spice, sealed with tradition, served with soul.</p>
+            <h1 className="menu-header-title">{t('menu.title')}</h1>
+            <p className="menu-header-sub">{t('menu.subtitle')}</p>
           </div>
         </div>
       )}
@@ -711,12 +728,12 @@ const Menu = () => {
           )}
           <span className="menu-info-dot" />
           <div className="menu-info-item">
-            <span>100% Zabiha Halal</span>
+            <span>{t('menu.zabihaHalal')}</span>
           </div>
           <span className="menu-info-dot" />
           <div className="menu-info-item menu-info-open">
             <span className="menu-open-dot" />
-            <span>Open Now</span>
+            <span>{t('menu.openNow')}</span>
           </div>
         </div>
       </div>
@@ -727,7 +744,7 @@ const Menu = () => {
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Type to search items…"
+            placeholder={t('menu.searchPlaceholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); setShowSuggestions(true); if (e.target.value) setActiveCategory('all'); }}
             onFocus={() => setShowSuggestions(true)}
@@ -797,7 +814,7 @@ const Menu = () => {
                 onClick={() => handleCatClick(cat.value)}
               >
                 <span className="menu-cat-emoji">{cat.emoji}</span>
-                <span className="menu-cat-label-mobile">{cat.shortLabel || cat.label}</span>
+                <span className="menu-cat-label-mobile">{t(`menu.categories.${cat.value}.shortLabel`, cat.shortLabel || cat.label)}</span>
               </button>
             );
           })}
@@ -813,7 +830,7 @@ const Menu = () => {
       {/* Sticky left sidebar — always visible on desktop */}
       <aside className="menu-sidebar">
         <div className="menu-sidebar-inner">
-          <p className="menu-sidebar-heading">Categories</p>
+          <p className="menu-sidebar-heading">{t('menu.categoriesHeading')}</p>
           {CATEGORIES.map(cat => {
             const isActive = cat.value === 'byo'
               ? activeCategory === 'byo'
@@ -828,8 +845,8 @@ const Menu = () => {
               >
                 <span className="menu-sidebar-emoji">{cat.emoji}</span>
                 <span className="menu-sidebar-label">
-                  {cat.subLabel ? cat.shortLabel : cat.label}
-                  {cat.subLabel && <span className="menu-sidebar-sublabel">{cat.subLabel}</span>}
+                  {t(`menu.categories.${cat.value}.${cat.subLabel ? 'shortLabel' : 'label'}`, cat.subLabel ? cat.shortLabel : cat.label)}
+                  {cat.subLabel && <span className="menu-sidebar-sublabel">{t(`menu.categories.${cat.value}.subLabel`, cat.subLabel)}</span>}
                 </span>
               </button>
             );
@@ -847,11 +864,11 @@ const Menu = () => {
         >
           <img src={MENU_ICON} alt="Habibi Menu" className="menu-cat-hero-icon" />
           <div className="menu-cat-hero-text">
-            <h1 className="menu-cat-hero-title">{activeCatObj?.label}</h1>
+            <h1 className="menu-cat-hero-title">{t(`menu.categories.${activeCatObj?.value}.label`, activeCatObj?.label)}</h1>
             {activeCatObj?.tagline && (
               <div className="menu-cat-hero-divider">
                 <span className="menu-cat-hero-line" />
-                <span className="menu-cat-hero-tagline">{activeCatObj.tagline}</span>
+                <span className="menu-cat-hero-tagline">{t(`menu.categories.${activeCatObj.value}.tagline`, activeCatObj.tagline)}</span>
                 <span className="menu-cat-hero-line" />
               </div>
             )}
@@ -862,8 +879,8 @@ const Menu = () => {
       {/* ── Category grid — landing page when no category selected ── */}
       {activeCategory === 'grid' && !search && (
         <div className="cat-grid-wrap">
-          <p className="cat-grid-eyebrow">EXPLORE OUR MENU</p>
-          <h2 className="cat-grid-title">What are you craving?</h2>
+          <p className="cat-grid-eyebrow">{t('menu.exploreEyebrow')}</p>
+          <h2 className="cat-grid-title">{t('menu.whatCraving')}</h2>
           <div className="cat-grid">
             {CATEGORIES.filter(c => c.value !== 'grid').map(cat => (
               <button
@@ -876,7 +893,7 @@ const Menu = () => {
                 <div className="cat-grid-img-overlay" />
                 <div className="cat-grid-info">
                   <span className="cat-grid-emoji">{cat.emoji}</span>
-                  <span className="cat-grid-name">{cat.label}</span>
+                  <span className="cat-grid-name">{t(`menu.categories.${cat.value}.label`, cat.label)}</span>
                 </div>
               </button>
             ))}
@@ -888,19 +905,19 @@ const Menu = () => {
       {activeCategory === 'all' && !search && featuredItems.length > 0 && (
         <div className="mf-section">
           <div className="mf-header">
-            <p className="mf-eyebrow">POPULAR PICKS</p>
-            <h2 className="mf-title">Order Your Favourites</h2>
+            <p className="mf-eyebrow">{t('menu.popularEyebrow')}</p>
+            <h2 className="mf-title">{t('menu.orderFavourites')}</h2>
           </div>
           <div className="mf-carousel-wrap">
-            <button className="mf-nav-btn mf-nav-prev" onClick={() => scrollFeatCarousel(-1)} aria-label="Previous">
+            <button className="mf-nav-btn mf-nav-prev" onClick={() => scrollFeatCarousel(-1)} aria-label={t('menu.previous')}>
               <ChevronLeft size={20} />
             </button>
             <div className="mf-track" ref={featCarouselRef}>
               {featuredItems.map((item, idx) => {
                 const imgSrc = item.image || item.image_url || categoryFallback(item);
-                const name   = (item.name || item.title || 'Menu Item').replace(/\s*\(.*$/, '').trim();
+                const name   = (localizedName(item, i18n.language) || 'Menu Item').replace(/\s*\(.*$/, '').trim();
                 const price  = parseFloat(item.price || 0);
-                const sub    = (item.description || item.category || 'Halal · Fresh').slice(0, 32);
+                const sub    = (localizedDesc(item, i18n.language) || item.category || 'Halal · Fresh').slice(0, 32);
                 const isSpicy = !!item.is_spicy;
                 const temp2   = getItemTemp(item, name);
                 const fxClass = temp2 === 'none' ? '' :
@@ -979,7 +996,7 @@ const Menu = () => {
                 );
               })}
             </div>
-            <button className="mf-nav-btn mf-nav-next" onClick={() => scrollFeatCarousel(1)} aria-label="Next">
+            <button className="mf-nav-btn mf-nav-next" onClick={() => scrollFeatCarousel(1)} aria-label={t('menu.next')}>
               <ChevronRight size={20} />
             </button>
           </div>
@@ -1027,12 +1044,12 @@ const Menu = () => {
           <div className="byo-builder-wrap" id="byo-bowl-builder">
             <div className="bowls-container">
               <div className="bowls-content">
-                <p className="section-eyebrow text-gold">PERSONALIZED BOWLS</p>
-                <h2 className="heading-2">Build Your Own Bowl</h2>
-                <p className="section-desc">Create your perfect bowl step by step. Fresh, authentic and made entirely how you like it.</p>
+                <p className="section-eyebrow text-gold">{t('menu.personalizedEyebrow')}</p>
+                <h2 className="heading-2">{t('menu.buildYourOwnBowl')}</h2>
+                <p className="section-desc">{t('menu.buildYourOwnDesc')}</p>
                 <div className="bowl-builder">
                   <div className="builder-step">
-                    <p className="step-title">1. CHOOSE YOUR BASE</p>
+                    <p className="step-title">{t('menu.stepBase')}</p>
                     <div className="step-options">
                       {bowlBaseOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlBase === opt.id ? ' active' : ''}`} onClick={() => setBowlBase(opt.id)}>
@@ -1044,7 +1061,7 @@ const Menu = () => {
                     </div>
                   </div>
                   <div className="builder-step">
-                    <p className="step-title">2. SELECT PROTEIN</p>
+                    <p className="step-title">{t('menu.stepProtein')}</p>
                     <div className="step-options">
                       {bowlProteinOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlProtein === opt.id ? ' active' : ''}`} onClick={() => setBowlProtein(opt.id)}>
@@ -1056,7 +1073,7 @@ const Menu = () => {
                     </div>
                   </div>
                   <div className="builder-step">
-                    <p className="step-title">3. ADD TOPPINGS</p>
+                    <p className="step-title">{t('menu.stepToppings')}</p>
                     <div className="step-options">
                       {bowlToppingOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlTopping === opt.id ? ' active' : ''}`} onClick={() => setBowlTopping(opt.id)}>
@@ -1068,7 +1085,7 @@ const Menu = () => {
                     </div>
                   </div>
                   <div className="builder-step">
-                    <p className="step-title">4. CHOOSE SAUCE</p>
+                    <p className="step-title">{t('menu.stepSauce')}</p>
                     <div className="step-options">
                       {bowlSauceOptions.map(opt => (
                         <button key={opt.id} className={`btn-option${bowlSauce === opt.id ? ' active' : ''}`} onClick={() => setBowlSauce(opt.id)}>
@@ -1084,9 +1101,9 @@ const Menu = () => {
                     onClick={bowlReady ? handleAddComposedBowl : undefined}
                     disabled={!bowlReady}
                   >
-                    {bowlReady ? (editingBowlCartKey ? `UPDATE BOWL — $${BYO_ITEM.price}` : `ADD BOWL TO CART — $${BYO_ITEM.price}`) : 'SELECT OPTIONS TO BUILD'}
+                    {bowlReady ? (editingBowlCartKey ? t('menu.updateBowl', { price: BYO_ITEM.price }) : t('menu.addBowlToCart', { price: BYO_ITEM.price })) : t('menu.selectOptionsToBuild')}
                   </button>
-                  {bowlReady && <p className="bowl-hint">Perfect! Your bowl is ready to be ordered.</p>}
+                  {bowlReady && <p className="bowl-hint">{t('menu.bowlReady')}</p>}
                 </div>
               </div>
               <div className="bowl-preview-panel">
@@ -1103,14 +1120,14 @@ const Menu = () => {
                       )}
                       {!selectedBase && (
                         <div className="bowl-empty-state">
-                          <p className="bowl-empty-text">Choose a base above</p>
+                          <p className="bowl-empty-text">{t('menu.chooseBase')}</p>
                         </div>
                       )}
                       {/* Food zone — centered plate circle on top of platter */}
                       {selectedBase && (
                         <div className="bowl-food-zone">
                           {!selectedProtein && !selectedTopping && !selectedSauce ? (
-                            <div className="bowl-food-zone-hint">Add protein</div>
+                            <div className="bowl-food-zone-hint">{t('menu.addProtein')}</div>
                           ) : (
                             <>
                               {selectedProtein && <div className="bowl-layer bowl-protein-layer"><img src={selectedProtein.image} alt={selectedProtein.label} className="bowl-layer-image" /></div>}
@@ -1128,7 +1145,7 @@ const Menu = () => {
                         {!selectedBase && !selectedProtein && !selectedTopping && !selectedSauce ? (
                           <div className="bowl-empty-state">
                             <img src="/images/builder/realistic-3d-bowl.webp" alt="Bowl" className="bowl-empty-img-rotate" />
-                            <p className="bowl-empty-text">Your bowl awaits</p>
+                            <p className="bowl-empty-text">{t('menu.bowlAwaits')}</p>
                           </div>
                         ) : (
                           <>
@@ -1144,15 +1161,15 @@ const Menu = () => {
                   )}
                 </div>
                 <div className="bowl-summary">
-                  <div className={`bowl-tag-pill ${selectedBase    ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedBase    ? <><img src={selectedBase.image}    className="summary-img" alt="" />{selectedBase.label}</>    : '① Base'}</div>
+                  <div className={`bowl-tag-pill ${selectedBase    ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedBase    ? <><img src={selectedBase.image}    className="summary-img" alt="" />{selectedBase.label}</>    : t('menu.tagBase')}</div>
                   <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedProtein ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedProtein ? <><img src={selectedProtein.image} className="summary-img" alt="" />{selectedProtein.label}</> : '② Protein'}</div>
+                  <div className={`bowl-tag-pill ${selectedProtein ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedProtein ? <><img src={selectedProtein.image} className="summary-img" alt="" />{selectedProtein.label}</> : t('menu.tagProtein')}</div>
                   <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedTopping ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedTopping ? <><img src={selectedTopping.image} className="summary-img" alt="" />{selectedTopping.label}</> : '③ Toppings'}</div>
+                  <div className={`bowl-tag-pill ${selectedTopping ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedTopping ? <><img src={selectedTopping.image} className="summary-img" alt="" />{selectedTopping.label}</> : t('menu.tagToppings')}</div>
                   <span className="bowl-tag-sep">+</span>
-                  <div className={`bowl-tag-pill ${selectedSauce   ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedSauce   ? <><img src={selectedSauce.image}   className="summary-img" alt="" />{selectedSauce.label}</>   : '④ Sauce'}</div>
+                  <div className={`bowl-tag-pill ${selectedSauce   ? 'bowl-tag-active' : 'bowl-tag-empty'}`}>{selectedSauce   ? <><img src={selectedSauce.image}   className="summary-img" alt="" />{selectedSauce.label}</>   : t('menu.tagSauce')}</div>
                 </div>
-                {bowlReady && <p className="bowl-preview-cta">Looking good! Complete in the next step.</p>}
+                {bowlReady && <p className="bowl-preview-cta">{t('menu.bowlPreviewCta')}</p>}
               </div>
             </div>
           </div>
@@ -1164,7 +1181,7 @@ const Menu = () => {
         ) : activeCategory === 'all' && !search ? (
           categoryGroups.length === 0 ? (
             <div className="menu-empty">
-              <p>No items available.</p>
+              <p>{t('menu.noItems')}</p>
             </div>
           ) : (
             categoryGroups.map(([category, catItems]) => {
@@ -1187,15 +1204,15 @@ const Menu = () => {
                       />
                       <div className="menu-cat-banner-overlay" />
                       <div className="menu-cat-banner-label">
-                        <span className="menu-cat-banner-title">{category}</span>
-                        <span className="menu-cat-banner-count">{catItems.length} items</span>
+                        <span className="menu-cat-banner-title">{categoryDisplayName(category, t)}</span>
+                        <span className="menu-cat-banner-count">{t('menu.itemsCount', { count: catItems.length })}</span>
                       </div>
                     </div>
                   )}
                   {!bannerSrc && (
                     <div className="menu-cat-section-hd">
-                      <h3 className="menu-cat-section-title">{category}</h3>
-                      <span className="menu-cat-section-count">{catItems.length} items</span>
+                      <h3 className="menu-cat-section-title">{categoryDisplayName(category, t)}</h3>
+                      <span className="menu-cat-section-count">{t('menu.itemsCount', { count: catItems.length })}</span>
                     </div>
                   )}
                   <div className="menu-list">
@@ -1207,9 +1224,9 @@ const Menu = () => {
           )
         ) : filtered.length === 0 && activeCategory !== 'byo' ? (
           <div className="menu-empty">
-            <p>No items found{search ? ` for "${search}"` : ' in this category'}.</p>
+            <p>{search ? t('menu.noItemsFoundFor', { search }) : t('menu.noItemsFoundInCategory')}</p>
             <button className="menu-empty-reset" onClick={() => { setSearch(''); handleCatClick('all'); }}>
-              Show all items
+              {t('menu.showAllItems')}
             </button>
           </div>
         ) : activeCategory !== 'byo' ? (
@@ -1226,6 +1243,7 @@ const Menu = () => {
       {modalItemId && (
         <MenuItemModal
           itemId={modalItemId}
+          soldOut={(locAvailMap[modalItemId] || 'available') === 'sold_out'}
           onClose={closeItemModal}
           onSelectItem={selectItemInModal}
         />

@@ -26,6 +26,7 @@
   width: 100%;
   max-width: 680px;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -275,6 +276,7 @@
 @media (max-width: 520px) {
   .lm-dialog {
     max-height: 95vh;
+    max-height: 95dvh;
     border-radius: 12px 12px 0 0;
     position: fixed;
     bottom: 0;

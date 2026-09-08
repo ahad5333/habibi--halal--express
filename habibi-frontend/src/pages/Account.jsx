@@ -6,29 +6,20 @@ import {
   Clock, Shield, Star, Lock, AlertTriangle, RefreshCw,
   Package, Printer, Eye, RotateCcw, Gift, Bell, Heart, Camera, Share2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI, settingsAPI } from '../services/api';
+import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI, settingsAPI, subscriptionsAPI } from '../services/api';
 import './Account.css';
 
-const DIETARY_TAGS = [
-  { key: 'vegetarian',        label: 'Vegetarian' },
-  { key: 'vegan',              label: 'Vegan' },
-  { key: 'gluten_free',        label: 'Gluten-Free' },
-  { key: 'dairy_free',         label: 'Dairy-Free' },
-  { key: 'nut_allergy',        label: 'Nut Allergy' },
-  { key: 'shellfish_allergy',  label: 'Shellfish Allergy' },
-];
+const DIETARY_KEYS = ['vegetarian', 'vegan', 'gluten_free', 'dairy_free', 'nut_allergy', 'shellfish_allergy'];
 
-const TABS = [
-  { id: 'profile',       label: 'Profile',          icon: <User size={16} /> },
-  { id: 'orders',        label: 'Order History',     icon: <ShoppingBag size={16} /> },
-  { id: 'addresses',     label: 'Saved Addresses',   icon: <MapPin size={16} /> },
-  { id: 'payment',       label: 'Payment Methods',   icon: <CreditCard size={16} /> },
-  { id: 'notifications', label: 'Notifications',     icon: <Bell size={16} /> },
-  { id: 'favorites',     label: 'Saved Items',       icon: <Heart size={16} /> },
-  { id: 'referral',      label: 'Refer a Friend',    icon: <Gift size={16} /> },
-];
+const TAB_IDS = ['profile', 'orders', 'addresses', 'payment', 'subscriptions', 'notifications', 'favorites', 'referral'];
+const TAB_ICONS = {
+  profile: <User size={16} />, orders: <ShoppingBag size={16} />, addresses: <MapPin size={16} />,
+  payment: <CreditCard size={16} />, subscriptions: <RefreshCw size={16} />, notifications: <Bell size={16} />, favorites: <Heart size={16} />,
+  referral: <Gift size={16} />,
+};
 
 const STATUS_COLOR = {
   pending:     '#E5B64E',
@@ -53,6 +44,7 @@ function StatusBadge({ status }) {
 
 // ── Birthday Coupon Banner ────────────────────────────────────────────────────
 function BirthdayCouponBanner() {
+  const { t } = useTranslation();
   const [coupon, setCoupon] = useState(() => {
     try { return JSON.parse(localStorage.getItem('habibi_birthday_coupon') || 'null'); } catch { return null; }
   });
@@ -76,10 +68,10 @@ function BirthdayCouponBanner() {
     <div className="birthday-banner">
       <span className="birthday-banner-emoji">🎂</span>
       <div className="birthday-banner-body">
-        <p className="birthday-banner-title">Happy Birthday! Here's your gift 🎁</p>
-        <p className="birthday-banner-sub">Use code <strong>{coupon.code}</strong> for {coupon.discount_value}% off your order. Valid until {coupon.expiry_date}.</p>
+        <p className="birthday-banner-title">{t('account.happyBirthday')}</p>
+        <p className="birthday-banner-sub">{t('account.birthdayDesc', { code: coupon.code, discount: coupon.discount_value, expiry: coupon.expiry_date })}</p>
       </div>
-      <button className="birthday-banner-copy" onClick={copy}>{copied ? 'Copied!' : 'Copy Code'}</button>
+      <button className="birthday-banner-copy" onClick={copy}>{copied ? t('account.copied') : t('account.copyCode')}</button>
       <button className="birthday-banner-close" onClick={dismiss}><X size={14} /></button>
     </div>
   );
@@ -87,6 +79,7 @@ function BirthdayCouponBanner() {
 
 // ── Profile Tab ───────────────────────────────────────────────────────────────
 function ProfileTab({ user, logout, refreshUser }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [editing, setEditing]       = useState(false);
   const [name, setName]             = useState('');
@@ -161,10 +154,10 @@ function ProfileTab({ user, logout, refreshUser }) {
       const updated = await userAPI.updateProfile({ name, phone_number: phone, date_of_birth: dob || null, dietary_prefs: dietaryPrefs });
       refreshUser({ name: updated.name, phone_number: updated.phone_number });
       setEditing(false);
-      setSaveMsg('Saved!');
+      setSaveMsg(t('account.saved'));
       setTimeout(() => setSaveMsg(''), 2500);
     } catch (err) {
-      setSaveMsg('Error: ' + (err.message || 'Save failed.'));
+      setSaveMsg('Error: ' + (err.message || t('account.errSaveFailed')));
     } finally {
       setSaving(false);
     }
@@ -183,7 +176,7 @@ function ProfileTab({ user, logout, refreshUser }) {
       setAvatarUrl(data.avatar_url);
       refreshUser({ avatar_url: data.avatar_url });
     } catch (err) {
-      setAvatarErr(err.message || 'Failed to upload photo.');
+      setAvatarErr(err.message || t('account.errFailedUploadPhoto'));
     } finally {
       setAvatarUploading(false);
     }
@@ -195,16 +188,16 @@ function ProfileTab({ user, logout, refreshUser }) {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (newPw !== confirmPw) { setPwMsg('Passwords do not match.'); return; }
-    if (newPw.length < 6)    { setPwMsg('Min. 6 characters.'); return; }
+    if (newPw !== confirmPw) { setPwMsg(t('account.errPasswordsDontMatchShort')); return; }
+    if (newPw.length < 8)    { setPwMsg(t('account.errMin8Chars')); return; }
     setPwSaving(true); setPwMsg('');
     try {
       await userAPI.changePassword(currentPw, newPw);
-      setPwMsg('Password updated!');
+      setPwMsg(t('account.passwordUpdated'));
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       setTimeout(() => { setPwOpen(false); setPwMsg(''); }, 2000);
     } catch (err) {
-      setPwMsg(err.message || 'Failed to update password.');
+      setPwMsg(err.message || t('account.errFailedUpdatePassword'));
     } finally {
       setPwSaving(false);
     }
@@ -217,7 +210,7 @@ function ProfileTab({ user, logout, refreshUser }) {
       logout();
       navigate('/');
     } catch (err) {
-      setDeleteErr(err.message || 'Incorrect password.');
+      setDeleteErr(err.message || t('account.errIncorrectPassword'));
     } finally {
       setDeleting(false);
     }
@@ -235,7 +228,7 @@ function ProfileTab({ user, logout, refreshUser }) {
           className="acct-avatar acct-avatar-btn"
           onClick={() => avatarInputRef.current?.click()}
           disabled={avatarUploading}
-          title="Change profile photo"
+          title={t('account.changeProfilePhoto')}
           style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
         >
           {!avatarUrl && initial}
@@ -251,12 +244,12 @@ function ProfileTab({ user, logout, refreshUser }) {
           onChange={handleAvatarChange}
         />
         <div>
-          <p className="acct-profile-name">{user?.name || 'Guest'}</p>
-          <p className="acct-profile-role">{user?.role === 'admin' ? 'Administrator' : 'Member'}</p>
+          <p className="acct-profile-name">{user?.name || t('account.guest')}</p>
+          <p className="acct-profile-role">{user?.role === 'admin' ? t('account.administrator') : t('account.member')}</p>
         </div>
         <button className="acct-edit-btn" onClick={() => { setEditing(e => !e); setSaveMsg(''); }}>
           {editing ? <X size={15} /> : <Edit3 size={15} />}
-          {editing ? 'Cancel' : 'Edit'}
+          {editing ? t('account.cancel') : t('account.edit')}
         </button>
       </div>
       {avatarErr && <p className="acct-inline-msg err">{avatarErr}</p>}
@@ -264,45 +257,45 @@ function ProfileTab({ user, logout, refreshUser }) {
       {/* Fields */}
       <div className="acct-fields">
         <div className="acct-field">
-          <label>Full Name</label>
+          <label>{t('account.fullName')}</label>
           {editing
             ? <input className="acct-input" value={name} onChange={e => setName(e.target.value)} />
             : <p>{name || '—'}</p>}
         </div>
         <div className="acct-field">
-          <label>Email Address</label>
+          <label>{t('account.emailAddress')}</label>
           <p className="acct-field-locked">{user?.email || '—'} <Lock size={11} /></p>
         </div>
         <div className="acct-field">
-          <label>Phone Number</label>
+          <label>{t('account.phoneNumber')}</label>
           {editing
             ? <input type="tel" className="acct-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (718) 000-0000" />
             : <p>{phone || '—'}</p>}
         </div>
         <div className="acct-field">
-          <label>Date of Birth <span style={{fontSize:'0.72rem',color:'var(--color-text-muted)',fontWeight:400}}>(optional — for birthday reward)</span></label>
+          <label>{t('account.dateOfBirth')} <span style={{fontSize:'0.72rem',color:'var(--color-text-muted)',fontWeight:400}}>{t('account.optionalBirthdayReward')}</span></label>
           {editing
             ? <input type="date" className="acct-input" value={dob} onChange={e => setDob(e.target.value)} max={new Date().toISOString().slice(0,10)} />
             : <p>{dob ? new Date(dob + 'T00:00:00').toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) : '—'}</p>}
         </div>
         <div className="acct-field">
-          <label>Dietary Preferences</label>
+          <label>{t('account.dietaryPreferences')}</label>
           {editing ? (
             <div className="acct-dietary-grid">
-              {DIETARY_TAGS.map(tag => (
-                <label key={tag.key} className="acct-dietary-chip">
+              {DIETARY_KEYS.map(key => (
+                <label key={key} className="acct-dietary-chip">
                   <input
                     type="checkbox"
-                    checked={!!dietaryPrefs[tag.key]}
-                    onChange={() => toggleDietaryPref(tag.key)}
+                    checked={!!dietaryPrefs[key]}
+                    onChange={() => toggleDietaryPref(key)}
                   />
-                  {tag.label}
+                  {t(`account.dietary.${key}`)}
                 </label>
               ))}
             </div>
           ) : (
             <p>
-              {DIETARY_TAGS.filter(t => dietaryPrefs[t.key]).map(t => t.label).join(', ') || '—'}
+              {DIETARY_KEYS.filter(key => dietaryPrefs[key]).map(key => t(`account.dietary.${key}`)).join(', ') || '—'}
             </p>
           )}
         </div>
@@ -310,15 +303,15 @@ function ProfileTab({ user, logout, refreshUser }) {
 
       {editing && (
         <button className="btn btn-primary acct-save-btn" onClick={handleSave} disabled={saving}>
-          <Check size={15} /> {saving ? 'Saving…' : 'Save Changes'}
+          <Check size={15} /> {saving ? t('account.saving') : t('account.saveChanges')}
         </button>
       )}
       {saveMsg && <p className={`acct-inline-msg ${saveMsg.startsWith('Error') ? 'err' : 'ok'}`}>{saveMsg}</p>}
 
       {/* Badges */}
       <div className="acct-badges">
-        <div className="acct-badge"><Shield size={14} /><span>Verified Account</span></div>
-        <div className="acct-badge"><Star size={14} /><span>Halal Loyalty Member</span></div>
+        <div className="acct-badge"><Shield size={14} /><span>{t('account.verifiedAccount')}</span></div>
+        <div className="acct-badge"><Star size={14} /><span>{t('account.halalLoyaltyMember')}</span></div>
       </div>
 
       {/* Loyalty Card */}
@@ -326,10 +319,10 @@ function ProfileTab({ user, logout, refreshUser }) {
         <div className="acct-loyalty-top">
           <div className="acct-loyalty-icon"><Gift size={18} /></div>
           <div>
-            <p className="acct-loyalty-label">Habibi Rewards</p>
-            <p className="acct-loyalty-sub">{loyaltyEarnRate} pts per $1 · {loyaltyRedeemRate} pts = $1 off</p>
+            <p className="acct-loyalty-label">{t('account.habibiRewards')}</p>
+            <p className="acct-loyalty-sub">{t('account.ptsPerDollar', { earn: loyaltyEarnRate, redeem: loyaltyRedeemRate })}</p>
           </div>
-          <div className="acct-loyalty-pts">{loyaltyPoints.toLocaleString()}<span> pts</span></div>
+          <div className="acct-loyalty-pts">{loyaltyPoints.toLocaleString()}<span> {t('account.pts')}</span></div>
         </div>
         <div className="acct-loyalty-bar-track">
           <div
@@ -338,11 +331,11 @@ function ProfileTab({ user, logout, refreshUser }) {
           />
         </div>
         <div className="acct-loyalty-footer">
-          <span className="acct-loyalty-value">${(Math.floor(loyaltyPoints / loyaltyRedeemRate)).toFixed(0)} redeemable</span>
+          <span className="acct-loyalty-value">${(Math.floor(loyaltyPoints / loyaltyRedeemRate)).toFixed(0)} {t('account.redeemable')}</span>
           <span className="acct-loyalty-next">
             {loyaltyPoints % loyaltyRedeemRate === 0 && loyaltyPoints > 0
-              ? 'Reward available!'
-              : `${loyaltyRedeemRate - (loyaltyPoints % loyaltyRedeemRate)} pts to next $1 off`}
+              ? t('account.rewardAvailable')
+              : t('account.ptsToNextDollar', { pts: loyaltyRedeemRate - (loyaltyPoints % loyaltyRedeemRate) })}
           </span>
         </div>
 
@@ -357,10 +350,21 @@ function ProfileTab({ user, logout, refreshUser }) {
                   background: loyaltyTier.tier_color + '15',
                 }}
               >
-                {loyaltyTier.tier} Tier
+                {loyaltyTier.tier} {t('account.tier')}
               </span>
-              <span className="acct-tier-multiplier">{loyaltyTier.tier_multiplier}&times; points</span>
+              <span className="acct-tier-multiplier">{t('account.ptsMultiplier', { mult: loyaltyTier.tier_multiplier })}</span>
             </div>
+            {(loyaltyTier.tier_discount_pct > 0 || loyaltyTier.free_delivery_threshold != null) && (
+              <p className="acct-tier-perks">
+                {loyaltyTier.tier_discount_pct > 0 && t('account.tierPerkDiscount', { pct: loyaltyTier.tier_discount_pct })}
+                {loyaltyTier.tier_discount_pct > 0 && loyaltyTier.free_delivery_threshold != null && ' · '}
+                {loyaltyTier.free_delivery_threshold === 0
+                  ? t('account.tierPerkAlwaysFreeDelivery')
+                  : loyaltyTier.free_delivery_threshold != null
+                    ? t('account.tierPerkFreeDeliveryOver', { amount: loyaltyTier.free_delivery_threshold })
+                    : ''}
+              </p>
+            )}
             <div className="acct-loyalty-bar-track">
               <div
                 className="acct-loyalty-bar-fill"
@@ -369,8 +373,8 @@ function ProfileTab({ user, logout, refreshUser }) {
             </div>
             <p className="acct-tier-next">
               {loyaltyTier.next_tier_name
-                ? `${loyaltyTier.next_tier_pts_needed.toLocaleString()} pts to ${loyaltyTier.next_tier_name}`
-                : "You've reached the highest tier!"}
+                ? t('account.ptsToTier', { pts: loyaltyTier.next_tier_pts_needed.toLocaleString(), tier: loyaltyTier.next_tier_name })
+                : t('account.reachedHighestTier')}
             </p>
           </div>
         )}
@@ -378,52 +382,52 @@ function ProfileTab({ user, logout, refreshUser }) {
 
       {/* Change password */}
       <button className="acct-secondary-btn" onClick={() => setPwOpen(o => !o)}>
-        <Lock size={14} /> {pwOpen ? 'Cancel Password Change' : 'Change Password'}
+        <Lock size={14} /> {pwOpen ? t('account.cancelPasswordChange') : t('account.changePassword')}
       </button>
 
       {pwOpen && (
         <form className="acct-pw-form" onSubmit={handleChangePassword}>
           <input
-            type="password" className="acct-input" placeholder="Current password"
+            type="password" className="acct-input" placeholder={t('account.currentPassword')}
             value={currentPw} onChange={e => setCurrentPw(e.target.value)} required
           />
           <input
-            type="password" className="acct-input" placeholder="New password (min 6)"
+            type="password" className="acct-input" placeholder={t('account.newPasswordMin8')}
             value={newPw} onChange={e => setNewPw(e.target.value)} required
           />
           <input
-            type="password" className="acct-input" placeholder="Confirm new password"
+            type="password" className="acct-input" placeholder={t('account.confirmNewPassword')}
             value={confirmPw} onChange={e => setConfirmPw(e.target.value)} required
           />
-          {pwMsg && <p className={`acct-inline-msg ${pwMsg.startsWith('Password updated') ? 'ok' : 'err'}`}>{pwMsg}</p>}
+          {pwMsg && <p className={`acct-inline-msg ${pwMsg === t('account.passwordUpdated') ? 'ok' : 'err'}`}>{pwMsg}</p>}
           <button type="submit" className="btn btn-primary acct-save-btn" disabled={pwSaving}>
-            {pwSaving ? 'Updating…' : 'Update Password'}
+            {pwSaving ? t('account.updating') : t('account.updatePassword')}
           </button>
         </form>
       )}
 
       {/* Sign out */}
       <button className="acct-logout-btn" onClick={logout}>
-        <LogOut size={15} /> Sign Out
+        <LogOut size={15} /> {t('common.signOut')}
       </button>
 
       {/* Delete account */}
       <div className="acct-danger-zone">
         <button className="acct-delete-trigger" onClick={() => setDeleteOpen(o => !o)}>
-          <AlertTriangle size={14} /> Delete Account
+          <AlertTriangle size={14} /> {t('account.deleteAccount')}
         </button>
         {deleteOpen && (
           <div className="acct-delete-confirm">
             <p className="acct-delete-warn">
-              This is permanent. Your account will be anonymised to comply with GDPR. Your order history will be preserved for our records.
+              {t('account.deletePermanentWarning')}
             </p>
             <input
-              type="password" className="acct-input" placeholder="Confirm with your password"
+              type="password" className="acct-input" placeholder={t('account.confirmWithPassword')}
               value={deletePw} onChange={e => setDeletePw(e.target.value)}
             />
             {deleteErr && <p className="acct-inline-msg err">{deleteErr}</p>}
             <button className="acct-delete-btn" onClick={handleDeleteAccount} disabled={deleting || !deletePw}>
-              {deleting ? 'Deleting…' : 'Yes, Delete My Account'}
+              {deleting ? t('account.deleting') : t('account.yesDeleteAccount')}
             </button>
           </div>
         )}
@@ -434,6 +438,7 @@ function ProfileTab({ user, logout, refreshUser }) {
 
 // ── Order Detail Modal ────────────────────────────────────────────────────────
 function OrderDetailModal({ order, onClose, onReorder }) {
+  const { t } = useTranslation();
   const items = order.items || [];
   const fmt = (v) => `$${parseFloat(v || 0).toFixed(2)}`;
   const dateStr = order.placed_at
@@ -470,7 +475,7 @@ function OrderDetailModal({ order, onClose, onReorder }) {
       <div class="d"></div><p class="c">Thank you for your order!</p>
       </body></html>`;
     const win = window.open('', '_blank', 'width=420,height=600');
-    if (!win) { alert('Please allow popups to print your receipt.'); return; }
+    if (!win) { alert(t('account.allowPopupsToPrint')); return; }
     win.document.write(html);
     win.document.close();
     win.print();
@@ -490,14 +495,14 @@ function OrderDetailModal({ order, onClose, onReorder }) {
         </div>
 
         <p className="acct-receipt-method">
-          {order.delivery_method === 'delivery' ? '🚗 Delivery' : '🏪 Pickup'}
+          {order.delivery_method === 'delivery' ? `🚗 ${t('checkout.delivery')}` : `🏪 ${t('checkout.pickup')}`}
           {order.payment_method && <span className="acct-receipt-pay"> · {order.payment_method}</span>}
         </p>
 
         <div className="acct-receipt-divider" />
 
         <div className="acct-receipt-items">
-          {items.length === 0 && <p className="acct-receipt-empty">No item details available.</p>}
+          {items.length === 0 && <p className="acct-receipt-empty">{t('account.noItemDetails')}</p>}
           {items.map((item, idx) => {
             const q = item.qty || item.quantity || 1;
             const p = parseFloat(item.price || item.unit_price || 0);
@@ -514,19 +519,19 @@ function OrderDetailModal({ order, onClose, onReorder }) {
         <div className="acct-receipt-divider" />
 
         <div className="acct-receipt-totals">
-          <div className="acct-receipt-row"><span>Subtotal</span><span>{fmt(order.sub_total)}</span></div>
-          {parseFloat(order.tax||0) > 0 && <div className="acct-receipt-row"><span>Tax</span><span>{fmt(order.tax)}</span></div>}
-          {parseFloat(order.service_fee||0) > 0 && <div className="acct-receipt-row"><span>Service fee</span><span>{fmt(order.service_fee)}</span></div>}
-          {parseFloat(order.delivery_fee||0) > 0 && <div className="acct-receipt-row"><span>Delivery</span><span>{fmt(order.delivery_fee)}</span></div>}
-          {parseFloat(order.tip||0) > 0 && <div className="acct-receipt-row"><span>Tip</span><span>{fmt(order.tip)}</span></div>}
-          {parseFloat(order.discount||0) > 0 && <div className="acct-receipt-row discount"><span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span><span>−{fmt(order.discount)}</span></div>}
-          <div className="acct-receipt-row total"><span>Total</span><span>{fmt(order.total)}</span></div>
+          <div className="acct-receipt-row"><span>{t('checkout.itemTotal')}</span><span>{fmt(order.sub_total)}</span></div>
+          {parseFloat(order.tax||0) > 0 && <div className="acct-receipt-row"><span>{t('account.tax')}</span><span>{fmt(order.tax)}</span></div>}
+          {parseFloat(order.service_fee||0) > 0 && <div className="acct-receipt-row"><span>{t('checkout.serviceFee')}</span><span>{fmt(order.service_fee)}</span></div>}
+          {parseFloat(order.delivery_fee||0) > 0 && <div className="acct-receipt-row"><span>{t('checkout.delivery')}</span><span>{fmt(order.delivery_fee)}</span></div>}
+          {parseFloat(order.tip||0) > 0 && <div className="acct-receipt-row"><span>{t('checkout.tip')}</span><span>{fmt(order.tip)}</span></div>}
+          {parseFloat(order.discount||0) > 0 && <div className="acct-receipt-row discount"><span>{t('account.discount')}{order.coupon_code ? ` (${order.coupon_code})` : ''}</span><span>−{fmt(order.discount)}</span></div>}
+          <div className="acct-receipt-row total"><span>{t('checkout.total')}</span><span>{fmt(order.total)}</span></div>
         </div>
 
         {order.delivery_method === 'delivery' && (order.delivery_address || order.delivery_city) && (
           <>
             <div className="acct-receipt-divider" />
-            <p className="acct-receipt-addr-label">Delivered to</p>
+            <p className="acct-receipt-addr-label">{t('account.deliveredTo')}</p>
             <p className="acct-receipt-addr">
               {[order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_zip].filter(Boolean).join(', ')}
             </p>
@@ -537,10 +542,10 @@ function OrderDetailModal({ order, onClose, onReorder }) {
 
         <div className="acct-receipt-actions">
           <button className="acct-receipt-btn print" onClick={handlePrint}>
-            <Printer size={14} /> Print Receipt
+            <Printer size={14} /> {t('account.printReceipt')}
           </button>
           <button className="acct-receipt-btn reorder" onClick={() => onReorder(order)}>
-            <RotateCcw size={14} /> Order Again
+            <RotateCcw size={14} /> {t('orderConfirmation.orderAgain')}
           </button>
         </div>
       </div>
@@ -550,6 +555,7 @@ function OrderDetailModal({ order, onClose, onReorder }) {
 
 // ── Review Modal ──────────────────────────────────────────────────────────────
 function ReviewModal({ order, onClose, onSubmitted }) {
+  const { t } = useTranslation();
   const [rating, setRating]     = useState(0);
   const [hover, setHover]       = useState(0);
   const [comment, setComment]   = useState('');
@@ -559,7 +565,7 @@ function ReviewModal({ order, onClose, onSubmitted }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (rating === 0) { setError('Please select a star rating.'); return; }
+    if (rating === 0) { setError(t('account.errSelectStarRating')); return; }
     setLoading(true); setError('');
     try {
       await reviewsAPI.submit({
@@ -570,7 +576,7 @@ function ReviewModal({ order, onClose, onSubmitted }) {
       setDone(true);
       onSubmitted?.(order.order_number);
     } catch (err) {
-      setError(err.message || 'Could not submit review. Please try again.');
+      setError(err.message || t('account.errCouldNotSubmitReview'));
     } finally {
       setLoading(false);
     }
@@ -582,22 +588,22 @@ function ReviewModal({ order, onClose, onSubmitted }) {
         {done ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>⭐</div>
-            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--color-text-main)' }}>Thank you!</h3>
+            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--color-text-main)' }}>{t('account.thankYou')}</h3>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Your review has been submitted and is pending approval.
+              {t('account.reviewPendingApproval')}
             </p>
-            <button className="btn btn-primary" onClick={onClose}>Done</button>
+            <button className="btn btn-primary" onClick={onClose}>{t('account.done')}</button>
           </div>
         ) : (
           <form onSubmit={submit}>
             <div className="acct-modal-header">
-              <h3 className="acct-modal-title">Rate Your Order</h3>
+              <h3 className="acct-modal-title">{t('account.rateYourOrder')}</h3>
               <button type="button" className="acct-modal-close" onClick={onClose}><X size={18} /></button>
             </div>
 
             <div style={{ padding: '1.25rem 1.5rem' }}>
               <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
-                Order #{order.order_number}
+                {t('account.orderHash', { num: order.order_number })}
               </p>
 
               {/* Star rating */}
@@ -615,24 +621,24 @@ function ReviewModal({ order, onClose, onSubmitted }) {
                       color: s <= (hover || rating) ? '#E5B64E' : 'var(--color-border)',
                       transition: 'color 0.15s',
                     }}
-                    aria-label={`${s} star${s > 1 ? 's' : ''}`}
+                    aria-label={t('account.starLabel', { s, plural: s > 1 ? 's' : '' })}
                   >★</button>
                 ))}
                 {rating > 0 && (
                   <span style={{ alignSelf: 'center', fontSize: '0.85rem', color: '#E5B64E', marginLeft: '0.5rem', fontWeight: 600 }}>
-                    {['','Poor','Fair','Good','Great','Excellent'][rating]}
+                    {['', t('account.ratingPoor'), t('account.ratingFair'), t('account.ratingGood'), t('account.ratingGreat'), t('account.ratingExcellent')][rating]}
                   </span>
                 )}
               </div>
 
               {/* Comment */}
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">YOUR REVIEW <span style={{ color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <label className="form-label">{t('account.yourReview')} <span style={{ color: 'var(--color-text-muted)' }}>{t('account.optionalParen')}</span></label>
                 <textarea
                   className="form-input"
                   rows={4}
                   maxLength={1000}
-                  placeholder="Tell us about your experience — food quality, delivery speed, packaging…"
+                  placeholder={t('account.reviewPlaceholder')}
                   value={comment}
                   onChange={e => setComment(e.target.value)}
                   style={{ resize: 'vertical', fontFamily: 'inherit' }}
@@ -645,9 +651,9 @@ function ReviewModal({ order, onClose, onSubmitted }) {
               {error && <p style={{ color: 'var(--color-error)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>⚠ {error}</p>}
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button type="button" className="btn btn-outline" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+                <button type="button" className="btn btn-outline" onClick={onClose} style={{ flex: 1 }}>{t('account.cancel')}</button>
                 <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 2 }}>
-                  {loading ? 'Submitting…' : 'Submit Review'}
+                  {loading ? t('account.submitting') : t('account.submitReview')}
                 </button>
               </div>
             </div>
@@ -660,6 +666,7 @@ function ReviewModal({ order, onClose, onSubmitted }) {
 
 // ── Orders Tab ────────────────────────────────────────────────────────────────
 function OrdersTab() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [orders, setOrders]         = useState([]);
@@ -675,7 +682,7 @@ function OrdersTab() {
     const ctrl = new AbortController();
     userAPI.getOrders()
       .then(data => setOrders(Array.isArray(data) ? data : []))
-      .catch(err => { if (err.name !== 'AbortError') setError(err.message || 'Could not load orders.'); })
+      .catch(err => { if (err.name !== 'AbortError') setError(err.message || t('account.errCouldNotLoadOrders')); })
       .finally(() => setLoading(false));
     return ctrl;
   }, []);
@@ -683,13 +690,13 @@ function OrdersTab() {
   useEffect(() => { const ctrl = load(); return () => ctrl?.abort(); }, [load]);
 
   const handleCancel = async (orderNumber) => {
-    if (!window.confirm('Cancel this order?')) return;
+    if (!window.confirm(t('account.confirmCancelOrder'))) return;
     setCancelling(orderNumber);
     try {
       await userAPI.cancelOrder(orderNumber);
       setOrders(prev => prev.map(o => o.order_number === orderNumber ? { ...o, order_status: 'cancelled' } : o));
     } catch (err) {
-      alert(err.message || 'Could not cancel order.');
+      alert(err.message || t('account.errCouldNotCancelOrder'));
     } finally {
       setCancelling(null);
     }
@@ -708,15 +715,15 @@ function OrdersTab() {
   if (error) return (
     <div className="acct-empty">
       <p className="acct-empty-err">{error}</p>
-      <button className="btn btn-outline" onClick={load}><RefreshCw size={14} /> Retry</button>
+      <button className="btn btn-outline" onClick={load}><RefreshCw size={14} /> {t('account.retry')}</button>
     </div>
   );
 
   if (orders.length === 0) return (
     <div className="acct-empty">
       <Package size={40} className="acct-empty-icon" />
-      <p>No orders yet.</p>
-      <Link to="/menu" className="btn btn-primary">Browse Menu</Link>
+      <p>{t('account.noOrdersYet')}</p>
+      <Link to="/menu" className="btn btn-primary">{t('account.browseMenu')}</Link>
     </div>
   );
 
@@ -740,13 +747,13 @@ function OrdersTab() {
               {itemNames.length > 0 && (
                 <p className="acct-order-items">
                   {itemNames.slice(0, 3).join(' · ')}
-                  {itemNames.length > 3 && ` +${itemNames.length - 3} more`}
+                  {itemNames.length > 3 && ` ${t('account.moreItems', { count: itemNames.length - 3 })}`}
                 </p>
               )}
               <div className="acct-order-bottom">
                 <span className="acct-order-total">${parseFloat(o.total || 0).toFixed(2)}</span>
                 <button className="acct-reorder-btn" onClick={() => handleReorder(o)}>
-                  <RotateCcw size={12} /> Order Again
+                  <RotateCcw size={12} /> {t('account.orderAgain')}
                 </button>
                 {o.order_status === 'pending' && (
                   <button
@@ -754,22 +761,22 @@ function OrdersTab() {
                     onClick={() => handleCancel(o.order_number)}
                     disabled={cancelling === o.order_number}
                   >
-                    <X size={11} /> {cancelling === o.order_number ? 'Cancelling…' : 'Cancel'}
+                    <X size={11} /> {cancelling === o.order_number ? t('account.cancelling') : t('account.cancel')}
                   </button>
                 )}
                 {o.order_status === 'delivered' && !reviewedOrders.has(o.order_number) && (
                   <button className="acct-track-btn" style={{ color: '#E5B64E', borderColor: 'rgba(229,182,78,0.3)' }} onClick={() => setReviewOrder(o)}>
-                    <Star size={12} /> Rate
+                    <Star size={12} /> {t('account.rate')}
                   </button>
                 )}
                 {reviewedOrders.has(o.order_number) && (
-                  <span style={{ fontSize: '0.72rem', color: '#22c55e' }}>✓ Reviewed</span>
+                  <span style={{ fontSize: '0.72rem', color: '#22c55e' }}>{t('account.reviewed')}</span>
                 )}
                 <button className="acct-track-btn" onClick={() => setExpanded(o)}>
-                  <Eye size={12} /> Details
+                  <Eye size={12} /> {t('account.details')}
                 </button>
                 <Link to={`/order-tracking?order=${o.order_number}`} className="acct-track-btn">
-                  Track <ChevronRight size={13} />
+                  {t('account.track')} <ChevronRight size={13} />
                 </Link>
               </div>
             </div>
@@ -803,6 +810,7 @@ function OrdersTab() {
 const BLANK_ADDR_FORM = { receiver_name: '', street_address: '', second_line: '', city: '', state: 'NY', zip_code: '', driver_instruction: '' };
 
 function AddressesTab() {
+  const { t } = useTranslation();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [adding, setAdding]       = useState(false);
@@ -845,7 +853,7 @@ function AddressesTab() {
 
   const handleAdd = async () => {
     if (!form.street_address.trim() || !form.city.trim() || !form.zip_code.trim()) {
-      setErr('Street address, city and ZIP are required.'); return;
+      setErr(t('account.errAddressRequired')); return;
     }
     setSaving(true); setErr('');
     try {
@@ -859,7 +867,7 @@ function AddressesTab() {
       setForm(BLANK_ADDR_FORM);
       load();
     } catch (e) {
-      setErr(e.message || 'Failed to save address.');
+      setErr(e.message || t('account.errFailedSaveAddress'));
     } finally {
       setSaving(false);
     }
@@ -888,8 +896,8 @@ function AddressesTab() {
           <div className="acct-addr-icon"><MapPin size={16} /></div>
           <div className="acct-addr-body">
             <p className="acct-addr-label">
-              {a.receiver_name || 'Address'}
-              {a.is_default && <span className="acct-default-tag">Default</span>}
+              {a.receiver_name || t('account.address')}
+              {a.is_default && <span className="acct-default-tag">{t('account.default')}</span>}
             </p>
             <p className="acct-addr-line">{a.street_address}{a.second_line ? `, ${a.second_line}` : ''}</p>
             <p className="acct-addr-line muted">{[a.city, a.state, a.zip_code].filter(Boolean).join(', ')}</p>
@@ -899,7 +907,7 @@ function AddressesTab() {
           </div>
           <div className="acct-addr-actions">
             {!a.is_default && (
-              <button className="acct-link-btn" onClick={() => handleSetDefault(a.id)}>Set Default</button>
+              <button className="acct-link-btn" onClick={() => handleSetDefault(a.id)}>{t('account.setDefault')}</button>
             )}
             <button className="acct-icon-btn" onClick={() => startEdit(a)}><Edit3 size={14} /></button>
             <button className="acct-icon-btn danger" onClick={() => handleDelete(a.id)}><Trash2 size={14} /></button>
@@ -910,39 +918,39 @@ function AddressesTab() {
       {(adding || editingId) ? (
         <div className="acct-add-form">
           <p className="acct-section-title" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-            {editingId ? 'Edit Address' : 'Add New Address'}
+            {editingId ? t('account.editAddress') : t('account.addNewAddress')}
           </p>
           <div className="acct-add-form-row">
-            <input className="acct-input" placeholder="Receiver name" value={form.receiver_name} onChange={e => setForm(f => ({ ...f, receiver_name: e.target.value }))} />
+            <input className="acct-input" placeholder={t('account.receiverNamePlaceholder')} value={form.receiver_name} onChange={e => setForm(f => ({ ...f, receiver_name: e.target.value }))} />
           </div>
-          <input className="acct-input" placeholder="Street address *" value={form.street_address} onChange={e => setForm(f => ({ ...f, street_address: e.target.value }))} />
-          <input className="acct-input" placeholder="Apt, floor, suite (optional)" value={form.second_line} onChange={e => setForm(f => ({ ...f, second_line: e.target.value }))} />
+          <input className="acct-input" placeholder={t('account.streetAddressPlaceholder')} value={form.street_address} onChange={e => setForm(f => ({ ...f, street_address: e.target.value }))} />
+          <input className="acct-input" placeholder={t('account.aptFloorSuite')} value={form.second_line} onChange={e => setForm(f => ({ ...f, second_line: e.target.value }))} />
           <div className="acct-add-form-row">
-            <input className="acct-input" placeholder="City *" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
-            <input className="acct-input acct-input-sm" placeholder="State" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} maxLength={2} />
-            <input className="acct-input acct-input-sm" placeholder="ZIP *" value={form.zip_code} onChange={e => setForm(f => ({ ...f, zip_code: e.target.value }))} />
+            <input className="acct-input" placeholder={t('account.cityPlaceholder')} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+            <input className="acct-input acct-input-sm" placeholder={t('account.statePlaceholder')} value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} maxLength={2} />
+            <input className="acct-input acct-input-sm" placeholder={t('account.zipPlaceholder')} value={form.zip_code} onChange={e => setForm(f => ({ ...f, zip_code: e.target.value }))} />
           </div>
-          <input className="acct-input" placeholder="Driver instructions (optional)" value={form.driver_instruction} onChange={e => setForm(f => ({ ...f, driver_instruction: e.target.value }))} />
+          <input className="acct-input" placeholder={t('account.driverInstructionsOptional')} value={form.driver_instruction} onChange={e => setForm(f => ({ ...f, driver_instruction: e.target.value }))} />
           {err && <p className="acct-inline-msg err">{err}</p>}
           <div className="acct-add-form-btns">
             <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
-              <Check size={14} /> {saving ? 'Saving…' : editingId ? 'Update Address' : 'Save Address'}
+              <Check size={14} /> {saving ? t('account.saving') : editingId ? t('account.updateAddress') : t('account.saveAddress')}
             </button>
-            <button className="btn btn-outline" onClick={cancelForm}>Cancel</button>
+            <button className="btn btn-outline" onClick={cancelForm}>{t('account.cancel')}</button>
           </div>
         </div>
       ) : (
         <>
           {addresses.length < 12 ? (
             <button className="acct-add-btn" onClick={() => setAdding(true)}>
-              <Plus size={15} /> Add New Address
+              <Plus size={15} /> {t('account.addNewAddress')}
               <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: 8 }}>
                 {addresses.length}/12
               </span>
             </button>
           ) : (
             <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '0.75rem 0' }}>
-              ℹ You've reached the 12-address limit. Remove one to add a new address.
+              {t('account.addressLimitReached')}
             </p>
           )}
         </>
@@ -953,6 +961,7 @@ function AddressesTab() {
 
 // ── Payment Methods Tab ───────────────────────────────────────────────────────
 function PaymentTab() {
+  const { t } = useTranslation();
   const [cards, setCards]     = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -986,8 +995,8 @@ function PaymentTab() {
       {cards.length === 0 && (
         <div className="acct-empty">
           <CreditCard size={36} className="acct-empty-icon" />
-          <p>No saved payment methods.</p>
-          <p className="acct-empty-sub">Payment methods are saved automatically after your first card checkout.</p>
+          <p>{t('account.noSavedPaymentMethods')}</p>
+          <p className="acct-empty-sub">{t('account.paymentMethodsAutoSaved')}</p>
         </div>
       )}
 
@@ -1000,16 +1009,16 @@ function PaymentTab() {
             </div>
             <div className="acct-card-body">
               <p className="acct-card-num">
-                {c.brand || 'Card'} •••• {c.last4 || '****'}
+                {c.brand || t('account.card')} •••• {c.last4 || '****'}
               </p>
               <p className="acct-card-exp muted">
-                Exp {c.expiry || '—'}
-                {c.is_default && <span className="acct-default-tag">Default</span>}
+                {t('account.exp', { expiry: c.expiry || '—' })}
+                {c.is_default && <span className="acct-default-tag">{t('account.default')}</span>}
               </p>
             </div>
             <div className="acct-addr-actions">
               {!c.is_default && (
-                <button className="acct-link-btn" onClick={() => handleSetDefault(c.id)}>Set Default</button>
+                <button className="acct-link-btn" onClick={() => handleSetDefault(c.id)}>{t('account.setDefault')}</button>
               )}
               <button className="acct-icon-btn danger" onClick={() => handleDelete(c.id)}><Trash2 size={14} /></button>
             </div>
@@ -1019,14 +1028,88 @@ function PaymentTab() {
 
       <div className="acct-payment-note">
         <Shield size={14} />
-        <span>Cards are stored securely via Authorize.net. New cards are added at checkout.</span>
+        <span>{t('account.cardsStoredSecurely')}</span>
       </div>
+    </div>
+  );
+}
+
+// ── Subscriptions Tab ("Habibi Weekly") ─────────────────────────────────────
+const SUB_STATUS_BADGE = { active: 'ok', paused: 'warn', cancelled: 'muted' };
+
+function SubscriptionsTab() {
+  const { t } = useTranslation();
+  const [subs, setSubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = () => {
+    subscriptionsAPI.getAll()
+      .then(data => setSubs(Array.isArray(data) ? data : []))
+      .catch(() => setSubs([]))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
+
+  const act = async (id, action) => {
+    setBusyId(id);
+    try {
+      const updated = await subscriptionsAPI[action](id);
+      setSubs(prev => prev.map(s => s.id === id ? updated : s));
+    } catch (_) {}
+    setBusyId(null);
+  };
+
+  if (loading) return <div className="acct-empty"><div className="acct-spinner" /></div>;
+
+  return (
+    <div className="acct-subs">
+      {subs.length === 0 && (
+        <div className="acct-empty">
+          <RefreshCw size={36} className="acct-empty-icon" />
+          <p>{t('account.noSubscriptions')}</p>
+          <p className="acct-empty-sub">{t('account.noSubscriptionsSub')}</p>
+        </div>
+      )}
+
+      {subs.map(s => {
+        const items = Array.isArray(s.items) ? s.items : [];
+        const itemsSummary = items.map(i => `${i.qty || i.quantity || 1}× ${i.name}`).join(', ');
+        return (
+          <div key={s.id} className="acct-sub-card">
+            <div className="acct-sub-hdr">
+              <p className="acct-sub-title">{t('account.everyNDays', { n: s.interval_days })}</p>
+              <span className={`acct-sub-badge ${SUB_STATUS_BADGE[s.status] || 'muted'}`}>{s.status}</span>
+            </div>
+            <p className="acct-sub-items">{itemsSummary}</p>
+            <p className="acct-sub-meta">
+              {s.status === 'active' && t('account.nextChargeOn', { date: new Date(s.next_charge_date).toLocaleDateString() })}
+              {s.card_last4 && ` · ${(s.card_brand || 'Card')} •••• ${s.card_last4}`}
+            </p>
+            {s.failed_attempts > 0 && s.status === 'active' && (
+              <p className="acct-sub-warn">{t('account.subFailedAttempts', { n: s.failed_attempts })}</p>
+            )}
+            <div className="acct-sub-actions">
+              {s.status === 'active' && (
+                <button className="acct-link-btn" disabled={busyId === s.id} onClick={() => act(s.id, 'pause')}>{t('account.pause')}</button>
+              )}
+              {s.status === 'paused' && (
+                <button className="acct-link-btn" disabled={busyId === s.id} onClick={() => act(s.id, 'resume')}>{t('account.resume')}</button>
+              )}
+              {s.status !== 'cancelled' && (
+                <button className="acct-link-btn danger" disabled={busyId === s.id} onClick={() => act(s.id, 'cancel')}>{t('account.cancelSubscription')}</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ── Favorites Tab ─────────────────────────────────────────────────────────────
 function FavoritesTab() {
+  const { t } = useTranslation();
   const [items, setItems]   = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1047,13 +1130,13 @@ function FavoritesTab() {
   return (
     <div>
       <p className="acct-section-title" style={{ marginBottom: '1rem' }}>
-        Saved Items <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>({items.length})</span>
+        {t('account.savedItemsCount', { count: items.length })}
       </p>
       {items.length === 0 ? (
         <div className="acct-empty">
           <Heart size={32} />
-          <p>No saved items yet.</p>
-          <a href="/menu" className="acct-link-btn">Browse the menu →</a>
+          <p>{t('account.noSavedItemsYet')}</p>
+          <a href="/menu" className="acct-link-btn">{t('account.browseTheMenu')}</a>
         </div>
       ) : (
         <div className="acct-fav-grid">
@@ -1063,10 +1146,10 @@ function FavoritesTab() {
                 <img src={f.image_url} alt={f.name || 'Item'} className="acct-fav-img" />
               )}
               <div className="acct-fav-info">
-                <p className="acct-fav-name">{f.name || 'Menu Item'}</p>
+                <p className="acct-fav-name">{f.name || t('account.menuItem')}</p>
                 {f.price && <p className="acct-fav-price">${parseFloat(f.price).toFixed(2)}</p>}
               </div>
-              <button className="acct-icon-btn danger" onClick={() => remove(f.menu_item_id)} title="Remove">
+              <button className="acct-icon-btn danger" onClick={() => remove(f.menu_item_id)} title={t('account.remove')}>
                 <Trash2 size={14} />
               </button>
             </div>
@@ -1080,6 +1163,7 @@ function FavoritesTab() {
 // ── Notifications Tab ─────────────────────────────────────────────────────────
 // ── Push Notification Permission Toggle ───────────────────────────────────────
 function PushNotificationToggle() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState(() => {
     if (!('Notification' in window)) return 'unsupported';
     return Notification.permission; // 'default' | 'granted' | 'denied'
@@ -1091,7 +1175,7 @@ function PushNotificationToggle() {
     setLoading(true); setMsg('');
     const { requestPushPermission, isFirebaseConfigured } = await import('../utils/pushNotifications.js');
     if (!isFirebaseConfigured()) {
-      setMsg('Push notifications are not yet configured on this server.');
+      setMsg(t('account.pushNotConfigured'));
       setLoading(false);
       return;
     }
@@ -1099,12 +1183,12 @@ function PushNotificationToggle() {
     setLoading(false);
     if (result.ok) {
       setStatus('granted');
-      setMsg('✓ Push notifications enabled! You will receive order updates in real time.');
+      setMsg(t('account.pushEnabledMsg'));
     } else if (result.reason === 'denied') {
       setStatus('denied');
-      setMsg('Notifications were blocked. Please enable them in your browser settings and try again.');
+      setMsg(t('account.pushBlockedMsg'));
     } else {
-      setMsg('Could not enable notifications. Please try again later.');
+      setMsg(t('account.pushCouldNotEnable'));
     }
   };
 
@@ -1119,12 +1203,12 @@ function PushNotificationToggle() {
     }}>
       <div>
         <p style={{ fontWeight: 600, fontSize: '0.88rem', margin: '0 0 0.2rem', color: 'var(--color-text-main)' }}>
-          🔔 Order Push Notifications
+          {t('account.orderPushNotifications')}
         </p>
         <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0 }}>
           {status === 'granted'
-            ? 'Enabled — you will be notified about your orders even when this tab is closed.'
-            : 'Get real-time order status updates directly in your browser.'}
+            ? t('account.pushEnabledDesc')
+            : t('account.pushGetRealtimeDesc')}
         </p>
         {msg && <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: status === 'granted' ? '#22c55e' : 'var(--color-text-muted)' }}>{msg}</p>}
       </div>
@@ -1135,20 +1219,21 @@ function PushNotificationToggle() {
           onClick={handleEnable}
           disabled={loading}
         >
-          {loading ? 'Enabling…' : 'Enable Notifications'}
+          {loading ? t('account.enabling') : t('account.enableNotifications')}
         </button>
       )}
       {status === 'granted' && (
-        <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 600 }}>✓ Active</span>
+        <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 600 }}>{t('account.active')}</span>
       )}
       {status === 'denied' && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Blocked in browser settings</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('account.blockedInBrowser')}</span>
       )}
     </div>
   );
 }
 
 function NotificationsTab() {
+  const { t } = useTranslation();
   const [notifs, setNotifs]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [smsOptIn, setSmsOptIn]     = useState(true);
@@ -1205,18 +1290,18 @@ function NotificationsTab() {
     <div className="acct-notifs">
       <div className="acct-notifs-hdr">
         <p className="acct-section-title">
-          Notifications {unread > 0 && <span className="notif-count-badge">{unread} new</span>}
+          {t('account.notifications')} {unread > 0 && <span className="notif-count-badge">{t('account.newCount', { count: unread })}</span>}
         </p>
         {unread > 0 && (
-          <button className="acct-link-btn" onClick={markAll}>Mark all read</button>
+          <button className="acct-link-btn" onClick={markAll}>{t('account.markAllRead')}</button>
         )}
       </div>
       {/* Communication preferences */}
       <div className="acct-comm-prefs">
         <div className="acct-comm-pref-row">
           <div>
-            <p className="acct-comm-pref-label">SMS Updates</p>
-            <p className="acct-comm-pref-sub">Order status texts and promotions</p>
+            <p className="acct-comm-pref-label">{t('account.smsUpdates')}</p>
+            <p className="acct-comm-pref-sub">{t('account.smsUpdatesDesc')}</p>
           </div>
           <button
             type="button"
@@ -1231,8 +1316,8 @@ function NotificationsTab() {
         </div>
         <div className="acct-comm-pref-row">
           <div>
-            <p className="acct-comm-pref-label">Email Updates</p>
-            <p className="acct-comm-pref-sub">Newsletters, offers, and announcements</p>
+            <p className="acct-comm-pref-label">{t('account.emailUpdates')}</p>
+            <p className="acct-comm-pref-sub">{t('account.emailUpdatesDesc')}</p>
           </div>
           <button
             type="button"
@@ -1253,7 +1338,7 @@ function NotificationsTab() {
       {notifs.length === 0 ? (
         <div className="acct-empty">
           <Bell size={32} />
-          <p>No notifications yet.</p>
+          <p>{t('account.noNotificationsYet')}</p>
         </div>
       ) : (
         <div className="acct-notifs-list">
@@ -1281,6 +1366,7 @@ function NotificationsTab() {
 
 // ── Referral Tab ──────────────────────────────────────────────────────────────
 function ReferralTab({ user }) {
+  const { t } = useTranslation();
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [applyCode, setApplyCode] = useState('');
@@ -1306,7 +1392,7 @@ function ReferralTab({ user }) {
 
   const shareCode = () => {
     if (!data?.code) return;
-    const shareText = `Use my code ${data.code} at Habibi Halal Express and we both earn rewards! Sign up at ${window.location.origin} and enter it in your account under "Refer a Friend."`;
+    const shareText = t('account.shareReferralText', { code: data.code, origin: window.location.origin });
     navigator.share({ title: 'Habibi Halal Express Referral', text: shareText, url: window.location.origin })
       .catch(() => {}); // user cancelled the share sheet — not an error
   };
@@ -1317,12 +1403,12 @@ function ReferralTab({ user }) {
     setApplying(true); setApplyErr(''); setApplyMsg('');
     try {
       const res = await referralAPI.apply(applyCode.trim().toUpperCase());
-      setApplyMsg(`Applied! You were referred by ${res.referrer_name}.`);
+      setApplyMsg(t('account.appliedReferredBy', { name: res.referrer_name }));
       setApplyCode('');
       const refreshed = await referralAPI.getMe().catch(() => null);
       if (refreshed) setData(refreshed);
     } catch (err) {
-      setApplyErr(err.message || 'Failed to apply referral code.');
+      setApplyErr(err.message || t('account.errFailedApplyReferral'));
     } finally {
       setApplying(false);
     }
@@ -1332,24 +1418,24 @@ function ReferralTab({ user }) {
 
   return (
     <div className="acct-referral">
-      <p className="acct-section-title">Refer a Friend</p>
-      <p className="acct-section-sub">Share your code and earn loyalty points when friends place their first order.</p>
+      <p className="acct-section-title">{t('account.referAFriend')}</p>
+      <p className="acct-section-sub">{t('account.referralSub')}</p>
 
       {/* Your code */}
       <div className="referral-code-card">
-        <p className="referral-code-label">YOUR REFERRAL CODE</p>
+        <p className="referral-code-label">{t('account.yourReferralCode')}</p>
         <div className="referral-code-row">
           <span className="referral-code">{data?.code || '—'}</span>
           <button className="btn btn-outline btn-sm" onClick={copyCode} disabled={!data?.code}>
-            {copied ? <><Check size={13} /> Copied!</> : 'Copy Code'}
+            {copied ? <><Check size={13} /> {t('account.copied')}</> : t('account.copyCode')}
           </button>
           {typeof navigator !== 'undefined' && navigator.share && (
             <button className="btn btn-outline btn-sm" onClick={shareCode} disabled={!data?.code}>
-              <Share2 size={13} /> Share
+              <Share2 size={13} /> {t('account.share')}
             </button>
           )}
         </div>
-        <p className="referral-code-hint">Share this with friends so they can apply it at signup or in their account.</p>
+        <p className="referral-code-hint">{t('account.referralCodeHint')}</p>
       </div>
 
       {/* Stats */}
@@ -1357,15 +1443,15 @@ function ReferralTab({ user }) {
         <div className="referral-stats">
           <div className="referral-stat">
             <span className="rs-value">{data.stats.total_invited}</span>
-            <span className="rs-label">Invited</span>
+            <span className="rs-label">{t('account.invited')}</span>
           </div>
           <div className="referral-stat">
             <span className="rs-value">{data.stats.total_completed}</span>
-            <span className="rs-label">Completed</span>
+            <span className="rs-label">{t('account.completed')}</span>
           </div>
           <div className="referral-stat">
             <span className="rs-value">{data.stats.total_points}</span>
-            <span className="rs-label">Points Earned</span>
+            <span className="rs-label">{t('account.pointsEarned')}</span>
           </div>
         </div>
       )}
@@ -1374,14 +1460,14 @@ function ReferralTab({ user }) {
       {data?.my_referral && (
         <div className="referral-applied-by">
           <Check size={14} style={{ color: '#22c55e' }} />
-          <span>You were referred by <strong>{data.my_referral.referrer_name}</strong>.</span>
+          <span>{t('account.youWereReferredBy', { name: data.my_referral.referrer_name })}</span>
         </div>
       )}
 
       {/* Apply a code */}
       {!data?.my_referral && (
         <div className="referral-apply-section">
-          <p className="referral-apply-label">Have a friend's code? Apply it here:</p>
+          <p className="referral-apply-label">{t('account.haveAFriendsCode')}</p>
           <form onSubmit={handleApply} className="referral-apply-form">
             <input
               className="acct-input"
@@ -1392,7 +1478,7 @@ function ReferralTab({ user }) {
               style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}
             />
             <button className="btn btn-primary btn-sm" type="submit" disabled={applying || !applyCode.trim()}>
-              {applying ? 'Applying…' : 'Apply'}
+              {applying ? t('account.applying') : t('account.apply')}
             </button>
           </form>
           {applyMsg && <p className="referral-msg success">{applyMsg}</p>}
@@ -1403,10 +1489,10 @@ function ReferralTab({ user }) {
       {/* History */}
       {data?.referrals?.length > 0 && (
         <div className="referral-history">
-          <p className="referral-history-title">Referral History</p>
+          <p className="referral-history-title">{t('account.referralHistory')}</p>
           <table className="acct-table">
             <thead>
-              <tr><th>Email</th><th>Status</th><th>Points</th><th>Date</th></tr>
+              <tr><th>{t('account.email')}</th><th>{t('account.status')}</th><th>{t('account.points')}</th><th>{t('account.date')}</th></tr>
             </thead>
             <tbody>
               {data.referrals.map((r, i) => (
@@ -1429,11 +1515,11 @@ function ReferralTab({ user }) {
 
 // ── Main Account Page ──────────────────────────────────────────────────────────
 const Account = () => {
+  const { t } = useTranslation();
   const { user, isLoggedIn, logout, loading, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab');
-  const validTabs = TABS.map(t => t.id);
-  const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'profile');
+  const [activeTab, setActiveTab] = useState(TAB_IDS.includes(initialTab) ? initialTab : 'profile');
 
   if (loading) return null;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
@@ -1443,26 +1529,26 @@ const Account = () => {
       <section className="acct-hero">
         <div className="acct-hero-overlay" />
         <div className="container acct-hero-content">
-          <p className="acct-eyebrow">MY ACCOUNT</p>
+          <p className="acct-eyebrow">{t('account.myAccount')}</p>
           <h1 className="acct-hero-title">
-            Welcome back, <span className="text-primary">{(user?.name || '').split(' ')[0] || 'Friend'}</span>
+            {t('account.welcomeBack')} <span className="text-primary">{(user?.name || '').split(' ')[0] || t('common.friend')}</span>
           </h1>
-          <p className="acct-hero-sub">Manage your profile, track orders, and update your preferences.</p>
+          <p className="acct-hero-sub">{t('account.heroSub')}</p>
         </div>
       </section>
 
       <section className="section">
         <div className="container acct-layout">
           <nav className="acct-nav">
-            {TABS.map(tab => (
+            {TAB_IDS.map(id => (
               <button
-                key={tab.id}
-                className={`acct-nav-btn ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
+                key={id}
+                className={`acct-nav-btn ${activeTab === id ? 'active' : ''}`}
+                onClick={() => setActiveTab(id)}
               >
-                {tab.icon}
-                <span>{tab.label}</span>
-                {activeTab === tab.id && <ChevronRight size={14} className="acct-nav-arrow" />}
+                {TAB_ICONS[id]}
+                <span>{t(`account.tabs.${id}`)}</span>
+                {activeTab === id && <ChevronRight size={14} className="acct-nav-arrow" />}
               </button>
             ))}
           </nav>
@@ -1472,6 +1558,7 @@ const Account = () => {
             {activeTab === 'orders'        && <OrdersTab />}
             {activeTab === 'addresses'     && <AddressesTab />}
             {activeTab === 'payment'       && <PaymentTab />}
+            {activeTab === 'subscriptions' && <SubscriptionsTab />}
             {activeTab === 'notifications' && <NotificationsTab />}
             {activeTab === 'favorites'     && <FavoritesTab />}
             {activeTab === 'referral'      && <ReferralTab user={user} />}

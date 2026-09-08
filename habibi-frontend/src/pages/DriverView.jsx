@@ -632,7 +632,7 @@ export default function DriverView() {
 
   useEffect(() => {
     if (!driverId) return;
-    const socket = io(API_BASE, { transports: ['websocket', 'polling'], reconnectionAttempts: 10 });
+    const socket = io(API_BASE, { transports: ['websocket'], reconnectionAttempts: 10 });
     socketRef.current = socket;
 
     socket.on('connect', () => {

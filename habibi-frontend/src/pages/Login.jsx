@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import LegalModal from '../components/LegalModal';
 import './Login.css';
@@ -24,6 +25,7 @@ function AppleIcon() {
 }
 
 const Login = () => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,7 +44,7 @@ const Login = () => {
     try {
       const { isFirebaseConfigured, getFirebaseAuth } = await import('../utils/firebase');
       if (!isFirebaseConfigured()) {
-        setError('Social login is not configured yet. Please use email & password.');
+        setError(t('auth.errSocialNotConfigured'));
         return;
       }
       const auth = await getFirebaseAuth();
@@ -71,7 +73,7 @@ const Login = () => {
         body: JSON.stringify({ id_token: idToken }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Social login failed.');
+      if (!res.ok) throw new Error(data.message || t('auth.errSocialLoginFailed'));
       if (data?.birthday_coupon) {
         localStorage.setItem('habibi_birthday_coupon', JSON.stringify(data.birthday_coupon));
       }
@@ -81,7 +83,7 @@ const Login = () => {
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         // User closed popup — no error needed
       } else {
-        setError(err.message || `${provider} login failed. Please try again.`);
+        setError(err.message || t('auth.errProviderLoginFailed', { provider }));
       }
     } finally {
       setLoading(false);
@@ -110,9 +112,9 @@ const Login = () => {
       navigate(redirectTo);
     } catch (err) {
       if (err.requiresVerification) {
-        setError('Your email is not verified yet. Check your inbox for the verification link, or sign up again to get a new one.');
+        setError(t('auth.errEmailNotVerified'));
       } else {
-        setError(err.message || 'Login failed. Please check your credentials.');
+        setError(err.message || t('auth.errLoginFailed'));
       }
     } finally {
       setLoading(false);
@@ -123,19 +125,25 @@ const Login = () => {
     e.preventDefault();
     setError('');
     if (!agreeTerms) {
-      setError('You must agree to the Terms of Service and Privacy Policy to create an account.');
+      setError(t('auth.errMustAgreeToTerms'));
       return;
     }
     setLoading(true);
     try {
-      await register(name, email, password);
+      const result = await register(name, email, password, { sms_consent: agreeSms });
       // Switch to login tab — keep email pre-filled so user doesn't have to retype
       setTab('login');
       setPassword('');
       setName('');
-      setSuccessMsg('Account created! Please log in below.');
+      if (result?.requiresVerification) {
+        setSuccessMsg(t('auth.accountCreatedCheckEmail'));
+      } else if (result?.requiresPhoneVerification) {
+        setSuccessMsg(t('auth.accountCreatedCheckPhone'));
+      } else {
+        setSuccessMsg(t('auth.accountCreatedPleaseLoginBelow'));
+      }
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || t('auth.errRegistrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -165,17 +173,17 @@ const Login = () => {
           {/* Tabs */}
           <div className="login-tabs">
             <button className={`tab-btn ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); }}>
-              LOGIN
+              {t('auth.login')}
             </button>
             <button className={`tab-btn ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setAgreeTerms(false); setAgreeSms(false); }}>
-              SIGN UP
+              {t('auth.signUp')}
             </button>
           </div>
           <div className="login-divider-line" />
 
           {(fromSignup || successMsg) && (
             <div className="login-success">
-              ✓ {successMsg || 'Account created! Please log in to continue.'}
+              ✓ {successMsg || t('auth.accountCreatedPleaseLogin')}
             </div>
           )}
 
@@ -187,11 +195,11 @@ const Login = () => {
 
           {tab === 'login' ? (
             <form onSubmit={handleLogin}>
-              <h2 className="login-title">Welcome Back</h2>
-              <p className="login-subtitle">Please enter your details to access your account.</p>
+              <h2 className="login-title">{t('auth.welcomeBack')}</h2>
+              <p className="login-subtitle">{t('auth.loginSubtitle')}</p>
 
               <div className="form-group mt-8">
-                <label className="form-label">EMAIL OR PHONE NUMBER</label>
+                <label className="form-label">{t('auth.emailOrPhone')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -205,8 +213,8 @@ const Login = () => {
 
               <div className="form-group mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="form-label">PASSWORD</label>
-                  <Link to="/forgot-password" className="text-primary text-xs hover-underline">FORGOT PASSWORD?</Link>
+                  <label className="form-label">{t('auth.password')}</label>
+                  <Link to="/forgot-password" className="text-primary text-xs hover-underline">{t('auth.forgotPasswordShort')}</Link>
                 </div>
                 <input
                   type="password"
@@ -220,36 +228,36 @@ const Login = () => {
               </div>
 
               <button type="submit" className="btn btn-primary login-btn mt-8" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? t('auth.signingIn') : t('auth.signIn')}
               </button>
 
               <div className="or-divider">
                 <span className="or-line" />
-                <span className="or-text">OR CONTINUE WITH</span>
+                <span className="or-text">{t('auth.orContinueWith')}</span>
                 <span className="or-line" />
               </div>
 
               <div className="social-logins">
                 <button type="button" className="social-login-btn social-google-btn" onClick={() => handleSocialLogin('Google')}>
-                  <GoogleIcon /> Continue with Google
+                  <GoogleIcon /> {t('auth.continueWithGoogle')}
                 </button>
                 <button type="button" className="social-login-btn social-apple-btn" onClick={() => handleSocialLogin('Apple')}>
-                  <AppleIcon /> Continue with Apple
+                  <AppleIcon /> {t('auth.continueWithApple')}
                 </button>
               </div>
               {socialToast && <p className="social-coming-soon">{socialToast}</p>}
             </form>
           ) : (
             <form onSubmit={handleRegister}>
-              <h2 className="login-title">Create Account</h2>
-              <p className="login-subtitle">Sign up to order, track your meals, and earn rewards.</p>
+              <h2 className="login-title">{t('auth.createAccount')}</h2>
+              <p className="login-subtitle">{t('auth.signUpSubtitle')}</p>
 
               <div className="form-group mt-8">
-                <label className="form-label">FULL NAME</label>
+                <label className="form-label">{t('auth.fullName')}</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Your Name"
+                  placeholder={t('auth.yourName')}
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
@@ -257,7 +265,7 @@ const Login = () => {
               </div>
 
               <div className="form-group mt-4">
-                <label className="form-label">EMAIL OR PHONE NUMBER</label>
+                <label className="form-label">{t('auth.emailOrPhone')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -270,11 +278,11 @@ const Login = () => {
               </div>
 
               <div className="form-group mt-4">
-                <label className="form-label">PASSWORD</label>
+                <label className="form-label">{t('auth.password')}</label>
                 <input
                   type="password"
                   className="form-input"
-                  placeholder="Min. 8 characters"
+                  placeholder={t('auth.min8Chars')}
                   autoComplete="new-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -292,10 +300,10 @@ const Login = () => {
                     onChange={e => setAgreeTerms(e.target.checked)}
                   />
                   <span>
-                    I agree to the{' '}
-                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('terms')}>Terms of Service</button>,{' '}
-                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('privacy')}>Privacy Policy</button>, and{' '}
-                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('accessibility')}>Accessibility Statement</button>. <span className="login-req">*</span>
+                    {t('auth.agreeToTermsPrefix')}{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('terms')}>{t('auth.termsOfServiceLink')}</button>,{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('privacy')}>{t('auth.privacyPolicyLink')}</button>, {t('auth.andLink')}{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('accessibility')}>{t('auth.accessibilityStatement')}</button>. <span className="login-req">*</span>
                   </span>
                 </label>
                 <label className="login-consent-row">
@@ -305,28 +313,28 @@ const Login = () => {
                     onChange={e => setAgreeSms(e.target.checked)}
                   />
                   <span>
-                    I consent to receive recurring SMS order updates from Habibi Halal Express. Reply <strong>STOP</strong> to opt out.{' '}
-                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('sms')}>SMS Terms</button>.
+                    {t('auth.smsConsentPrefix')} <strong>{t('auth.smsConsentStop')}</strong> {t('auth.smsConsentSuffix')}{' '}
+                    <button type="button" className="login-terms-link" onClick={() => setLegalModal('sms')}>{t('auth.smsTermsLink')}</button>.
                   </span>
                 </label>
               </div>
 
               <button type="submit" className="btn btn-primary login-btn" disabled={loading || !agreeTerms}>
-                {loading ? 'Creating Account...' : 'Create Account'}
+                {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
               </button>
 
               <div className="or-divider">
                 <span className="or-line" />
-                <span className="or-text">OR CONTINUE WITH</span>
+                <span className="or-text">{t('auth.orContinueWith')}</span>
                 <span className="or-line" />
               </div>
 
               <div className="social-logins">
                 <button type="button" className="social-login-btn social-google-btn" onClick={() => handleSocialLogin('Google')}>
-                  <GoogleIcon /> Continue with Google
+                  <GoogleIcon /> {t('auth.continueWithGoogle')}
                 </button>
                 <button type="button" className="social-login-btn social-apple-btn" onClick={() => handleSocialLogin('Apple')}>
-                  <AppleIcon /> Continue with Apple
+                  <AppleIcon /> {t('auth.continueWithApple')}
                 </button>
               </div>
               {socialToast && <p className="social-coming-soon">{socialToast}</p>}
@@ -337,11 +345,11 @@ const Login = () => {
 
       {/* Footer */}
       <div className="login-footer">
-        <span>© 2024 Habibi Halal Express. Artisanal Halal Dining.</span>
+        <span>{t('auth.footerTagline')}</span>
         <div className="flex gap-6">
-          <Link to="/health-safety">OUR STANDARDS</Link>
-          <Link to="/privacy-policy">PRIVACY POLICY</Link>
-          <Link to="/terms">TERMS OF SERVICE</Link>
+          <Link to="/health-safety">{t('auth.ourStandardsFooter')}</Link>
+          <Link to="/privacy-policy">{t('auth.privacyPolicyFooter')}</Link>
+          <Link to="/terms">{t('auth.termsOfServiceFooter')}</Link>
         </div>
       </div>
 

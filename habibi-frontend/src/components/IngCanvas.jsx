@@ -38,12 +38,12 @@ const CO_ING_DB = {
   'chicken-kabab':  { zone:'protein', src:'/images/byo/ing/chicken-kabab.webp',    z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
   'beef-kabab':     { zone:'protein', src:'/images/byo/ing/beef-kabab.webp',       z:4, pos:{ familyTray:[{x:34,y:44,w:22},{x:66,y:44,w:22}], platter:[{x:32,y:44,w:28},{x:68,y:44,w:28}], hero:[{x:28,y:44,w:44},{x:72,y:44,w:44}], standard:[{x:36,y:44,w:36},{x:64,y:44,w:36}], compact:[{x:36,y:44,w:34},{x:64,y:44,w:34}], wrap:[{x:30,y:44,w:42},{x:70,y:44,w:42}] } },
   'philly-steak':   { zone:'protein', src:'/images/byo/ing/philly-steak.webp',     z:4, showAsideWhen:'roundBun', hotDogPos:[{x:50,y:70,w:36}], pos:{ familyTray:[{x:50,y:44,w:26}], platter:[{x:50,y:44,w:26}], hero:[{x:50,y:39,w:28}], standard:[{x:50,y:44,w:37}], compact:[{x:50,y:44,w:38}], wrap:[{x:50,y:44,w:42}] } },
-  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', hotDogPos:[{x:49,y:63,w:50}], srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:38}], hero:[{x:50,y:37,w:32}], standard:[{x:50,y:44,w:42}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:50}] } },
+  falafel:          { zone:'protein', src:'/images/byo/ing/falafel-6.webp', hotDogPos:[{x:49,y:63,w:50}], srcByQty:{ low:'/images/byo/ing/falafel-3.webp', regular:'/images/byo/ing/falafel-6.webp', extra:'/images/byo/ing/falafel-9.webp', double:'/images/byo/ing/falafel-12.webp' }, z:4, pos:{ familyTray:[{x:65,y:50,w:38,rot:-1.8,final:true}], platter:[{x:50,y:44,w:38}], hero:[{x:50,y:37,w:32}], standard:[{x:50,y:44,w:42}], compact:[{x:50,y:44,w:44}], wrap:[{x:50,y:44,w:50}] } },
   'fish-fillet':    { zone:'protein', src:'/images/byo/ing/fish-fillet2.webp',      z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:50,y:44,w:51}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:66}] } },
   shrimp:           { zone:'protein', src:'/images/byo/ing/shrimp.webp',            z:4, hotDogPos:[{x:25,y:62,w:24},{x:38,y:63,w:24}], pos:{ familyTray:[{x:34,y:43,w:13},{x:66,y:45,w:13}], platter:[{x:32,y:43,w:13},{x:68,y:45,w:13}], hero:[{x:28,y:36,w:20},{x:72,y:36,w:20}], standard:[{x:36,y:43,w:17},{x:64,y:45,w:17}], compact:[{x:57,y:43,w:16},{x:44,y:42,w:18}], wrap:[{x:30,y:43,w:17},{x:70,y:45,w:17}] } },
   tuna:             { zone:'protein', src:'/images/byo/ing/tuna.webp',              z:4, pos:{ familyTray:[{x:50,y:44,w:38}], platter:[{x:50,y:44,w:40}], hero:[{x:51,y:34,w:39}], standard:[{x:50,y:44,w:58}], compact:[{x:50,y:44,w:60}], wrap:[{x:50,y:44,w:64}] } },
   'beef-burger':    { zone:'protein', src:'/images/byo/ing/beef-burger2.webp',      z:4, hotDogPos:[{x:50,y:62,w:24}], pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:55,y:44,w:20}], hero:[{x:50,y:39,w:28}], standard:[{x:50,y:44,w:28}], compact:[{x:50,y:44,w:28}], wrap:[{x:50,y:44,w:32}] } },
-  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, showAsideWhen:'burger', pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:34}], hero:[{x:50,y:41,w:35}], standard:[{x:50,y:44,w:56}], compact:[{x:50,y:44,w:58}], wrap:[{x:50,y:44,w:58}] } },
+  'chicken-burger': { zone:'protein', src:'/images/byo/ing/chicken-burger.webp',   z:4, showAsideWhen:'roundBun', pos:{ familyTray:[{x:50,y:44,w:34}], platter:[{x:50,y:44,w:34}], hero:[{x:50,y:41,w:35}], standard:[{x:50,y:44,w:56}], compact:[{x:50,y:44,w:58}], wrap:[{x:50,y:44,w:58}] } },
   'egg-fried':      { zone:'protein', src:'/images/byo/ing/egg-fried.webp',        z:4, pos:{ familyTray:[{x:34,y:44,w:14,rot:12},{x:66,y:44,w:14,rot:-9}], platter:[{x:32,y:44,w:18,rot:10},{x:68,y:43,w:18,rot:-8}], hero:[{x:22,y:37,w:30,rot:10},{x:70,y:43,w:29,rot:-9}], standard:[{x:36,y:44,w:28,rot:10},{x:64,y:43,w:27,rot:-8}], compact:[{x:36,y:44,w:28,rot:8},{x:64,y:44,w:27,rot:-7}], wrap:[{x:31,y:44,w:32,rot:12},{x:69,y:43,w:31,rot:-10}] } },
   'egg-scrambled':  { zone:'protein', src:'/images/byo/ing/egg-scrambled.webp',    z:4, hotDogPos:[{x:50,y:70,w:47}], pos:{ familyTray:[{x:50,y:44,w:44}], platter:[{x:50,y:44,w:44}], hero:[{x:76,y:39,w:42}], standard:[{x:50,y:44,w:62}], compact:[{x:50,y:44,w:64}], wrap:[{x:50,y:44,w:66}] } },
 
@@ -59,10 +59,10 @@ const CO_ING_DB = {
   /* Rice: square yellow basmati for flat trays; platter uses same dense image, bread bases use elongated pile */
   rice:     { zone:'rice', src:'/images/byo/ing/rice.webp',
     srcByFamily: { familyTray:'/images/byo/ing/rice-tray.webp', platter:'/images/byo/ing/rice-tray.webp' },
-    z:2, pos:{ familyTray:[{x:34,y:50,w:40,final:true}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
+    z:2, pos:{ familyTray:[{x:35,y:50,w:45,final:true}], platter:[{x:50,y:50,w:22}], hero:[{x:50,y:54,w:62}], standard:[{x:50,y:54,w:50}], compact:[{x:50,y:54,w:48}], wrap:[{x:50,y:54,w:60}] } },
   /* Onions: ~2" slice — fewer, centred for compact round bases */
   onions:   { zone:'veg', src:'/images/byo/ing/onion2.webp',    z:5, hotDogPos:[{x:30,y:44,w:31},{x:44,y:40,w:32}], pos:{
-    familyTray:[{x:48,y:36,w:28,rot:-3.5,final:true},{x:40,y:61,w:24,rot:7,final:true}],
+    familyTray:[{x:39,y:64,w:19,final:true},{x:60,y:64,w:18,rot:7,final:true}],
     platter:   [{x:22,y:59,w:12},{x:40,y:64,w:12},{x:58,y:58,w:11},{x:76,y:64,w:11}],
     hero:      [{x:40,y:44,w:29},{x:59,y:45,w:35}],
     standard:  [{x:33,y:44,w:18},{x:72,y:45,w:18},{x:52,y:42,w:18}],
@@ -296,8 +296,7 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
     const when = CO_ING_DB[id]?.showAsideWhen;
     if (!when) return false;
     if (when === 'hotdog') return isHotDog;
-    if (when === 'burger') return base?.id === '39g';
-    /* Philly Steak specifically: a whole steak slab centered on any flat
+    /* A whole patty (chicken burger, philly steak) centered on any flat
        round bread (Bagel/Roll/Burger Bun — all family 'standard') reads
        as a burger patty, not a stuffed sandwich. Show it as a side item
        on all of those, not just Burger Bun. */
@@ -631,8 +630,10 @@ function IngCanvas({ base, cfg, onReset, proteinOpts, sauceOpts }) {
               {/* Sauce drizzle — SVG for realistic glossy look */}
               {onFoodSauces.map((sauce, i) => {
                 const qty = cfg.sauces[sauce.id]?.qty || 'regular';
-                /* Width: ~35% for bread, 40% for flat bases, 53% for hot dog */
-                const drizzleW = isFlatBase ? 40 : isHotDog ? 53 : 35;
+                /* Width: ~35% for bread, 52% for flat bases (widened per a real
+                   on-canvas measurement so drizzle reads as generous rather than
+                   a thin line across a full tray), 53% for hot dog */
+                const drizzleW = isFlatBase ? 52 : isHotDog ? 53 : 35;
                 /* Position: flat bases fixed at left=20%, hotdog fixed at left=21.5%, bread centered in zone */
                 const protCx = isFlatBase
                   ? (PROT_ZONE[0] + PROT_ZONE[1]) / 2

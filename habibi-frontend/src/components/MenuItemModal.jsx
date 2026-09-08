@@ -1,9 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Minus, Plus, Heart, Star, Flame, Share2, Check } from 'lucide-react';
-import { menuAPI, favoritesAPI } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import { menuAPI, favoritesAPI, waitlistAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
+
+// Arabic name/description are optional per-item admin fields -- always fall
+// back to English, whether blank (not filled in yet) or when browsing in
+// English. Display-only: the cart/order line item itself always keeps the
+// English name (see cleanName below), so kitchen/order records stay English
+// regardless of what language the customer browsed in.
+const localizedName = (item, lang) => (lang === 'ar' && item?.name_ar) ? item.name_ar : (item?.name || item?.title || '');
+const localizedDesc = (item, lang) => (lang === 'ar' && item?.description_ar) ? item.description_ar : (item?.description || '');
 
 /* ── Universal addon groups: Sauces / Make it a Meal! / Add a Drink / More Meat ──
    These 4 groups appear on every item (client spec). ── */
@@ -70,6 +79,7 @@ const toWebp = url =>
 
 export default function MenuItemModal({
   itemId,
+  soldOut = false,
   onClose,
   onSelectItem,
   // Edit-mode props — when set, the modal pre-fills with existing selections and replaces the cart item
@@ -82,10 +92,13 @@ export default function MenuItemModal({
   // When provided, the built cart-line item(s) are handed to this callback instead of going
   // straight into the shopping cart (used by Group Order, which stores its own item list).
   onAddOverride    = null,
-  addLabel         = 'Add to Cart',
+  addLabel         = null,
 }) {
+  const { t, i18n } = useTranslation();
   const { addItem, removeItem } = useCart();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
+  const isDefaultAddLabel = !addLabel;
+  const displayAddLabel = addLabel || t('menuModal.addToCart');
 
   const [item,           setItem]           = useState(null);
   const [modifiers,      setModifiers]      = useState({ choice_groups: [], addon_groups: [] });
@@ -111,6 +124,13 @@ export default function MenuItemModal({
   const [moreTacosSel, setMoreTacosSel] = useState({});
   const [quotaError,   setQuotaError]   = useState('');
 
+  // Sold-out waitlist state
+  const [waitlistEmail,      setWaitlistEmail]      = useState('');
+  const [waitlistPhone,      setWaitlistPhone]       = useState('');
+  const [waitlistSubmitting, setWaitlistSubmitting]  = useState(false);
+  const [waitlistJoined,     setWaitlistJoined]      = useState(false);
+  const [waitlistError,      setWaitlistError]       = useState('');
+
   /* ── Load item + modifiers ── */
   useEffect(() => {
     if (!itemId) return;
@@ -123,6 +143,10 @@ export default function MenuItemModal({
     setQty(initialQty   || 1);
     setAdded(false);
     setQuotaSel({}); setMoreTacosSel({}); setQuotaError('');
+    setWaitlistEmail(user?.email || '');
+    setWaitlistPhone('');
+    setWaitlistJoined(false);
+    setWaitlistError('');
 
     Promise.all([menuAPI.getById(itemId), menuAPI.getModifiers(itemId), menuAPI.getAll()])
       .then(([itemData, mods, all]) => {
@@ -238,6 +262,8 @@ export default function MenuItemModal({
   /* ── Price calculation ── */
   const basePrice  = parseFloat(item?.price || 0);
   const cleanName  = (item?.name || item?.title || '').replace(/\s*\(.*$/, '').trim();
+  const displayName = (localizedName(item, i18n.language) || cleanName).replace(/\s*\(.*$/, '').trim();
+  const displayDesc  = localizedDesc(item, i18n.language);
   let choiceExtra = 0;
   (modifiers.choice_groups || []).forEach(cg => {
     const opt = cg.options?.find(o => o.id === choiceSel[cg.id]);
@@ -330,7 +356,7 @@ export default function MenuItemModal({
   // MenuItemPage's existing share button.
   const handleShare = async () => {
     const url = window.location.href;
-    const name = cleanName || 'Menu Item';
+    const name = displayName || 'Menu Item';
     if (navigator.share) {
       try { await navigator.share({ title: `${name} — Habibi Halal Express`, url }); } catch (_) {}
     } else {
@@ -338,6 +364,27 @@ export default function MenuItemModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     }
+  };
+
+  /* ── Sold-out waitlist ── */
+  const handleJoinWaitlist = async () => {
+    setWaitlistError('');
+    if (!waitlistEmail.trim() && !waitlistPhone.trim()) {
+      setWaitlistError(t('menuModal.waitlistNeedContact'));
+      return;
+    }
+    setWaitlistSubmitting(true);
+    try {
+      await waitlistAPI.join({
+        menu_item_id: item.id,
+        email: waitlistEmail.trim() || undefined,
+        phone: waitlistPhone.trim() || undefined,
+      });
+      setWaitlistJoined(true);
+    } catch (err) {
+      setWaitlistError(err.message || t('menuModal.waitlistError'));
+    }
+    setWaitlistSubmitting(false);
   };
 
   /* ── Add to cart ── */
@@ -570,7 +617,7 @@ export default function MenuItemModal({
     <div className="mim-overlay" onClick={onClose}>
       <div className="mim-modal" onClick={e => e.stopPropagation()}>
 
-        <button className="mim-close" onClick={onClose} aria-label="Close">
+        <button className="mim-close" onClick={onClose} aria-label={t('menuModal.close')}>
           <X size={18} />
         </button>
 
@@ -585,7 +632,7 @@ export default function MenuItemModal({
               <>
                 <img
                   src={item?.image || item?.image_url || categoryFallback(item)}
-                  alt={cleanName}
+                  alt={displayName}
                   className="mim-img"
                   onError={e => { e.target.onerror = null; e.target.src = categoryFallback(item); }}
                 />
@@ -594,7 +641,7 @@ export default function MenuItemModal({
                 <div className="mim-img-top">
                   {(item?.is_popular || item?.is_featured) && (
                     <span className="mim-top-badge">
-                      <Flame size={11} /> #1 Most Liked
+                      <Flame size={11} /> {t('menuModal.mostLiked')}
                     </span>
                   )}
                 </div>
@@ -603,7 +650,7 @@ export default function MenuItemModal({
                   <button
                     className={`mim-fav-btn${isFav ? ' active' : ''}`}
                     onClick={toggleFav}
-                    aria-label="Save to favourites"
+                    aria-label={t('menuModal.saveToFavourites')}
                   >
                     <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
                   </button>
@@ -612,10 +659,10 @@ export default function MenuItemModal({
                 <button
                   className={`mim-share-btn${copied ? ' mim-share-btn--copied' : ''}`}
                   onClick={handleShare}
-                  aria-label="Share this item"
+                  aria-label={t('menuModal.shareThisItem')}
                 >
                   {copied ? <Check size={15} /> : <Share2 size={15} />}
-                  <span>{copied ? 'Copied!' : 'Share'}</span>
+                  <span>{copied ? t('menuModal.copied') : t('menuModal.share')}</span>
                 </button>
               </>
             )}
@@ -628,14 +675,14 @@ export default function MenuItemModal({
             {!loading && item && (
               <div className="mim-item-hd">
                 <div className="mim-item-pills">
-                  <span className="mim-halal-pill">Halal</span>
-                  {item.is_spicy && <span className="mim-spicy-pill">🌶 Spicy</span>}
+                  <span className="mim-halal-pill">{t('menuModal.halal')}</span>
+                  {item.is_spicy && <span className="mim-spicy-pill">🌶 {t('menu.spicy')}</span>}
                 </div>
                 <div className="mim-name-row">
-                  <h2 className="mim-name">{cleanName}</h2>
+                  <h2 className="mim-name">{displayName}</h2>
                   <span className="mim-price">${basePrice.toFixed(2)}</span>
                 </div>
-                {item.description && <p className="mim-desc">{item.description}</p>}
+                {displayDesc && <p className="mim-desc">{displayDesc}</p>}
                 <div className="mim-stars-row">
                   {[1,2,3,4,5].map(s => (
                     <Star key={s} size={12} fill="#F97316" stroke="#F97316" />
@@ -652,6 +699,43 @@ export default function MenuItemModal({
                 <div className="mim-skel mim-skel--line" />
                 <div className="mim-skel mim-skel--line short" />
                 <div className="mim-skel mim-skel--block" />
+              </div>
+            ) : soldOut ? (
+              /* ════════ SOLD OUT — waitlist form instead of add-to-cart ════════ */
+              <div className="mim-section mim-waitlist-section">
+                <span className="mim-soldout-pill">{t('menu.soldOut')}</span>
+                {waitlistJoined ? (
+                  <p className="mim-waitlist-joined">{t('menuModal.waitlistJoined')}</p>
+                ) : (
+                  <>
+                    <p className="mim-waitlist-prompt">{t('menuModal.waitlistPrompt')}</p>
+                    <div className="mim-waitlist-fields">
+                      <input
+                        type="email"
+                        className="mim-waitlist-input"
+                        placeholder={t('menuModal.waitlistEmailPlaceholder')}
+                        value={waitlistEmail}
+                        onChange={e => setWaitlistEmail(e.target.value)}
+                      />
+                      <input
+                        type="tel"
+                        className="mim-waitlist-input"
+                        placeholder={t('menuModal.waitlistPhonePlaceholder')}
+                        value={waitlistPhone}
+                        onChange={e => setWaitlistPhone(e.target.value)}
+                      />
+                    </div>
+                    {waitlistError && <p className="mim-waitlist-error">{waitlistError}</p>}
+                    <button
+                      type="button"
+                      className="mim-waitlist-btn"
+                      onClick={handleJoinWaitlist}
+                      disabled={waitlistSubmitting}
+                    >
+                      {waitlistSubmitting ? t('menuModal.waitlistSubmitting') : t('menuModal.waitlistNotifyMe')}
+                    </button>
+                  </>
+                )}
               </div>
             ) : quotaRequired > 0 ? (
               /* ════════ QUOTA ITEM UI (Dozen of Tacos, etc.) ════════ */
@@ -736,8 +820,8 @@ export default function MenuItemModal({
                 <div className="mim-section">
                   <div className="mim-section-hd">
                     <div>
-                      <span className="mim-section-title">More Tacos</span>
-                      <p className="mim-section-sub">Add extra tacos to your order</p>
+                      <span className="mim-section-title">{t('menuModal.moreTacos')}</span>
+                      <p className="mim-section-sub">{t('menuModal.addExtraTacos')}</p>
                     </div>
                     <span className="mim-badge mim-badge--opt">+$5.99 each</span>
                   </div>
@@ -776,12 +860,12 @@ export default function MenuItemModal({
                 {/* ── Special Instructions ── */}
                 <div className="mim-section">
                   <div className="mim-section-hd">
-                    <span className="mim-section-title">Special Instructions</span>
-                    <span className="mim-badge mim-badge--opt">Optional</span>
+                    <span className="mim-section-title">{t('menuModal.specialInstructions')}</span>
+                    <span className="mim-badge mim-badge--opt">{t('menuModal.optional')}</span>
                   </div>
                   <textarea
                     className="mim-notes"
-                    placeholder="Spicy sauce on the side, extra lime..."
+                    placeholder={t('menuModal.notePlaceholder1')}
                     value={note}
                     onChange={e => setNote(e.target.value)}
                     rows={2}
@@ -797,10 +881,10 @@ export default function MenuItemModal({
                     disabled={added}
                   >
                     {added
-                      ? `✓ ${addLabel === 'Add to Cart' ? 'Added to Cart' : addLabel}!`
+                      ? `✓ ${isDefaultAddLabel ? t('menuModal.addedToCart') : addLabel}!`
                       : quotaTotal !== quotaRequired
-                      ? `Select ${quotaRequired} tacos (${quotaTotal}/${quotaRequired})`
-                      : `${addLabel} · $${(basePrice + moreTacosExtra).toFixed(2)}`
+                      ? t('menuModal.selectNTacos', { required: quotaRequired, total: quotaTotal })
+                      : `${displayAddLabel} · $${(basePrice + moreTacosExtra).toFixed(2)}`
                     }
                   </button>
                 </div>
@@ -814,9 +898,9 @@ export default function MenuItemModal({
                     <div className="mim-section-hd">
                       <div>
                         <span className="mim-section-title">{cg.title}</span>
-                        <p className="mim-section-sub">Select one option</p>
+                        <p className="mim-section-sub">{t('menuModal.selectOneOption')}</p>
                       </div>
-                      <span className="mim-badge mim-badge--req">Required</span>
+                      <span className="mim-badge mim-badge--req">{t('menuModal.required')}</span>
                     </div>
                     <div className="mim-options-list">
                       {(cg.options || []).map(opt => {
@@ -849,10 +933,10 @@ export default function MenuItemModal({
                       <div>
                         <span className="mim-section-title">{ag.title}</span>
                         <p className="mim-section-sub">
-                          {ag.max_selections ? `Choose up to ${ag.max_selections}` : 'Add as many as you like'}
+                          {ag.max_selections ? t('menuModal.chooseUpTo', { count: ag.max_selections }) : t('menuModal.addAsManyAsYouLike')}
                         </p>
                       </div>
-                      <span className="mim-badge mim-badge--opt">Optional</span>
+                      <span className="mim-badge mim-badge--opt">{t('menuModal.optional')}</span>
                     </div>
                     <div className="mim-options-list">
                       {[...(ag.options || [])].sort((a, b) =>
@@ -946,12 +1030,12 @@ export default function MenuItemModal({
                 {/* ── Special Instructions ── */}
                 <div className="mim-section">
                   <div className="mim-section-hd">
-                    <span className="mim-section-title">Special Instructions</span>
-                    <span className="mim-badge mim-badge--opt">Optional</span>
+                    <span className="mim-section-title">{t('menuModal.specialInstructions')}</span>
+                    <span className="mim-badge mim-badge--opt">{t('menuModal.optional')}</span>
                   </div>
                   <textarea
                     className="mim-notes"
-                    placeholder="No onions, extra sauce, well done..."
+                    placeholder={t('menuModal.notePlaceholder2')}
                     value={note}
                     onChange={e => setNote(e.target.value)}
                     rows={2}
@@ -962,7 +1046,7 @@ export default function MenuItemModal({
                 {/* ── Suggested items ── */}
                 {suggestions.length > 0 && onSelectItem && (
                   <div className="mim-suggestions">
-                    <p className="mim-suggestions-title">You might also like</p>
+                    <p className="mim-suggestions-title">{t('menuModal.youMightAlsoLike')}</p>
                     <div className="mim-suggestions-row">
                       {suggestions.map(s => {
                         const img = s.image || s.image_url;
@@ -1005,10 +1089,10 @@ export default function MenuItemModal({
                     disabled={missingRequired || added}
                   >
                     {added
-                      ? (editCartKey ? '✓ Cart Updated!' : `✓ ${addLabel === 'Add to Cart' ? 'Added to Cart' : addLabel}!`)
+                      ? (editCartKey ? `✓ ${t('menuModal.cartUpdated')}` : `✓ ${isDefaultAddLabel ? t('menuModal.addedToCart') : addLabel}!`)
                       : editCartKey
-                      ? `Update Cart · $${total.toFixed(2)}`
-                      : `${addLabel} · $${total.toFixed(2)}`}
+                      ? `${t('menuModal.updateCart')} · $${total.toFixed(2)}`
+                      : `${displayAddLabel} · $${total.toFixed(2)}`}
                   </button>
                 </div>
               </>

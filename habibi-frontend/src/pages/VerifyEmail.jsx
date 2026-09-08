@@ -17,8 +17,13 @@ export default function VerifyEmail() {
     }
     authAPI.verifyEmail(token)
       .then(data => {
-        // Token lives in the httpOnly cookie set by the server — just cache user data
-        if (data.user) localStorage.setItem('habibi_user', JSON.stringify(data.user));
+        // Token lives in the httpOnly cookie set by the server — just cache
+        // display fields, never the full user object (matches AuthContext's
+        // safePersist: no roles/email/loyalty balance in localStorage).
+        if (data.user) {
+          const { id, name, avatar_url } = data.user;
+          localStorage.setItem('habibi_user', JSON.stringify({ id, name, avatar_url: avatar_url || null }));
+        }
         setStatus('success');
         // Hard redirect so AuthContext re-initializes from /api/auth/me
         setTimeout(() => { window.location.href = '/'; }, 2500);

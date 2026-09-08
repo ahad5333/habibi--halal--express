@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Copy, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { paymentsAPI } from '../services/api';
 import './OfflinePayModal.css';
 
 export default function OfflinePayModal({ method, amount, orderNumber, onConfirm, onClose }) {
+  const { t } = useTranslation();
   const [info, setInfo] = useState({ zelle: {}, cashapp: {} });
   const [copied, setCopied] = useState('');
   const [reference, setReference] = useState('');
@@ -66,7 +68,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
       ? (info.cashapp?.cashtag || '$HabibiHalal')
       : '';
 
-  const title = isZelle ? 'Pay via Zelle' : isCash ? 'Pay via Cash App' : 'Cash on Delivery';
+  const title = isZelle ? t('offlinePay.payViaZelle') : isCash ? t('offlinePay.payViaCashApp') : t('offlinePay.cashOnDelivery');
   const icon  = isZelle ? '💙' : isCash ? '💚' : '💵';
 
   return (
@@ -80,7 +82,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
         aria-labelledby="opm-title"
         tabIndex={-1}
       >
-        <button className="opm-close" onClick={onClose} aria-label="Close">
+        <button className="opm-close" onClick={onClose} aria-label={t('offlinePay.close')}>
           <X size={18} />
         </button>
 
@@ -96,7 +98,10 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
         {(isZelle || isCash) && (
           <>
             <p className="opm-instruction">
-              Send exactly <strong className="opm-amount">${parseFloat(amount).toFixed(2)}</strong> to:
+              {(() => {
+                const [before, after] = t('offlinePay.sendExactly', { amount: '__AMT__' }).split('__AMT__');
+                return <>{before}<strong className="opm-amount">${parseFloat(amount).toFixed(2)}</strong>{after}</>;
+              })()}
             </p>
 
             <div className="opm-handle-row">
@@ -104,44 +109,44 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
               <button
                 className="opm-copy-btn"
                 onClick={() => copy(handle, 'handle')}
-                title="Copy"
-                aria-label={`Copy ${isZelle ? 'email' : 'CashTag'}`}
+                title={t('offlinePay.copy')}
+                aria-label={isZelle ? t('offlinePay.copyEmail') : t('offlinePay.copyCashTag')}
               >
                 {copied === 'handle' ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>
 
-            <p className="opm-memo-label">Include this in the memo / note:</p>
+            <p className="opm-memo-label">{t('offlinePay.includeInMemo')}</p>
             <div className="opm-handle-row opm-memo">
               <span className="opm-handle">{orderNumber}</span>
               <button
                 className="opm-copy-btn"
                 onClick={() => copy(orderNumber, 'memo')}
-                title="Copy order number"
-                aria-label="Copy order number"
+                title={t('offlinePay.copyOrderNumber')}
+                aria-label={t('offlinePay.copyOrderNumber')}
               >
                 {copied === 'memo' ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>
 
             <div className="opm-steps">
-              <p className="opm-steps-title">How it works:</p>
+              <p className="opm-steps-title">{t('offlinePay.howItWorks')}</p>
               <ol className="opm-steps-list">
-                <li>Send <strong>${parseFloat(amount).toFixed(2)}</strong> to the {isZelle ? 'email' : 'CashTag'} above</li>
-                <li>Include your order number <strong>{orderNumber}</strong> in the note</li>
-                <li>Enter the confirmation number {isZelle ? 'Zelle' : 'Cash App'} showed you after sending, below</li>
-                <li>Click &ldquo;I&rsquo;ve Sent Payment&rdquo; below — we&rsquo;ll confirm and start your order</li>
+                <li>{t('offlinePay.step1', { amount: `$${parseFloat(amount).toFixed(2)}`, method: isZelle ? t('offlinePay.email') : t('offlinePay.cashTag') })}</li>
+                <li>{t('offlinePay.step2Prefix')} <strong>{orderNumber}</strong> {t('offlinePay.step2Suffix')}</li>
+                <li>{t('offlinePay.step3', { method: isZelle ? t('offlinePay.zelle') : t('offlinePay.cashApp') })}</li>
+                <li>{t('offlinePay.step4')}</li>
               </ol>
             </div>
 
             <label className="opm-ref-label" htmlFor="opm-ref-input">
-              {isZelle ? 'Zelle' : 'Cash App'} confirmation number (required)
+              {t('offlinePay.confirmationNumberRequired', { method: isZelle ? t('offlinePay.zelle') : t('offlinePay.cashApp') })}
             </label>
             <input
               id="opm-ref-input"
               className="opm-ref-input"
               type="text"
-              placeholder="e.g. confirmation ID, or last 4 digits of the transaction"
+              placeholder={t('offlinePay.confirmationPlaceholder')}
               value={reference}
               onChange={e => setReference(e.target.value)}
               maxLength={100}
@@ -151,8 +156,13 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
 
         {method === 'cash' && (
           <div className="opm-cash-note">
-            <p className="opm-instruction">Your order will be confirmed immediately.</p>
-            <p className="opm-instruction muted">Please have <strong>${parseFloat(amount).toFixed(2)}</strong> ready in cash upon delivery.</p>
+            <p className="opm-instruction">{t('offlinePay.cashConfirmedImmediately')}</p>
+            <p className="opm-instruction muted">
+              {(() => {
+                const [before, after] = t('offlinePay.cashReadyNote', { amount: '__AMT__' }).split('__AMT__');
+                return <>{before}<strong>${parseFloat(amount).toFixed(2)}</strong>{after}</>;
+              })()}
+            </p>
           </div>
         )}
 
@@ -161,13 +171,13 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
           onClick={() => onConfirm(reference.trim())}
           disabled={(isZelle || isCash) && !reference.trim()}
         >
-          {method === 'cash' ? 'Place Order — Pay on Delivery' : 'I\'ve Sent Payment — Place Order'}
+          {method === 'cash' ? t('offlinePay.placeOrderPayOnDelivery') : t('offlinePay.sentPaymentPlaceOrder')}
         </button>
 
         <p className="opm-disclaimer">
           {isZelle || isCash
-            ? 'Your order will be placed in "pending verification" until our team confirms receipt of payment (usually 2–5 minutes).'
-            : 'Please have exact change ready for the driver.'}
+            ? t('offlinePay.pendingVerification')
+            : t('offlinePay.exactChangeNote')}
         </p>
       </div>
     </div>

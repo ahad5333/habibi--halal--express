@@ -26,6 +26,7 @@
   width: 100%;
   max-width: 900px;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -41,8 +42,12 @@
 /* ── Close button ── */
 .mim-close {
   position: absolute;
-  top: 0.875rem;
-  right: 0.875rem;
+  /* env(safe-area-inset-*) resolves to 0 on devices without a notch/status
+     bar cutout, so this is a no-op there — on phones that have one (iPhone
+     notch/Dynamic Island, Android punch-hole camera, etc.) it keeps the
+     button clear of it instead of sitting right under it. */
+  top: calc(0.875rem + env(safe-area-inset-top, 0px));
+  right: calc(0.875rem + env(safe-area-inset-right, 0px));
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -673,6 +678,7 @@
     max-width: 100%;
     width: 100%;
     max-height: 93vh;
+    max-height: 93dvh;
     border-radius: 20px 20px 0 0;
     animation: mim-slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
   }
@@ -714,10 +720,11 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Close button stays visible over image */
+  /* Close button stays visible over image — safe-area-aware so it never
+     sits under a phone's notch/status bar cutout (see base rule above). */
   .mim-close {
-    top: 0.75rem;
-    right: 0.75rem;
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    right: calc(0.75rem + env(safe-area-inset-right, 0px));
     background: rgba(0,0,0,0.75);
   }
 
@@ -755,7 +762,7 @@
 }
 
 @media (max-width: 480px) {
-  .mim-modal        { max-height: 96vh; }
+  .mim-modal        { max-height: 96vh; max-height: 96dvh; }
   .mim-col-left     { height: 200px; }
   .mim-name         { font-size: 1.25rem; }
   .mim-price        { font-size: 1.05rem; }
@@ -834,4 +841,75 @@
 
 .mim-footer--quota .mim-add-btn {
   width: 100%;
+}
+
+/* ── Sold-out waitlist ── */
+.mim-waitlist-section {
+  padding: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.mim-soldout-pill {
+  align-self: flex-start;
+  background: rgba(239,68,68,0.14);
+  border: 1px solid rgba(239,68,68,0.35);
+  color: #f87171;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+}
+.mim-waitlist-prompt {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+}
+.mim-waitlist-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.mim-waitlist-input {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.88rem;
+  padding: 0.7rem 0.9rem;
+  font-family: inherit;
+}
+.mim-waitlist-input:focus { outline: none; border-color: #F97316; }
+.mim-waitlist-input::placeholder { color: rgba(255,255,255,0.35); }
+.mim-waitlist-error {
+  font-size: 0.78rem;
+  color: #f87171;
+  margin: 0;
+}
+.mim-waitlist-btn {
+  background: #F97316;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  height: 42px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.18s;
+}
+.mim-waitlist-btn:hover { background: #ea6c00; }
+.mim-waitlist-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mim-waitlist-joined {
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.35);
+  color: #4ade80;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  margin: 0;
 }

@@ -9,6 +9,8 @@ const Wholesale = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [bizName, setBizName] = useState('');
   const [repName, setRepName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [bizAddress, setBizAddress] = useState('');
   const [certFile, setCertFile] = useState(null);
   const [bizType, setBizType] = useState('Restaurant / Café');
@@ -26,15 +28,26 @@ const Wholesale = () => {
     setLoading(true);
     setError('');
     try {
+      // Field names here must match what the backend actually reads
+      // (business_name/contact_name/email/phone/address) — a prior mismatch
+      // here meant every submitted application saved as entirely empty rows.
       const fd = new FormData();
-      fd.append('businessName', bizName);
-      fd.append('representativeName', repName);
-      fd.append('businessAddress', bizAddress);
-      fd.append('businessType', bizType);
-      fd.append('estimatedVolume', volume);
-      fd.append('deliveryFrequency', frequency);
-      fd.append('deliveryAddress', deliveryAddr);
-      fd.append('logisticsNotes', logisticsNotes);
+      fd.append('business_name', bizName);
+      fd.append('contact_name', repName);
+      fd.append('email', email);
+      fd.append('phone', phone);
+      fd.append('address', bizAddress);
+      // The backend's application table doesn't have dedicated columns for
+      // these operational details, so fold them into notes rather than
+      // silently dropping them.
+      const notes = [
+        `Business type: ${bizType}`,
+        volume ? `Estimated weekly volume: ${volume} meals` : null,
+        `Delivery frequency: ${frequency}`,
+        deliveryAddr ? `Delivery address (if different): ${deliveryAddr}` : null,
+        logisticsNotes ? `Logistics notes: ${logisticsNotes}` : null,
+      ].filter(Boolean).join('\n');
+      fd.append('notes', notes);
       if (certFile) fd.append('certificate', certFile);
       await partnersAPI.apply(fd);
       setSuccess(true);
@@ -156,6 +169,17 @@ const Wholesale = () => {
                       </div>
                     </div>
 
+                    <div className="form-row two-col">
+                      <div className="form-group">
+                        <label className="form-label">Email</label>
+                        <input type="email" className="form-input" placeholder="you@business.com" value={email} onChange={e => setEmail(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Phone</label>
+                        <input type="tel" className="form-input" placeholder="(555) 555-5555" value={phone} onChange={e => setPhone(e.target.value)} />
+                      </div>
+                    </div>
+
                     <div className="form-group">
                       <label className="form-label">Business Address</label>
                       <input type="text" className="form-input" placeholder="Street address, Suite, City, State, ZIP" value={bizAddress} onChange={e => setBizAddress(e.target.value)} />
@@ -172,7 +196,7 @@ const Wholesale = () => {
                       </div>
                     </div>
 
-                    <button className="btn btn-primary step-next-btn" onClick={() => setCurrentStep(1)} disabled={!bizName || !repName}>
+                    <button className="btn btn-primary step-next-btn" onClick={() => setCurrentStep(1)} disabled={!bizName.trim() || !repName.trim() || !email.trim().includes('@')}>
                       Continue to Operations
                     </button>
                   </div>

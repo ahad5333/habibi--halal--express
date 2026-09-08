@@ -427,9 +427,21 @@ const Payment = () => {
                             placeholder="0.00"
                             value={amount}
                             onChange={e => setAmount(e.target.value)}
+                            readOnly={!!foundOrder}
+                            title={foundOrder ? 'Locked to your order balance' : undefined}
                             required
                           />
                         </div>
+                        {/* A matched real order is always charged its own server-side
+                            total (see resolveChargeAmount on the backend) regardless of
+                            what's typed here — editing this field for a real order would
+                            show the customer one amount while a different one gets
+                            charged, so it's locked once an order is found. */}
+                        {foundOrder && (
+                          <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            Locked to your order balance.
+                          </p>
+                        )}
                       </div>
                       <div className="pay-group">
                         <label>REASON</label>

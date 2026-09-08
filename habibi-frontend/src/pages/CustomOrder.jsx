@@ -834,7 +834,7 @@ export default function CustomOrder() {
 
       {/* ── Header image ── */}
       <div className="co-hero">
-        <img src="/images/byo/customize-hero.jpg" alt="Customize Your Order" className="co-hero-img" />
+        <img src="/images/byo/customize-hero-v2.webp" alt="Customize Your Order" className="co-hero-img" />
         <div className="co-hero-overlay" aria-hidden="true" />
         <div className="co-hero-lines"  aria-hidden="true" />
 

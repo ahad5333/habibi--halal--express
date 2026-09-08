@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Clock, MapPin, ChevronRight, ShoppingBag, Star } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useTranslation } from 'react-i18next';
 import { trackPurchase } from '../utils/analytics';
 import './OrderConfirmation.css';
 
@@ -19,10 +20,23 @@ const STATUS_TO_STEP = {
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 function ReviewWidget({ orderNum }) {
+  const { t } = useTranslation();
   const [rating, setRating]   = useState(0);
   const [hover, setHover]     = useState(0);
   const [comment, setComment] = useState('');
   const [status, setStatus]   = useState('idle'); // idle | saving | done | error
+  // The backend only fills in the real name from a logged-in session — a guest
+  // checkout (most orders) has none, so without this every guest review posted
+  // from this widget would literally show up as authored by "Customer".
+  const [customerName, setCustomerName] = useState('Customer');
+
+  useEffect(() => {
+    if (!orderNum) return;
+    fetch(`${API_BASE}/api/orders/track/${encodeURIComponent(orderNum)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.customer_name) setCustomerName(data.customer_name); })
+      .catch(() => {});
+  }, [orderNum]);
 
   const submit = async () => {
     if (!rating) return;
@@ -34,7 +48,7 @@ function ReviewWidget({ orderNum }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order_number:   orderNum,
-          customer_name:  'Customer',
+          customer_name:  customerName,
           rating,
           comment: comment.trim() || null,
         }),
@@ -51,14 +65,14 @@ function ReviewWidget({ orderNum }) {
     return (
       <div className="orc-review-card orc-review-done">
         <CheckCircle size={22} color="#34d399" />
-        <p>Thanks for your review! It'll appear on the site after moderation.</p>
+        <p>{t('orderConfirmation.reviewThanks')}</p>
       </div>
     );
   }
 
   return (
     <div className="orc-review-card">
-      <p className="orc-review-title">How was your order? ⭐</p>
+      <p className="orc-review-title">{t('orderConfirmation.howWasOrder')}</p>
       <div className="orc-stars">
         {[1,2,3,4,5].map(n => (
           <button
@@ -68,7 +82,7 @@ function ReviewWidget({ orderNum }) {
             onMouseEnter={() => setHover(n)}
             onMouseLeave={() => setHover(0)}
             onClick={() => setRating(n)}
-            aria-label={`${n} star`}
+            aria-label={t('orderConfirmation.starLabel', { n })}
           >
             <Star size={24} fill={n <= (hover || rating) ? '#E5B64E' : 'none'} color="#E5B64E" />
           </button>
@@ -78,34 +92,41 @@ function ReviewWidget({ orderNum }) {
         <textarea
           className="orc-review-textarea"
           rows={3}
-          placeholder="Tell us more (optional)…"
+          placeholder={t('orderConfirmation.tellUsMore')}
           value={comment}
           onChange={e => setComment(e.target.value)}
           maxLength={500}
         />
       )}
-      {status === 'error' && <p className="orc-review-error">Couldn't submit — please try again.</p>}
+      {status === 'error' && <p className="orc-review-error">{t('orderConfirmation.couldNotSubmit')}</p>}
       <button
         className="orc-btn-review"
         onClick={submit}
         disabled={!rating || status === 'saving'}
       >
-        {status === 'saving' ? 'Submitting…' : 'Submit Review'}
+        {status === 'saving' ? t('orderConfirmation.submitting') : t('orderConfirmation.submitReview')}
       </button>
     </div>
   );
 }
 
-const STEPS = [
-  { id: 'confirmed', label: 'Order Confirmed', icon: '✓', desc: 'We got your order!' },
-  { id: 'preparing', label: 'Preparing',        icon: '👨‍🍳', desc: 'Kitchen is on it'  },
-  { id: 'on_the_way', label: 'On the Way',      icon: '🛵', desc: 'Driver en route'  },
-  { id: 'delivered', label: 'Delivered',         icon: '🎉', desc: 'Enjoy your meal!' },
-];
+const STEP_IDS = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
+const STEP_ICONS = { confirmed: '✓', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '🎉' };
 
 export default function OrderConfirmation() {
+  const { t } = useTranslation();
+  const STEPS = STEP_IDS.map(id => ({
+    id,
+    icon: STEP_ICONS[id],
+    label: t(`orderConfirmation.step${id === 'on_the_way' ? 'OnTheWay' : id[0].toUpperCase() + id.slice(1)}`),
+    desc: t(`orderConfirmation.step${id === 'on_the_way' ? 'OnTheWay' : id[0].toUpperCase() + id.slice(1)}Desc`),
+  }));
   const [params]  = useSearchParams();
-  const orderNum  = params.get('order') || localStorage.getItem('last_order_number') || 'HHE-' + Math.floor(Math.random() * 90000 + 10000);
+  // No fabricated fallback number here — showing a fake "Order Placed!" success
+  // page (with a made-up order number and a progress tracker) to someone who
+  // didn't actually just order anything is actively misleading, not a harmless
+  // default. See the no-order early return below for what happens instead.
+  const orderNum  = params.get('order') || localStorage.getItem('last_order_number') || '';
   const method    = params.get('method') || 'delivery';
   const [elapsed, setElapsed]       = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
@@ -132,7 +153,7 @@ export default function OrderConfirmation() {
   // Live status via Socket.IO — advances the step tracker in real-time
   useEffect(() => {
     if (!orderNum) return;
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'], withCredentials: true });
+    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join_order', orderNum));
     socket.on('order_status_updated', ({ status }) => {
@@ -145,6 +166,24 @@ export default function OrderConfirmation() {
   const etaMin = Math.max(0, ETA_MIN - elapsed);
   const etaMax = Math.max(0, ETA_MAX - elapsed);
 
+  if (!orderNum) {
+    return (
+      <div className="orc-page">
+        <div className="orc-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+          <ShoppingBag size={40} style={{ opacity: 0.4, marginBottom: '1rem' }} />
+          <h1 className="orc-title">{t('orderConfirmation.noOrderFound')}</h1>
+          <p className="orc-subtitle">
+            {t('orderConfirmation.noOrderFoundDesc')}
+          </p>
+          <div className="orc-actions">
+            <Link to="/order-tracking" className="orc-btn-primary">{t('orderConfirmation.trackAnOrder')}</Link>
+            <Link to="/menu" className="orc-btn-secondary">{t('orderConfirmation.orderNow')}</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="orc-page">
       <div className="orc-container">
@@ -154,9 +193,9 @@ export default function OrderConfirmation() {
           <div className="orc-check-ring">
             <CheckCircle size={52} strokeWidth={1.5} />
           </div>
-          <h1 className="orc-title">Order Placed!</h1>
+          <h1 className="orc-title">{t('orderConfirmation.orderPlaced')}</h1>
           <p className="orc-subtitle">
-            Thank you for your order. We&apos;re getting it ready right now.
+            {t('orderConfirmation.gettingItReady')}
           </p>
         </div>
 
@@ -165,16 +204,16 @@ export default function OrderConfirmation() {
           <div className="orc-info-card">
             <ShoppingBag size={18} />
             <div>
-              <p className="orc-info-label">Order Number</p>
+              <p className="orc-info-label">{t('orderConfirmation.orderNumber')}</p>
               <p className="orc-info-val">{orderNum}</p>
             </div>
           </div>
           <div className="orc-info-card">
             <Clock size={18} />
             <div>
-              <p className="orc-info-label">Estimated {method === 'pickup' ? 'Pickup' : 'Delivery'}</p>
+              <p className="orc-info-label">{t('orderConfirmation.estimated')} {method === 'pickup' ? t('orderConfirmation.pickup') : t('orderConfirmation.delivery')}</p>
               <p className="orc-info-val">
-                {etaMin === 0 ? 'Any moment now!' : `${etaMin}–${etaMax} min`}
+                {etaMin === 0 ? t('orderConfirmation.anyMomentNow') : t('orderConfirmation.minRange', { min: etaMin, max: etaMax })}
               </p>
             </div>
           </div>
@@ -182,8 +221,8 @@ export default function OrderConfirmation() {
             <div className="orc-info-card">
               <MapPin size={18} />
               <div>
-                <p className="orc-info-label">Delivery to</p>
-                <p className="orc-info-val">{params.get('address') || 'Your address'}</p>
+                <p className="orc-info-label">{t('orderConfirmation.deliveryTo')}</p>
+                <p className="orc-info-val">{params.get('address') || t('orderConfirmation.yourAddress')}</p>
               </div>
             </div>
           )}
@@ -192,8 +231,8 @@ export default function OrderConfirmation() {
         {/* Status tracker */}
         <div className="orc-tracker">
           <div className="orc-tracker-head">
-            <h3 className="orc-tracker-title">Live Order Status</h3>
-            <span className="orc-live-badge"><span className="orc-live-dot" />Live</span>
+            <h3 className="orc-tracker-title">{t('orderConfirmation.liveOrderStatus')}</h3>
+            <span className="orc-live-badge"><span className="orc-live-dot" />{t('orderConfirmation.live')}</span>
           </div>
           <div
             className="orc-steps"
@@ -233,8 +272,8 @@ export default function OrderConfirmation() {
         <div className="orc-halal">
           <img src="/images/logos/halal-certified-premium.webp" alt="Halal Certified" />
           <div>
-            <p className="orc-halal-title">100% Halal Certified</p>
-            <p className="orc-halal-sub">Every ingredient, hand-slaughtered Zabiha Halal</p>
+            <p className="orc-halal-title">{t('orderConfirmation.halalCertifiedTitle')}</p>
+            <p className="orc-halal-sub">{t('orderConfirmation.halalCertifiedDesc')}</p>
           </div>
         </div>
 
@@ -244,10 +283,10 @@ export default function OrderConfirmation() {
         {/* CTAs */}
         <div className="orc-actions">
           <Link to={`/order-tracking?order=${orderNum}`} className="orc-btn-primary">
-            Track Your Order <ChevronRight size={16} />
+            {t('orderConfirmation.trackYourOrder')} <ChevronRight size={16} />
           </Link>
           <Link to="/menu" className="orc-btn-secondary">
-            Order Again
+            {t('orderConfirmation.orderAgain')}
           </Link>
         </div>
 

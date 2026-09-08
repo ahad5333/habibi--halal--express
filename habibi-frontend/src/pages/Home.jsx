@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ChevronRight, ChevronLeft, Sparkles, Shield, Eye, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import SEO from '../components/SEO';
 import { menuAPI } from '../services/api';
 import './Home.css';
@@ -137,10 +138,10 @@ const FeastVideo = ({ src }) => {
 };
 
 const STATS = [
-  { value: 500,  suffix: '+', label: 'Menu Items',      icon: '🍽️' },
-  { value: 10,   suffix: 'K+', label: 'Happy Customers', icon: '❤️' },
-  { value: 3,    suffix: '',   label: 'Bronx Locations', icon: '📍' },
-  { value: 100,  suffix: '%',  label: 'Halal Certified', icon: '✅' },
+  { value: 500,  suffix: '+',  labelKey: 'home.stats.menuItems',      icon: '🍽️' },
+  { value: 10,   suffix: 'K+', labelKey: 'home.stats.happyCustomers', icon: '❤️' },
+  { value: 3,    suffix: '',   labelKey: 'home.stats.bronxLocations', icon: '📍' },
+  { value: 100,  suffix: '%',  labelKey: 'home.stats.halalCertified', icon: '✅' },
 ];
 
 function useCountUp(target, duration = 1800, start = false) {
@@ -159,7 +160,8 @@ function useCountUp(target, duration = 1800, start = false) {
   return count;
 }
 
-function StatCard({ icon, value, suffix, label, animate }) {
+function StatCard({ icon, value, suffix, labelKey, animate }) {
+  const { t } = useTranslation();
   const count = useCountUp(value, 1600, animate);
   return (
     <div className="stat-card">
@@ -167,7 +169,7 @@ function StatCard({ icon, value, suffix, label, animate }) {
       <div className="stat-value">
         {count}{suffix}
       </div>
-      <div className="stat-label">{label}</div>
+      <div className="stat-label">{t(labelKey)}</div>
     </div>
   );
 }
@@ -196,6 +198,7 @@ function StatsRow() {
 }
 
 const Home = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
@@ -205,9 +208,9 @@ const Home = () => {
   const [typedText, setTypedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   useEffect(() => {
-    const words = ["Street Food", "Gourmet Bowls", "Sizzling Platters"];
+    const words = t('home.typedWords', { returnObjects: true });
     const typingSpeed = 100;
     const deletingSpeed = 50;
     const delayBetweenWords = 2000;
@@ -288,40 +291,36 @@ const Home = () => {
 
           <div className="container hero-content">
             <h1 className="hero-title-exact">
-              <span className="hero-title-line-1">Savor the Flavor of</span><br />
-              <span className="hero-title-line-2">Halal Perfection</span><br />
+              <span className="hero-title-line-1">{t('home.hero.titleLine1')}</span><br />
+              <span className="hero-title-line-2">{t('home.hero.titleLine2')}</span><br />
               <span className="hero-title-line-3"><span className="animated-hero-words">{typedText}<span className="typewriter-cursor">|</span></span></span>
             </h1>
 
             <p className="hero-creative-line">
-              ~ Where Every Bite is Blessed, fresh, bold &amp; made with love ~
+              {t('home.hero.tagline')}
             </p>
-            
+
             <div className="hero-cta-group">
-              <Link to="/menu" className="hero-btn-primary">Order Now</Link>
-              <Link to="/menu" className="hero-btn-ghost">View Menu</Link>
+              <Link to="/menu" className="hero-btn-primary">{t('common.orderNow')}</Link>
+              <Link to="/menu" className="hero-btn-ghost">{t('home.hero.viewMenu')}</Link>
             </div>
 
           </div>
-          
+
         </div>
 
         <div className="hero-bottom-light">
           <div className="container text-center">
             <h2 className="hero-bottom-title-exact">
-              Fresh, Healthy &amp; Delivered<br />
-              Right To Your Door
+              {t('home.hero.bottomTitle')}
             </h2>
 
             <div className="hero-food-wrapper">
               <img src="/images/hero/round_food.webp" alt="Delicious Food" className="hero-food-img" />
             </div>
-            
+
             <p className="hero-bottom-desc-exact">
-              100% certified halal, cooked fresh to order, never frozen, never rushed.<br />
-              Rooted in the Bronx and built on family recipes passed down through generations,<br />
-              every dish carries the bold flavors of authentic halal cuisine. Juicy bergers,<br />
-              seasoned grilled chicken, loaded rice platters, delivered straight to your door.
+              {t('home.hero.bottomDesc')}
             </p>
 
             <div className="hero-divider-exact">
@@ -371,27 +370,26 @@ const Home = () => {
           <div className="byo-strip-left">
             <div className="byo-strip-eyebrow">
               <span className="byo-strip-eyebrow-dot" />
-              BUILD IT YOUR WAY
+              {t('home.byo.eyebrow')}
             </div>
             <h3 className="byo-strip-title">
-              Customize<br />
-              <span className="byo-strip-title-accent">Your Order</span>
+              {t('home.byo.titleLine1')}<br />
+              <span className="byo-strip-title-accent">{t('home.byo.titleLine2')}</span>
             </h3>
             <p className="byo-strip-desc">
-              19 halal proteins. 8 sauces. Fresh veggies &amp; cheese.
-              Every ingredient, every quantity, <strong>exactly how you want it</strong>.
+              {t('home.byo.descPrefix')} <strong>{t('home.byo.descStrong')}</strong>.
             </p>
             {/* Step indicators */}
             <div className="byo-steps">
-              {['Base', 'Cheese', 'Veggies', 'Protein', 'Sauces', 'Extras', 'Drink'].map((step, i) => (
+              {['base', 'cheese', 'veggies', 'protein', 'sauces', 'extras', 'drink'].map((step, i) => (
                 <div key={step} className="byo-step">
                   <div className="byo-step-num">{i + 1}</div>
-                  <span className="byo-step-label">{step}</span>
+                  <span className="byo-step-label">{t(`home.byo.steps.${step}`)}</span>
                 </div>
               ))}
             </div>
             <Link to="/customize" className="byo-strip-btn">
-              <span>Customize Now</span>
+              <span>{t('home.byo.customizeNow')}</span>
               <span className="byo-strip-btn-arrow"><ChevronRight size={18} /></span>
             </Link>
           </div>
@@ -409,12 +407,12 @@ const Home = () => {
             <div className="byo-orbiter byo-orbiter-3" aria-hidden="true" />
 
             {/* Floating ingredient chips — left side */}
-            <div className="byo-chip byo-chip-1" aria-hidden="true">🌿 Fresh Base</div>
-            <div className="byo-chip byo-chip-2" aria-hidden="true">🥩 Halal Protein</div>
+            <div className="byo-chip byo-chip-1" aria-hidden="true">{t('home.byo.chips.freshBase')}</div>
+            <div className="byo-chip byo-chip-2" aria-hidden="true">{t('home.byo.chips.halalProtein')}</div>
 
             {/* Floating ingredient chips — right side */}
-            <div className="byo-chip byo-chip-3" aria-hidden="true">🔥 Bold Flavour</div>
-            <div className="byo-chip byo-chip-4" aria-hidden="true">✨ 100+ Combos</div>
+            <div className="byo-chip byo-chip-3" aria-hidden="true">{t('home.byo.chips.boldFlavour')}</div>
+            <div className="byo-chip byo-chip-4" aria-hidden="true">{t('home.byo.chips.combos')}</div>
 
             {/* Sparkle glints */}
             <span className="byo-glint byo-glint-1" aria-hidden="true">✦</span>
@@ -435,26 +433,26 @@ const Home = () => {
       <section className="section story-section">
         <div className="container story-container">
           <div className="story-content-col">
-            <p className="section-eyebrow text-gold">CULINARY HERITAGE</p>
-            <h2 className="heading-2 story-title">Our Story</h2>
+            <p className="section-eyebrow text-gold">{t('home.story.eyebrow')}</p>
+            <h2 className="heading-2 story-title">{t('home.story.title')}</h2>
             <p className="story-lead mt-3">
-              Rooted in the vibrant streets of the Bronx, Habibi Halal Express was born out of a passion for authentic Mediterranean flavors and family-founded Halal cooking traditions.
+              {t('home.story.lead')}
             </p>
             <p className="story-text mt-3">
-              We bring the golden grills of the Mediterranean right to NYC, sourcing only premium, 100% Zabiha Halal certified ingredients. Every dish is seasoned with our secret blend of spices, perfected over generations, and prepared fresh daily.
+              {t('home.story.text')}
             </p>
             <div className="story-highlights mt-4">
               <div className="story-highlight-item">
                 <span className="story-highlight-number">100%</span>
-                <span className="story-highlight-label">Zabiha Halal Certified</span>
+                <span className="story-highlight-label">{t('home.story.zabihaCertified')}</span>
               </div>
               <div className="story-highlight-item">
                 <span className="story-highlight-number">Fresh</span>
-                <span className="story-highlight-label">Never Frozen Ingredients</span>
+                <span className="story-highlight-label">{t('home.story.neverFrozen')}</span>
               </div>
               <div className="story-highlight-item">
                 <span className="story-highlight-number">Bronx</span>
-                <span className="story-highlight-label">Local Heritage & Roots</span>
+                <span className="story-highlight-label">{t('home.story.localHeritage')}</span>
               </div>
             </div>
           </div>
@@ -462,8 +460,8 @@ const Home = () => {
             <div className="story-image-frame">
               <img src="/images/story-chef.webp" alt="Fresh authentic halal culinary preparation" className="story-main-img" loading="lazy" />
               <div className="story-image-overlay-card">
-                <span className="overlay-card-title">Est. 2018</span>
-                <span className="overlay-card-desc">Handcrafted with Love</span>
+                <span className="overlay-card-title">{t('home.story.est')}</span>
+                <span className="overlay-card-desc">{t('home.story.handcrafted')}</span>
               </div>
             </div>
           </div>
@@ -475,8 +473,8 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="section feast-section text-center">
         <div className="container">
-          <p className="section-eyebrow text-gold">HABIBI'S SIGNATURE</p>
-          <h2 className="heading-2">The Art of the Feast</h2>
+          <p className="section-eyebrow text-gold">{t('home.feast.eyebrow')}</p>
+          <h2 className="heading-2">{t('home.feast.title')}</h2>
 
           <div className="feast-thumbs mt-5">
             {FEAST_VIDEOS.map((src, i) => (
@@ -487,7 +485,7 @@ const Home = () => {
           </div>
 
           <p className="feast-desc mt-4">
-            From the golden grills of the Mediterranean right to your plates, witness the passion that goes into every dish we serve.
+            {t('home.feast.desc')}
           </p>
         </div>
       </section>
@@ -500,12 +498,12 @@ const Home = () => {
         <div className="container">
           <div className="section-header space-between">
             <div>
-              <h2 className="heading-2">Curated Selections</h2>
+              <h2 className="heading-2">{t('home.curated.title')}</h2>
               <p className="section-desc mt-2">
-                Our signature dishes are crafted with carefully sourced ingredients and slow-roasted Halal traditions.
+                {t('home.curated.desc')}
               </p>
             </div>
-            <Link to="/menu" className="text-gold browse-link">Browse all menu items</Link>
+            <Link to="/menu" className="text-gold browse-link">{t('home.curated.browseAll')}</Link>
           </div>
 
           <div className="curated-grid mt-5">
@@ -513,11 +511,10 @@ const Home = () => {
             <div className="curated-card large">
               <img src="/images/mixed-platter.jpg" alt="The Mixed Platter" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
-                <p className="text-sm font-bold" style={{ color: '#F97316', letterSpacing: '2px' }}>★ CHEF'S PICK</p>
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>The Mixed Platter</h3>
+                <p className="text-sm font-bold" style={{ color: '#F97316', letterSpacing: '2px' }}>{t('home.curated.chefsPick')}</p>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>{t('home.curated.mixedPlatter')}</h3>
                 <div className="curated-actions mt-2">
-                  <Link to="/menu/platter" className="btn btn-outline-light btn-sm" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Add to Bag</Link>
-                  <button className="btn btn-primary btn-sm" style={{ backgroundColor: '#F97316', border: 'none' }}>$16.99</button>
+                  <Link to="/menu/platter" className="btn btn-primary btn-sm" style={{ backgroundColor: '#F97316', border: 'none', textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>{t('common.orderNow')}</Link>
                 </div>
               </div>
             </div>
@@ -526,10 +523,10 @@ const Home = () => {
             <div className="curated-card small">
               <img src="/images/habibi-burger.jpg" alt="Habibi Bergers" className="curated-img" loading="lazy" />
               <div className="curated-overlay">
-                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>Habibi Bergers</h3>
+                <h3 className="curated-title" style={{ color: '#F97316', textTransform: 'uppercase' }}>{t('home.curated.habibiBergers')}</h3>
                 <p className="curated-price text-sm font-bold" style={{ color: '#F97316' }}>$6.49</p>
                 <div className="curated-actions mt-2">
-                  <Link to="/menu/burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Order Now</Link>
+                  <Link to="/menu/burgers" className="btn btn-outline-light btn-sm btn-full" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>{t('common.orderNow')}</Link>
                 </div>
               </div>
             </div>
@@ -537,15 +534,11 @@ const Home = () => {
             {/* Halal Certified Info */}
             <div className="curated-card info-card">
               <Shield size={32} color="var(--color-primary)" />
-              <h3 className="info-card-title mt-3">100% Halal Certified</h3>
+              <h3 className="info-card-title mt-3">{t('home.curated.halalCertifiedTitle')}</h3>
               <p className="info-card-desc mt-2">
-                We take pride in our strict adherence to Halal standards, sourcing top-tier ingredients from trusted origins and quality providers.
+                {t('home.curated.halalCertifiedDesc')}
               </p>
-              <div className="info-card-icon mt-4">
-                <div className="icon-circle">
-                  <Sparkles size={20} />
-                </div>
-              </div>
+              <Link to="/health-safety" className="text-gold browse-link mt-4">{t('home.curated.ourStandards')}</Link>
             </div>
 
             {/* Halal Salad */}
@@ -561,8 +554,8 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="section reviews-section">
         <div className="container text-center">
-          <p className="section-eyebrow text-gold">WHAT OUR FANS SAY</p>
-          <h2 className="heading-2 mb-5">Wall of Love</h2>
+          <p className="section-eyebrow text-gold">{t('home.reviews.fansEyebrow')}</p>
+          <h2 className="heading-2 mb-5">{t('home.reviews.wallOfLove')}</h2>
           
           <div className="reviews-marquee-container">
             <div className="reviews-marquee-content">
@@ -598,8 +591,8 @@ const Home = () => {
       {liveReviews.length > 0 && (
         <section className="section customer-reviews-section">
           <div className="container text-center">
-            <p className="section-eyebrow text-gold">VERIFIED CUSTOMERS</p>
-            <h2 className="heading-2 mb-2">What Our Customers Say</h2>
+            <p className="section-eyebrow text-gold">{t('home.reviews.verifiedEyebrow')}</p>
+            <h2 className="heading-2 mb-2">{t('home.reviews.whatCustomersSay')}</h2>
             {reviewStats && (
               <div className="rev-stats-bar">
                 <span className="rev-stats-avg">
@@ -608,7 +601,7 @@ const Home = () => {
                   ))}
                 </span>
                 <span className="rev-stats-label">
-                  {parseFloat(reviewStats.avg_rating).toFixed(1)} out of 5 &nbsp;·&nbsp; {reviewStats.total} reviews
+                  {parseFloat(reviewStats.avg_rating).toFixed(1)} {t('home.reviews.outOf5')} &nbsp;·&nbsp; {reviewStats.total} {t('home.reviews.reviewsCount')}
                 </span>
               </div>
             )}
@@ -629,7 +622,7 @@ const Home = () => {
                   </div>
                   {r.reply && (
                     <div className="customer-reply">
-                      <span className="customer-reply-label">Habibi replied:</span>
+                      <span className="customer-reply-label">{t('home.reviews.habibiReplied')}</span>
                       <p className="customer-reply-text">{r.reply}</p>
                     </div>
                   )}
@@ -646,16 +639,16 @@ const Home = () => {
       <section className="section beyond-section">
         <div className="container beyond-container">
           <div className="beyond-content">
-            <h2 className="heading-2 mb-5">Beyond The Plate.</h2>
-            
+            <h2 className="heading-2 mb-5">{t('home.beyond.title')}</h2>
+
             <div className="feature-item">
               <div className="feature-icon">
                 <Sparkles size={20} color="var(--color-primary)" />
               </div>
               <div className="feature-text">
-                <h4 className="feature-title">Master Craftsmanship</h4>
+                <h4 className="feature-title">{t('home.beyond.craftTitle')}</h4>
                 <p className="feature-desc">
-                  We believe great food is born from love, passion, and an unwavering dedication to quality, never cut corners, never compromised.
+                  {t('home.beyond.craftDesc')}
                 </p>
               </div>
             </div>
@@ -665,9 +658,9 @@ const Home = () => {
                 <Shield size={20} color="var(--color-primary)" />
               </div>
               <div className="feature-text">
-                <h4 className="feature-title">Uncompromised Excellence</h4>
+                <h4 className="feature-title">{t('home.beyond.excellenceTitle')}</h4>
                 <p className="feature-desc">
-                  From our kitchen to your table, every plate is a showcase of true craftsmanship, built with the finest halal ingredients available.
+                  {t('home.beyond.excellenceDesc')}
                 </p>
               </div>
             </div>
@@ -677,9 +670,9 @@ const Home = () => {
                 <Eye size={20} color="var(--color-primary)" />
               </div>
               <div className="feature-text">
-                <h4 className="feature-title">Seamless Presentation</h4>
+                <h4 className="feature-title">{t('home.beyond.presentationTitle')}</h4>
                 <p className="feature-desc">
-                  Great food is more than taste, it's a full experience. We obsess over every detail, from the first look to the very last bite.
+                  {t('home.beyond.presentationDesc')}
                 </p>
               </div>
             </div>
@@ -706,12 +699,12 @@ const Home = () => {
             {/* We duplicate the items to create a seamless infinite scroll effect */}
             {Array.from({ length: 2 }).map((_, i) => (
               <React.Fragment key={i}>
-                <span className="marquee-item">100% Halal Certified <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">Locally Sourced <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">Authentic Spices <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">Master Chefs <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">NYC's Finest <Sparkles size={28} className="marquee-icon"/></span>
-                <span className="marquee-item">Handcrafted With Love <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.halal')} <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.local')} <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.spices')} <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.chefs')} <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.finest')} <Sparkles size={28} className="marquee-icon"/></span>
+                <span className="marquee-item">{t('home.marquee.handcrafted')} <Sparkles size={28} className="marquee-icon"/></span>
               </React.Fragment>
             ))}
           </div>
@@ -734,41 +727,39 @@ const Home = () => {
           <div className="rb-left">
             <p className="rb-eyebrow">
               <span className="rb-eyebrow-line" />
-              EST. 2018 · BRONX, NEW YORK
+              {t('home.banner.eyebrow')}
             </p>
             <h2 className="rb-title">
-              Where Every Meal<br />
-              Tells a <span className="rb-title-accent">Story</span>
+              {t('home.banner.titleLine1')}<br />
+              <span className="rb-title-accent">{t('home.banner.titleLine2')}</span>
             </h2>
             <p className="rb-desc">
-              Step into a world where ancient Halal traditions meet modern culinary artistry.
-              Our kitchen never sleeps, seasoning bold, serving fresh, crafting memories,
-              one plate at a time.
+              {t('home.banner.desc')}
             </p>
 
             {/* Animated quote lines */}
             <div className="rb-lines">
               <div className="rb-line">
                 <span className="rb-line-icon">🔥</span>
-                <span>"Grilled fresh, never frozen, never rushed."</span>
+                <span>{t('home.banner.line1')}</span>
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">🌿</span>
-                <span>"100% Zabiha Halal, certified, trusted, proud."</span>
+                <span>{t('home.banner.line2')}</span>
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">❤️</span>
-                <span>"Family recipes, passed down through generations."</span>
+                <span>{t('home.banner.line3')}</span>
               </div>
               <div className="rb-line">
                 <span className="rb-line-icon">🚀</span>
-                <span>"Delivering across 300+ miles, from Bronx to your door."</span>
+                <span>{t('home.banner.line4')}</span>
               </div>
             </div>
 
             <div className="rb-cta-row">
-              <Link to="/menu" className="rb-btn-primary">Order Now</Link>
-              <Link to="/about" className="rb-btn-ghost">Our Story ➔</Link>
+              <Link to="/menu" className="rb-btn-primary">{t('common.orderNow')}</Link>
+              <Link to="/about" className="rb-btn-ghost">{t('home.banner.ourStory')}</Link>
             </div>
           </div>
 
@@ -778,22 +769,22 @@ const Home = () => {
               <div className="rb-badge">
                 <span className="rb-badge-icon">🏆</span>
                 <p className="rb-badge-num">10K+</p>
-                <p className="rb-badge-label">Happy Customers</p>
+                <p className="rb-badge-label">{t('home.stats.happyCustomers')}</p>
               </div>
               <div className="rb-badge">
                 <span className="rb-badge-icon">⭐</span>
                 <p className="rb-badge-num">4.9</p>
-                <p className="rb-badge-label">Average Rating</p>
+                <p className="rb-badge-label">{t('home.banner.averageRating')}</p>
               </div>
               <div className="rb-badge">
                 <span className="rb-badge-icon">📍</span>
                 <p className="rb-badge-num">3</p>
-                <p className="rb-badge-label">Bronx Locations</p>
+                <p className="rb-badge-label">{t('home.stats.bronxLocations')}</p>
               </div>
               <div className="rb-badge">
                 <span className="rb-badge-icon">⏰</span>
                 <p className="rb-badge-num">24/7</p>
-                <p className="rb-badge-label">Bedford Park Open</p>
+                <p className="rb-badge-label">{t('home.banner.bedfordParkOpen')}</p>
               </div>
             </div>
 
@@ -811,10 +802,10 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="section locations-section">
         <div className="container text-center">
-          <p className="section-eyebrow text-gold">THE BRONX, NY</p>
-          <h2 className="heading-2">Find Your Habibi</h2>
+          <p className="section-eyebrow text-gold">{t('home.locations.eyebrow')}</p>
+          <h2 className="heading-2">{t('home.locations.title')}</h2>
           <p className="section-desc mx-auto mt-3">
-            Several locations across New York City, all open, all serving the same fresh halal you love.
+            {t('home.locations.desc')}
           </p>
 
           <div className="locations-grid mt-5">
@@ -822,39 +813,39 @@ const Home = () => {
             <div className="location-card">
               <div className="location-img-wrapper">
                 <img src="/images/locations/bedford-park.webp" alt="Bedford Park" className="location-img" />
-                <span className="location-badge outline">OPEN 24/7</span>
+                <span className="location-badge outline">{t('home.locations.open247')}</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">Bedford Park Blvd</h3>
+                <h3 className="location-title">{t('home.locations.bedfordPark')}</h3>
                 <p className="location-address">2974 Jerome Ave, Bronx, NY 10468</p>
-                <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
-                <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
+                <p className="location-hours">{t('home.locations.hours')}</p>
+                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
               </div>
             </div>
 
             <div className="location-card">
               <div className="location-img-wrapper">
                 <img src="/images/locations/kings-bridge.webp" alt="Kingsbridge Road" className="location-img" />
-                <span className="location-badge outline">NOW OPEN</span>
+                <span className="location-badge outline">{t('home.locations.nowOpen')}</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">Kingsbridge Road</h3>
+                <h3 className="location-title">{t('home.locations.kingsbridge')}</h3>
                 <p className="location-address">2 E Kingsbridge Rd, Bronx, NY 10468</p>
-                <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
-                <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
+                <p className="location-hours">{t('home.locations.hours')}</p>
+                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
               </div>
             </div>
 
             <div className="location-card">
               <div className="location-img-wrapper">
                 <img src="/images/locations/white-plains.webp" alt="White Plains Road" className="location-img" />
-                <span className="location-badge outline">NOW OPEN</span>
+                <span className="location-badge outline">{t('home.locations.nowOpen')}</span>
               </div>
               <div className="location-info">
-                <h3 className="location-title">White Plains Road</h3>
+                <h3 className="location-title">{t('home.locations.whitePlains')}</h3>
                 <p className="location-address">3971 White Plains Rd, Bronx, NY 10466</p>
-                <p className="location-hours">Open 24 Hours · 365 Days a Year</p>
-                <Link to="/menu" className="location-link text-gold">Order Now <ChevronRight size={14}/></Link>
+                <p className="location-hours">{t('home.locations.hours')}</p>
+                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
               </div>
             </div>
 

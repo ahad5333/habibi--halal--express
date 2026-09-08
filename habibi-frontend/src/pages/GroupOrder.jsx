@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { menuAPI, cartAPI, groupOrderAPI } from '../services/api';
+import { menuAPI, groupOrderAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import MenuItemModal from '../components/MenuItemModal';
 import SEO from '../components/SEO';
 import './GroupOrder.css';
 
@@ -113,42 +115,52 @@ function GroupLanding({ prefillCode }) {
 }
 
 // ─── Item Picker ──────────────────────────────────────────────────────────────
+// Reuses the same MenuItemModal as the main Menu page so group-order participants get the
+// full protein/sauce/extras customization every item normally has, instead of a bare quantity
+// stepper. Each "Add" click can produce multiple lines (e.g. a "Make it a Meal!" side becomes
+// its own line) — onAddOverride hands us the whole batch instead of writing to the shopping cart.
 function ItemPicker({ myItems, onUpdate, syncing }) {
   const [menu, setMenu] = useState([]);
   const [search, setSearch] = useState('');
-  const [quantities, setQuantities] = useState({});
   const [menuLoading, setMenuLoading] = useState(true);
+  const [modalItemId, setModalItemId] = useState(null);
+  const [localItems, setLocalItems] = useState(
+    () => (myItems || []).map(i => ({ ...i, uid: i.uid || `srv-${i.id}` }))
+  );
 
   useEffect(() => {
     menuAPI.getAll()
       .then(items => { setMenu(items); setMenuLoading(false); })
       .catch(() => setMenuLoading(false));
-    // Seed quantities from existing items
-    const init = {};
-    (myItems || []).forEach(item => {
-      if (item.menu_item_id) init[String(item.menu_item_id)] = item.qty;
-    });
-    setQuantities(init);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = search
     ? menu.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
     : menu;
 
-  const setQty = (item, qty) => {
-    const next = { ...quantities };
-    if (qty <= 0) {
-      delete next[String(item.id)];
-    } else {
-      next[String(item.id)] = qty;
-    }
-    setQuantities(next);
-    const items = Object.entries(next).map(([id, q]) => {
-      const m = menu.find(x => x.id === parseInt(id));
-      return { menu_item_id: parseInt(id), name: m?.name || '', price: parseFloat(m?.price) || 0, qty: q };
-    });
-    onUpdate(items);
+  const handleModalAdd = (lines) => {
+    const converted = lines.map(li => ({
+      uid: crypto.randomUUID(),
+      menu_item_id: li.id,
+      name: li.name,
+      price: parseFloat(li.price) || 0,
+      qty: li.qty || 1,
+      note: [
+        ...(li.choiceLabels || []),
+        ...(li.addons || []).map(a => `${a.qty > 1 ? a.qty + 'x ' : ''}${a.name}`),
+        li.note,
+      ].filter(Boolean).join(' · '),
+      details: { addons: li.addons || [], choiceLabels: li.choiceLabels || [], userNote: li.note || '', img: li.img, tag: li.tag },
+    }));
+    const next = [...localItems, ...converted];
+    setLocalItems(next);
+    onUpdate(next);
+  };
+
+  const removeLine = (uid) => {
+    const next = localItems.filter(i => i.uid !== uid);
+    setLocalItems(next);
+    onUpdate(next);
   };
 
   if (menuLoading) return <div className="go-picker-loading">Loading menu…</div>;
@@ -164,31 +176,46 @@ function ItemPicker({ myItems, onUpdate, syncing }) {
         />
         {syncing && <span className="go-syncing">Saving…</span>}
       </div>
-      <div className="go-picker-list">
-        {filtered.map(item => {
-          const qty = quantities[String(item.id)] || 0;
-          return (
-            <div key={item.id} className="go-picker-row">
-              <div className="go-picker-info">
-                <span className="go-picker-name">{item.name}</span>
-                <span className="go-picker-price">${parseFloat(item.price).toFixed(2)}</span>
+
+      {localItems.length > 0 && (
+        <div className="go-picker-mine">
+          <h4 className="go-picker-mine-title">Your items</h4>
+          {localItems.map(li => (
+            <div key={li.uid} className="go-picker-mine-row">
+              <div className="go-picker-mine-info">
+                <span className="go-picker-mine-name">{li.qty}× {li.name}</span>
+                {li.note && <span className="go-picker-mine-note">{li.note}</span>}
               </div>
-              <div className="go-picker-ctrl">
-                {qty > 0 ? (
-                  <>
-                    <button className="go-qty-btn" onClick={() => setQty(item, qty - 1)}>−</button>
-                    <span className="go-qty-num">{qty}</span>
-                    <button className="go-qty-btn" onClick={() => setQty(item, qty + 1)}>+</button>
-                  </>
-                ) : (
-                  <button className="go-add-btn" onClick={() => setQty(item, 1)}>+ Add</button>
-                )}
+              <div className="go-picker-mine-right">
+                <span className="go-picker-mine-price">${(li.price * li.qty).toFixed(2)}</span>
+                <button className="go-picker-mine-remove" onClick={() => removeLine(li.uid)} aria-label="Remove item">✕</button>
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
+      )}
+
+      <div className="go-picker-list">
+        {filtered.map(item => (
+          <div key={item.id} className="go-picker-row">
+            <div className="go-picker-info">
+              <span className="go-picker-name">{item.name}</span>
+              <span className="go-picker-price">${parseFloat(item.price).toFixed(2)}</span>
+            </div>
+            <button className="go-add-btn" onClick={() => setModalItemId(item.id)}>+ Add</button>
+          </div>
+        ))}
         {filtered.length === 0 && <p className="go-picker-empty">No items match "{search}"</p>}
       </div>
+
+      {modalItemId && (
+        <MenuItemModal
+          itemId={modalItemId}
+          onClose={() => setModalItemId(null)}
+          onAddOverride={handleModalAdd}
+          addLabel="Add to Group Order"
+        />
+      )}
     </div>
   );
 }
@@ -196,6 +223,7 @@ function ItemPicker({ myItems, onUpdate, syncing }) {
 // ─── Session ──────────────────────────────────────────────────────────────────
 function GroupSession({ sessionId }) {
   const { user } = useAuth();
+  const { addItem, clearCart } = useCart();
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -205,6 +233,9 @@ function GroupSession({ sessionId }) {
   const [syncing, setSyncing] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const socketRef = useRef(null);
+  // Suppresses the "host closed this session" message on the host's own screen —
+  // their socket is in the same room they just closed, so the broadcast echoes back to them too.
+  const justClosedRef = useRef(false);
 
   const participantId = getOrCreateParticipantId(sessionId);
 
@@ -224,11 +255,11 @@ function GroupSession({ sessionId }) {
 
   useEffect(() => {
     load();
-    const socket = io(SOCKET_URL, { withCredentials: true, transports: ['websocket', 'polling'] });
+    const socket = io(SOCKET_URL, { withCredentials: true, transports: ['websocket'] });
     socketRef.current = socket;
     socket.emit('join_group', sessionId);
     socket.on('group_update', data => setSession(data));
-    socket.on('group_closed', () => setErr('The host has closed this group order.'));
+    socket.on('group_closed', () => { if (!justClosedRef.current) setErr('The host has closed this group order.'); });
     return () => socket.disconnect();
   }, [sessionId, load]);
 
@@ -258,13 +289,33 @@ function GroupSession({ sessionId }) {
     if (allItems.length === 0) { setErr('No items in the group order yet.'); return; }
     setCheckingOut(true); setErr('');
     try {
+      // Build the real cart locally first (synchronous, can't partially fail) — closing the
+      // session is the only network call, and it happens last so a failure here never leaves
+      // the group order closed with an empty/broken cart.
+      clearCart();
+      allItems.forEach(item => {
+        if (!item.menu_item_id) return;
+        const participant = (session?.participants || []).find(p => p.participant_id === item.participant_id);
+        const forWhom = participant?.name || '';
+        addItem({
+          id:            item.menu_item_id,
+          cartKey:       `grp-${item.participant_id}-${item.id}`,
+          name:          item.name,
+          price:         parseFloat(item.price) || 0,
+          baseItemPrice: parseFloat(item.price) || 0,
+          addons:        item.details?.addons || [],
+          img:           item.details?.img,
+          tag:           item.details?.tag || 'Item',
+          note:          forWhom ? `For ${forWhom}${item.details?.userNote ? ': ' + item.details.userNote : ''}` : (item.details?.userNote || ''),
+          choiceLabels:  item.details?.choiceLabels || [],
+          qty:           item.qty,
+          selectedChoices: {},
+          selectedAddons:  {},
+        });
+      });
+
+      justClosedRef.current = true;
       await groupOrderAPI.closeSession(sessionId);
-      await cartAPI.clear();
-      for (const item of allItems) {
-        if (item.menu_item_id) {
-          await cartAPI.add(item.menu_item_id, item.qty, {});
-        }
-      }
       navigate('/checkout');
     } catch (e) {
       setErr(e.message || 'Checkout failed. Please try again.');
@@ -355,10 +406,13 @@ function GroupSession({ sessionId }) {
             {p.items.length > 0 && (
               <ul className="go-items-list">
                 {p.items.map((item, i) => (
-                  <li key={i} className="go-item-row">
-                    <span className="go-item-name">{item.name}</span>
-                    <span className="go-item-qty">×{item.qty}</span>
-                    <span className="go-item-price">${(parseFloat(item.price) * item.qty).toFixed(2)}</span>
+                  <li key={i}>
+                    <div className="go-item-row">
+                      <span className="go-item-name">{item.name}</span>
+                      <span className="go-item-qty">×{item.qty}</span>
+                      <span className="go-item-price">${(parseFloat(item.price) * item.qty).toFixed(2)}</span>
+                    </div>
+                    {item.note && <div className="go-item-note">{item.note}</div>}
                   </li>
                 ))}
               </ul>

@@ -1,10 +1,15 @@
 import { useEffect } from 'react';
 
+const SITE_NAME = 'Habibi Halal Express';
+// Some pages already build their title with the site name baked in (e.g. "Careers | Habibi Halal Express");
+// only append it when it's missing, so the tab/OG title never doubles up.
+const withSiteName = (t) => (!t ? SITE_NAME : t.includes(SITE_NAME) ? t : `${t} | ${SITE_NAME}`);
+
 const SEO = ({ title, description, keywords, image, url, type = 'website', schema, noindex = false }) => {
   useEffect(() => {
     // 1. Title
     const defaultTitle = 'Habibi Halal Express | Authentic Halal Dining';
-    document.title = title ? `${title} | Habibi Halal Express` : defaultTitle;
+    document.title = title ? withSiteName(title) : defaultTitle;
 
     // 1b. noindex
     let robotsEl = document.querySelector('meta[name="robots"]');
@@ -36,7 +41,7 @@ const SEO = ({ title, description, keywords, image, url, type = 'website', schem
 
     // 3. Open Graph (OG) tags
     const siteUrl = window.location.origin;
-    const ogTitle = title ? `${title} | Habibi Halal Express` : 'Habibi Halal Express';
+    const ogTitle = withSiteName(title);
     setMetaTag('property', 'og:title', ogTitle);
     setMetaTag('property', 'og:description', description || 'Authentic Halal Dining. Every dish crafted with tradition, precision, and passion.');
     setMetaTag('property', 'og:image', image ? (image.startsWith('http') ? image : siteUrl + image) : siteUrl + '/images/logos/logo.png');

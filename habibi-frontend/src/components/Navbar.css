@@ -1186,6 +1186,21 @@
   .navbar-top-inner { padding: 0.5rem 0.75rem; gap: 0.3rem; }
   .navbar-order-badge-img { width: 44px; height: 44px; }
   .navbar-top-right { gap: 0.55rem; }
+
+  /* .notif-dropdown is normally anchored to the bell icon itself (position:
+     absolute, right: -8px, width: 300px) -- fine on desktop where the bell
+     sits near the row's right edge, but on a phone the bell is nowhere near
+     300px from the left edge (cart/avatar/hamburger sit to its right), so
+     the panel rendered mostly off-screen to the left. Breaking it out to be
+     viewport-relative instead of anchor-relative fixes this regardless of
+     exactly where the bell ends up at any given width. */
+  .notif-dropdown {
+    position: fixed;
+    top: 76px;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+  }
 }
 
 @media (max-width: 400px) {

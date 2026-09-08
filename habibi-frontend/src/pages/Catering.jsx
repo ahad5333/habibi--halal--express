@@ -30,6 +30,7 @@ const initialForm = {
   event_time:       '',
   guest_count:      20,
   service_type:     'delivery',
+  event_address:    '',
   name:             '',
   email:            '',
   phone:            '',
@@ -46,7 +47,9 @@ export default function Catering() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const canNext0 = form.event_type && form.event_date && form.guest_count >= 10;
+  const needsAddress = form.service_type !== 'pickup';
+  const canNext0 = form.event_type && form.event_date && form.guest_count >= 10
+    && (!needsAddress || form.event_address.trim());
   const canNext1 = form.name.trim() && form.email.trim().includes('@');
 
   const handleSubmit = async () => {
@@ -63,6 +66,7 @@ export default function Catering() {
         event_date:   `${form.event_date}T${form.event_time || '12:00'}:00`,
         guest_count:  parseInt(form.guest_count),
         service_type: form.service_type,
+        event_address: form.event_address.trim(),
         notes:        mealNote,
       };
       const res = await fetch(`${API_BASE}/api/reservations/public`, {
@@ -91,8 +95,15 @@ export default function Catering() {
           <h1>Quote Request Sent!</h1>
           <p>Thank you, <strong>{form.name}</strong>. We've received your inquiry for <strong>{form.guest_count} guests</strong> and will send you a custom quote within 24–48 hours.</p>
           <div className="cat-success-ref">
-            Quote reference: <strong>#CAT-{String(done?.id || '—').padStart(4,'0')}</strong>
+            Quote reference: <strong>#CAT-{String(done?.data?.id || '—').padStart(4,'0')}</strong>
           </div>
+          {done?.estimated_total > 0 && (
+            <div className="cat-estimate-block">
+              <p className="cat-est-label">Rough Estimate</p>
+              <p className="cat-est-total">~${parseFloat(done.estimated_total).toLocaleString('en-US')}</p>
+              <p className="cat-est-note">Starting estimate for {form.guest_count} guests — your final quote may vary based on menu selections.</p>
+            </div>
+          )}
           <p className="cat-success-sub">Check your inbox at <strong>{form.email}</strong> for a confirmation. Our team will follow up within 12 hours.</p>
           <a href="/menu" className="cat-back-btn">Browse Our Menu</a>
         </div>
@@ -219,6 +230,21 @@ export default function Catering() {
                 </button>
               ))}
             </div>
+
+            {needsAddress && (
+              <div className="cat-field">
+                <label className="cat-label">
+                  {form.service_type === 'on-site' ? 'Venue Address' : 'Delivery Address'} *
+                </label>
+                <input
+                  type="text"
+                  className="cat-input"
+                  placeholder="Street address, city, state, ZIP"
+                  value={form.event_address}
+                  onChange={e => set('event_address', e.target.value)}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -256,7 +282,7 @@ export default function Catering() {
               <label className="cat-label">Additional Notes <span style={{fontWeight:400,color:'rgba(255,255,255,0.4)',fontSize:'0.78rem'}}>(optional)</span></label>
               <textarea
                 className="cat-input cat-textarea"
-                placeholder="Dietary restrictions, venue address, setup instructions..."
+                placeholder="Dietary restrictions, setup instructions, parking info..."
                 rows={3}
                 value={form.notes}
                 onChange={e => set('notes', e.target.value)}
@@ -276,6 +302,7 @@ export default function Catering() {
               <div className="cat-review-row"><span>Date & Time</span><strong>{form.event_date} {form.event_time && `at ${form.event_time}`}</strong></div>
               <div className="cat-review-row"><span>Guest Count</span><strong>{form.guest_count} guests</strong></div>
               <div className="cat-review-row"><span>Service</span><strong style={{ textTransform: 'capitalize' }}>{form.service_type}</strong></div>
+              {form.event_address && <div className="cat-review-row" style={{gridColumn:'1/-1'}}><span>Address</span><strong>{form.event_address}</strong></div>}
               <div className="cat-review-row"><span>Name</span><strong>{form.name}</strong></div>
               <div className="cat-review-row"><span>Email</span><strong>{form.email}</strong></div>
               {form.phone && <div className="cat-review-row"><span>Phone</span><strong>{form.phone}</strong></div>}

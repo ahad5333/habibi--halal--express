@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Clock, ChefHat, ArrowRight, Share2, Check } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import SEO from '../components/SEO';
 import { articlesAPI } from '../services/api';
 import './ArticleDetail.css';
@@ -73,9 +74,10 @@ export default function ArticleDetail() {
     if (navigator.share) {
       navigator.share({ title: article?.title, url }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(url);
-      setShared(true);
-      setTimeout(() => setShared(false), 1800);
+      navigator.clipboard.writeText(url).then(() => {
+        setShared(true);
+        setTimeout(() => setShared(false), 1800);
+      }).catch(() => {});
     }
   };
 
@@ -138,7 +140,7 @@ export default function ArticleDetail() {
         </div>
 
         <div className="article-body" ref={bodyRef}>
-          <div dangerouslySetInnerHTML={{ __html: article.body || '' }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.body || '') }} />
         </div>
 
         {/* Sibling of .article-body, not a child — this is a promo footer,

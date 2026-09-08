@@ -17,8 +17,9 @@
 }
 .offers-hero-overlay {
   position: absolute; inset: 0;
-  background: url('/images/hero/round_food.webp') center/cover no-repeat;
-  opacity: 0.07;
+  background:
+    linear-gradient(180deg, rgba(10,5,0,0.5) 0%, rgba(10,5,0,0.22) 45%, rgba(10,5,0,0.5) 100%),
+    url('/images/hero/offers-hero.webp') center 55%/cover no-repeat;
   pointer-events: none;
 }
 .offers-hero-content { position: relative; z-index: 1; }
@@ -40,9 +41,10 @@
   color: #fff;
   margin-bottom: 0.75rem;
   line-height: 1.1;
+  text-shadow: 0 2px 14px rgba(0,0,0,.75);
 }
 .offers-hero-accent { color: #d4a017; }
-.offers-hero-sub { font-size: 1rem; color: rgba(255,255,255,0.65); max-width: 480px; margin: 0 auto; }
+.offers-hero-sub { font-size: 1rem; color: rgba(255,255,255,0.85); max-width: 480px; margin: 0 auto; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
 
 /* Section */
 .offers-section { padding: 3rem 1.5rem 5rem; background: var(--color-bg, #f9fafb); }

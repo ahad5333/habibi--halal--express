@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authAPI } from '../services/api';
 import './ForgotPassword.css';
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [params]          = useSearchParams();
   const token             = params.get('token') || '';
   const isPartner         = params.get('type') === 'partner';
@@ -18,15 +20,16 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    if (password.length < 8) { setError(t('auth.errPasswordTooShort')); return; }
+    if (!/[0-9]/.test(password)) { setError(t('auth.errPasswordNoNumber')); return; }
+    if (password !== confirm) { setError(t('auth.errPasswordsDontMatch')); return; }
     setLoading(true); setError('');
     try {
       await authAPI.resetPassword(token, password);
       setDone(true);
       setTimeout(() => navigate(isPartner ? '/partner/login' : '/login'), 2500);
     } catch (err) {
-      setError(err.message || 'Invalid or expired link. Please request a new one.');
+      setError(err.message || t('auth.errInvalidResetLink'));
     } finally {
       setLoading(false);
     }
@@ -36,8 +39,8 @@ export default function ResetPassword() {
     return (
       <div className="fp-page">
         <div className="fp-card">
-          <div className="fp-error">No reset token found. Please use the link from your email.</div>
-          <Link to="/forgot-password" className="fp-btn-primary" style={{ marginTop: '1rem' }}>Request New Link</Link>
+          <div className="fp-error">{t('auth.noResetToken')}</div>
+          <Link to="/forgot-password" className="fp-btn-primary" style={{ marginTop: '1rem' }}>{t('auth.requestNewLink')}</Link>
         </div>
       </div>
     );
@@ -49,24 +52,24 @@ export default function ResetPassword() {
         {done ? (
           <div className="fp-success">
             <CheckCircle size={48} className="fp-success-icon" />
-            <h2>Password Updated!</h2>
-            <p>Redirecting you to login…</p>
+            <h2>{t('auth.passwordUpdated')}</h2>
+            <p>{t('auth.redirectingToLogin')}</p>
           </div>
         ) : (
           <>
-            <h1 className="fp-title">Set New Password</h1>
-            <p className="fp-sub">Choose a strong password for your account.</p>
+            <h1 className="fp-title">{t('auth.setNewPassword')}</h1>
+            <p className="fp-sub">{t('auth.chooseStrongPassword')}</p>
 
             {error && <div className="fp-error">⚠ {error}</div>}
 
             <form onSubmit={handleSubmit} className="fp-form">
               <div className="fp-field">
-                <label>New Password</label>
+                <label>{t('auth.newPassword')}</label>
                 <div className="fp-input-wrap">
                   <Lock size={15} className="fp-input-icon" />
                   <input
                     type={showPw ? 'text' : 'password'}
-                    placeholder="Min. 6 characters"
+                    placeholder={t('auth.min8CharsWithNumber')}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required autoFocus
@@ -83,24 +86,24 @@ export default function ResetPassword() {
               </div>
 
               <div className="fp-field">
-                <label>Confirm Password</label>
+                <label>{t('auth.confirmPassword')}</label>
                 <div className="fp-input-wrap">
                   <Lock size={15} className="fp-input-icon" />
                   <input
                     type={showPw ? 'text' : 'password'}
-                    placeholder="Repeat password"
+                    placeholder={t('auth.repeatPassword')}
                     value={confirm}
                     onChange={e => setConfirm(e.target.value)}
                     required
                   />
                 </div>
                 {confirm && password !== confirm && (
-                  <p className="fp-match-err">Passwords don&apos;t match</p>
+                  <p className="fp-match-err">{t('auth.passwordsDontMatchShort')}</p>
                 )}
               </div>
 
               <button type="submit" className="fp-btn-primary" disabled={loading}>
-                {loading ? 'Updating…' : 'Update Password'}
+                {loading ? t('auth.updating') : t('auth.updatePassword')}
               </button>
             </form>
           </>

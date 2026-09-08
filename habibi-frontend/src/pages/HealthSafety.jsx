@@ -60,7 +60,7 @@ export default function HealthSafety() {
           </div>
 
           <div className="legal-updated">
-            Last reviewed: May 2026 &nbsp;·&nbsp; <Link to="/contact">Report a concern</Link>
+            Last reviewed: {DOCS.health.updated} &nbsp;·&nbsp; <Link to="/contact">Report a concern</Link>
           </div>
         </div>
       </section>

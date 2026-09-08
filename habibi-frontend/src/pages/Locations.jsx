@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Navigation, Star, ChevronDown, Wifi } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import './Locations.css';
 
 /* ── Helpers ──────────────────────────────────────────────── */
-const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+// Kept as English day-name keys for internal parsing/matching (DAY_MAP
+// below) -- translated only at render time via `locations.days.<key>`.
+const DAY_KEYS    = ['sun','mon','tue','wed','thu','fri','sat'];
 
 const getLocationImage = (title) => {
   const t = (title || '').toLowerCase();
@@ -92,16 +95,16 @@ const parseHoursTable = (hoursStr) => {
   const today = new Date().getDay();
 
   if (!hoursStr) {
-    return DAYS.map((day, i) => ({ day, hours: 'Hours Vary', isToday: i === today }));
+    return DAY_KEYS.map((dayKey, i) => ({ dayKey, hours: null, isToday: i === today }));
   }
 
   const h = hoursStr.toLowerCase();
   if (h.includes('24 hour') || h.includes('always')) {
-    return DAYS.map((day, i) => ({ day, hours: '24 Hours', isToday: i === today }));
+    return DAY_KEYS.map((dayKey, i) => ({ dayKey, hours: '24', isToday: i === today }));
   }
 
   const DAY_MAP  = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
-  const result   = DAYS.map((day, i) => ({ day, hours: 'Closed', isToday: i === today }));
+  const result   = DAY_KEYS.map((dayKey, i) => ({ dayKey, hours: 'closed', isToday: i === today }));
 
   const segments = hoursStr.split(/[·,;]+/);
   for (const seg of segments) {
@@ -176,14 +179,15 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 // source of truth for whether an address can be delivered to. This never
 // returns a "pickup only"-style verdict — a bad/missing distance reading
 // should never be presented as a delivery restriction.
-function getDistanceBadge(miles) {
+function getDistanceBadge(miles, t) {
   if (miles === undefined || miles === null || Number.isNaN(miles)) return null;
-  if (miles < 0.5) return { label: 'Nearby', color: '#22c55e' };
-  return { label: `${miles.toFixed(1)} mi away`, color: '#3b82f6' };
+  if (miles < 0.5) return { label: t('locations.nearby'), color: '#22c55e' };
+  return { label: t('locations.milesAway', { miles: miles.toFixed(1) }), color: '#3b82f6' };
 }
 
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
+  const { t } = useTranslation();
   // Priority: cPanel-uploaded image → local PNG → OpenStreetMap embed (no API key, never errors)
   const localImg   = getLocationImage(loc.title);
   const displayImg = loc.image || localImg;
@@ -206,7 +210,7 @@ function LocationCard({ loc, userCoords, index }) {
     ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(loc.latitude), parseFloat(loc.longitude))
     : null;
   const distMiles = distKm !== null && !Number.isNaN(distKm) ? distKm * 0.621371 : null;
-  const distBadge = getDistanceBadge(distMiles);
+  const distBadge = getDistanceBadge(distMiles, t);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`;
   const shortTitle = getShortTitle(loc.title);
@@ -249,7 +253,7 @@ function LocationCard({ loc, userCoords, index }) {
         {open !== null && (
           <div className={`lcn-live-badge ${open ? 'lcn-live-open' : 'lcn-live-closed'}`}>
             <span className="lcn-live-dot" />
-            {open ? 'Open Now' : 'Closed'}
+            {open ? t('locations.openNow') : t('locations.closed')}
           </div>
         )}
 
@@ -282,13 +286,13 @@ function LocationCard({ loc, userCoords, index }) {
             className={`lcn-tab ${!flipped ? 'lcn-tab-active' : ''}`}
             onClick={() => setFlipped(false)}
           >
-            <MapPin size={12} /> Info
+            <MapPin size={12} /> {t('locations.info')}
           </button>
           <button
             className={`lcn-tab ${flipped ? 'lcn-tab-active' : ''}`}
             onClick={() => setFlipped(true)}
           >
-            <Clock size={12} /> Hours
+            <Clock size={12} /> {t('locations.hoursTab')}
           </button>
         </div>
 
@@ -298,7 +302,7 @@ function LocationCard({ loc, userCoords, index }) {
             <div className="lcn-info-row">
               <MapPin size={14} className="lcn-info-icon" />
               <div>
-                <p className="lcn-info-label">Address</p>
+                <p className="lcn-info-label">{t('locations.address')}</p>
                 <p className="lcn-info-value">{loc.brief_address}</p>
               </div>
             </div>
@@ -307,7 +311,7 @@ function LocationCard({ loc, userCoords, index }) {
               <div className="lcn-info-row">
                 <Phone size={14} className="lcn-info-icon" />
                 <div>
-                  <p className="lcn-info-label">Phone</p>
+                  <p className="lcn-info-label">{t('locations.phone')}</p>
                   <a href={`tel:${loc.phone_number}`} className="lcn-phone">{loc.phone_number}</a>
                 </div>
               </div>
@@ -316,11 +320,11 @@ function LocationCard({ loc, userCoords, index }) {
             <div className="lcn-info-row">
               <Wifi size={14} className="lcn-info-icon" />
               <div>
-                <p className="lcn-info-label">Delivery &amp; Pickup</p>
+                <p className="lcn-info-label">{t('locations.deliveryAndPickup')}</p>
                 <p className="lcn-info-value">
                   {loc.delivery_radius_miles
-                    ? `🚚 Delivery within ${loc.delivery_radius_miles} mi · 🏪 Pickup available`
-                    : '🚚 Delivery & 🏪 Pickup available — enter your address at checkout'
+                    ? t('locations.deliveryWithinMi', { radius: loc.delivery_radius_miles })
+                    : t('locations.deliveryPickupGeneric')
                   }
                 </p>
               </div>
@@ -328,14 +332,16 @@ function LocationCard({ loc, userCoords, index }) {
           </div>
         ) : (
           <div className="lcn-hours-panel">
-            {hoursTable.map(({ day, hours, isToday }) => (
-              <div key={day} className={`lcn-hr-row ${isToday ? 'lcn-hr-today' : ''}`}>
-                <span className="lcn-hr-day">{day.slice(0, 3)}</span>
+            {hoursTable.map(({ dayKey, hours, isToday }) => (
+              <div key={dayKey} className={`lcn-hr-row ${isToday ? 'lcn-hr-today' : ''}`}>
+                <span className="lcn-hr-day">{t(`locations.days.${dayKey}`)}</span>
                 <div className="lcn-hr-dots" />
-                <span className="lcn-hr-time">{hours}</span>
+                <span className="lcn-hr-time">
+                  {hours === null ? t('locations.hoursVary') : hours === '24' ? t('locations.hours24') : hours === 'closed' ? t('locations.closed') : hours}
+                </span>
                 {isToday && (
                   <span className={`lcn-today-badge ${open ? 'lcn-today-open' : 'lcn-today-closed'}`}>
-                    {open ? '● OPEN' : '● CLOSED'}
+                    {open ? t('locations.openBadge') : t('locations.closedBadge')}
                   </span>
                 )}
               </div>
@@ -347,11 +353,11 @@ function LocationCard({ loc, userCoords, index }) {
         <div className="lcn-actions">
           <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="lcn-btn-directions">
             <Navigation size={14} />
-            Get Directions
+            {t('locations.getDirections')}
           </a>
           <a href={`tel:${loc.phone_number}`} className="lcn-btn-call">
             <Phone size={14} />
-            Call
+            {t('locations.call')}
           </a>
         </div>
       </div>
@@ -389,6 +395,7 @@ function AnimatedCounter({ target, suffix = '' }) {
 
 /* ── Page ──────────────────────────────────────────────────── */
 const Locations = () => {
+  const { t } = useTranslation();
   const [locations, setLocations] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [userCoords, setUserCoords] = useState(null);
@@ -426,10 +433,10 @@ const Locations = () => {
     "@context": "https://schema.org",
     "@graph": locations.map(loc => ({
       "@type": "Restaurant",
-      "@id": `https://habibihalalexpress.com/locations#${getAnchorId(loc.title)}`,
+      "@id": `https://habibihe.com/locations#${getAnchorId(loc.title)}`,
       "name": `Habibi Halal Express - ${sanitizeTitle(loc.title)}`,
-      "image": "https://habibihalalexpress.com/images/logos/logo.png",
-      "telephone": loc.phone_number || "+1-718-561-0001",
+      "image": "https://habibihe.com/images/logos/logo.png",
+      "telephone": loc.phone_number || "+1-718-400-0443",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": loc.brief_address || loc.exact_address,
@@ -473,16 +480,16 @@ const Locations = () => {
         <div className="loc-hero-content">
           <div className="loc-hero-badge">
             <MapPin size={14} />
-            <span>3 Locations · Bronx, NY</span>
+            <span>{t('locations.locationsCountBadge')}</span>
           </div>
           <h1 className="loc-hero-title">
-            Find Us <span className="loc-hero-accent">Near You</span>
+            {t('locations.findUsNear')} <span className="loc-hero-accent">{t('locations.nearYou')}</span>
           </h1>
           <p className="loc-hero-sub">
-            Serving authentic Halal cuisine across the Bronx, open early, close late, always fresh.
+            {t('locations.heroSub')}
           </p>
           <a href="#locations-grid" className="loc-hero-scroll">
-            <span>Explore Locations</span>
+            <span>{t('locations.exploreLocations')}</span>
             <ChevronDown size={18} className="loc-scroll-arrow" />
           </a>
         </div>
@@ -491,23 +498,23 @@ const Locations = () => {
         <div className="loc-hero-stats">
           <div className="loc-hero-stat">
             <span className="loc-hero-stat-num">3</span>
-            <span className="loc-hero-stat-label">Locations</span>
+            <span className="loc-hero-stat-label">{t('locations.statLocations')}</span>
           </div>
           <div className="loc-hero-stat-divider" />
           <div className="loc-hero-stat">
             <span className="loc-hero-stat-num">365</span>
-            <span className="loc-hero-stat-label">Days / Year</span>
+            <span className="loc-hero-stat-label">{t('locations.statDaysPerYear')}</span>
           </div>
           <div className="loc-hero-stat-divider" />
           <div className="loc-hero-stat">
             <span className="loc-hero-stat-num">300+</span>
-            <span className="loc-hero-stat-label">Mile Delivery</span>
+            <span className="loc-hero-stat-label">{t('locations.statMileDelivery')}</span>
           </div>
           <div className="loc-hero-stat-divider" />
           <div className="loc-hero-stat">
             <Star size={18} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
             <span className="loc-hero-stat-num">4.9</span>
-            <span className="loc-hero-stat-label">Rating</span>
+            <span className="loc-hero-stat-label">{t('locations.statRating')}</span>
           </div>
         </div>
       </div>
@@ -518,11 +525,11 @@ const Locations = () => {
         <div className="loc-section-header" id="locations-grid">
           <div className="loc-section-label">
             <span className="loc-eyebrow-dot" />
-            <span className="loc-eyebrow">OUR NETWORK</span>
+            <span className="loc-eyebrow">{t('locations.ourNetwork')}</span>
           </div>
-          <h2 className="loc-section-title">All <span className="text-primary">Locations</span></h2>
+          <h2 className="loc-section-title">{t('locations.allLocations')} <span className="text-primary">{t('locations.locationsWord')}</span></h2>
           <p className="loc-section-desc">
-            {userCoords ? 'Sorted by proximity to your location' : 'Tap a card to view hours or get directions'}
+            {userCoords ? t('locations.sortedByProximity') : t('locations.tapCardForHours')}
           </p>
         </div>
 
@@ -532,7 +539,7 @@ const Locations = () => {
             <div className="loc-loading-ring">
               <div className="loading-spinner" />
             </div>
-            <p>Finding locations near you...</p>
+            <p>{t('locations.findingLocations')}</p>
           </div>
         ) : (
           <div className="lcn-grid">
@@ -579,20 +586,18 @@ const Locations = () => {
             </div>
             <div className="coverage-stat-center">
               <p className="coverage-num"><AnimatedCounter target="300" suffix="+" /></p>
-              <p className="coverage-unit">MILE RADIUS</p>
+              <p className="coverage-unit">{t('locations.mileRadius')}</p>
             </div>
           </div>
 
           {/* Right: text */}
           <div className="coverage-text">
-            <p className="loc-eyebrow">📦 DELIVERY COVERAGE</p>
+            <p className="loc-eyebrow">{t('locations.deliveryCoverage')}</p>
             <h2 className="coverage-title">
-              Broadening the<br /><span className="text-primary">Halal Horizon</span>
+              {t('locations.broadening')}<br /><span className="text-primary">{t('locations.halalHorizon')}</span>
             </h2>
             <p className="coverage-desc">
-              We don't just deliver to your doorstep, we bridge the gap between premium Halal artistry
-              and the tri-state area. Our long-distance logistics network ensures your feast arrives
-              with the same precision it was crafted with.
+              {t('locations.coverageDesc')}
             </p>
 
             {/* Delivery tiers */}
@@ -600,22 +605,22 @@ const Locations = () => {
               <div className="cov-tier">
                 <div className="cov-tier-dot" style={{ background: '#22c55e' }} />
                 <div>
-                  <p className="cov-tier-label">🏠 In-House Delivery</p>
-                  <p className="cov-tier-range">Up to 3 miles · ~25 min</p>
+                  <p className="cov-tier-label">{t('locations.inHouseDelivery')}</p>
+                  <p className="cov-tier-range">{t('locations.inHouseRange')}</p>
                 </div>
               </div>
               <div className="cov-tier">
                 <div className="cov-tier-dot" style={{ background: '#3b82f6' }} />
                 <div>
-                  <p className="cov-tier-label">⚡ Express Delivery</p>
-                  <p className="cov-tier-range">3–10 miles · ~45 min</p>
+                  <p className="cov-tier-label">{t('locations.expressDelivery')}</p>
+                  <p className="cov-tier-range">{t('locations.expressRange')}</p>
                 </div>
               </div>
               <div className="cov-tier">
                 <div className="cov-tier-dot" style={{ background: '#f59e0b' }} />
                 <div>
-                  <p className="cov-tier-label">🚀 Long Distance</p>
-                  <p className="cov-tier-range">10–350 miles · Scheduled</p>
+                  <p className="cov-tier-label">{t('locations.longDistance')}</p>
+                  <p className="cov-tier-range">{t('locations.longDistanceRange')}</p>
                 </div>
               </div>
             </div>
@@ -623,20 +628,20 @@ const Locations = () => {
             <div className="coverage-metrics">
               <div className="coverage-metric">
                 <span><AnimatedCounter target="25" suffix=" min" /></span>
-                <p>Avg. Delivery</p>
+                <p>{t('locations.avgDelivery')}</p>
               </div>
               <div className="coverage-metric">
                 <span><AnimatedCounter target="10" suffix="K+" /></span>
-                <p>Orders Delivered</p>
+                <p>{t('locations.ordersDelivered')}</p>
               </div>
               <div className="coverage-metric">
                 <span>4.9 ★</span>
-                <p>Customer Rating</p>
+                <p>{t('locations.customerRating')}</p>
               </div>
             </div>
 
             <Link to="/menu" className="btn btn-primary loc-cta-btn">
-              Order Now ➔
+              {t('locations.orderNowArrow')}
             </Link>
           </div>
         </div>
