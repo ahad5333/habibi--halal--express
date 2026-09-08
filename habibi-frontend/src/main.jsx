@@ -24,6 +24,34 @@ window.addEventListener('vite:preloadError', () => {
   window.location.reload();
 });
 
+// App service worker. Registered for two reasons: "Add to Home Screen" needs a
+// fetch handler to consider the site installable (firebase-messaging-sw.js has
+// none, and only registers once push is enabled anyway), and it gives an
+// offline screen instead of the browser's error page.
+//
+// Registered after load so it never competes with the initial render, and only
+// in production -- a SW in front of the dev server causes exactly the kind of
+// stale-asset confusion the preloadError handler above exists to clean up.
+// sw.js itself deliberately caches only hashed /assets/ and never index.html
+// or /api/, so it cannot serve a stale shell or stale order data.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      // A new build is live while this tab is open: activate it right away so
+      // the next navigation is served by the new worker rather than a stale one.
+      reg.addEventListener('updatefound', () => {
+        const incoming = reg.installing;
+        if (!incoming) return;
+        incoming.addEventListener('statechange', () => {
+          if (incoming.state === 'installed' && navigator.serviceWorker.controller) {
+            incoming.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(err => console.warn('[SW] registration failed:', err.message));
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <SettingsProvider>

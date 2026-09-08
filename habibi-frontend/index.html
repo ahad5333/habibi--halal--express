@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="Habibi Halal Express — Fresh, authentic halal platters, gyros, burgers and more. Fast delivery across the Bronx, NY." />
     <meta name="keywords" content="halal food bronx, halal delivery bronx, mediterranean food, halal platters, gyros, shawarma, halal burgers, habibi halal, bronx food delivery" />
@@ -30,7 +30,13 @@
     <meta name="twitter:description" content="Fresh halal platters, gyros, shawarma & burgers made to order. Fast delivery + pickup across the Bronx." />
     <meta name="twitter:image"       content="https://habibihe.com/favicon.png" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+    <!-- iOS ignores the web manifest, so the install appearance comes from
+         these three tags. Previously pointed at the 500x500 favicon, which
+         iOS downscaled on every home-screen add. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Habibi" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

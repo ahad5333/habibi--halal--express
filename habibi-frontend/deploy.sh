@@ -7,6 +7,14 @@ set -e
 REMOTE="habibi-server"
 REMOTE_DIR="/var/www/habibi/habibi-frontend/dist"
 LOCAL_DIST="$(dirname "$0")/dist"
+# How long an old build's asset files stick around after being superseded.
+# Vite's content-hashed filenames mean a file's name only changes when its
+# content does, so old and new files never collide -- this used to delete
+# the previous build's files within seconds of a deploy (swap-then-cleanup),
+# which meant a customer who already had the site open, then navigated to a
+# route they hadn't loaded yet, could hit a "failed to fetch dynamically
+# imported module" error if that chunk's old filename was already gone.
+ASSET_RETENTION_DAYS=14
 
 echo "▶ Building..."
 cd "$(dirname "$0")"
@@ -16,14 +24,33 @@ echo "▶ Uploading new assets to staging folder..."
 ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_new"
 scp -r "${LOCAL_DIST}/assets" "${REMOTE}:${REMOTE_DIR}/assets_new"
 
-echo "▶ Atomic swap (zero downtime)..."
+echo "▶ Merging new assets (old ones kept for ${ASSET_RETENTION_DAYS} days)..."
 ssh "$REMOTE" "
-  mv ${REMOTE_DIR}/assets ${REMOTE_DIR}/assets_old 2>/dev/null || true
-  mv ${REMOTE_DIR}/assets_new ${REMOTE_DIR}/assets
+  mkdir -p ${REMOTE_DIR}/assets
+  cp -rf ${REMOTE_DIR}/assets_new/. ${REMOTE_DIR}/assets/
+  rm -rf ${REMOTE_DIR}/assets_new
+  find ${REMOTE_DIR}/assets -type f -mtime +${ASSET_RETENTION_DAYS} -delete
 "
 
 echo "▶ Uploading index.html..."
 scp "${LOCAL_DIST}/index.html" "${REMOTE}:${REMOTE_DIR}/index.html"
+
+# Root-level files from public/ (manifest.json, sw.js, offline.html,
+# firebase-messaging-sw.js, robots.txt, the PWA icons...). This script only
+# ever handled assets/ + index.html + images/, so anything sitting at the root
+# of dist/ silently never deployed -- the ones already live got there by hand
+# at some point, and a later edit to any of them would not have shipped.
+# Found while adding sw.js, which would have been built locally and simply
+# never existed in production. Small and few, so they upload unconditionally.
+echo "▶ Uploading root files (manifest, service workers, icons)..."
+ROOT_FILES=$(find "${LOCAL_DIST}" -maxdepth 1 -type f ! -name 'index.html' 2>/dev/null)
+if [ -n "$ROOT_FILES" ]; then
+  # shellcheck disable=SC2086
+  scp $ROOT_FILES "${REMOTE}:${REMOTE_DIR}/" && \
+    echo "  uploaded: $(echo "$ROOT_FILES" | wc -l | tr -d ' ') file(s)"
+else
+  echo "  none"
+fi
 
 # public/images/ (391MB, ~1000 files) is a direct copy into dist/images/ but
 # was never synced by this script at all -- it only ever handled assets/ +
@@ -79,8 +106,5 @@ else
   echo "  no new images"
 fi
 rm -f "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST"
-
-echo "▶ Cleaning up old assets..."
-ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_old"
 
 echo "✓ Deploy complete"
