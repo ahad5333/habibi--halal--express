@@ -101,6 +101,34 @@ async function applyOrderStatusEffects({
     ).catch(err => console.error('[OrderStatus] notification insert failed:', err.message));
   }
 
+  // ── 4b. Guest push ───────────────────────────────────────────────────────
+  // Someone who ordered without an account has no user_id and therefore no row
+  // in user_device_tokens, so steps above reach them by email/SMS only. Tokens
+  // registered against this specific order cover them.
+  try {
+    const guestTokens = await pool.query(
+      'SELECT device_token FROM guest_push_tokens WHERE order_number = $1', [orderNumber]
+    );
+    if (guestTokens.rows.length) {
+      const body = STATUS_BODY[status] || `Your order status is now: ${status}.`;
+      for (const { device_token } of guestTokens.rows) {
+        fcmService.sendPushNotification(
+          device_token,
+          `Order Update — #${orderNumber}`,
+          body,
+          { orderNumber, status, url: `/order-tracking?order=${orderNumber}` }
+        ).catch(err => console.error('[OrderStatus] guest push failed:', err.message));
+      }
+    }
+    // Once the order is finished these tokens have nothing left to say.
+    if (['delivered', 'cancelled', 'refunded', 'completed'].includes(status)) {
+      pool.query('DELETE FROM guest_push_tokens WHERE order_number = $1', [orderNumber])
+        .catch(err => console.error('[OrderStatus] guest token cleanup failed:', err.message));
+    }
+  } catch (err) {
+    console.error('[OrderStatus] guest push lookup failed:', err.message);
+  }
+
   // ── 5. Loyalty points on delivery ────────────────────────────────────────
   // Guarded on the previous status so re-saving 'delivered' can't award twice.
   if (status === 'delivered' && previousStatus !== 'delivered' && customerEmail && total) {

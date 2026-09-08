@@ -109,6 +109,46 @@ export const registerDriverPush = async (driverId, hmacToken) => {
   }
 };
 
+// Guest order tracking -- same shape as the driver/staff helpers, but binds
+// the token to one order number instead of an account. This is the only push
+// path available to someone who ordered without registering: user_device_tokens
+// is keyed by user_id, so guests previously got email and SMS only, and were
+// never even asked whether they wanted notifying.
+export const registerGuestOrderPush = async (orderNumber) => {
+  if (!('Notification' in window) || !isFirebaseConfigured()) return { ok: false, reason: 'unsupported' };
+  let permission = Notification.permission;
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== 'granted') return { ok: false, reason: 'denied' };
+
+  try {
+    const { initializeApp, getApps } = await import('firebase/app');
+    const { getMessaging, getToken } = await import('firebase/messaging');
+    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+    const messaging = getMessaging(app);
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const target = swReg.installing || swReg.waiting || swReg.active;
+    if (target) target.postMessage({ type: 'FIREBASE_CONFIG', config: FIREBASE_CONFIG });
+    const fcmToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!fcmToken) return { ok: false, reason: 'no_token' };
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL || ''}/api/orders/${encodeURIComponent(orderNumber)}/push-token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_token: fcmToken }),
+      }
+    );
+    if (!res.ok) return { ok: false, reason: 'register_failed' };
+    return { ok: true, token: fcmToken };
+  } catch (err) {
+    console.error('[Push] Guest order FCM error:', err.message);
+    return { ok: false, reason: 'error' };
+  }
+};
+
 // Staff order-queue login (kitchen/manager/cashier/server) -- same shape as
 // registerDriverPush, but hits the staff-scoped endpoint with the staff
 // session's X-Staff-Id/X-Staff-Token headers instead of X-Driver-Token.

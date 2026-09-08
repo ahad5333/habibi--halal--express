@@ -930,6 +930,24 @@ const createTables = async () => {
       );
     `);
 
+    // ── Guest push tokens ──────────────────────────────────────────
+    // Push previously required a user account: tokens lived only in
+    // user_device_tokens keyed by user_id, so anyone ordering as a guest could
+    // get email and SMS but never a push, and was never even asked. This binds
+    // a browser's FCM token to one order so the person actually waiting for
+    // that food can be told when it moves. Rows are per-order and disposable —
+    // cleaned up once the order reaches a terminal state.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS guest_push_tokens (
+        id           SERIAL PRIMARY KEY,
+        order_number VARCHAR(100) NOT NULL,
+        device_token TEXT NOT NULL,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (order_number, device_token)
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_guest_push_order ON guest_push_tokens(order_number)`);
+
     // ── Delivery Quotes ────────────────────────────────────────────
     // A courier's price is live and moves between the moment checkout shows it
     // and the moment the order is placed, so the quote the customer actually

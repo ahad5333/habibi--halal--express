@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send, Share2, Check } from 'lucide-react';
+import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send, Share2, Check, Bell, BellRing } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ordersAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './OrderTracking.css';
@@ -16,16 +17,22 @@ const RESTAURANT_LNG = -73.8892829;
 // Pre-written quick-select comment tags for the post-delivery rating popup --
 // must match RATING_TAGS in habibi-backend/src/controllers/dispatchController.js
 // (the server rejects anything not in that list).
+// Pre-written quick-select comment tags for the post-delivery rating popup --
+// values sent to the API must match RATING_TAGS in
+// habibi-backend/src/controllers/dispatchController.js verbatim (the server
+// rejects anything not in that list) regardless of UI language -- only the
+// on-screen label is translated, via `orderTracking.ratingTags.<value>`.
 const RATING_TAGS = ['Fast delivery', 'Friendly driver', 'Order arrived hot', 'Great communication', 'Order was late', 'Missing items', 'Order was cold'];
 
-const STEPS = [
-  { id: 1, key: 'pending',          label: 'Received',   emoji: '📋', animClass: 'anim-received'  },
-  { id: 2, key: 'accepted',         label: 'Accepted',   emoji: '✅', animClass: 'anim-accepted'  },
-  { id: 3, key: 'preparing',        label: 'Preparing',  emoji: '👨‍🍳', animClass: 'anim-preparing' },
-  { id: 4, key: 'out_for_delivery', label: 'On the Way', emoji: '🛵', animClass: 'anim-on-way'   },
-  { id: 5, key: 'nearby',           label: 'Nearby',     emoji: '📍', animClass: 'anim-nearby'   },
-  { id: 6, key: 'delivered',        label: 'Delivered',  emoji: '🎉', animClass: 'anim-delivered' },
+const STEP_META = [
+  { id: 1, key: 'pending',          labelKey: 'received',  emoji: '📋', animClass: 'anim-received'  },
+  { id: 2, key: 'accepted',         labelKey: 'accepted',  emoji: '✅', animClass: 'anim-accepted'  },
+  { id: 3, key: 'preparing',        labelKey: 'preparing', emoji: '👨‍🍳', animClass: 'anim-preparing' },
+  { id: 4, key: 'out_for_delivery', labelKey: 'onTheWay',  emoji: '🛵', animClass: 'anim-on-way'   },
+  { id: 5, key: 'nearby',           labelKey: 'nearby',    emoji: '📍', animClass: 'anim-nearby'   },
+  { id: 6, key: 'delivered',        labelKey: 'delivered', emoji: '🎉', animClass: 'anim-delivered' },
 ];
+const buildSteps = (t) => STEP_META.map(s => ({ ...s, label: t(`orderTracking.steps.${s.labelKey}`) }));
 
 const STATUS_STEP = {
   pending: 1,
@@ -36,14 +43,17 @@ const STATUS_STEP = {
   delivered: 6, completed: 6,
 };
 
-const STATUS_INFO = {
-  1: { title: 'Order Received',               sub: 'We got your order and it\'s in the queue. We\'ll confirm shortly.',                          icon: ClipboardList, color: '#60a5fa' },
-  2: { title: 'Order Accepted',               sub: 'The kitchen confirmed your order and is firing up the grill. Hang tight!',                  icon: CheckCircle2,  color: '#34d399' },
-  3: { title: 'Chef is Crafting Perfection',  sub: 'Your order is on the grill. Every cut meets our Habibi gold standard.',                     icon: ChefHat,       color: '#E5B64E', animate: 'chef' },
-  4: { title: 'Driver is On The Way',         sub: 'Your order has been picked up and is heading to you now. Track live below.',                 icon: Scooter,       color: '#a78bfa', animate: 'drive' },
-  5: { title: 'Almost There!',                sub: 'Your driver is nearby. Please be ready to receive your order.',                              icon: MapPin,        color: '#f97316', animate: 'nearby' },
-  6: { title: 'Order Delivered!',             sub: 'Your meal has arrived. Enjoy every bite, made with Habibi love. ✨',                        icon: PartyPopper,   color: '#4ade80', animate: 'delivered' },
-};
+const STATUS_ICONS = { 1: ClipboardList, 2: CheckCircle2, 3: ChefHat, 4: Scooter, 5: MapPin, 6: PartyPopper };
+const STATUS_COLORS = { 1: '#60a5fa', 2: '#34d399', 3: '#E5B64E', 4: '#a78bfa', 5: '#f97316', 6: '#4ade80' };
+const STATUS_ANIM = { 3: 'chef', 4: 'drive', 5: 'nearby', 6: 'delivered' };
+const buildStatusInfo = (t) => ({
+  1: { title: t('orderTracking.status1Title'), sub: t('orderTracking.status1Sub'), icon: STATUS_ICONS[1], color: STATUS_COLORS[1] },
+  2: { title: t('orderTracking.status2Title'), sub: t('orderTracking.status2Sub'), icon: STATUS_ICONS[2], color: STATUS_COLORS[2] },
+  3: { title: t('orderTracking.status3Title'), sub: t('orderTracking.status3Sub'), icon: STATUS_ICONS[3], color: STATUS_COLORS[3], animate: STATUS_ANIM[3] },
+  4: { title: t('orderTracking.status4Title'), sub: t('orderTracking.status4Sub'), icon: STATUS_ICONS[4], color: STATUS_COLORS[4], animate: STATUS_ANIM[4] },
+  5: { title: t('orderTracking.status5Title'), sub: t('orderTracking.status5Sub'), icon: STATUS_ICONS[5], color: STATUS_COLORS[5], animate: STATUS_ANIM[5] },
+  6: { title: t('orderTracking.status6Title'), sub: t('orderTracking.status6Sub'), icon: STATUS_ICONS[6], color: STATUS_COLORS[6], animate: STATUS_ANIM[6] },
+});
 
 function statusToStep(status) {
   return STATUS_STEP[(status || '').toLowerCase()] || 1;
@@ -159,6 +169,9 @@ async function geocodeAddress(addr) {
 }
 
 export default function OrderTracking() {
+  const { t } = useTranslation();
+  const STEPS = buildSteps(t);
+  const STATUS_INFO = buildStatusInfo(t);
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
@@ -166,6 +179,8 @@ export default function OrderTracking() {
 
   const [searchInput, setSearchInput]   = useState(urlOrder || '');
   const [orderNum, setOrderNum]         = useState('');
+  // 'idle' | 'enabling' | 'on' | 'denied' | 'unavailable'
+  const [pushState, setPushState]       = useState('idle');
   const [order, setOrder]               = useState(null);
   const [loading, setLoading]           = useState(false);
   const [notFound, setNotFound]         = useState(false);
@@ -366,7 +381,7 @@ export default function OrderTracking() {
   useEffect(() => {
     if (!orderNum) return;
     const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'],
       withCredentials: true,
     });
     socketRef.current = socket;
@@ -462,6 +477,19 @@ export default function OrderTracking() {
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [orderNum]);
+
+  // Remember that push was already enabled for this order, so revisiting the
+  // page doesn't offer it again as though nothing happened. Browser permission
+  // is the real source of truth -- if it was revoked, show the offer again.
+  useEffect(() => {
+    if (!orderNum) return;
+    try {
+      const saved = localStorage.getItem(`push_on_${orderNum}`) === '1';
+      const granted = 'Notification' in window && Notification.permission === 'granted';
+      if (saved && granted) setPushState('on');
+      else if ('Notification' in window && Notification.permission === 'denied') setPushState('denied');
+    } catch { /* private mode — just show the offer */ }
   }, [orderNum]);
 
   // ── Fallback poll while the chat panel is open ──────────────
@@ -624,6 +652,24 @@ export default function OrderTracking() {
   const isDeliveryOrder = order && order.delivery_method !== 'pickup';
   const isCancelled = orderStatus === 'cancelled';
 
+  // Push notifications for THIS order. Offered here rather than at signup
+  // because this is the one moment the customer actually wants them, and it's
+  // the only push path a guest has -- account-based tokens need a user_id.
+  const enableOrderPush = async () => {
+    if (pushState === 'enabling' || pushState === 'on') return;
+    setPushState('enabling');
+    const { registerGuestOrderPush, isFirebaseConfigured } =
+      await import('../utils/pushNotifications.js');
+    if (!isFirebaseConfigured()) { setPushState('unavailable'); return; }
+    const res = await registerGuestOrderPush(orderNum);
+    if (res.ok) {
+      setPushState('on');
+      try { localStorage.setItem(`push_on_${orderNum}`, '1'); } catch {}
+    } else {
+      setPushState(res.reason === 'denied' ? 'denied' : 'unavailable');
+    }
+  };
+
   // Fake truck position (CSS map fallback when Leaflet not loaded)
   const truckLeft = 20 + (driverProgress / 100) * 55;
 
@@ -631,7 +677,7 @@ export default function OrderTracking() {
   const canCancel = orderStatus === 'pending' && cancelSecondsLeft > 0;
 
   const handleCancelOrder = async () => {
-    if (!cancelEmail.trim()) { setCancelError('Enter the email used for this order.'); return; }
+    if (!cancelEmail.trim()) { setCancelError(t('orderTracking.errEnterOrderEmail')); return; }
     setCancelling(true);
     setCancelError('');
     try {
@@ -641,11 +687,11 @@ export default function OrderTracking() {
         body: JSON.stringify({ customer_email: cancelEmail.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Could not cancel order.');
+      if (!res.ok) throw new Error(data.message || t('orderTracking.errCouldNotCancelOrder'));
       setOrderStatus('cancelled');
       setShowCancelForm(false);
     } catch (err) {
-      setCancelError(err.message || 'Could not cancel order.');
+      setCancelError(err.message || t('orderTracking.errCouldNotCancelOrder'));
     } finally {
       setCancelling(false);
     }
@@ -691,7 +737,7 @@ export default function OrderTracking() {
     try {
       const res = await fetch(`${API_BASE}/api/orders/chat/${orderNum}?customer_email=${encodeURIComponent(email)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Could not load messages.');
+      if (!res.ok) throw new Error(data.message || t('orderTracking.errCouldNotLoadMessages'));
       // Merge rather than replace — a live message can arrive over the socket
       // while this fetch is in flight; blindly overwriting would drop it.
       setChatMessages(prev => {
@@ -706,14 +752,14 @@ export default function OrderTracking() {
       setChatEmailConfirmed(true);
       if (!isLoggedIn) localStorage.setItem(`chat_email_${orderNum}`, email);
     } catch (err) {
-      if (!silent) setChatError(err.message || 'Could not load messages.');
+      if (!silent) setChatError(err.message || t('orderTracking.errCouldNotLoadMessages'));
     } finally {
       if (!silent) setChatLoading(false);
     }
   };
 
   const handleChatEmailSubmit = () => {
-    if (!chatEmail.trim()) { setChatError('Enter the email used for this order.'); return; }
+    if (!chatEmail.trim()) { setChatError(t('orderTracking.errEnterOrderEmail')); return; }
     loadChatHistory(chatEmail.trim());
   };
 
@@ -754,7 +800,7 @@ export default function OrderTracking() {
     const url = `${window.location.origin}/order-tracking?order=${orderNum}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Track my Habibi Halal Express order', text: `Track my order #${orderNum} live:`, url });
+        await navigator.share({ title: t('orderTracking.shareTrackingTitle'), text: t('orderTracking.shareTrackingText', { orderNum }), url });
       } catch (_) { /* user cancelled the share sheet — no-op */ }
       return;
     }
@@ -772,8 +818,8 @@ export default function OrderTracking() {
       {nearbyToast && (
         <div className="ot-nearby-toast" role="status" aria-live="assertive">
           <MapPin size={15} />
-          <span>Your driver is almost there! Please be ready.</span>
-          <button className="ot-nearby-close" onClick={() => setNearbyToast(false)} aria-label="Dismiss">×</button>
+          <span>{t('orderTracking.driverAlmostThere')}</span>
+          <button className="ot-nearby-close" onClick={() => setNearbyToast(false)} aria-label={t('orderTracking.dismiss')}>×</button>
         </div>
       )}
 
@@ -781,8 +827,8 @@ export default function OrderTracking() {
       {showRatingPopup && (
         <div className="ot-rating-popup-overlay" onClick={dismissRatingPopup}>
           <div className="ot-rating-popup" onClick={e => e.stopPropagation()}>
-            <p className="ot-rating-popup-title">How was your delivery?</p>
-            <div className="ot-rating-popup-stars" role="radiogroup" aria-label="Rate your delivery from 1 to 5 stars">
+            <p className="ot-rating-popup-title">{t('orderTracking.howWasDelivery')}</p>
+            <div className="ot-rating-popup-stars" role="radiogroup" aria-label={t('orderTracking.rateDelivery15')}>
               {[1, 2, 3, 4, 5].map(n => (
                 <button
                   key={n}
@@ -790,7 +836,7 @@ export default function OrderTracking() {
                   className="ot-driver-rating-star"
                   disabled={driverRatingSubmitting}
                   onClick={() => setRatingPopupStars(n)}
-                  aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                  aria-label={t('orderTracking.starLabel', { n, plural: n === 1 ? '' : 's' })}
                 >
                   <Star size={28} fill={n <= ratingPopupStars ? 'var(--color-primary)' : 'none'} stroke="var(--color-primary)" strokeWidth={1.5} />
                 </button>
@@ -804,7 +850,7 @@ export default function OrderTracking() {
                   className={`ot-rating-tag ${ratingPopupTags.includes(tag) ? 'ot-rating-tag-selected' : ''}`}
                   onClick={() => toggleRatingTag(tag)}
                 >
-                  {tag}
+                  {t(`orderTracking.ratingTags.${tag}`)}
                 </button>
               ))}
             </div>
@@ -813,9 +859,9 @@ export default function OrderTracking() {
               disabled={!ratingPopupStars || driverRatingSubmitting}
               onClick={() => handleRateDriver(ratingPopupStars, ratingPopupTags)}
             >
-              {driverRatingSubmitting ? 'Submitting…' : 'Submit'}
+              {driverRatingSubmitting ? t('orderTracking.submitting') : t('orderTracking.submit')}
             </button>
-            <button className="ot-rating-popup-later" onClick={dismissRatingPopup}>Maybe later</button>
+            <button className="ot-rating-popup-later" onClick={dismissRatingPopup}>{t('orderTracking.maybeLater')}</button>
           </div>
         </div>
       )}
@@ -830,18 +876,18 @@ export default function OrderTracking() {
             <Search size={15} className="ot-lookup-icon" />
             <input
               className="ot-lookup-input"
-              placeholder="Enter order number (e.g. HBB-1234567890-ABC123)"
-              aria-label="Order number"
+              placeholder={t('orderTracking.orderNumberPlaceholder')}
+              aria-label={t('orderTracking.orderNumberLabel')}
               value={searchInput}
               onChange={e => setSearchInput(e.target.value.toUpperCase())}
             />
             <button type="submit" className="ot-lookup-btn" disabled={loading}>
-              {loading ? <RefreshCw size={14} className="spin" /> : 'Track'}
+              {loading ? <RefreshCw size={14} className="spin" /> : t('orderTracking.track')}
             </button>
           </form>
           {liveConnected && orderNum && (
             <div className="ot-live-pill">
-              <span className="dot-pulse" /> Live
+              <span className="dot-pulse" /> {t('orderTracking.live')}
             </div>
           )}
         </div>
@@ -850,8 +896,8 @@ export default function OrderTracking() {
       {/* ── Not found ── */}
       {notFound && (
         <div className="container ot-not-found">
-          <p>Order not found. Check your order number and try again.</p>
-          <p className="ot-not-found-sub">Look for <strong>HBB-</strong> in your confirmation email.</p>
+          <p>{t('orderTracking.orderNotFound')}</p>
+          <p className="ot-not-found-sub">{t('orderTracking.lookForHBB', { prefix: 'HBB-' })}</p>
         </div>
       )}
 
@@ -859,11 +905,11 @@ export default function OrderTracking() {
       {!order && !notFound && !loading && (
         <div className="container ot-empty-state">
           <Scooter size={48} className="ot-empty-icon" color="var(--color-primary)" />
-          <h2>Track Your Order</h2>
+          <h2>{t('orderTracking.trackYourOrder')}</h2>
 
           {isLoggedIn && recentOrders.length > 0 ? (
             <div className="ot-recent-orders">
-              <p className="ot-recent-orders-label">Your recent orders — tap to track</p>
+              <p className="ot-recent-orders-label">{t('orderTracking.recentOrdersLabel')}</p>
               <div className="ot-recent-orders-list">
                 {recentOrders.map(o => (
                   <button
@@ -889,10 +935,10 @@ export default function OrderTracking() {
               </div>
             </div>
           ) : (
-            <p>Enter your order number above to see live status updates.</p>
+            <p>{t('orderTracking.enterOrderNumberAbove')}</p>
           )}
 
-          <Link to="/menu" className="btn btn-primary" style={{ marginTop: '1rem' }}>Place an Order</Link>
+          <Link to="/menu" className="btn btn-primary" style={{ marginTop: '1rem' }}>{t('orderTracking.placeAnOrder')}</Link>
         </div>
       )}
 
@@ -903,27 +949,50 @@ export default function OrderTracking() {
             <div className="container ot-topbar-inner">
               <div className="ot-order-id">
                 <ShoppingBag size={15} className="ot-order-icon" />
-                <span>Order <strong>#{orderNum}</strong></span>
+                <span>{t('orderTracking.orderHash', { num: orderNum })}</span>
                 <span className="ot-placed-at">
-                  Placed {order.placed_at ? new Date(order.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                  {t('orderTracking.placedAt', { time: order.placed_at ? new Date(order.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—' })}
                 </span>
               </div>
               <div className="ot-topbar-right">
-                <button type="button" className="ot-share-btn" onClick={handleShareTracking} title="Share tracking link">
-                  {shareCopied ? <><Check size={13} /> Copied</> : <><Share2 size={13} /> Share</>}
+                <button type="button" className="ot-share-btn" onClick={handleShareTracking} title={t('orderTracking.shareTrackingLink')}>
+                  {shareCopied ? <><Check size={13} /> {t('orderTracking.copied')}</> : <><Share2 size={13} /> {t('orderTracking.share')}</>}
                 </button>
+
+                {/* Only worth offering while the order can still change. */}
+                {!isDelivered && !isCancelled && pushState !== 'unavailable' && (
+                  <button
+                    type="button"
+                    className={`ot-share-btn${pushState === 'on' ? ' ot-notify-on' : ''}`}
+                    onClick={enableOrderPush}
+                    disabled={pushState === 'enabling' || pushState === 'on'}
+                    title={
+                      pushState === 'on'     ? "You'll be notified as this order moves"
+                      : pushState === 'denied' ? 'Notifications are blocked in your browser settings'
+                      : 'Get notified when this order is ready'
+                    }
+                  >
+                    {pushState === 'on'
+                      ? <><BellRing size={13} /> Notifications on</>
+                      : pushState === 'enabling'
+                        ? <><Bell size={13} /> Enabling…</>
+                        : pushState === 'denied'
+                          ? <><Bell size={13} /> Blocked</>
+                          : <><Bell size={13} /> Notify me</>}
+                  </button>
+                )}
                 <div className={`ot-eta-chip${runningLate ? ' ot-eta-chip-late' : ''}`}>
                   <Clock size={13} />
                   <span>
                     {isDelivered
-                      ? 'Delivered ✓'
+                      ? t('orderTracking.deliveredCheck')
                       : runningLate
-                        ? 'Running a bit behind'
+                        ? t('orderTracking.runningBehind')
                         : etaFromGPS != null
-                          ? `~${etaFromGPS} min away`
+                          ? t('orderTracking.minAway', { min: etaFromGPS })
                           : etaSeconds != null
-                            ? `ETA ${fmtEta(etaSeconds)}`
-                            : 'Estimating…'}
+                            ? t('orderTracking.etaLabel', { eta: fmtEta(etaSeconds) })
+                            : t('orderTracking.estimating')}
                   </span>
                 </div>
               </div>
@@ -985,14 +1054,14 @@ export default function OrderTracking() {
                     <div className="ot-hero-icon-ring" style={{ borderColor: '#f87171', boxShadow: '0 0 30px #f8717133' }}>
                       <XCircle size={44} color="#f87171" strokeWidth={2} />
                     </div>
-                    <h2 className="ot-hero-title">Order Cancelled</h2>
+                    <h2 className="ot-hero-title">{t('orderTracking.orderCancelledTitle')}</h2>
                     <p className="ot-hero-sub">
                       {order.payment_method && !['cash', 'zelle', 'cashapp'].includes((order.payment_method || '').toLowerCase())
-                        ? 'This order was cancelled. If you were charged, your refund is being processed.'
-                        : 'This order was cancelled.'}
+                        ? t('orderTracking.orderCancelledRefunding')
+                        : t('orderTracking.orderCancelledPlain')}
                     </p>
                     <div className="ot-delivered-actions">
-                      <Link to="/menu" className="btn btn-primary">Order Again</Link>
+                      <Link to="/menu" className="btn btn-primary">{t('orderTracking.orderAgain')}</Link>
                     </div>
                   </div>
                 ) : (
@@ -1026,14 +1095,14 @@ export default function OrderTracking() {
                     <div className="ot-queue-widget">
                       <div className="ot-queue-dots">
                         {queuePosition === 0 ? (
-                          <span className="ot-queue-dot you pulse" title="Your order" />
+                          <span className="ot-queue-dot you pulse" title={t('orderTracking.yourOrderDot')} />
                         ) : (
                           Array.from({ length: Math.min(queuePosition, 5) }).map((_, i) => (
                             <span key={i} className="ot-queue-dot ahead" />
                           ))
                         )}
                         {queuePosition > 0 && (
-                          <span className="ot-queue-dot you" title="Your order" />
+                          <span className="ot-queue-dot you" title={t('orderTracking.yourOrderDot')} />
                         )}
                         {queuePosition > 5 && (
                           <span className="ot-queue-more">+{queuePosition - 5}</span>
@@ -1041,12 +1110,12 @@ export default function OrderTracking() {
                       </div>
                       <p className="ot-queue-label" aria-live="polite">
                         {queuePosition === 0
-                          ? "You're next! 🔥 Kitchen is starting your order"
+                          ? t('orderTracking.queueNext')
                           : queuePosition === 1
-                            ? '1 order ahead of yours'
-                            : `${queuePosition} orders ahead of yours`}
+                            ? t('orderTracking.queueOneAhead')
+                            : t('orderTracking.queueNAhead', { n: queuePosition })}
                       </p>
-                      <p className="ot-queue-sub">Queue updates in real time</p>
+                      <p className="ot-queue-sub">{t('orderTracking.queueRealtime')}</p>
                     </div>
                   )}
 
@@ -1054,8 +1123,8 @@ export default function OrderTracking() {
                     <div className="ot-eta-block">
                       {runningLate ? (
                         <div className="ot-eta-late">
-                          <span className="ot-eta-late-title">Running a bit behind schedule</span>
-                          <span className="ot-eta-late-sub">Thanks for your patience — your order is still being taken care of.</span>
+                          <span className="ot-eta-late-title">{t('orderTracking.runningLateTitle')}</span>
+                          <span className="ot-eta-late-sub">{t('orderTracking.runningLateSub')}</span>
                         </div>
                       ) : (
                         <>
@@ -1063,7 +1132,7 @@ export default function OrderTracking() {
                             {etaFromGPS != null ? `~${etaFromGPS}` : etaSeconds != null ? fmtEta(etaSeconds) : '—'}
                           </span>
                           <span className="ot-eta-label">
-                            {etaFromGPS != null ? 'minutes away · GPS live' : 'estimated arrival'}
+                            {etaFromGPS != null ? t('orderTracking.minutesAwayGps') : t('orderTracking.estimatedArrival')}
                           </span>
                         </>
                       )}
@@ -1072,19 +1141,19 @@ export default function OrderTracking() {
 
                   {isDelivered && proofPhotoUrl && (
                     <div className="ot-proof-photo">
-                      <p className="ot-proof-label">📸 Delivery Photo</p>
-                      <img src={proofPhotoUrl} alt="Photo taken by your driver at delivery" className="ot-proof-img" />
+                      <p className="ot-proof-label">{t('orderTracking.deliveryPhoto')}</p>
+                      <img src={proofPhotoUrl} alt={t('orderTracking.deliveryPhotoAlt')} className="ot-proof-img" />
                     </div>
                   )}
 
                   {isDelivered && driverInfo?.source !== 'doordash' && driverInfo?.source !== 'roadie' && (
                     <div className="ot-driver-rating-widget">
                       {driverRatingSubmitted || assignmentInfo?.customerRating != null ? (
-                        <p className="ot-driver-rating-thanks">Thanks for rating your driver!</p>
+                        <p className="ot-driver-rating-thanks">{t('orderTracking.ratingThanks')}</p>
                       ) : (
                         <>
-                          <p className="ot-driver-rating-prompt">Rate your delivery driver</p>
-                          <div className="ot-driver-rating-stars" role="radiogroup" aria-label="Rate your driver from 1 to 5 stars">
+                          <p className="ot-driver-rating-prompt">{t('orderTracking.ratingPrompt')}</p>
+                          <div className="ot-driver-rating-stars" role="radiogroup" aria-label={t('orderTracking.rateDriverAria')}>
                             {[1, 2, 3, 4, 5].map(n => (
                               <button
                                 key={n}
@@ -1094,7 +1163,7 @@ export default function OrderTracking() {
                                 onMouseEnter={() => setDriverRatingHover(n)}
                                 onMouseLeave={() => setDriverRatingHover(0)}
                                 onClick={() => handleRateDriver(n)}
-                                aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                                aria-label={t('orderTracking.starLabel', { n, plural: n === 1 ? '' : 's' })}
                               >
                                 <Star size={22} fill={n <= driverRatingHover ? 'var(--color-primary)' : 'none'} stroke="var(--color-primary)" strokeWidth={1.5} />
                               </button>
@@ -1107,8 +1176,8 @@ export default function OrderTracking() {
 
                   {isDelivered && (
                     <div className="ot-delivered-actions">
-                      <Link to="/menu" className="btn btn-primary">Order Again</Link>
-                      <button className="btn btn-outline" onClick={() => navigate(`/reviews/new?order=${orderNum}`)}>Rate Your Order</button>
+                      <Link to="/menu" className="btn btn-primary">{t('orderTracking.orderAgain')}</Link>
+                      <button className="btn btn-outline" onClick={() => navigate(`/reviews/new?order=${orderNum}`)}>{t('orderTracking.rateYourOrder')}</button>
                     </div>
                   )}
                 </div>
@@ -1118,8 +1187,8 @@ export default function OrderTracking() {
                   <MapPin size={14} className="ot-loc-icon" />
                   <span>
                     {order.delivery_method === 'pickup'
-                      ? 'Pickup from Habibi Bedford Park Blvd'
-                      : `Delivering to ${[order.delivery_address, order.delivery_city].filter(Boolean).join(', ')}`}
+                      ? t('orderTracking.pickupFrom')
+                      : t('orderTracking.deliveringTo', { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', ') })}
                   </span>
                 </div>
 
@@ -1129,20 +1198,20 @@ export default function OrderTracking() {
                     {!showCancelForm ? (
                       canCancel ? (
                         <button type="button" className="ot-cancel-trigger" onClick={() => setShowCancelForm(true)}>
-                          Need to cancel? You can for the next {fmtEta(cancelSecondsLeft)}
+                          {t('orderTracking.cancelTrigger', { time: fmtEta(cancelSecondsLeft) })}
                         </button>
                       ) : (
-                        <p className="ot-cancel-expired">Cancellation window has passed — call us if you need help.</p>
+                        <p className="ot-cancel-expired">{t('orderTracking.cancelExpired')}</p>
                       )
                     ) : (
                       <div className="ot-cancel-form">
-                        <p className="ot-cancel-form-title">Cancel this order?</p>
-                        <p className="ot-cancel-form-sub">Enter the email you used at checkout to confirm.</p>
+                        <p className="ot-cancel-form-title">{t('orderTracking.cancelFormTitle')}</p>
+                        <p className="ot-cancel-form-sub">{t('orderTracking.cancelFormSub')}</p>
                         <input
                           type="email"
                           className="ot-cancel-email-input"
                           placeholder="you@example.com"
-                          aria-label="Email used at checkout"
+                          aria-label={t('orderTracking.emailUsedCheckout')}
                           value={cancelEmail}
                           onChange={e => setCancelEmail(e.target.value)}
                           autoFocus
@@ -1150,10 +1219,10 @@ export default function OrderTracking() {
                         {cancelError && <p className="ot-cancel-error" role="alert">{cancelError}</p>}
                         <div className="ot-cancel-actions">
                           <button type="button" className="btn btn-outline" onClick={() => { setShowCancelForm(false); setCancelError(''); }} disabled={cancelling}>
-                            Never mind
+                            {t('orderTracking.neverMind')}
                           </button>
                           <button type="button" className="ot-cancel-confirm-btn" onClick={handleCancelOrder} disabled={cancelling}>
-                            {cancelling ? 'Cancelling…' : 'Yes, cancel my order'}
+                            {cancelling ? t('orderTracking.cancelling') : t('orderTracking.yesCancelOrder')}
                           </button>
                         </div>
                       </div>
@@ -1170,7 +1239,7 @@ export default function OrderTracking() {
                 <div className="ot-map">
                   <div className="ot-map-live-badge">
                     <span className={liveConnected ? 'dot-pulse' : 'dot-static'} />
-                    {driverLatLng ? 'GPS Live' : liveConnected ? 'Live Tracking' : orderNum ? 'Reconnecting…' : 'Enter order number to track'}
+                    {driverLatLng ? t('orderTracking.gpsLiveBadge') : liveConnected ? t('orderTracking.liveTracking') : orderNum ? t('orderTracking.reconnecting') : t('orderTracking.enterOrderNumberToTrack')}
                   </div>
 
                   {/* Real Leaflet map for delivery orders */}
@@ -1191,11 +1260,11 @@ export default function OrderTracking() {
                       <div className="map-pin restaurant-pin">
                         <div className="map-pin-dot gold" />
                         <div className="map-pin-ring gold-ring" />
-                        <span className="map-pin-label">Habibi</span>
+                        <span className="map-pin-label">{t('orderTracking.pinHabibi')}</span>
                       </div>
                       <div className="map-pin home-pin">
                         <div className="map-pin-dot green" />
-                        <span className="map-pin-label">You</span>
+                        <span className="map-pin-label">{t('orderTracking.pinYou')}</span>
                       </div>
                     </>
                   )}
@@ -1232,35 +1301,35 @@ export default function OrderTracking() {
                             : <User size={22} color="#E5B64E" strokeWidth={2} />}
                       </div>
                       <div className="ot-driver-info">
-                        <span className="ot-rider-badge">YOUR RIDER</span>
-                        <p className="ot-driver-name">{driverInfo?.name || 'Your Driver'}</p>
+                        <span className="ot-rider-badge">{t('orderTracking.yourRider')}</span>
+                        <p className="ot-driver-name">{driverInfo?.name || t('orderTracking.yourDriver')}</p>
                         <p className="ot-driver-meta">
                           {driverInfo?.rating_count > 0 ? (
                             <><Star size={11} fill="var(--color-primary)" stroke="none" /> {driverInfo.rating} ({driverInfo.rating_count})</>
                           ) : (
-                            !driverInfo?.source && <span className="ot-new-driver-badge">New Driver</span>
+                            !driverInfo?.source && <span className="ot-new-driver-badge">{t('orderTracking.newDriver')}</span>
                           )}
-                          {driverLatLng && <> · <span className="ot-gps-live">GPS live</span></>}
-                          {!driverLatLng && driverInfo?.source === 'doordash' && <> · <span>DoorDash Drive</span></>}
-                          {!driverLatLng && driverInfo?.source === 'roadie'   && <> · <span>Roadie Courier</span></>}
+                          {driverLatLng && <> · <span className="ot-gps-live">{t('orderTracking.gpsLiveShort')}</span></>}
+                          {!driverLatLng && driverInfo?.source === 'doordash' && <> · <span>{t('orderTracking.doordashDrive')}</span></>}
+                          {!driverLatLng && driverInfo?.source === 'roadie'   && <> · <span>{t('orderTracking.roadieCourier')}</span></>}
                           {driverInfo?.eta && (
                             <> · <Clock size={10} /> {new Date(driverInfo.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
                           )}
                         </p>
                         {driverInfo?.tracking_url && (
                           <a href={driverInfo.tracking_url} target="_blank" rel="noopener noreferrer" className="ot-tracking-link">
-                            Track on DoorDash →
+                            {t('orderTracking.trackOnDoordash')}
                           </a>
                         )}
                       </div>
                       <div className="ot-driver-actions">
                         {hasCallablePhone
-                          ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call" aria-label="Call your driver"><Phone size={16} /></a>
-                          : <button className="ot-driver-btn ot-driver-btn-call" disabled title="Not available for this delivery method" aria-label="Call driver (not available for this delivery method)"><Phone size={16} /></button>
+                          ? <a href={`tel:${driverInfo.phone}`} className="ot-driver-btn ot-driver-btn-call" aria-label={t('orderTracking.callYourDriver')}><Phone size={16} /></a>
+                          : <button className="ot-driver-btn ot-driver-btn-call" disabled title={t('orderTracking.notAvailableMethod')} aria-label={t('orderTracking.callDriverNotAvailable')}><Phone size={16} /></button>
                         }
                         {hasCallablePhone
-                          ? <a href={`sms:${driverInfo.phone}`} className="ot-driver-btn" aria-label="Text your driver"><MessageSquare size={16} /></a>
-                          : <button className="ot-driver-btn" disabled title="Not available for this delivery method" aria-label="Text driver (not available for this delivery method)"><MessageSquare size={16} /></button>
+                          ? <a href={`sms:${driverInfo.phone}`} className="ot-driver-btn" aria-label={t('orderTracking.textYourDriver')}><MessageSquare size={16} /></a>
+                          : <button className="ot-driver-btn" disabled title={t('orderTracking.notAvailableMethod')} aria-label={t('orderTracking.textDriverNotAvailable')}><MessageSquare size={16} /></button>
                         }
                       </div>
                     </div>
@@ -1269,8 +1338,8 @@ export default function OrderTracking() {
                     <div className="ot-finding-rider">
                       <Scooter size={28} className="ot-finding-scooter" color="var(--color-primary)" strokeWidth={2} />
                       <div className="ot-finding-text">
-                        <p className="ot-finding-title">Finding your rider…</p>
-                        <p className="ot-finding-sub">A driver will be assigned once your order is ready</p>
+                        <p className="ot-finding-title">{t('orderTracking.findingRider')}</p>
+                        <p className="ot-finding-sub">{t('orderTracking.findingRiderSub')}</p>
                       </div>
                     </div>
                   )
@@ -1285,19 +1354,19 @@ export default function OrderTracking() {
                     onClick={() => showChatPanel ? setShowChatPanel(false) : openChatPanel()}
                   >
                     <MessageSquare size={16} />
-                    <span>{showChatPanel ? 'Hide messages' : 'Need help? Message us about this order'}</span>
+                    <span>{showChatPanel ? t('orderTracking.hideMessages') : t('orderTracking.needHelpMessageUs')}</span>
                     {hasUnreadReply && !showChatPanel && <span className="ot-chat-unread-dot" />}
                   </button>
 
                   {showChatPanel && (
                     !chatEmailConfirmed ? (
                       <div className="ot-chat-email-gate">
-                        <p className="ot-chat-email-hint">Enter the email used for this order to view and send messages.</p>
+                        <p className="ot-chat-email-hint">{t('orderTracking.enterEmailForOrder')}</p>
                         <input
                           type="email"
                           className="ot-cancel-email-input"
                           placeholder="you@example.com"
-                          aria-label="Email used for this order"
+                          aria-label={t('orderTracking.emailUsedForOrder')}
                           value={chatEmail}
                           onChange={e => setChatEmail(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleChatEmailSubmit()}
@@ -1305,14 +1374,14 @@ export default function OrderTracking() {
                         />
                         {chatError && <p className="ot-cancel-error" role="alert">{chatError}</p>}
                         <button type="button" className="ot-chat-confirm-btn" onClick={handleChatEmailSubmit} disabled={chatLoading}>
-                          {chatLoading ? 'Loading…' : 'Continue'}
+                          {chatLoading ? t('orderTracking.loadingEllipsis') : t('orderTracking.continueBtn')}
                         </button>
                       </div>
                     ) : (
                       <div className="ot-chat-thread">
                         <div className="ot-chat-messages" aria-live="polite" aria-relevant="additions">
                           {chatMessages.length === 0 && (
-                            <p className="ot-chat-empty">No messages yet — send us a note and we'll get back to you.</p>
+                            <p className="ot-chat-empty">{t('orderTracking.noMessagesYet')}</p>
                           )}
                           {chatMessages.map((m, i) => (
                             <div key={m.id || i} className={`ot-chat-msg ${m.sender === 'admin' ? 'ot-chat-msg-staff' : 'ot-chat-msg-me'}`}>
@@ -1330,13 +1399,13 @@ export default function OrderTracking() {
                           <input
                             type="text"
                             className="ot-chat-input"
-                            placeholder="Type a message…"
-                            aria-label="Message"
+                            placeholder={t('orderTracking.typeMessage')}
+                            aria-label={t('orderTracking.messageLabel')}
                             value={chatInput}
                             onChange={e => setChatInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
                           />
-                          <button type="button" className="ot-chat-send-btn" onClick={handleSendChatMessage} disabled={!chatInput.trim()} aria-label="Send message">
+                          <button type="button" className="ot-chat-send-btn" onClick={handleSendChatMessage} disabled={!chatInput.trim()} aria-label={t('orderTracking.sendMessage')}>
                             <Send size={15} />
                           </button>
                         </div>
@@ -1348,9 +1417,9 @@ export default function OrderTracking() {
                 {/* Receipt */}
                 <div className="ot-receipt">
                   <div className="ot-receipt-hdr">
-                    <span className="ot-receipt-label">ORDER SUMMARY</span>
+                    <span className="ot-receipt-label">{t('orderTracking.orderSummary')}</span>
                     <button className="ot-receipt-toggle" onClick={() => setShowItems(v => !v)}>
-                      {showItems ? 'Hide' : 'View'} items
+                      {showItems ? t('orderTracking.hideItems') : t('orderTracking.viewItems')} {t('orderTracking.items')}
                       <ChevronRight size={13} className={`receipt-chevron ${showItems ? 'open' : ''}`} />
                     </button>
                   </div>
@@ -1365,28 +1434,28 @@ export default function OrderTracking() {
                         </div>
                       ))}
                       <div className="ot-receipt-divider" />
-                      <div className="ot-receipt-row"><span>Subtotal</span><span>${parseFloat(order.sub_total || 0).toFixed(2)}</span></div>
-                      <div className="ot-receipt-row"><span>Tax</span><span>${parseFloat(order.tax || 0).toFixed(2)}</span></div>
-                      <div className="ot-receipt-row"><span>Service fee</span><span>${parseFloat(order.service_fee || 0).toFixed(2)}</span></div>
+                      <div className="ot-receipt-row"><span>{t('orderTracking.subtotal')}</span><span>${parseFloat(order.sub_total || 0).toFixed(2)}</span></div>
+                      <div className="ot-receipt-row"><span>{t('orderTracking.tax')}</span><span>${parseFloat(order.tax || 0).toFixed(2)}</span></div>
+                      <div className="ot-receipt-row"><span>{t('orderTracking.serviceFee')}</span><span>${parseFloat(order.service_fee || 0).toFixed(2)}</span></div>
                       {parseFloat(order.delivery_fee) > 0 && (
-                        <div className="ot-receipt-row"><span>Delivery fee</span><span>${parseFloat(order.delivery_fee).toFixed(2)}</span></div>
+                        <div className="ot-receipt-row"><span>{t('orderTracking.deliveryFee')}</span><span>${parseFloat(order.delivery_fee).toFixed(2)}</span></div>
                       )}
                       {parseFloat(order.tip) > 0 && (
-                        <div className="ot-receipt-row"><span>Tip</span><span>${parseFloat(order.tip).toFixed(2)}</span></div>
+                        <div className="ot-receipt-row"><span>{t('orderTracking.tip')}</span><span>${parseFloat(order.tip).toFixed(2)}</span></div>
                       )}
                       {parseFloat(order.discount) > 0 && (
-                        <div className="ot-receipt-row discount"><span>Discount</span><span>−${parseFloat(order.discount).toFixed(2)}</span></div>
+                        <div className="ot-receipt-row discount"><span>{t('orderTracking.discount')}</span><span>−${parseFloat(order.discount).toFixed(2)}</span></div>
                       )}
                     </div>
                   )}
 
                   <div className="ot-receipt-total">
                     <div>
-                      <p className="ot-total-label">TOTAL CHARGED</p>
+                      <p className="ot-total-label">{t('orderTracking.totalCharged')}</p>
                       <p className="ot-total-amount">${parseFloat(order.total || 0).toFixed(2)}</p>
                     </div>
                     <span className="ot-payment-badge">
-                      Paid · {order.payment_method || 'Card'}
+                      {t('orderTracking.paidVia', { method: order.payment_method || t('orderTracking.cardFallback') })}
                     </span>
                   </div>
                 </div>

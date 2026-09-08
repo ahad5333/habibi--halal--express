@@ -186,6 +186,53 @@ router.get("/track/:orderNumber", async (req, res) => {
 /* ── Customer self-service cancellation (ownership-verified) ── */
 router.post("/:orderNumber/cancel", optionalAuth, cancelOrder);
 
+/* ── Guest push registration for one order ──────────────────────────────────
+   Lets someone ordering WITHOUT an account be notified as their order moves.
+   Tokens are bound to a single order and carry no personal data; the push body
+   is only the order number and its status, so this deliberately doesn't demand
+   the ownership proof cancellation does — the worst case is someone who
+   already knows a valid order number learning that its food is being cooked,
+   while requiring an email here would defeat the point for the guests it
+   exists for. Registration is capped per order so it can't be used as a
+   fan-out. ── */
+const MAX_TOKENS_PER_ORDER = 5;
+router.post("/:orderNumber/push-token", async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { device_token } = req.body;
+    if (!device_token || typeof device_token !== 'string' || device_token.length > 4096) {
+      return res.status(400).json({ message: 'device_token required.' });
+    }
+
+    // Only for an order that exists and is still in flight — no point
+    // registering for one that's already delivered or cancelled.
+    const ord = await pool.query(
+      `SELECT order_status FROM guest_orders WHERE order_number = $1`, [orderNumber]
+    );
+    if (!ord.rows.length) return res.status(404).json({ message: 'Order not found.' });
+    if (['delivered', 'cancelled', 'refunded', 'completed'].includes(ord.rows[0].order_status)) {
+      return res.json({ success: true, active: false, message: 'This order is already complete.' });
+    }
+
+    const existing = await pool.query(
+      'SELECT COUNT(*)::int n FROM guest_push_tokens WHERE order_number = $1', [orderNumber]
+    );
+    if (existing.rows[0].n >= MAX_TOKENS_PER_ORDER) {
+      return res.json({ success: true, active: true }); // silently at cap
+    }
+
+    await pool.query(
+      `INSERT INTO guest_push_tokens (order_number, device_token)
+       VALUES ($1, $2) ON CONFLICT (order_number, device_token) DO NOTHING`,
+      [orderNumber, device_token]
+    );
+    res.json({ success: true, active: true });
+  } catch (err) {
+    console.error('[GuestPush] registration failed:', err.message);
+    res.status(500).json(safeError(err));
+  }
+});
+
 /* ── Chat history for an order (ownership-verified) ── */
 router.get("/chat/:orderNumber", optionalAuth, async (req, res) => {
   try {

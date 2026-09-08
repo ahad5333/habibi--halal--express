@@ -132,6 +132,16 @@
   transition: border-color 0.15s, color 0.15s;
 }
 .ot-share-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.ot-share-btn:disabled { cursor: default; }
+.ot-share-btn:disabled:hover { border-color: var(--color-border); color: var(--color-text-muted); }
+
+/* Push enabled for this order — reads as confirmed state, not a button to press. */
+.ot-notify-on,
+.ot-notify-on:disabled {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.ot-notify-on:disabled:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .ot-eta-chip {
   display: flex;
