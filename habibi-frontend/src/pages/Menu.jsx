@@ -184,6 +184,7 @@ const Menu = () => {
   });
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [isOffline,   setIsOffline]   = useState(false);
   const [search,      setSearch]      = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
@@ -263,6 +264,22 @@ const Menu = () => {
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  // The service worker serves the menu catalogue from cache when the network
+  // is gone, so the page still works offline -- but per-location sold-out data
+  // is deliberately never cached, because showing yesterday's availability as
+  // current is worse than admitting we don't know. Say so rather than let the
+  // menu look authoritative.
+  useEffect(() => {
+    const sync = () => setIsOffline(!navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
   }, []);
 
   // React to /menu/:cat URL param or legacy ?cat= query string
@@ -705,6 +722,18 @@ const Menu = () => {
         keywords="halal menu, gyros, chicken over rice platter, philly cheesesteak, halal bergers bronx"
         schema={items.length > 0 ? menuSchema : null}
       />
+
+      {/* Cached menu, no connection. Availability is never cached, so this has
+          to say plainly that it can't be trusted rather than look current. */}
+      {isOffline && (
+        <div className="menu-offline-banner" role="status">
+          <span className="menu-offline-dot" aria-hidden="true" />
+          <span>
+            <strong>You're offline.</strong> This is your last saved menu — prices and
+            availability may have changed, and you'll need a connection to order.
+          </span>
+        </div>
+      )}
 
       {/* ── Full hero — only on main menu (All Categories) ── */}
       {(activeCategory === 'grid' || activeCategory === 'all') && (
