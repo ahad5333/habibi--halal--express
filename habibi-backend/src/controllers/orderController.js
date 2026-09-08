@@ -381,6 +381,23 @@ const createGuestOrder = async (req, res, overrides = {}) => {
           // live quote + 20%. Validated against the quote the customer was
           // actually shown so a moving courier price can't reject a real order.
           const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
+          // A free_delivery coupon legitimately makes the fee $0, so resolve it
+          // before the guard runs or the order gets rejected as underpaid.
+          // Validated through computeCouponDiscount rather than trusting the
+          // code string, so an invented one can't buy free delivery.
+          let couponFreeDelivery = false;
+          if (coupon_code) {
+            try {
+              const c = await computeCouponDiscount({
+                code: coupon_code, amount: parseFloat(sub_total) || 0,
+                userId: req.user?.id || null, locationId: resolvedLocationId, cart: items,
+              });
+              couponFreeDelivery = !!c?.isFreeDelivery;
+            } catch (_) {
+              // Invalid/expired coupon — the dedicated coupon check further
+              // down rejects it with a proper message; nothing to do here.
+            }
+          }
           const feeCheck = await validateClientDeliveryFee({
             quoteRef: delivery_quote_ref,
             locationId: feeLocationId,
@@ -390,6 +407,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
             subtotal: sub_total,
             clientFee: clientDelFee,
             freeDeliveryThreshold,
+            couponFreeDelivery,
           });
           if (!feeCheck.ok) {
             return res.status(400).json({ message: feeCheck.message });
@@ -1214,6 +1232,23 @@ const createPendingCheckout = async (req, res) => {
           return res.status(400).json({ message: "We couldn't verify this delivery address. Please double-check it and try again." });
         } else {
           const freeDeliveryThreshold = await getFreeDeliveryThreshold(req.user?.id);
+          // A free_delivery coupon legitimately makes the fee $0, so resolve it
+          // before the guard runs or the order gets rejected as underpaid.
+          // Validated through computeCouponDiscount rather than trusting the
+          // code string, so an invented one can't buy free delivery.
+          let couponFreeDelivery = false;
+          if (coupon_code) {
+            try {
+              const c = await computeCouponDiscount({
+                code: coupon_code, amount: parseFloat(sub_total) || 0,
+                userId: req.user?.id || null, locationId: resolvedLocationId, cart: items,
+              });
+              couponFreeDelivery = !!c?.isFreeDelivery;
+            } catch (_) {
+              // Invalid/expired coupon — the dedicated coupon check further
+              // down rejects it with a proper message; nothing to do here.
+            }
+          }
           const feeCheck = await validateClientDeliveryFee({
             quoteRef: delivery_quote_ref,
             locationId: feeLocationId,
@@ -1223,6 +1258,7 @@ const createPendingCheckout = async (req, res) => {
             subtotal: sub_total,
             clientFee: clientDelFee,
             freeDeliveryThreshold,
+            couponFreeDelivery,
           });
           if (!feeCheck.ok) {
             return res.status(400).json({ message: feeCheck.message });

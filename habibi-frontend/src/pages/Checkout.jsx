@@ -91,6 +91,9 @@ const Checkout = () => {
   const [couponCode, setCouponCode]         = useState('');
   const [couponApplied, setCouponApplied]   = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  // A free_delivery coupon (e.g. FREESHIP) waives the fee rather than
+  // discounting the food, so it can't be folded into couponDiscount.
+  const [couponFreeDelivery, setCouponFreeDelivery] = useState(false);
   const [couponMsg, setCouponMsg]           = useState('');
   const [couponErr, setCouponErr]           = useState('');
   const [couponLoading, setCouponLoading]   = useState(false);
@@ -172,7 +175,12 @@ const Checkout = () => {
   // VIP tier discount — real, automatic, server-validated the same way the
   // coupon/loyalty discounts above already are (see orderController.js).
   const tierDiscount = tierDiscountPct > 0 ? subtotal * (tierDiscountPct / 100) : 0;
-  const preGiftCardTotal = Math.max(0, subtotal + tax + serviceFee + deliveryFee + tip - couponDiscount - loyaltyDiscount - tierDiscount);
+  // What the customer is actually charged for delivery. deliveryFee stays the
+  // real quoted price (we still owe the courier that), but a free_delivery
+  // coupon waives it — previously FREESHIP said "Free delivery applied!" and
+  // then charged the fee anyway.
+  const chargedDeliveryFee = couponFreeDelivery ? 0 : deliveryFee;
+  const preGiftCardTotal = Math.max(0, subtotal + tax + serviceFee + chargedDeliveryFee + tip - couponDiscount - loyaltyDiscount - tierDiscount);
   // Applying a gift card always uses as much of its balance as the order
   // needs (capped at what's actually owed) -- not a customer-chosen partial
   // amount, mirroring how coupon/loyalty already just apply their full value.
@@ -628,11 +636,13 @@ const Checkout = () => {
       const res = await couponsAPI.validate(code, subtotal, items);
       setCouponApplied(true);
       setCouponDiscount(res.discount || 0);
+      setCouponFreeDelivery(!!res.is_free_delivery);
       setCouponMsg(res.message || t('checkout.couponApplied'));
     } catch (err) {
       setCouponErr(err.message || t('checkout.errInvalidCoupon'));
       setCouponApplied(false);
       setCouponDiscount(0);
+      setCouponFreeDelivery(false);
     } finally {
       setCouponLoading(false);
     }
@@ -703,7 +713,7 @@ const Checkout = () => {
     sub_total:    parseFloat(subtotal.toFixed(2)),
     tax:          parseFloat(tax.toFixed(2)),
     service_fee:  parseFloat(serviceFee.toFixed(2)),
-    delivery_fee: isDineIn ? 0 : parseFloat(deliveryFee.toFixed(2)),
+    delivery_fee: isDineIn ? 0 : parseFloat(chargedDeliveryFee.toFixed(2)),
     // Lets the server validate against the price this checkout actually
     // displayed instead of re-quoting the courier and rejecting the order
     // over a difference the customer never saw.
@@ -2115,7 +2125,7 @@ const Checkout = () => {
                             <input
                               type="text" className="coupon-input" placeholder={t('checkout.enterCouponCode')}
                               value={couponCode}
-                              onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponMsg(''); setCouponErr(''); }}
+                              onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponApplied(false); setCouponDiscount(0); setCouponFreeDelivery(false); setCouponMsg(''); setCouponErr(''); }}
                               disabled={couponApplied}
                             />
                           </div>
@@ -2245,10 +2255,10 @@ const Checkout = () => {
                             <span className="pb-value-hint">{t('checkout.enterAddressAbove')}</span>
                           ) : feeLoading ? (
                             <span className="pb-value-hint">{t('checkout.calculating')}</span>
-                          ) : deliveryFee === 0 ? (
+                          ) : chargedDeliveryFee === 0 ? (
                             <span className="pb-free">{t('checkout.free')}</span>
                           ) : (
-                            `$${deliveryFee.toFixed(2)}`
+                            `$${chargedDeliveryFee.toFixed(2)}`
                           )}
                         </span>
                       </div>

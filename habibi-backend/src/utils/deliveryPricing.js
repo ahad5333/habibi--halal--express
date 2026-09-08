@@ -230,7 +230,7 @@ async function markQuoteConsumed(quoteRef) {
  */
 async function validateClientDeliveryFee({
   quoteRef, locationId, destinationAddress, originAddress, miles, subtotal,
-  clientFee, freeDeliveryThreshold,
+  clientFee, freeDeliveryThreshold, couponFreeDelivery = false,
 }) {
   const TOLERANCE = 0.10;
 
@@ -258,6 +258,10 @@ async function validateClientDeliveryFee({
   if ((parseFloat(subtotal) || 0) >= (parseFloat(freeDeliveryThreshold) || Infinity)) {
     expectedFee = 0;
   }
+  // A free_delivery coupon is one of the two zero cases the owner called out
+  // ("delivery charge might be zero because of a coupon"). The caller resolves
+  // it through computeCouponDiscount, so a made-up code can't reach here.
+  if (couponFreeDelivery) expectedFee = 0;
 
   if ((parseFloat(clientFee) || 0) < expectedFee - TOLERANCE) {
     return { ok: false, message: 'Delivery fee is incorrect. Please refresh and retry.' };
