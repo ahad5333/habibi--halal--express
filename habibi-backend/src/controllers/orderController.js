@@ -12,6 +12,7 @@ const {
   createDelivery: uberCreateDelivery,
 } = require("../utils/uberDirect");
 const { validateClientDeliveryFee, loadQuote, markQuoteConsumed } = require("../utils/deliveryPricing");
+const { applyOrderStatusEffects } = require("../services/orderStatusEffects");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
 const { computeCouponDiscount } = require("./couponController");
@@ -1634,94 +1635,20 @@ const updateGuestOrderStatus = async (req, res) => {
       [status, id]
     );
 
-    const io = req.app.get("io");
-    if (io) {
-      io.to(`order_${id}`).emit("order_status_updated", { order_id: id, status });
-    }
-
     const row = updated.rows[0];
     if (row) {
-      const { customer_phone, customer_email, order_number } = row;
-
-      // 1. Email notification
-      if (customer_email) {
-        emailService.sendOrderStatusUpdate(customer_email, order_number, status).catch(err => {
-          console.error('Failed to send status update email:', err.message);
-        });
-      }
-
-      // 2. SMS notification
-      if (customer_phone) {
-        smsService.sendOrderUpdate(customer_phone, order_number, status).catch(err => {
-          console.error('Failed to send status update SMS:', err.message);
-        });
-      }
-
-      // 3. FCM push + in-app notification
-      if (customer_email) {
-        const userRes = await pool.query("SELECT id FROM users WHERE LOWER(email) = LOWER($1)", [customer_email]);
-        if (userRes.rows.length > 0) {
-          const userId = userRes.rows[0].id;
-          fcmService.sendOrderPushNotification(userId, order_number, status).catch(err => {
-            console.error('Failed to send order status push notification:', err.message);
-          });
-          const STATUS_BODY = {
-            pending:          'Your order is awaiting confirmation.',
-            accepted:         'Great news — the kitchen has accepted your order!',
-            preparing:        'The kitchen is now preparing your food.',
-            cooking:          'Your food is being cooked to perfection.',
-            ready:            'Your order is ready! Pickup or on its way.',
-            out_for_delivery: 'Your order is out for delivery. Hang tight!',
-            delivered:        'Your order has been delivered. Enjoy your meal! 🍽️',
-            cancelled:        'Your order has been cancelled. Contact us if you need help.',
-          };
-          const body = STATUS_BODY[status] || `Your order status is now: ${status}.`;
-          pool.query(
-            `INSERT INTO user_notifications (user_id, title, body) VALUES ($1, $2, $3)`,
-            [userId, `Order Update — #${order_number}`, body]
-          ).catch(err => console.error('[Notification] Insert on status update failed:', err.message));
-        }
-      }
-
-      // 4. Award loyalty points on delivery: 1 pt per $1 spent
-      // Guard: only award if we're transitioning INTO delivered, not re-setting it
-      if (status === 'delivered' && row.previous_status !== 'delivered' && customer_email && row.total) {
-        const pts = Math.floor(parseFloat(row.total) || 0);
-        if (pts > 0) {
-          pool.query(
-            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE LOWER(email) = LOWER($2)`,
-            [pts, customer_email]
-          ).catch(err => console.error('[Loyalty] Award on delivery failed:', err.message));
-        }
-
-        // 5. Complete pending referral on the referee's first delivered order
-        pool.query(
-          `SELECT id FROM guest_orders
-           WHERE customer_email = $1 AND order_status = 'delivered'`,
-          [customer_email]
-        ).then(async (countRes) => {
-          if (countRes.rows.length !== 1) return; // not their first delivered order
-          const userRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [customer_email]);
-          if (!userRes.rows[0]) return;
-          const refereeId = userRes.rows[0].id;
-          const refRow = await pool.query(
-            `SELECT id, referrer_id FROM referrals WHERE referee_user_id = $1 AND status = 'pending' LIMIT 1`,
-            [refereeId]
-          );
-          if (!refRow.rows[0]) return;
-          const { id: refId, referrer_id } = refRow.rows[0];
-          const REFERRAL_BONUS = 500;
-          await pool.query(
-            `UPDATE referrals SET status = 'completed', points_awarded = $1, completed_at = NOW() WHERE id = $2`,
-            [REFERRAL_BONUS, refId]
-          );
-          await pool.query(
-            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + $1 WHERE id = $2`,
-            [REFERRAL_BONUS, referrer_id]
-          );
-          console.log(`[Referral] Awarded ${REFERRAL_BONUS} pts to user ${referrer_id} for referring user ${refereeId}`);
-        }).catch(err => console.error('[Referral] Completion check failed:', err.message));
-      }
+      // Shared with the staff order queue so both screens notify the customer
+      // identically -- see services/orderStatusEffects.js.
+      await applyOrderStatusEffects({
+        io:             req.app.get('io'),
+        orderId:        Number(id),
+        orderNumber:    row.order_number,
+        status,
+        previousStatus: row.previous_status,
+        customerEmail:  row.customer_email,
+        customerPhone:  row.customer_phone,
+        total:          row.total,
+      });
     }
 
     res.json({ success: true });

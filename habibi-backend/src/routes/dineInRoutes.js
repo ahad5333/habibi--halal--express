@@ -5,6 +5,7 @@ const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
 const staffAuth = require('../middleware/staffMiddleware');
 const fcmService = require('../services/fcmService');
+const { applyOrderStatusEffects } = require('../services/orderStatusEffects');
 const safeError = require('../utils/safeError');
 
 // Add verification audit columns if not present
@@ -117,13 +118,18 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     const { status } = req.body;
     // Validate that the requested status is a valid forward transition
     const current = await pool.query(
-      'SELECT order_status, order_number, delivery_method FROM guest_orders WHERE id=$1',
+      `SELECT order_status, order_number, delivery_method,
+              customer_email, customer_phone, total
+         FROM guest_orders WHERE id=$1`,
       [req.params.id]
     );
     if (!current.rows.length) return res.status(404).json({ message: 'Order not found.' });
     const currentStatus  = current.rows[0].order_status;
     const orderNumber    = current.rows[0].order_number;
     const deliveryMethod = current.rows[0].delivery_method;
+    const customerEmail  = current.rows[0].customer_email;
+    const customerPhone  = current.rows[0].customer_phone;
+    const orderTotal     = current.rows[0].total;
     const allowed = KITCHEN_STATUS_FLOW[currentStatus];
 
     // A delivery order's terminal staff stage is 'ready' -- the driver app owns
@@ -177,6 +183,24 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     // benefit from it, same event name already used for order tracking elsewhere.
     const io = req.app.get('io');
     if (io) io.to('admins').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
+
+    // ── Tell the CUSTOMER ────────────────────────────────────────────────
+    // This screen previously notified staff and drivers and said nothing to
+    // the person waiting for the food: no push, no email, no SMS, and the
+    // emit above only reaches the 'admins' room, so /order-tracking sat
+    // still. It also meant a pickup order completed at the counter awarded
+    // no loyalty points and completed no referral, since only the admin
+    // screen ran that. Same shared path both screens now use.
+    applyOrderStatusEffects({
+      io,
+      orderId:        Number(req.params.id),
+      orderNumber,
+      status,
+      previousStatus: currentStatus,
+      customerEmail,
+      customerPhone,
+      total:          orderTotal,
+    }).catch(err => console.error('[Staff queue] customer notification failed:', err.message));
 
     // ── Hand off to the next station / channel ────────────────────────────
     // Fire-and-forget: none of this should be able to fail the bump itself.
