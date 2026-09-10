@@ -256,9 +256,13 @@ async function undo(client, runId) {
   for (const r of rows) {
     const b = r.before;
     if (r.tbl === 'menus') {
+      // A NULL column must come back as SQL NULL, not as the JSON value null
+      // that JSON.stringify(null) would write -- both read as null in JS, so a
+      // snapshot comparison can't tell them apart, but a restore should be exact.
+      const j = (v) => (v === null || v === undefined ? null : JSON.stringify(v));
       await client.query(
         `UPDATE menus SET description=$1, choices=$2, addons=$3, image_url=$4, is_active=$5 WHERE id=$6`,
-        [b.description, JSON.stringify(b.choices), JSON.stringify(b.addons), b.image_url, b.is_active, b.id]);
+        [b.description, j(b.choices), j(b.addons), b.image_url, b.is_active, b.id]);
     } else if (r.tbl === 'subscriptions') {
       await client.query(`UPDATE subscriptions SET items = $1 WHERE id = $2`, [JSON.stringify(b.items), r.row_key.id]);
     } else if (b && b.id !== undefined) {
