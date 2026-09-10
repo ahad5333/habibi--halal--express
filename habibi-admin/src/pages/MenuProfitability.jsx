@@ -96,6 +96,21 @@ export default function MenuProfitability({ start, end, reloadKey }) {
 
   useEffect(() => { load(); }, [load, reloadKey]);
 
+  // The menu holds 35 dish names more than once (e.g. two "Beef Burger" rows),
+  // and orders point at only one of them. A cost typed onto the copy that
+  // never sells leaves the real dish uncosted with no visible reason why, so
+  // duplicate listings are labelled with their id and whether they sell.
+  const dupNames = useMemo(() => {
+    if (!data) return new Set();
+    const seen = new Map();
+    data.items.forEach(i => {
+      const k = (i.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      seen.set(k, (seen.get(k) || 0) + 1);
+    });
+    return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k));
+  }, [data]);
+  const isDup = (i) => dupNames.has((i.name || '').trim().replace(/\s+/g, ' ').toLowerCase());
+
   const rows = useMemo(() => {
     if (!data) return [];
     const q = search.trim().toLowerCase();
@@ -255,6 +270,12 @@ export default function MenuProfitability({ start, end, reloadKey }) {
                   <td>
                     <div style={{ fontWeight: 600 }}>{i.name}</div>
                     <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{i.category || 'Uncategorised'}</div>
+                    {isDup(i) && (
+                      <div style={{ fontSize: '0.68rem', marginTop: 2, color: i.units > 0 ? '#1e3a8a' : '#b45309' }}
+                           title="This dish name appears more than once on the menu. Costs apply to one listing only.">
+                        Duplicate listing #{i.id} · {i.units > 0 ? 'this is the one that sells' : 'no sales on this copy'}
+                      </div>
+                    )}
                   </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{i.units}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{money(i.avg_price)}</td>
