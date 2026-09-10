@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * ⚠️  DO NOT RUN --apply.  The owner confirmed on 2026-09-11 that these
+ * same-named listings are NOT duplicates -- they differ in categories,
+ * temperature, sort order and delivery-app price, which this script never
+ * compared. Its one run (dedupe-2026-09-10T17-44-25-793Z) was reversed with
+ * --undo and the menu restored to its original 251 listings. Kept only so the
+ * undo remains available and as a record of what was tried.
+ *
  * Merge dishes that appear twice in the SAME menu section.
  *
  * WHY: a later bulk re-import (ids #11xx-12xx, added 2026-06-26..07-04) put

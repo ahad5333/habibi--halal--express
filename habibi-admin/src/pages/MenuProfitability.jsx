@@ -96,10 +96,10 @@ export default function MenuProfitability({ start, end, reloadKey }) {
 
   useEffect(() => { load(); }, [load, reloadKey]);
 
-  // Some dishes are deliberately listed in more than one section (Beef Burger
-  // under both Sandwich and Bergers). Costs now follow the dish -- saving one
-  // listing's cost updates every listing of it -- so this label just says so,
-  // rather than asking the owner to work out which copy to cost.
+  // Some dish names appear on more than one listing. The owner confirmed these
+  // can be deliberately distinct items, so each listing keeps its own cost.
+  // The label just makes that visible, so costing one listing isn't mistaken
+  // for costing them all.
   const nameCounts = useMemo(() => {
     const seen = new Map();
     (data?.items || []).forEach(i => {
@@ -271,9 +271,9 @@ export default function MenuProfitability({ start, end, reloadKey }) {
                     <div style={{ fontWeight: 600 }}>{i.name}</div>
                     <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{i.category || 'Uncategorised'}</div>
                     {isDup(i) && (
-                      <div style={{ fontSize: '0.68rem', marginTop: 2, color: '#1e3a8a' }}
-                           title="This dish appears in more than one menu section. One cost is saved to every listing.">
-                        Listed in {listingCount(i)} sections · one cost covers all
+                      <div style={{ fontSize: '0.68rem', marginTop: 2, color: '#6b7280' }}
+                           title="This name appears on more than one menu listing. Each listing has its own cost.">
+                        Listing #{i.id} · 1 of {listingCount(i)} with this name · own cost
                       </div>
                     )}
                   </td>
