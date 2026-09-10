@@ -498,15 +498,33 @@ exports.updateMenuItemCost = async (req, res) => {
     const before = await pool.query('SELECT name, price, cost_price FROM menus WHERE id = $1', [id]);
     if (!before.rows.length) return res.status(404).json({ message: 'Menu item not found.' });
 
-    await pool.query('UPDATE menus SET cost_price = $1 WHERE id = $2', [cost, id]);
+    // The same dish can be listed in more than one section (Beef Burger under
+    // both Sandwich and Bergers). It's one burger with one set of ingredients,
+    // so its cost belongs to every listing -- otherwise a cost typed on the
+    // listing that never sells leaves the one that does uncosted, which is
+    // exactly the trap duplicate listings caused. Matching is done here in JS
+    // with the same whitespace normalisation the report uses, since some
+    // names carry doubled or unusual spaces.
+    const norm = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const applyAll = req.body?.apply_to_same_name !== false;
+    let ids = [id];
+    if (applyAll) {
+      const all = await pool.query(`SELECT id, name FROM menus WHERE COALESCE(is_active, TRUE) = TRUE`);
+      const target = norm(before.rows[0].name);
+      ids = all.rows.filter(r => norm(r.name) === target).map(r => r.id);
+      if (!ids.includes(id)) ids.push(id);
+    }
+
+    await pool.query('UPDATE menus SET cost_price = $1 WHERE id = ANY($2)', [cost, ids]);
 
     const { logAudit } = require('./auditController');
     logAudit(pool, req.user?.id, req.user?.name || req.user?.email, 'update_cost_price', 'menu', id,
-      { name: before.rows[0].name, from: before.rows[0].cost_price, to: cost }, req.ip).catch(() => {});
+      { name: before.rows[0].name, from: before.rows[0].cost_price, to: cost, listings: ids }, req.ip).catch(() => {});
 
     res.json({
       id,
       cost_price: cost,
+      updated_ids: ids,
       // Flagged, not refused: selling below cost can be deliberate (a loss
       // leader), but it should never be an unnoticed typo.
       below_cost: cost !== null && cost > Number(before.rows[0].price),
