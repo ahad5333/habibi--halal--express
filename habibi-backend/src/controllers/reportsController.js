@@ -324,3 +324,194 @@ exports.getPrepForecast = async (req, res) => {
     res.status(500).json(safeError(err));
   }
 };
+
+// ── Menu profitability ─────────────────────────────────────────────────────
+// Answers the question the revenue reports can't: which dishes actually MAKE
+// money. Revenue per dish already existed; what didn't was any notion of what
+// a dish costs to make, so a best-seller at a 20% margin and one at 70% looked
+// identical.
+//
+// Classifies each costed dish with the standard menu-engineering matrix
+// (Kasavana & Smith), because a margin % on its own doesn't say what to DO:
+//
+//   Star       popular, high margin   -> keep, feature prominently
+//   Plowhorse  popular, low margin    -> review the cost, or nudge the price
+//   Puzzle     unpopular, high margin -> promote it, reposition it
+//   Dog        unpopular, low margin  -> rework or remove
+//
+// Thresholds are the textbook ones, computed from this period's own data:
+//   popular     = share of units >= 70% of an even split (0.7 / N)
+//   high margin = unit margin >= the weighted-average unit margin
+//
+// Deliberate limits, surfaced to the admin rather than hidden:
+//  - Cost is per base dish. Paid add-ons raise the selling price captured on
+//    the order, but their ingredient cost isn't tracked, so an add-on-heavy
+//    dish's margin reads slightly high.
+//  - BYO bowls and custom wraps aren't menu rows, so they can't carry a cost;
+//    they're reported as one bucket, revenue only.
+//  - Order-level discounts (coupons, loyalty) aren't allocated to dishes, so
+//    these are gross margins at the price the dish actually sold for.
+//  - Only completed orders count, the same rule as every other report here.
+exports.getMenuProfitability = async (req, res) => {
+  const { s, e } = dateRange(req);
+  try {
+    // Units and revenue per line-item id, from completed orders in range.
+    // The id has lived under three different keys over time.
+    const soldRes = await pool.query(
+      `SELECT
+         COALESCE(item->>'menu_item_id', item->>'menuItemId', item->>'id') AS item_key,
+         SUM(${ITEM_QTY})::numeric AS units,
+         SUM(
+           COALESCE(NULLIF(item->>'unit_price','')::numeric, NULLIF(item->>'price','')::numeric, 0)
+           * ${ITEM_QTY}
+         )::numeric AS revenue
+       FROM guest_orders, ${ITEMS_UNNEST}
+       WHERE ${DATE_BOUNDS} AND ${COMPLETED}
+       GROUP BY 1`,
+      [s, e]
+    );
+
+    const menuRes = await pool.query(
+      `SELECT id, name, category, price, cost_price, is_available
+         FROM menus WHERE COALESCE(is_active, TRUE) = TRUE`
+    );
+
+    const soldById = new Map();
+    const custom = { units: 0, revenue: 0, kinds: new Set() };
+    for (const r of soldRes.rows) {
+      const key = String(r.item_key || '');
+      if (/^\d+$/.test(key)) {
+        soldById.set(Number(key), { units: Number(r.units) || 0, revenue: Number(r.revenue) || 0 });
+      } else {
+        // byo-menu / custom-... : built by the customer, no menu row to cost.
+        custom.units += Number(r.units) || 0;
+        custom.revenue += Number(r.revenue) || 0;
+        custom.kinds.add(key.startsWith('byo') ? 'BYO bowls' : 'custom builds');
+      }
+    }
+
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+    const items = menuRes.rows.map(m => {
+      const sold = soldById.get(m.id) || { units: 0, revenue: 0 };
+      const cost = m.cost_price === null ? null : Number(m.cost_price);
+      // What it really sold for (includes paid add-ons); list price if unsold.
+      const avgPrice = sold.units > 0 ? sold.revenue / sold.units : Number(m.price) || 0;
+      const unitMargin = cost === null ? null : avgPrice - cost;
+      return {
+        id: m.id,
+        name: m.name,
+        category: m.category,
+        list_price: round2(m.price),
+        is_available: m.is_available,
+        units: sold.units,
+        revenue: round2(sold.revenue),
+        avg_price: round2(avgPrice),
+        cost_price: cost === null ? null : round2(cost),
+        unit_margin: unitMargin === null ? null : round2(unitMargin),
+        margin_pct: unitMargin === null || avgPrice <= 0 ? null : round2((unitMargin / avgPrice) * 100),
+        contribution: unitMargin === null ? null : round2(unitMargin * sold.units),
+        klass: null,
+      };
+    });
+
+    // Classify only dishes that both sold and have a cost -- the matrix is
+    // meaningless for anything missing either half.
+    const classifiable = items.filter(i => i.cost_price !== null && i.units > 0);
+    const totalUnits = classifiable.reduce((a, i) => a + i.units, 0);
+    const totalContribution = classifiable.reduce((a, i) => a + i.contribution, 0);
+    const avgUnitMargin = totalUnits > 0 ? totalContribution / totalUnits : 0;
+    const popularityShare = classifiable.length > 0 ? 0.7 / classifiable.length : 0;
+
+    for (const i of classifiable) {
+      const popular = totalUnits > 0 && i.units / totalUnits >= popularityShare;
+      const highMargin = i.unit_margin >= avgUnitMargin;
+      i.klass = popular ? (highMargin ? 'star' : 'plowhorse') : (highMargin ? 'puzzle' : 'dog');
+    }
+
+    const costedRevenue = classifiable.reduce((a, i) => a + i.revenue, 0);
+    const itemRevenue = items.reduce((a, i) => a + i.revenue, 0) + custom.revenue;
+
+    // Sold but uncosted, biggest revenue first: the order in which filling
+    // in a cost changes the picture most.
+    const needsCost = items
+      .filter(i => i.cost_price === null && i.units > 0)
+      .sort((a, b) => b.revenue - a.revenue);
+
+    const counts = { star: 0, plowhorse: 0, puzzle: 0, dog: 0 };
+    classifiable.forEach(i => { counts[i.klass]++; });
+
+    res.json({
+      range: { start: s, end: e },
+      summary: {
+        item_revenue: round2(itemRevenue),
+        costed_revenue: round2(costedRevenue),
+        // How much of the money this report can actually explain. Low
+        // coverage means the margins below describe a small slice of sales.
+        cost_coverage_pct: itemRevenue > 0 ? round2((costedRevenue / itemRevenue) * 100) : 0,
+        total_contribution: round2(totalContribution),
+        blended_margin_pct: costedRevenue > 0 ? round2((totalContribution / costedRevenue) * 100) : null,
+        avg_unit_margin: round2(avgUnitMargin),
+        dishes_total: items.length,
+        dishes_costed: items.filter(i => i.cost_price !== null).length,
+        dishes_sold_uncosted: needsCost.length,
+        negative_margin: classifiable.filter(i => i.unit_margin < 0).length,
+        counts,
+      },
+      thresholds: {
+        popularity_share_pct: round2(popularityShare * 100),
+        avg_unit_margin: round2(avgUnitMargin),
+      },
+      custom_builds: {
+        units: custom.units,
+        revenue: round2(custom.revenue),
+        kinds: [...custom.kinds],
+      },
+      needs_cost: needsCost.slice(0, 15).map(i => ({ id: i.id, name: i.name, revenue: i.revenue, units: i.units })),
+      items: items.sort((a, b) =>
+        (b.contribution ?? -Infinity) - (a.contribution ?? -Infinity) || b.revenue - a.revenue),
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// PATCH /api/admin/reports/menu-profitability/:id/cost   { cost_price }
+// Set (or clear, with null) one dish's cost from the report itself. Entering
+// 251 costs through the item editor one at a time is exactly the friction
+// that means nobody ever fills them in.
+exports.updateMenuItemCost = async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid item id.' });
+
+  const raw = req.body?.cost_price;
+  let cost = null;
+  if (raw !== null && raw !== undefined && raw !== '') {
+    cost = Number(raw);
+    if (!Number.isFinite(cost) || cost < 0 || cost > 10000) {
+      return res.status(400).json({ message: 'Cost must be a number between 0 and 10,000.' });
+    }
+    cost = Math.round(cost * 100) / 100;
+  }
+
+  try {
+    const before = await pool.query('SELECT name, price, cost_price FROM menus WHERE id = $1', [id]);
+    if (!before.rows.length) return res.status(404).json({ message: 'Menu item not found.' });
+
+    await pool.query('UPDATE menus SET cost_price = $1 WHERE id = $2', [cost, id]);
+
+    const { logAudit } = require('./auditController');
+    logAudit(pool, req.user?.id, req.user?.name || req.user?.email, 'update_cost_price', 'menu', id,
+      { name: before.rows[0].name, from: before.rows[0].cost_price, to: cost }, req.ip).catch(() => {});
+
+    res.json({
+      id,
+      cost_price: cost,
+      // Flagged, not refused: selling below cost can be deliberate (a loss
+      // leader), but it should never be an unnoticed typo.
+      below_cost: cost !== null && cost > Number(before.rows[0].price),
+    });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};

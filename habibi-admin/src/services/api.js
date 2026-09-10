@@ -245,6 +245,10 @@ export const adminAPI = {
   reportTax:          (qs = '') => req(`/api/admin/reports/tax${qs}`),
   reportCouponUsage:  (qs = '') => req(`/api/admin/reports/coupon-usage${qs}`),
   reportTrending:     (qs = '') => req(`/api/admin/reports/trending${qs}`),
+  reportMenuProfitability: (qs = '') => req(`/api/admin/reports/menu-profitability${qs}`),
+  updateMenuItemCost: (id, cost_price) => req(`/api/admin/reports/menu-profitability/${id}/cost`, {
+    method: 'PATCH', body: JSON.stringify({ cost_price }),
+  }),
   reportPeakHours:    (qs = '') => req(`/api/admin/reports/peak-hours${qs}`),
   reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 

@@ -423,7 +423,8 @@ router.get("/audit-log", getAuditLog);
 const {
   getRevenueReport, getTransactionReport, getRevenueByLocation,
   getRevenueByCategory, getTaxReport, getOrderReport, getCouponUsageReport,
-  getTrendingItems, getPeakHours, getPrepForecast
+  getTrendingItems, getPeakHours, getPrepForecast,
+  getMenuProfitability, updateMenuItemCost
 } = require("../controllers/reportsController");
 router.get("/reports/revenue",      getRevenueReport);
 router.get("/reports/transactions", getTransactionReport);
@@ -435,6 +436,8 @@ router.get("/reports/coupon-usage", getCouponUsageReport);
 router.get("/reports/trending",     getTrendingItems);
 router.get("/reports/peak-hours",   getPeakHours);
 router.get("/reports/prep-forecast",getPrepForecast);
+router.get("/reports/menu-profitability", getMenuProfitability);
+router.patch("/reports/menu-profitability/:id/cost", updateMenuItemCost);
 
 // Chat Inbox
 router.get("/chat",                       getChatConversations);

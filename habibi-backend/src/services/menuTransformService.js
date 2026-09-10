@@ -12,7 +12,12 @@ async function fetchHabibiMenu() {
     pool.query('SELECT DISTINCT category FROM menus WHERE is_available = true ORDER BY category'),
     pool.query('SELECT * FROM menus WHERE is_available = true ORDER BY category, name'),
   ]);
-  return { categories: cats.rows.map(r => r.category), items: items.rows };
+  // This is the one path that sends menu data OUT, to delivery platforms.
+  // Strip the dish cost here, at the source, so it can never ride along to
+  // DoorDash/Uber/GrubHub -- whatever the per-platform transforms below turn
+  // into later, they only ever see a row without it.
+  const safeItems = items.rows.map(({ cost_price, ...rest }) => rest); // eslint-disable-line no-unused-vars
+  return { categories: cats.rows.map(r => r.category), items: safeItems };
 }
 
 // ── UberEats format ─────────────────────────────────────────────────

@@ -1614,6 +1614,16 @@ const createTables = async () => {
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS name_ar        VARCHAR(255)`);
     await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS description_ar TEXT`);
 
+    // What one portion of a dish costs to make (ingredients + packaging).
+    // Nullable on purpose, with no default: NULL means "not entered yet",
+    // which the profitability report must tell apart from a genuine $0 cost.
+    // A default of 0 would quietly show every dish as 100% margin.
+    //
+    // Business-confidential. The public menu queries select columns
+    // explicitly, so this never reaches a customer; the partner-sync path
+    // strips it before anything goes to a delivery platform.
+    await client.query(`ALTER TABLE menus ADD COLUMN IF NOT EXISTS cost_price NUMERIC(10,2)`);
+
     // ── Site Settings (admin-editable business info) ──────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS site_settings (

@@ -12,10 +12,13 @@ const syncCatalogToPartners = async (req, res) => {
     const menuResult = await pool.query("SELECT * FROM menus WHERE is_available = true");
     const categoriesResult = await pool.query("SELECT DISTINCT category FROM menus");
 
+    // Built for pushing to delivery partners (currently mocked). Dish cost is
+    // stripped now so wiring this up for real later can't leak it.
+    const safeRows = menuResult.rows.map(({ cost_price, ...rest }) => rest); // eslint-disable-line no-unused-vars
     const habibiMenu = {
       categories: categoriesResult.rows.map(cat => ({
         name: cat.category,
-        items: menuResult.rows.filter(item => item.category === cat.category)
+        items: safeRows.filter(item => item.category === cat.category)
       }))
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle, TrendingUp } from 'lucide-react';
 import { adminAPI } from '../services/api';
+import MenuProfitability from './MenuProfitability';
 import './Reports.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
@@ -41,6 +42,11 @@ export default function Reports() {
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(false);
   const [err, setErr]           = useState('');
+  // The range the last "Run Report" actually used. The profitability tab keys
+  // off this rather than the live date inputs, so it moves with every other
+  // tab instead of refetching while a date is still being picked.
+  const [ranRange, setRanRange] = useState({ start: MONTH_AGO, end: TODAY });
+  const [runCount, setRunCount] = useState(0);
 
   // Trends & Forecast tab -- independent of the date-range-scoped run()
   // above (trending/peak-hours/prep-forecast all use their own rolling
@@ -102,6 +108,8 @@ export default function Reports() {
       if (failed.length === results.length) throw new Error(failed[0].reason?.message || 'All report endpoints failed');
       if (failed.length) setErr(`${failed.length} report section(s) failed to load.`);
       setData({ rev, tx, byCat, byLoc, tax, coupon });
+      setRanRange({ start: overrideStart || start, end: overrideEnd || end });
+      setRunCount(c => c + 1);
     } catch (e) {
       setErr(e.message);
     }
@@ -119,6 +127,7 @@ export default function Reports() {
     { id: 'tax',        label: 'Tax Report' },
     { id: 'coupons',    label: 'Coupon Usage' },
     { id: 'trends',     label: 'Trends & Forecast' },
+    { id: 'profit',     label: 'Menu Profitability' },
   ];
 
   return (
@@ -338,6 +347,10 @@ export default function Reports() {
                   </table>
                 </div>
               </div>
+            )}
+
+            {tab === 'profit' && (
+              <MenuProfitability start={ranRange.start} end={ranRange.end} reloadKey={runCount} />
             )}
 
             {tab === 'trends' && (
