@@ -6,6 +6,7 @@ const { getCardProcessorAccountByProvider } = require('./cardProcessorController
 const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
 const { logAudit } = require('./auditController');
+const { normalizeZelleHandle, displayZelleHandle, zelleHandleFromConfig } = require('../utils/zelleHandle');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const { restockOrderItems } = require('./inventoryController');
 const { finalizePendingCheckout } = require('./orderController');
@@ -133,17 +134,30 @@ const getOfflinePaymentInfo = async (req, res) => {
     const zelleRow   = rows.find(r => r.provider === 'zelle');
     const cashappRow = rows.find(r => r.provider === 'cashapp');
     res.json({
-      zelle:   { email:   zelleRow?.config?.email    || process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      zelle:   zelleInfo(zelleHandleFromConfig(zelleRow?.config) || normalizeZelleHandle(process.env.ZELLE_EMAIL)),
       cashapp: { cashtag: cashappRow?.config?.cashtag || process.env.CASHAPP_CASHTAG || '$HabibiHalal' },
     });
   } catch {
     // Fallback to env if DB fails
     res.json({
-      zelle:   { email:   process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      zelle:   zelleInfo(normalizeZelleHandle(process.env.ZELLE_EMAIL)),
       cashapp: { cashtag: process.env.CASHAPP_CASHTAG  || '$HabibiHalal' },
     });
   }
 };
+
+// There is deliberately NO hardcoded Zelle fallback any more. It used to be
+// 'payments@habibihalal.com' -- a domain Habibi does not own, so a customer
+// with nothing configured was told to send real money to a stranger. If no
+// destination is set, `handle` is null and checkout says Zelle is unavailable.
+function zelleInfo(handle) {
+  return {
+    handle:  displayZelleHandle(handle),                  // "(347) 459-7103"
+    copy:    handle ? handle.value : null,                // what to paste into Zelle
+    type:    handle ? handle.type : null,                 // 'phone' | 'email'
+    email:   handle && handle.type === 'email' ? handle.value : null, // legacy readers
+  };
+}
 
 // ─── PayPal create order (mobile: returns approvalUrl for WebView) ──────────
 const paypalCreateOrder = async (req, res) => {

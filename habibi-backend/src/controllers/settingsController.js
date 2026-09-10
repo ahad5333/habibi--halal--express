@@ -2,6 +2,7 @@ const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { logAudit } = require('./auditController');
 const { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold } = require('../utils/systemSettings');
+const { normalizeZelleHandle, displayZelleHandle, zelleHandleFromConfig } = require('../utils/zelleHandle');
 
 const getPaymentSettings = async (req, res) => {
   try {
@@ -141,10 +142,15 @@ const getIntegrationStatus = (req, res) => {
 // ── Admin: upsert Zelle email + Cash App cashtag into payment_settings ──
 const updateOfflineHandles = async (req, res) => {
   const { zelle_email, cashapp_cashtag } = req.body;
-
+  // Field name kept for API compatibility, but it now holds any Zelle
+  // destination: a US mobile number or an email.
+  let zelleHandle = null;
   if (zelle_email !== undefined && zelle_email !== '') {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(zelle_email)) {
-      return res.status(400).json({ message: 'Zelle email must be a valid email address' });
+    zelleHandle = normalizeZelleHandle(zelle_email);
+    if (!zelleHandle) {
+      return res.status(400).json({
+        message: 'Zelle must be a US mobile number (e.g. 347-459-7103) or an email address.',
+      });
     }
   }
   if (cashapp_cashtag !== undefined && cashapp_cashtag !== '') {
@@ -171,7 +177,11 @@ const updateOfflineHandles = async (req, res) => {
   }
 
   try {
-    if (zelle_email !== undefined)    await upsertHandle('zelle',   'Zelle',    { email: zelle_email });
+    if (zelle_email !== undefined) {
+      // Cleared -> empty config, so the checkout shows "unavailable" rather
+      // than inventing an address.
+      await upsertHandle('zelle', 'Zelle', zelleHandle ? { type: zelleHandle.type, value: zelleHandle.value } : {});
+    }
     if (cashapp_cashtag !== undefined) await upsertHandle('cashapp', 'Cash App', { cashtag: cashapp_cashtag });
 
     const result = await pool.query(
@@ -192,8 +202,16 @@ const getOfflineHandles = async (req, res) => {
     const rows = result.rows;
     const zelleRow   = rows.find(r => r.provider === 'zelle');
     const cashappRow = rows.find(r => r.provider === 'cashapp');
+    // No hardcoded fallback: the admin must see "Not set" when nothing is
+    // configured, not the invented address customers used to be shown.
+    const zh = zelleHandleFromConfig(zelleRow?.config) || normalizeZelleHandle(process.env.ZELLE_EMAIL);
     res.json({
-      zelle:   { email:   zelleRow?.config?.email   || process.env.ZELLE_EMAIL      || 'payments@habibihalal.com' },
+      zelle:   {
+        handle: displayZelleHandle(zh),
+        copy:   zh ? zh.value : null,
+        type:   zh ? zh.type : null,
+        email:  zh && zh.type === 'email' ? zh.value : null,
+      },
       cashapp: { cashtag: cashappRow?.config?.cashtag || process.env.CASHAPP_CASHTAG || '$HabibiHalal' },
     });
   } catch (error) {

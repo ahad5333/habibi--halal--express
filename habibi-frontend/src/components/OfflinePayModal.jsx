@@ -62,11 +62,21 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
   const isZelle = method === 'zelle';
   const isCash = method === 'cashapp';
 
+  // No invented Zelle address. The old fallback told customers to pay an
+  // address nobody at Habibi controlled; if nothing is configured the modal
+  // now says Zelle is unavailable instead. Zelle can be a phone number or an
+  // email, so `handle` is what's shown and `copyValue` is what gets pasted.
+  const zelleHandle = info.zelle?.handle || info.zelle?.email || null;
+  const zelleIsPhone = info.zelle?.type === 'phone';
+  const zelleMissing = isZelle && !zelleHandle;
+
   const handle = isZelle
-    ? (info.zelle?.email || 'payments@habibihe.com')
+    ? zelleHandle
     : isCash
       ? (info.cashapp?.cashtag || '$HabibiHalal')
       : '';
+  const copyValue = isZelle ? (info.zelle?.copy || zelleHandle) : handle;
+  const zelleMethodWord = zelleIsPhone ? t('offlinePay.phoneNumber') : t('offlinePay.email');
 
   const title = isZelle ? t('offlinePay.payViaZelle') : isCash ? t('offlinePay.payViaCashApp') : t('offlinePay.cashOnDelivery');
   const icon  = isZelle ? '💙' : isCash ? '💚' : '💵';
@@ -95,7 +105,11 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
           <h2 className="opm-title" id="opm-title">{title}</h2>
         </div>
 
-        {(isZelle || isCash) && (
+        {zelleMissing && (
+          <p className="opm-instruction" role="alert">{t('offlinePay.zelleUnavailable')}</p>
+        )}
+
+        {(isZelle || isCash) && !zelleMissing && (
           <>
             <p className="opm-instruction">
               {(() => {
@@ -108,9 +122,11 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
               <span className="opm-handle">{handle}</span>
               <button
                 className="opm-copy-btn"
-                onClick={() => copy(handle, 'handle')}
+                onClick={() => copy(copyValue, 'handle')}
                 title={t('offlinePay.copy')}
-                aria-label={isZelle ? t('offlinePay.copyEmail') : t('offlinePay.copyCashTag')}
+                aria-label={isZelle
+                  ? (zelleIsPhone ? t('offlinePay.copyPhone') : t('offlinePay.copyEmail'))
+                  : t('offlinePay.copyCashTag')}
               >
                 {copied === 'handle' ? <Check size={14} /> : <Copy size={14} />}
               </button>
@@ -132,7 +148,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
             <div className="opm-steps">
               <p className="opm-steps-title">{t('offlinePay.howItWorks')}</p>
               <ol className="opm-steps-list">
-                <li>{t('offlinePay.step1', { amount: `$${parseFloat(amount).toFixed(2)}`, method: isZelle ? t('offlinePay.email') : t('offlinePay.cashTag') })}</li>
+                <li>{t('offlinePay.step1', { amount: `$${parseFloat(amount).toFixed(2)}`, method: isZelle ? zelleMethodWord : t('offlinePay.cashTag') })}</li>
                 <li>{t('offlinePay.step2Prefix')} <strong>{orderNumber}</strong> {t('offlinePay.step2Suffix')}</li>
                 <li>{t('offlinePay.step3', { method: isZelle ? t('offlinePay.zelle') : t('offlinePay.cashApp') })}</li>
                 <li>{t('offlinePay.step4')}</li>
@@ -169,7 +185,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
         <button
           className="opm-confirm-btn"
           onClick={() => onConfirm(reference.trim())}
-          disabled={(isZelle || isCash) && !reference.trim()}
+          disabled={zelleMissing || ((isZelle || isCash) && !reference.trim())}
         >
           {method === 'cash' ? t('offlinePay.placeOrderPayOnDelivery') : t('offlinePay.sentPaymentPlaceOrder')}
         </button>

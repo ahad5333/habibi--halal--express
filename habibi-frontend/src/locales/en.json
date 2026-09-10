@@ -457,7 +457,6 @@
     "statePlaceholder": "State",
     "zipPlaceholder": "ZIP *",
     "driverInstructionsOptional": "Driver instructions (optional)",
-    "saving": "Saving…",
     "updateAddress": "Update Address",
     "saveAddress": "Save Address",
     "addressLimitReached": "ℹ You've reached the 12-address limit. Remove one to add a new address.",
@@ -501,8 +500,6 @@
     "referAFriend": "Refer a Friend",
     "referralSub": "Share your code and earn loyalty points when friends place their first order.",
     "yourReferralCode": "YOUR REFERRAL CODE",
-    "copied": "Copied!",
-    "copyCode": "Copy Code",
     "share": "Share",
     "referralCodeHint": "Share this with friends so they can apply it at signup or in their account.",
     "invited": "Invited",
@@ -661,7 +658,15 @@
     "cardFallback": "Card"
   },
   "locations": {
-    "days": { "sun": "Sunday", "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday", "sat": "Saturday" },
+    "days": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    },
     "hoursVary": "Hours Vary",
     "hours24": "24 Hours",
     "closed": "Closed",
@@ -775,7 +780,10 @@
     "placeOrderPayOnDelivery": "Place Order — Pay on Delivery",
     "sentPaymentPlaceOrder": "I've Sent Payment — Place Order",
     "pendingVerification": "Your order will be placed in \"pending verification\" until our team confirms receipt of payment (usually 2–5 minutes).",
-    "exactChangeNote": "Please have exact change ready for the driver."
+    "exactChangeNote": "Please have exact change ready for the driver.",
+    "phoneNumber": "phone number",
+    "copyPhone": "Copy phone number",
+    "zelleUnavailable": "Zelle isn't available right now. Please choose another payment method."
   },
   "menu": {
     "spicy": "Spicy",
@@ -820,17 +828,61 @@
     "tagToppings": "③ Toppings",
     "tagSauce": "④ Sauce",
     "categories": {
-      "grid":      { "label": "All Categories",  "shortLabel": "All" },
-      "breakfast": { "label": "Breakfast",       "shortLabel": "Breakfast", "subLabel": "at your own time!", "tagline": "at your own time" },
-      "platter":   { "label": "Platter",         "shortLabel": "Platter",   "tagline": "fresh & generous" },
-      "sandwich":  { "label": "Sandwiches",      "shortLabel": "Sandwich",  "tagline": "wrapped with love" },
-      "burgers":   { "label": "Bergers",         "shortLabel": "Bergers",   "tagline": "stack it your way" },
-      "tacos":     { "label": "Tacos",           "shortLabel": "Tacos",     "tagline": "one epic taco" },
-      "specials":  { "label": "Habibi Specials", "shortLabel": "Specials",  "tagline": "signature favorites" },
-      "extras":    { "label": "Extras",          "shortLabel": "Extras",    "tagline": "complete your meal" },
-      "drinks":    { "label": "Drinks",          "shortLabel": "Drinks",    "tagline": "refresh & recharge" },
-      "family":    { "label": "Family Tray",     "shortLabel": "Family",    "tagline": "feed the whole family" },
-      "byo":       { "label": "Build your Bowl", "shortLabel": "BYO",       "tagline": "your perfect bowl" }
+      "grid": {
+        "label": "All Categories",
+        "shortLabel": "All"
+      },
+      "breakfast": {
+        "label": "Breakfast",
+        "shortLabel": "Breakfast",
+        "subLabel": "at your own time!",
+        "tagline": "at your own time"
+      },
+      "platter": {
+        "label": "Platter",
+        "shortLabel": "Platter",
+        "tagline": "fresh & generous"
+      },
+      "sandwich": {
+        "label": "Sandwiches",
+        "shortLabel": "Sandwich",
+        "tagline": "wrapped with love"
+      },
+      "burgers": {
+        "label": "Bergers",
+        "shortLabel": "Bergers",
+        "tagline": "stack it your way"
+      },
+      "tacos": {
+        "label": "Tacos",
+        "shortLabel": "Tacos",
+        "tagline": "one epic taco"
+      },
+      "specials": {
+        "label": "Habibi Specials",
+        "shortLabel": "Specials",
+        "tagline": "signature favorites"
+      },
+      "extras": {
+        "label": "Extras",
+        "shortLabel": "Extras",
+        "tagline": "complete your meal"
+      },
+      "drinks": {
+        "label": "Drinks",
+        "shortLabel": "Drinks",
+        "tagline": "refresh & recharge"
+      },
+      "family": {
+        "label": "Family Tray",
+        "shortLabel": "Family",
+        "tagline": "feed the whole family"
+      },
+      "byo": {
+        "label": "Build your Bowl",
+        "shortLabel": "BYO",
+        "tagline": "your perfect bowl"
+      }
     }
   },
   "menuModal": {
@@ -867,8 +919,17 @@
     "selectNTacos": "Select {{required}} tacos ({{total}}/{{required}})"
   },
   "home": {
-    "stats": { "menuItems": "Menu Items", "happyCustomers": "Happy Customers", "bronxLocations": "Bronx Locations", "halalCertified": "Halal Certified" },
-    "typedWords": ["Street Food", "Gourmet Bowls", "Sizzling Platters"],
+    "stats": {
+      "menuItems": "Menu Items",
+      "happyCustomers": "Happy Customers",
+      "bronxLocations": "Bronx Locations",
+      "halalCertified": "Halal Certified"
+    },
+    "typedWords": [
+      "Street Food",
+      "Gourmet Bowls",
+      "Sizzling Platters"
+    ],
     "hero": {
       "titleLine1": "Savor the Flavor of",
       "titleLine2": "Halal Perfection",
@@ -883,9 +944,22 @@
       "titleLine2": "Your Order",
       "descPrefix": "19 halal proteins. 8 sauces. Fresh veggies & cheese. Every ingredient, every quantity,",
       "descStrong": "exactly how you want it",
-      "steps": { "base": "Base", "cheese": "Cheese", "veggies": "Veggies", "protein": "Protein", "sauces": "Sauces", "extras": "Extras", "drink": "Drink" },
+      "steps": {
+        "base": "Base",
+        "cheese": "Cheese",
+        "veggies": "Veggies",
+        "protein": "Protein",
+        "sauces": "Sauces",
+        "extras": "Extras",
+        "drink": "Drink"
+      },
       "customizeNow": "Customize Now",
-      "chips": { "freshBase": "🌿 Fresh Base", "halalProtein": "🥩 Halal Protein", "boldFlavour": "🔥 Bold Flavour", "combos": "✨ 100+ Combos" }
+      "chips": {
+        "freshBase": "🌿 Fresh Base",
+        "halalProtein": "🥩 Halal Protein",
+        "boldFlavour": "🔥 Bold Flavour",
+        "combos": "✨ 100+ Combos"
+      }
     },
     "story": {
       "eyebrow": "CULINARY HERITAGE",

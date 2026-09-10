@@ -24,14 +24,23 @@ function OfflineHandlesCard() {
     try {
       const data = await adminAPI.getOfflineHandles();
       setHandles(data);
-      setForm({ zelle_email: data.zelle?.email || '', cashapp_cashtag: data.cashapp?.cashtag || '' });
+      setForm({ zelle_email: data.zelle?.copy || data.zelle?.email || '', cashapp_cashtag: data.cashapp?.cashtag || '' });
     } catch (_) {}
   };
   useEffect(() => { load(); }, []);
 
   const save = async () => {
-    if (form.zelle_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.zelle_email)) {
-      setErr('Zelle email must be a valid email address'); return;
+    // Zelle accepts a US mobile number or an email. Mirrors the server's
+    // normalizeZelleHandle so the form doesn't reject what the server allows.
+    if (form.zelle_email) {
+      const v = form.zelle_email.trim();
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      const digits = v.replace(/\D/g, '');
+      const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+      const isPhone = national.length === 10 && /^[2-9]/.test(national);
+      if (!isEmail && !isPhone) {
+        setErr('Zelle must be a US mobile number (e.g. 347-459-7103) or an email address'); return;
+      }
     }
     if (form.cashapp_cashtag && !form.cashapp_cashtag.startsWith('$')) {
       setErr('Cash App cashtag must start with $ (e.g. $HabibiHalal)'); return;
@@ -77,14 +86,14 @@ function OfflineHandlesCard() {
         {/* Zelle */}
         <div>
           <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b7280', marginBottom: '0.4rem' }}>
-            💙 Zelle Email
+            💙 Zelle (phone or email)
           </p>
           {editing
-            ? <input className="input" placeholder="e.g. payments@habibihe.com"
+            ? <input className="input" placeholder="e.g. 347-459-7103 or payments@habibihe.com"
                 value={form.zelle_email}
                 onChange={e => setForm(f => ({ ...f, zelle_email: e.target.value }))} />
-            : <p style={{ fontWeight: 600, color: handles.zelle?.email ? '#111' : '#9ca3af' }}>
-                {handles.zelle?.email || 'Not set'}
+            : <p style={{ fontWeight: 600, color: handles.zelle?.handle ? '#111' : '#9ca3af' }}>
+                {handles.zelle?.handle || 'Not set — Zelle shows as unavailable at checkout'}
               </p>
           }
         </div>
