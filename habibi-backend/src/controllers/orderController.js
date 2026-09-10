@@ -1528,6 +1528,21 @@ async function finalizePendingCheckout(req, orderNumber, { transactionId, proces
 
   const payload = claimed.rows[0].payload; // JSONB -- already a parsed object
   const authenticatedUserId = payload._authenticated_user_id || null;
+
+  // Record the method of the processor that ACTUALLY took the money, not the
+  // one the browser claimed when it staged the checkout. The checkout tiles
+  // used to stage with a stale selection (fixed client-side, but a tab opened
+  // before that deploy still runs the old code), so a PayPal payment could be
+  // staged as 'card'. That isn't cosmetic: refunds only take the card-processor
+  // route when payment_method === 'card', so the record decides where a refund
+  // goes. PayPal carries both PayPal and Google Pay, so either is kept as-is.
+  const truth = processor === 'paypal'
+    ? (['paypal', 'googlepay'].includes(payload.payment_method) ? payload.payment_method : 'paypal')
+    : ['square', 'clover', 'authorize_net'].includes(processor) ? 'card' : payload.payment_method;
+  if (truth && truth !== payload.payment_method) {
+    console.warn(`[finalize] ${orderNumber}: staged as '${payload.payment_method}' but paid via ${processor} — recording '${truth}'`);
+    payload.payment_method = truth;
+  }
   const fakeReq = {
     body: payload,
     app: req.app,

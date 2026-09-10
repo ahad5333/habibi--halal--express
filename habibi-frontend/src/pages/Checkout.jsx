@@ -677,7 +677,15 @@ const Checkout = () => {
   };
 
   // ── Build order payload ────────────────────────────────────────────────────
-  const buildPayload = (orderNumber, paymentReference) => ({
+  // methodOverride exists because the payment tiles call setPaymentMethod()
+  // and then build the payload in the SAME click. React hasn't applied that
+  // state yet, so reading `paymentMethod` there got the PREVIOUS value: on a
+  // fresh checkout (it starts as null) the first click on Card or PayPal sent
+  // no method and the server refused with "Validation failed"; after touching
+  // another tile first, the order was staged under the wrong method (a PayPal
+  // payment recorded as card, which also misroutes any later refund).
+  // Callers that know the method pass it explicitly.
+  const buildPayload = (orderNumber, paymentReference, methodOverride) => ({
     order_number: orderNumber,
     payment_reference: paymentReference || null,
     customer_name:         receiverName || 'Guest',
@@ -709,7 +717,7 @@ const Checkout = () => {
     // PayPal charge at all -- 'gift_card' routes it through the same
     // already-paid, straight-to-createGuestOrder path 'cash' uses (see
     // orderController.js's payment_status ternary).
-    payment_method:        (giftCardApplied && giftCardAmount > 0 && total <= 0.005) ? 'gift_card' : paymentMethod,
+    payment_method:        (giftCardApplied && giftCardAmount > 0 && total <= 0.005) ? 'gift_card' : (methodOverride || paymentMethod),
     sub_total:    parseFloat(subtotal.toFixed(2)),
     tax:          parseFloat(tax.toFixed(2)),
     service_fee:  parseFloat(serviceFee.toFixed(2)),
@@ -921,7 +929,9 @@ const Checkout = () => {
     trackBeginCheckout(items, total);
     setPlacing(true); setOrderError('');
     try {
-      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+      // Explicitly 'card': the Card tile calls this in the same click that
+      // selects Card, before that selection has reached state.
+      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, 'card'));
       setPendingOrderNum(prepared.order_number);
       // Re-fetch rather than trusting the on-mount check — the active
       // processor could have changed in the admin panel since page load.
@@ -981,7 +991,7 @@ const Checkout = () => {
 
     let orderNumber;
     try {
-      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, 'card'));
       orderNumber = prepared.order_number;
       setPendingOrderNum(orderNumber);
     } catch (err) {
@@ -1992,7 +2002,7 @@ const Checkout = () => {
                           trackBeginCheckout(items, total);
                           setPlacing(true);
                           try {
-                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined));
+                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, m.id));
                             setPendingOrderNum(prepared.order_number);
                             setIntentReady(true);
                           } catch (err) {
