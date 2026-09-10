@@ -120,6 +120,7 @@ const authRoutes = require("./routes/authRoutes")
 const cartRoutes = require("./routes/cartRoutes")
 const orderRoutes = require("./routes/orderRoutes")
 const paymentRoutes = require("./routes/paymentRoutes")
+const { paypalWebhook } = require("./controllers/paypalWebhookController")
 const adminRoutes = require("./routes/adminRoutes")
 const reservationRoutes = require("./routes/reservationRoutes");
 const aiRoutes = require("./routes/aiRoutes");
@@ -187,7 +188,17 @@ app.use('/api', (req, res, next) => {
 });
 
 app.use(cookieParser());
-app.use(express.json({ limit: '500kb' }))
+app.use(express.json({
+  limit: '500kb',
+  // PayPal signs the exact bytes it sends; re-serialising the parsed body is
+  // not guaranteed to reproduce them. Keep the raw text for that one route
+  // only -- every other route is unaffected.
+  verify: (req, res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/payments/paypal/webhook')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}))
 // Twilio (and any other form-POST webhook) sends application/x-www-form-urlencoded,
 // never JSON — without this, req.body was always {} for those requests, so e.g. the
 // inbound SMS STOP/HELP/START webhook read req.body.From/.Body as undefined and its
@@ -211,6 +222,10 @@ app.use("/api/byo-ingredients", byoIngredientRoutes)
 app.use("/api/auth", authRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderLimiter, orderRoutes);
+// PayPal webhook -- registered BEFORE the /api/payments limiter so a burst of
+// PayPal deliveries (e.g. its retries after an outage) can't be throttled into
+// failures. Its protection is signature verification, not rate limiting.
+app.post("/api/payments/paypal/webhook", paypalWebhook);
 app.use("/api/payments", payLimiter, paymentRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/admin", adminLimiter, adminRoutes);

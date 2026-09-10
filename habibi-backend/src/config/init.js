@@ -930,6 +930,24 @@ const createTables = async () => {
       );
     `);
 
+    // ── PayPal webhook events ──────────────────────────────────────
+    // One row per PayPal event id. PayPal retries and can deliver the same
+    // event more than once; the UNIQUE event_id is the idempotency claim, and
+    // `outcome` is the audit trail (e.g. 'recovered', 'alert_order_missing',
+    // 'refunded_full') for anything the webhook did or refused to do.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS paypal_webhook_events (
+        id           SERIAL PRIMARY KEY,
+        event_id     VARCHAR(100) UNIQUE NOT NULL,
+        event_type   VARCHAR(100),
+        resource_id  VARCHAR(100),
+        order_number VARCHAR(100),
+        outcome      VARCHAR(40),
+        detail       TEXT,
+        received_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // ── Guest push tokens ──────────────────────────────────────────
     // Push previously required a user account: tokens lived only in
     // user_device_tokens keyed by user_id, so anyone ordering as a guest could
