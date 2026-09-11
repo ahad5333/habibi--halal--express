@@ -28,6 +28,7 @@ const NAV = [
   { to: '/partner-orders',  icon: <Store size={17} />,      label: 'Partner Orders' },
   { to: '/wholesale-catalog', icon: <BookOpen size={17} />, label: 'Wholesale Catalog' },
   { to: '/staff',      icon: <UserCheck size={17} />,       label: 'Staff' },
+  { to: '/schedule',   icon: <CalendarClock size={17} />,   label: 'Staff Schedule' },
   { to: '/careers',   icon: <Briefcase size={17} />,       label: 'Careers' },
   { to: '/reviews',   icon: <Star size={17} />,            label: 'Reviews' },
   { to: '/inventory',  icon: <Package size={17} />,         label: 'Inventory' },

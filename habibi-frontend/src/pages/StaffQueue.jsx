@@ -1,14 +1,23 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut, Printer, Trash2 } from 'lucide-react';
+import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut, Printer, Trash2, CalendarDays } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, ROLE_STATION, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
 import PrinterPanel from '../components/PrinterPanel';
 import WasteSheet from '../components/WasteSheet';
+import ScheduleSheet from '../components/ScheduleSheet';
 import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const POLL_MS  = 15000;
+
+const SCHEDULE_PATHS = {
+  me: '/schedule/me',
+  clockIn: '/schedule/clock-in',
+  clockOut: '/schedule/clock-out',
+  timeOff: '/schedule/time-off',
+  cancelTimeOff: (id) => `/schedule/time-off/${id}`,
+};
 
 // No dine_in entry: the client doesn't offer dine-in service, the QR-landing
 // route that was the only way to create such an order is gone, and there are
@@ -134,6 +143,7 @@ export default function StaffQueue() {
     return COLUMNS.find(c => c.station === station)?.key || 'new';
   });
   const [showWaste, setShowWaste] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
   const prevIds = useRef(new Set());
   const isManager = session?.role === 'manager';
 
@@ -144,6 +154,18 @@ export default function StaffQueue() {
     localStorage.removeItem('habibi_staff_session');
     window.location.replace('/staff/login');
   };
+
+  // Authenticated call to this person's /api/staff endpoints (schedule sheet).
+  const staffRequest = useCallback(async (path, init = {}) => {
+    const res = await fetch(`${API_BASE}/api/staff${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...staffHeaders, ...(init.headers || {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { handleLogout(); throw new Error('Signed out'); }
+    if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
+    return data;
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchOrders = useCallback(async () => {
     if (!session) return;
@@ -251,6 +273,10 @@ export default function StaffQueue() {
         </div>
         <div className="kd-header-right">
           <PrinterPanel orders={orders} />
+          <button className="kd-manual-refresh kd-print-btn" onClick={() => setShowSchedule(true)} title="My schedule">
+            <CalendarDays size={13} />
+            <span className="kd-print-state">Schedule</span>
+          </button>
           <button className="kd-manual-refresh kd-print-btn" onClick={() => setShowWaste(true)} title="Log waste">
             <Trash2 size={13} />
             <span className="kd-print-state">Waste</span>
@@ -327,6 +353,7 @@ export default function StaffQueue() {
       )}
 
       {showWaste && <WasteSheet headers={staffHeaders} onClose={() => setShowWaste(false)} />}
+      {showSchedule && <ScheduleSheet request={staffRequest} paths={SCHEDULE_PATHS} onClose={() => setShowSchedule(false)} />}
 
       {historyOrder && (
         <div className="kd-history-overlay" onClick={() => setHistoryOrder(null)}>

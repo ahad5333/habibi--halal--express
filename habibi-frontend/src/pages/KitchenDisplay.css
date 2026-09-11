@@ -733,3 +733,10 @@
 .kd-waste-mine li { display: flex; align-items: center; gap: .6rem; font-size: .82rem; }
 .kd-waste-mine li span { flex: 1; min-width: 0; }
 .kd-waste-mine small { color: #6b7280; }
+
+/* Phones: the Print / Schedule / Waste buttons need the room, so the name and
+   the "LIVE" word go (the green dot stays). Without this the buttons ran over
+   the page title at 390px. */
+@media (max-width: 479px) {
+  .kd-staff-who, .kd-live-label { display: none; }
+}

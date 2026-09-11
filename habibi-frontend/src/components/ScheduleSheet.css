@@ -1,0 +1,116 @@
+/* "My schedule" sheet -- used on the staff order screen and in the driver
+   app, both dark, so it carries its own dark panel rather than borrowing
+   either page's classes. */
+.sched-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .75rem;
+  background: rgba(0, 0, 0, .7);
+}
+.sched {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 1.5rem);
+  overflow-y: auto;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  color: #e5e7eb;
+  font-size: .88rem;
+}
+.sched-hdr {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .85rem 1rem;
+  background: #161616;
+  border-bottom: 1px solid #232323;
+  font-weight: 700;
+}
+.sched-hdr span { display: inline-flex; align-items: center; gap: .45rem; }
+.sched-x { display: grid; place-items: center; padding: .35rem; border: 1px solid #2a2a2a; border-radius: 8px; background: none; color: #9ca3af; cursor: pointer; }
+.sched-body { padding: 1rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.sched-muted { padding: 1rem; color: #9ca3af; }
+.sched-muted-sm { margin: .2rem 0 0; font-size: .78rem; color: #9ca3af; }
+.sched-label { margin: 0 0 .5rem; font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #9ca3af; }
+.sched-row-between { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.sched-row-between .sched-label { margin: 0; }
+
+.sched-clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .85rem;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: #1b1b1b;
+}
+.sched-clock.on { border-color: rgba(34, 197, 94, .45); background: rgba(34, 197, 94, .08); }
+.sched-clock-state { margin: 0; font-weight: 700; }
+.sched-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .65rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  font-size: .9rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sched-btn.in { background: #16a34a; }
+.sched-btn.out { background: #dc2626; }
+.sched-btn:disabled { opacity: .5; cursor: default; }
+.sched-msg { margin: 0; font-size: .82rem; }
+.sched-msg.ok { color: #4ade80; }
+.sched-msg.err { color: #f87171; }
+
+.sched-shifts, .sched-offs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.sched-shifts li {
+  display: grid;
+  grid-template-columns: 6.2rem 1fr;
+  gap: .1rem .6rem;
+  padding: .6rem .7rem;
+  border-radius: 10px;
+  background: #1b1b1b;
+  border: 1px solid #232323;
+}
+.sched-shifts li.today { border-color: #3f3f46; }
+.sched-shifts li.now { border-color: rgba(34, 197, 94, .5); }
+.sched-day { font-weight: 700; }
+.sched-time { font-variant-numeric: tabular-nums; }
+.sched-where { grid-column: 2; font-size: .76rem; color: #9ca3af; }
+
+.sched-link { display: inline-flex; align-items: center; gap: .25rem; padding: .2rem 0; border: 0; background: none; color: #fbbf24; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.sched-link:disabled { opacity: .5; }
+.sched-off-form { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .6rem; }
+.sched-off-dates { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.sched-off-form label { display: flex; flex-direction: column; gap: .2rem; font-size: .72rem; color: #9ca3af; }
+.sched-off-form input {
+  width: 100%;
+  min-width: 0;
+  padding: .55rem .6rem;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+  background: #111;
+  color: #fff;
+  font-size: .85rem;
+  color-scheme: dark;
+}
+.sched-off-actions { display: flex; justify-content: flex-end; align-items: center; gap: .9rem; }
+.sched-offs li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; padding: .5rem .7rem; border-radius: 10px; background: #1b1b1b; }
+.sched-offs li > span:first-child { font-weight: 600; }
+.sched-offs small { flex-basis: 100%; color: #9ca3af; }
+.sched-status { padding: .1rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 700; }
+.sched-status.pending { background: rgba(251, 191, 36, .14); color: #fbbf24; }
+.sched-status.approved { background: rgba(34, 197, 94, .14); color: #4ade80; }
+.sched-status.declined { background: rgba(248, 113, 113, .14); color: #f87171; }
+.sched-status.cancelled { background: rgba(156, 163, 175, .14); color: #9ca3af; }

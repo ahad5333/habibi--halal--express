@@ -57,6 +57,7 @@ const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const AssistantInsights = lazy(() => import('./pages/AssistantInsights'));
 const WasteLog         = lazy(() => import('./pages/WasteLog'));
+const StaffSchedule    = lazy(() => import('./pages/StaffSchedule'));
 const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
 const GlobalAddons     = lazy(() => import('./pages/GlobalAddons'));
 const ArticlesAdmin    = lazy(() => import('./pages/ArticlesAdmin'));
@@ -120,6 +121,7 @@ function AdminLayout() {
             <Route path="/chat"           element={<ChatInbox />} />
             <Route path="/assistant"      element={<AssistantInsights />} />
             <Route path="/waste"          element={<WasteLog />} />
+            <Route path="/schedule"       element={<StaffSchedule />} />
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
             <Route path="/global-addons"  element={<GlobalAddons />} />
             <Route path="/articles"       element={<ArticlesAdmin />} />

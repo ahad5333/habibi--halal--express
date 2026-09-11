@@ -26,6 +26,7 @@ async function req(path, opts = {}) {
   if (!res.ok) {
     const err = new Error(data.message || data.error || `${res.status}`);
     err.status = res.status;
+    err.data = data; // e.g. { code: 'time_off' } so a page can offer "schedule anyway"
     throw err;
   }
   return data;
@@ -255,6 +256,18 @@ export const adminAPI = {
   wasteOptions:       () => req('/api/admin/waste/options'),
   logWaste:           (body) => req('/api/admin/waste', { method: 'POST', body: JSON.stringify(body) }),
   deleteWaste:        (id) => req(`/api/admin/waste/${id}`, { method: 'DELETE' }),
+  scheduleWeek:       (week = '') => req(`/api/admin/schedule${week ? `?week=${week}` : ''}`),
+  createShift:        (body) => req('/api/admin/schedule/shifts', { method: 'POST', body: JSON.stringify(body) }),
+  updateShift:        (id, body) => req(`/api/admin/schedule/shifts/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteShift:        (id) => req(`/api/admin/schedule/shifts/${id}`, { method: 'DELETE' }),
+  copyScheduleWeek:   (from, to) => req('/api/admin/schedule/copy-week', { method: 'POST', body: JSON.stringify({ from, to }) }),
+  textSchedule:       (week) => req('/api/admin/schedule/notify', { method: 'POST', body: JSON.stringify({ week }) }),
+  scheduleHours:      (week = '') => req(`/api/admin/schedule/hours${week ? `?week=${week}` : ''}`),
+  addClockEntry:      (body) => req('/api/admin/schedule/clock', { method: 'POST', body: JSON.stringify(body) }),
+  updateClockEntry:   (id, body) => req(`/api/admin/schedule/clock/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteClockEntry:   (id) => req(`/api/admin/schedule/clock/${id}`, { method: 'DELETE' }),
+  timeOffRequests:    (status = '') => req(`/api/admin/schedule/time-off${status ? `?status=${status}` : ''}`),
+  decideTimeOff:      (id, status, note) => req(`/api/admin/schedule/time-off/${id}`, { method: 'PATCH', body: JSON.stringify({ status, note }) }),
   reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 
   // Subscriptions ("Habibi Weekly")

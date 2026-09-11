@@ -170,7 +170,7 @@ export default function WasteSheet({ headers, onClose }) {
                   {mine.map(w => (
                     <li key={w.id}>
                       <span>{parseFloat(w.quantity)} × {w.item_name}</span>
-                      <small>{new Date(w.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>
+                      <small>{new Date(w.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</small>
                       {w.can_undo && (
                         <button className="kd-history-btn" onClick={() => undo(w.id)}><Undo2 size={12} /> Undo</button>
                       )}

@@ -8,7 +8,7 @@ import {
   Package, Phone, MessageSquare, DoorOpen, Camera, X,
   ThumbsUp, ThumbsDown, Power, DollarSign, Bell, Send,
   Zap, Star, History, TrendingUp, BarChart2, Award, Settings, Wifi, WifiOff,
-  Siren, Home,
+  Siren, Home, CalendarDays,
 } from 'lucide-react';
 
 // ── Navigation helpers ────────────────────────────────────────────────
@@ -86,6 +86,7 @@ function decodePolyline(encoded) {
 }
 import './DriverView.css';
 import DriverMap from '../components/DriverMap';
+import ScheduleSheet from '../components/ScheduleSheet';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -213,6 +214,12 @@ export default function DriverView() {
   const [driverPhone, setDriverPhone]       = useState(() => readSession()?.phone || '');
 
   const apiFetch = useCallback(makeApiFetch(driverId, token), [driverId, token]);
+  // "My schedule" sheet: shifts and time off. Drivers clock in by going on duty.
+  const schedulePaths = useMemo(() => ({
+    me: `/api/dispatch/drivers/${driverId}/schedule`,
+    timeOff: `/api/dispatch/drivers/${driverId}/time-off`,
+    cancelTimeOff: (id) => `/api/dispatch/drivers/${driverId}/time-off/${id}`,
+  }), [driverId]);
 
   const [assignment, setAssignment]       = useState(null);
   const [loading, setLoading]             = useState(true);
@@ -278,6 +285,7 @@ export default function DriverView() {
   const [socketConnected, setSocketConnected]   = useState(true);
   const [gpsSignalLost, setGpsSignalLost]       = useState(false);
   const [showPinChange, setShowPinChange]       = useState(false);
+  const [showSchedule, setShowSchedule]         = useState(false);
   const [pinForm, setPinForm]                   = useState({ current: '', newPin: '', confirm: '' });
   const [pinLoading, setPinLoading]             = useState(false);
   const [pinError, setPinError]                 = useState('');
@@ -1311,6 +1319,10 @@ export default function DriverView() {
   );
 
   // ── PIN change drawer ─────────────────────────────────────────────
+  const scheduleDrawer = showSchedule && (
+    <ScheduleSheet request={apiFetch} paths={schedulePaths} clockMode="duty" onClose={() => setShowSchedule(false)} />
+  );
+
   const pinChangeDrawer = showPinChange && (
     <div className="dv-history-overlay" onClick={closePinChange}>
       <div className="dv-history-drawer" onClick={e => e.stopPropagation()}>
@@ -1436,6 +1448,9 @@ export default function DriverView() {
               )}
             </div>
           )}
+          <button className="dv-profile-row" onClick={() => { setShowProfile(false); setShowSchedule(true); }}>
+            <CalendarDays size={18}/> <span>My schedule</span>
+          </button>
           <button className="dv-profile-row" onClick={() => { setShowProfile(false); loadPerf(); setShowPerf(true); }}>
             <BarChart2 size={18}/> <span>Performance</span>
           </button>
@@ -1730,6 +1745,7 @@ export default function DriverView() {
         {earningsDrawer}
         {perfDrawer}
         {pinChangeDrawer}
+        {scheduleDrawer}
         {profileDrawer}
         {cancelAlertModal}
         {connBanner}
@@ -1972,6 +1988,7 @@ export default function DriverView() {
       {earningsDrawer}
       {perfDrawer}
       {pinChangeDrawer}
+        {scheduleDrawer}
       {cancelAlertModal}
       {connBanner}
 
