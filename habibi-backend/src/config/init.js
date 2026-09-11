@@ -995,6 +995,24 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_delivery_quotes_ref ON delivery_quotes(quote_ref)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_delivery_quotes_expires ON delivery_quotes(expires_at)`);
 
+    // ── Assistant question log ─────────────────────────────────────
+    // One row per message sent to the home-page assistant, read by the CPanel
+    // "AI Assistant" page. Anonymous by design: no user, IP or session column,
+    // and the text is redacted (emails, phone numbers) before insert. 180-day
+    // retention via the daily cleanup cron in app.js.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS assistant_queries (
+        id          BIGSERIAL PRIMARY KEY,
+        message     VARCHAR(300) NOT NULL,
+        intent      VARCHAR(30)  NOT NULL,
+        outcome     VARCHAR(12)  NOT NULL CHECK (outcome IN ('answered', 'guessed', 'unanswered')),
+        input_mode  VARCHAR(8)   NOT NULL DEFAULT 'text' CHECK (input_mode IN ('text', 'voice')),
+        item_names  TEXT[]       NOT NULL DEFAULT '{}',
+        created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_assistant_queries_created ON assistant_queries(created_at DESC)`);
+
     // ── Notification Broadcasts ────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS broadcasts (

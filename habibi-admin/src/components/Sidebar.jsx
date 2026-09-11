@@ -7,7 +7,7 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw,
+  Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -52,6 +52,7 @@ const NAV = [
   { to: '/platform-credentials', icon: <KeyRound size={17} />, label: 'API Credentials' },
   { to: '/broadcasts', icon: <Bell size={17} />,            label: 'Broadcasts' },
   { to: '/chat',       icon: <MessageSquare size={17} />,   label: 'Customer Chat', live: true },
+  { to: '/assistant',  icon: <Bot size={17} />,             label: 'AI Assistant' },
   { to: '/loyalty',    icon: <Gift size={17} />,            label: 'Loyalty Program' },
   { to: '/audit-log',    icon: <Shield size={17} />,  label: 'Audit Log' },
   { to: '/integrations', icon: <Link2 size={17} />,   label: 'Integrations' },

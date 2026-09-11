@@ -416,3 +416,97 @@
 @media (prefers-reduced-motion: reduce) {
   .asw-teaser { animation: none; }
 }
+
+/* ── Deals (reply to "any deals?") ────────────────────────────────────────
+   The same list as the Offers page. The code is the button: tap to copy,
+   then paste at checkout, just as the Offers page works. */
+.asw-offers { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.35rem; width: 100%; }
+.asw-offer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(229, 182, 78, 0.07);
+  border: 1px solid rgba(229, 182, 78, 0.22);
+}
+.asw-offer-body { flex: 1; min-width: 0; }
+.asw-offer-title { margin: 0; font-size: 0.8rem; font-weight: 600; color: #f1f1f1; line-height: 1.4; }
+.asw-offer-value {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  background: var(--color-gold, #E5B64E);
+  color: #111;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  vertical-align: 1px;
+}
+.asw-offer-terms { margin: 0.15rem 0 0; font-size: 0.7rem; color: rgba(255, 255, 255, 0.55); }
+.asw-offer-code {
+  flex: none;
+  max-width: 45%;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(229, 182, 78, 0.7);
+  background: transparent;
+  color: var(--color-gold, #E5B64E);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asw-offer-code:hover { background: rgba(229, 182, 78, 0.12); border-style: solid; }
+.asw-offer-code.copied { border: 1px solid #22c55e; color: #4ade80; }
+
+.asw-cta {
+  justify-self: start;
+  margin-top: 0.45rem;
+  padding: 0.2rem 0;
+  background: none;
+  border: 0;
+  color: var(--color-gold, #E5B64E);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.asw-cta:hover { text-decoration: underline; }
+
+/* ── Voice ────────────────────────────────────────────────────────────────
+   Mic sits between the text box and Send; red and pulsing while it listens. */
+.asw-mic {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #f1f1f1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.asw-mic:hover { border-color: var(--color-gold, #E5B64E); }
+.asw-mic:disabled { opacity: 0.5; cursor: default; }
+.asw-mic.listening {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+  animation: asw-mic-pulse 1.4s ease-out infinite;
+}
+@keyframes asw-mic-pulse {
+  from { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }
+  to { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asw-mic.listening { animation: none; }
+}

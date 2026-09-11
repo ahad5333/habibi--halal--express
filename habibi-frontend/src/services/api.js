@@ -418,10 +418,10 @@ export const subscriptionsAPI = {
 };
 
 export const assistantAPI = {
-  chat: (message, cart, history, lastItems) =>
+  chat: (message, cart, history, lastItems, inputMode = 'text') =>
     request('/api/assistant/chat', {
       method: 'POST',
-      body: JSON.stringify({ message, cart, history, lastItems }),
+      body: JSON.stringify({ message, cart, history, lastItems, inputMode }),
     }),
 };
 

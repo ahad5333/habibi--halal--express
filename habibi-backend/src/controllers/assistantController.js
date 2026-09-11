@@ -1,5 +1,6 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
+const { getPublicOffers } = require('../utils/publicOffers');
 
 // ── Habibi Assistant ──────────────────────────────────────────────────────────
 // Rule-based conversational ordering — no external AI API. Every menu match is
@@ -31,6 +32,9 @@ const VEGAN_RE       = /vegan|vegetarian|meatless/i;
 const BURGER_RE      = /burger/i;
 const SPICY_RE       = /spicy|\bheat\b|\bhot\b/i;
 const ADD_CUE_RE     = /\badd\b|\border\b|\bwant\b|get me|i.?ll have|give me|i want/i;
+// "any deals?", "got a promo code", "discounts today" -- but not "do you offer
+// catering?": the verb "offer" only counts after any/an/special/current.
+const DEALS_RE = /\bdeals?\b|\boffers\b|\b(?:any|an|special|current) offer\b|\bdiscounts?\b|\bcoupons?\b|\bpromos?\b|\bpromotions?\b|\bspecials\b|\bon sale\b|\bsavings\b/;
 // Follow-ups that only make sense against whatever was just added, e.g.
 // "make that 3", "actually two", "no, 4 of those".
 const FOLLOWUP_QTY_RE = /^(?:no,?\s*)?(?:make (?:that|it)|actually|change (?:that|it) to|just)\s+(\w+)/i;
@@ -302,12 +306,72 @@ function toItemPayload(m) {
   return { id: m.id, name: m.name, price: parseFloat(m.price || 0), image_url: m.image_url || null };
 }
 
+// ── Deals ─────────────────────────────────────────────────────────────────────
+// Same list the public Offers page shows (utils/publicOffers), so the assistant
+// can never read out a code the page wouldn't -- personal coupons included.
+const DEALS_SHOWN = 5;
+const OFFERS_CTA = { label: 'See all offers', to: '/offers' };
+
+function offerTerms(o) {
+  const parts = [];
+  if (o.min_order > 0) parts.push(`Min. order $${Number(o.min_order).toFixed(2)}`);
+  if (o.first_order_only) parts.push('First order only');
+  if (o.expires_at) {
+    parts.push(`Ends ${new Date(o.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })}`);
+  }
+  return parts.join(' · ');
+}
+
+async function dealsReply() {
+  const offers = await getPublicOffers(DEALS_SHOWN + 1);
+  if (offers.length === 0) {
+    return { text: "There aren't any deals running right now. New ones show up on our Offers page first.", offers: [] };
+  }
+  const shown = offers.slice(0, DEALS_SHOWN);
+  let text;
+  if (offers.length > DEALS_SHOWN) text = 'Here are some of the deals running right now 🎉 Enter a code at checkout:';
+  else if (shown.length === 1) text = "Here's the deal running right now 🎉 Enter the code at checkout:";
+  else text = 'Here are the deals running right now 🎉 Enter a code at checkout:';
+  return {
+    text,
+    offers: shown.map(o => ({ code: o.code, title: o.title, value: o.value_display, terms: offerTerms(o) })),
+  };
+}
+
+// ── Question log (CPanel → AI Assistant) ─────────────────────────────────────
+// What customers ask, so the owner can see what the assistant couldn't answer.
+// Anonymous by design: no account, IP or session is stored, and emails and
+// phone-length digit runs are masked before the text is saved. Kept 180 days
+// (cleanup cron in app.js). A failed insert never affects the reply.
+const LOG_RETENTION_DAYS = 180;
+
+function redactForLog(s) {
+  return String(s || '')
+    .slice(0, 500)
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d[\d\s().-]{5,}\d/g, m => (m.replace(/\D/g, '').length >= 7 ? '[number]' : m))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300);
+}
+
+function logQuery({ message, intent, outcome, inputMode, itemNames }) {
+  const text = redactForLog(message);
+  if (!text) return;
+  pool.query(
+    `INSERT INTO assistant_queries (message, intent, outcome, input_mode, item_names)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [text, intent, outcome, inputMode, (itemNames || []).slice(0, 5)]
+  ).catch(err => console.error('[Assistant] Question log failed:', err.message));
+}
+
 const assistantChat = async (req, res) => {
   try {
     const { message, cart, history, lastItems } = req.body;
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
+    const inputMode = req.body.inputMode === 'voice' ? 'voice' : 'text';
 
     const menuRes = await pool.query(
       `SELECT id, name, price, image_url, description FROM menus WHERE is_available = TRUE AND is_active = TRUE`
@@ -318,11 +382,18 @@ const assistantChat = async (req, res) => {
     // Typo-corrected text is used for intent/menu matching only; the original
     // message is still what allergy detection and cart matching see.
     const norm = correctTypos(normalize(message), candidates);
+    // Deals words are checked on the uncorrected text: the typo corrector only
+    // knows menu words, so it could "fix" deals -> meals if a dish had that word.
+    const asksDeals = DEALS_RE.test(normalize(message));
 
     let text = '';
     let items = [];
     let actions = [];
     let suggestions = [];
+    let offers = null;
+    // For the CPanel question log: what was asked, and whether it got an answer.
+    let intent = 'unanswered';
+    let outcome = 'answered';
 
     // "make that 3" -- only meaningful against whatever was just added, so it's
     // checked before anything else and skipped entirely when there's no prior
@@ -334,13 +405,17 @@ const assistantChat = async (req, res) => {
 
     if (followupQty != null && followupQty > 0 && followupQty <= 50 && Array.isArray(lastItems) && lastItems.length > 0) {
       const target = lastItems[lastItems.length - 1];
+      intent = 'change_quantity';
       text = `Updated — ${followupQty}x ${target.name}.`;
       actions.push({ type: 'set_cart_qty', item: target, qty: followupQty });
 
-    } else if (GREETING_RE.test(norm)) {
-      text = "Hi! I'm the Habibi Assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart — try \"add two beef burgers\".";
+    } else if (GREETING_RE.test(norm) && !asksDeals) {
+      // "hi, any deals today?" is a deals question with a greeting in front.
+      intent = 'greeting';
+      text = "Hi! I'm Habibi, your AI ordering assistant 👋 Ask me about the menu or today's deals, or tell me what you'd like and I'll add it to your cart — try \"add two beef burgers\".";
 
     } else if (CLEAR_CART_RE.test(norm)) {
+      intent = 'clear_cart';
       // Checked before VIEW_CART_RE — "clear my cart" contains the substring
       // "my cart", which would otherwise match the view-cart intent instead.
       if (!cart || cart.length === 0) {
@@ -351,11 +426,13 @@ const assistantChat = async (req, res) => {
       }
 
     } else if (VIEW_CART_RE.test(norm)) {
+      intent = 'view_cart';
       text = (!cart || cart.length === 0)
         ? "Your cart is empty right now — tell me what you'd like and I'll add it!"
         : `Here's what's in your cart: ${cart.map(c => `${c.qty}x ${c.name}`).join(', ')}.`;
 
     } else if (CHECKOUT_RE.test(norm)) {
+      intent = 'checkout';
       if (!cart || cart.length === 0) {
         text = "Your cart's empty — add something first and I'll take you to checkout!";
       } else {
@@ -364,17 +441,28 @@ const assistantChat = async (req, res) => {
       }
 
     } else if (REMOVE_RE.test(norm)) {
+      intent = 'remove_item';
       const found = matchCartItem(message, cart);
       if (found) {
         text = `Removed ${found.name} from your cart.`;
         actions.push({ type: 'remove_from_cart', cartKey: found.cartKey ?? found.id });
       } else {
+        outcome = 'unanswered';
         text = "I couldn't find that in your cart — want to tell me exactly what to remove?";
       }
+
+    } else if (asksDeals && !ADD_CUE_RE.test(norm)) {
+      // Ahead of menu matching so "any deals on burgers?" answers the question
+      // instead of adding a burger. With an order cue ("add the ... deal") the
+      // menu gets first say, and the deals check runs again below if nothing
+      // on the menu matched.
+      intent = 'deals';
+      ({ text, offers } = await dealsReply());
 
     } else {
       const found = matchMenuItems(norm, candidates);
       if (found.length > 0) {
+        intent = 'add_to_cart';
         text = found.length === 1
           ? `Added ${found[0].qty}x ${found[0].item.name} to your cart!`
           : `Added to your cart: ${found.map(f => `${f.qty}x ${f.item.name}`).join(', ')}.`;
@@ -389,19 +477,29 @@ const assistantChat = async (req, res) => {
           text += ` Customers usually add ${pairs.map(p => p.name).join(' or ')} with that — want one?`;
         }
 
+      } else if (asksDeals) {
+        // "I want a deal" -- had an order cue, but nothing on the menu matched.
+        intent = 'deals';
+        ({ text, offers } = await dealsReply());
+
       } else if (TRACK_RE.test(norm)) {
+        intent = 'track_order';
         text = 'You can track your order in real-time on our tracking page — enter your order number (HAB-...) to see live updates!';
 
       } else if (HOURS_RE.test(norm)) {
+        intent = 'hours';
         text = "We're open daily from 11:00 AM to 3:00 AM. 🌙";
 
       } else if (CATERING_RE.test(norm)) {
+        intent = 'catering';
         text = 'We do catering! We can serve anywhere from 20 to 500+ guests. Visit our Catering page to get a free quote. 🎉';
 
       } else if (HALAL_RE.test(norm)) {
+        intent = 'halal';
         text = 'Everything we serve is 100% Hand-Zabiha Halal. We prioritize purity and quality in every single dish. ✅';
 
       } else if (BEST_RE.test(norm)) {
+        intent = 'popular';
         // Data-driven, not a hardcoded dish name — never claim a "best seller"
         // that isn't actually backed by real order history.
         const popRes = await pool.query(
@@ -421,6 +519,7 @@ const assistantChat = async (req, res) => {
         items = shown.slice(0, 5).map(toItemPayload);
 
       } else if (VEGAN_RE.test(norm)) {
+        intent = 'vegetarian';
         const veg = menu.filter(m =>
           (m.description || '').toLowerCase().includes('vegan') ||
           (m.description || '').toLowerCase().includes('vegetarian') ||
@@ -430,11 +529,13 @@ const assistantChat = async (req, res) => {
         items = veg.slice(0, 5).map(toItemPayload);
 
       } else if (BURGER_RE.test(norm)) {
+        intent = 'burgers';
         const burgers = menu.filter(m => m.name.toLowerCase().includes('burger'));
         text = burgers.length ? 'We have some massive burgers! Check these out:' : 'Check out our Sandwiches and Gyros — equally satisfying!';
         items = burgers.slice(0, 5).map(toItemPayload);
 
       } else if (SPICY_RE.test(norm)) {
+        intent = 'spicy';
         const spicy = menu.filter(m =>
           (m.description || '').toLowerCase().includes('spicy') ||
           m.name.toLowerCase().includes('spicy') ||
@@ -445,9 +546,15 @@ const assistantChat = async (req, res) => {
 
       } else if (ADD_CUE_RE.test(norm)) {
         const guess = menu.filter(m => normalize(m.name).split(' ').some(w => w.length > 3 && norm.includes(w)));
-        text = guess.length
-          ? "I couldn't quite match that to a menu item — did you mean one of these?"
-          : "I couldn't find that on our menu — want to check out the full menu page?";
+        if (guess.length) {
+          intent = 'did_you_mean';
+          outcome = 'guessed';
+          text = "I couldn't quite match that to a menu item — did you mean one of these?";
+        } else {
+          intent = 'not_on_menu';
+          outcome = 'unanswered';
+          text = "I couldn't find that on our menu — want to check out the full menu page?";
+        }
         items = guess.slice(0, 5).map(toItemPayload);
 
       } else {
@@ -455,6 +562,7 @@ const assistantChat = async (req, res) => {
           m.name.toLowerCase().includes(norm) || (m.description || '').toLowerCase().includes(norm)
         );
         if (searchMatch.length > 0) {
+          intent = 'menu_search';
           text = `I found some items matching "${message}":`;
           items = searchMatch.slice(0, 5).map(toItemPayload);
         } else {
@@ -464,9 +572,12 @@ const assistantChat = async (req, res) => {
           // so the assistant never gets worse than it was.
           const ai = ALLERGY_RE.test(message) ? null : await aiFallback(message, history, menu);
           if (ai) {
+            intent = 'ai_reply';
             text = ai.text;
             items = ai.items.map(toItemPayload);
           } else {
+            intent = 'unanswered';
+            outcome = 'unanswered';
             text = "That sounds delicious! Ask me what's popular, or tell me what you'd like and I'll try to find it on our menu.";
           }
         }
@@ -477,11 +588,89 @@ const assistantChat = async (req, res) => {
       text = `${text} ${ALLERGY_DISCLAIMER}`.trim();
     }
 
-    res.json({ role: 'bot', text, items, actions, suggestions });
+    logQuery({ message, intent, outcome, inputMode, itemNames: items.map(i => i.name) });
+
+    const reply = { role: 'bot', text, items, actions, suggestions };
+    if (offers) {
+      reply.offers = offers;
+      reply.cta = OFFERS_CTA;
+    }
+    res.json(reply);
   } catch (error) {
     console.error('[Assistant] Error:', error);
     res.status(500).json(safeError(error));
   }
 };
 
-module.exports = { assistantChat };
+// ── CPanel: GET /api/admin/assistant/insights?days=30 ─────────────────────────
+// What customers ask the assistant, which topics come up, which dishes they ask
+// for by name, and -- the point of the page -- what it couldn't answer, grouped
+// so the same question typed ten ways shows up once with a count.
+const INSIGHT_RANGES = [7, 30, 90];
+
+const getAssistantInsights = async (req, res) => {
+  try {
+    const days = INSIGHT_RANGES.includes(Number(req.query.days)) ? Number(req.query.days) : 30;
+    const inRange = `created_at > NOW() - make_interval(days => $1::int)`;
+
+    const [summary, topics, gaps, dishes, recent] = await Promise.all([
+      pool.query(`
+        SELECT count(*)::int                                          AS total,
+               count(*) FILTER (WHERE outcome = 'answered')::int      AS answered,
+               count(*) FILTER (WHERE outcome = 'guessed')::int       AS guessed,
+               count(*) FILTER (WHERE outcome = 'unanswered')::int    AS unanswered,
+               count(*) FILTER (WHERE input_mode = 'voice')::int      AS voice
+          FROM assistant_queries WHERE ${inRange}`, [days]),
+      pool.query(`
+        SELECT intent, count(*)::int AS times
+          FROM assistant_queries WHERE ${inRange}
+         GROUP BY intent ORDER BY times DESC`, [days]),
+      // Grouped on a punctuation- and case-free key; shown with the most recent
+      // wording, and (for guesses) the dishes the assistant offered instead.
+      pool.query(`
+        WITH g AS (
+          SELECT message, outcome, intent, item_names, created_at,
+                 trim(regexp_replace(lower(message), '[^a-z0-9]+', ' ', 'g')) AS qkey
+            FROM assistant_queries
+           WHERE ${inRange} AND outcome <> 'answered'
+        )
+        SELECT l.message AS question, q.times, q.last_asked, l.outcome, l.intent, l.item_names
+          FROM (SELECT qkey, count(*)::int AS times, max(created_at) AS last_asked
+                  FROM g GROUP BY qkey) q
+          CROSS JOIN LATERAL (
+            SELECT message, outcome, intent, item_names
+              FROM g WHERE g.qkey = q.qkey
+             ORDER BY created_at DESC LIMIT 1
+          ) l
+         ORDER BY q.times DESC, q.last_asked DESC
+         LIMIT 50`, [days]),
+      // Only messages where the customer named the dish themselves: ordering it
+      // or searching for it. Lists the assistant chose (popular, spicy...) would
+      // just echo its own suggestions back.
+      pool.query(`
+        SELECT name, count(*)::int AS times
+          FROM assistant_queries, unnest(item_names) AS name
+         WHERE ${inRange} AND intent IN ('add_to_cart', 'menu_search')
+         GROUP BY name ORDER BY times DESC LIMIT 10`, [days]),
+      pool.query(`
+        SELECT id, message, intent, outcome, input_mode, created_at
+          FROM assistant_queries WHERE ${inRange}
+         ORDER BY created_at DESC LIMIT 50`, [days]),
+    ]);
+
+    res.json({
+      days,
+      retention_days: LOG_RETENTION_DAYS,
+      summary: summary.rows[0],
+      topics: topics.rows,
+      needs_attention: gaps.rows,
+      top_dishes: dishes.rows,
+      recent: recent.rows,
+    });
+  } catch (error) {
+    console.error('[Assistant] Insights error:', error);
+    res.status(500).json(safeError(error));
+  }
+};
+
+module.exports = { assistantChat, getAssistantInsights };

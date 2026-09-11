@@ -250,6 +250,7 @@ export const adminAPI = {
     method: 'PATCH', body: JSON.stringify({ cost_price }),
   }),
   reportPeakHours:    (qs = '') => req(`/api/admin/reports/peak-hours${qs}`),
+  assistantInsights:  (days = 30) => req(`/api/admin/assistant/insights?days=${days}`),
   reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 
   // Subscriptions ("Habibi Weekly")

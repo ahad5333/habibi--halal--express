@@ -439,6 +439,10 @@ router.get("/reports/prep-forecast",getPrepForecast);
 router.get("/reports/menu-profitability", getMenuProfitability);
 router.patch("/reports/menu-profitability/:id/cost", updateMenuItemCost);
 
+// AI Assistant — what customers ask it, and what it couldn't answer
+const { getAssistantInsights } = require("../controllers/assistantController");
+router.get("/assistant/insights", getAssistantInsights);
+
 // Chat Inbox
 router.get("/chat",                       getChatConversations);
 router.get("/chat/:order_number",         getChatMessages);

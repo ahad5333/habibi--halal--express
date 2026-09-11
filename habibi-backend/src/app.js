@@ -395,6 +395,20 @@ scheduleOnce('0 3 * * *', async () => {
   }
 });
 
+// ── Assistant question log retention ─────────────────────────────────────────
+// Runs daily. The CPanel "AI Assistant" page reads this log; nothing older than
+// 180 days is kept (matches LOG_RETENTION_DAYS in assistantController).
+scheduleOnce('15 3 * * *', async () => {
+  try {
+    const { rowCount } = await pool.query(
+      `DELETE FROM assistant_queries WHERE created_at < NOW() - INTERVAL '180 days'`
+    );
+    if (rowCount > 0) console.log(`[Cron] Purged ${rowCount} old assistant question(s)`);
+  } catch (err) {
+    console.error('[Cron] Assistant question cleanup error:', err.message);
+  }
+});
+
 // ── Expired group order session cleanup ───────────────────────────────────────
 // Runs every hour. Closes open sessions past their expires_at timestamp.
 scheduleOnce('0 * * * *', async () => {

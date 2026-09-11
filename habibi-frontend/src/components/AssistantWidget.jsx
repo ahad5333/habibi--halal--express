@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { X, Send } from 'lucide-react';
+import { X, Send, Mic, Square } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { assistantAPI } from '../services/api';
 import './AssistantWidget.css';
@@ -34,9 +34,26 @@ const snoozeTeaser = () => {
   try { localStorage.setItem(TEASER_SNOOZE_KEY, String(Date.now())); } catch { /* ignore */ }
 };
 
+// Browser speech-to-text: Chrome, Edge, Safari (iPhone too). Firefox has none,
+// so the mic button isn't rendered there. Audio goes to the browser's own
+// speech service (Google or Apple), never to our server -- only the text does.
+const SpeechRecognition = typeof window !== 'undefined'
+  ? (window.SpeechRecognition || window.webkitSpeechRecognition || null)
+  : null;
+
+const VOICE_ERRORS = {
+  'not-allowed': "I can't hear you — microphone access is blocked. Allow the microphone for this site in your browser settings, or type instead.",
+  'service-not-allowed': "Voice input isn't available in this browser. On an iPhone, turn on Dictation (Settings → General → Keyboard), or just type.",
+  'no-speech': "I didn't catch that — tap the mic and try again.",
+  'audio-capture': "I couldn't find a microphone on this device.",
+  'network': "Voice input couldn't reach your browser's speech service — try again, or type instead.",
+};
+const VOICE_ERROR_DEFAULT = "Voice input isn't working right now — try typing instead.";
+
 const getFallbackImg = (id) => `/images/menu/${((id || 1) % 70) + 1}.jpg`;
 
 const QUICK_REPLIES = [
+  { key: 'quickReplyDeals', text: 'Any deals today?' },
   { key: 'quickReplySpicy', text: "What's spicy?" },
   { key: 'quickReplyVegetarian', text: 'Vegetarian options?' },
   { key: 'quickReplyHours', text: 'What are your hours?' },
@@ -53,9 +70,15 @@ export default function AssistantWidget() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [teaser, setTeaser] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(null);
   const bodyRef = useRef(null);
   // What was added on the previous turn, so "make that 3" knows its target.
   const lastItemsRef = useRef([]);
+  const recognitionRef = useRef(null);
+  // Latest send(), for the speech callback: it fires after the render that
+  // started listening, and must not send with that render's stale state.
+  const sendRef = useRef(null);
 
   useEffect(() => {
     if (!teaserAllowed()) return undefined;
@@ -88,6 +111,77 @@ export default function AssistantWidget() {
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
   }, [messages, sending]);
+
+  // Closing the panel (or leaving the page) switches the mic off without
+  // sending whatever was half-said.
+  const cancelVoice = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    rec.cancelled = true;
+    rec.abort();
+  };
+  useEffect(() => { if (!open) cancelVoice(); }, [open]);
+  useEffect(() => cancelVoice, []);
+
+  const botSay = (text) =>
+    setMessages(prev => [...prev, { role: 'bot', text, items: [], actions: [] }]);
+
+  // Tap the mic, speak, and the words appear in the box as you talk; when you
+  // stop (or tap again) the order is sent as if typed.
+  const startVoice = () => {
+    if (!SpeechRecognition || sending || recognitionRef.current) return;
+    const rec = new SpeechRecognition();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    let finalText = '';
+    let failed = false;
+
+    rec.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setInput((finalText + interim).trim());
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'aborted') return;
+      failed = true;
+      botSay(VOICE_ERRORS[e.error] || VOICE_ERROR_DEFAULT);
+    };
+    rec.onend = () => {
+      recognitionRef.current = null;
+      setListening(false);
+      const said = finalText.trim();
+      if (said && !failed && !rec.cancelled) sendRef.current?.(said, 'voice');
+    };
+
+    recognitionRef.current = rec;
+    setInput('');
+    setListening(true);
+    try {
+      rec.start();
+    } catch {
+      recognitionRef.current = null;
+      setListening(false);
+      botSay(VOICE_ERROR_DEFAULT);
+    }
+  };
+
+  const stopVoice = () => recognitionRef.current?.stop();
+
+  const copyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(c => (c === code ? null : c)), 2000);
+    } catch {
+      // Clipboard blocked: the code is on the button to type in by hand.
+    }
+  };
 
   const cartSnapshot = () =>
     cartItems.map(i => ({ id: i.id, cartKey: i.cartKey ?? i.id, name: i.name, qty: i.qty }));
@@ -128,7 +222,7 @@ export default function AssistantWidget() {
     // 'confirm_clear_cart' is rendered as inline Yes/No buttons, not auto-run.
   };
 
-  const send = async (text) => {
+  const send = async (text, inputMode = 'text') => {
     const message = (text ?? input).trim();
     if (!message || sending) return;
     setMessages(prev => [...prev, { role: 'user', text: message }]);
@@ -138,7 +232,7 @@ export default function AssistantWidget() {
       // History lets the assistant resolve follow-ups ("make that 3"), and
       // lastItems tells it which items such a follow-up refers to.
       const history = messages.slice(-6).map(m => ({ role: m.role, text: m.text }));
-      const res = await assistantAPI.chat(message, cartSnapshot(), history, lastItemsRef.current);
+      const res = await assistantAPI.chat(message, cartSnapshot(), history, lastItemsRef.current, inputMode);
       const actions = res.actions || [];
       actions.filter(a => a.type !== 'confirm_clear_cart').forEach(runAction);
       // Items already added via an action shouldn't offer a second "Add" —
@@ -148,7 +242,8 @@ export default function AssistantWidget() {
       if (justAdded.length) lastItemsRef.current = justAdded;
       setMessages(prev => [...prev, {
         role: 'bot', text: res.text, items: res.items || [],
-        suggestions: res.suggestions || [], actions, addedIds,
+        suggestions: res.suggestions || [], offers: res.offers || [], cta: res.cta || null,
+        actions, addedIds,
       }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'bot', text: "Sorry, I couldn't process that — please try again.", items: [], actions: [] }]);
@@ -156,6 +251,7 @@ export default function AssistantWidget() {
       setSending(false);
     }
   };
+  sendRef.current = send;
 
   const handleAddCard = (item) => {
     addItem({
@@ -244,6 +340,40 @@ export default function AssistantWidget() {
                   </div>
                 )}
 
+                {m.offers && m.offers.length > 0 && (
+                  <div className="asw-offers">
+                    {m.offers.map(o => (
+                      <div key={o.code} className="asw-offer">
+                        <div className="asw-offer-body">
+                          <p className="asw-offer-title">
+                            <span className="asw-offer-value">{o.value}</span>
+                            {o.title}
+                          </p>
+                          {o.terms && <p className="asw-offer-terms">{o.terms}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          className={`asw-offer-code ${copiedCode === o.code ? 'copied' : ''}`}
+                          onClick={() => copyCode(o.code)}
+                          aria-label={`${t('assistant.copyCode')} ${o.code}`}
+                        >
+                          {copiedCode === o.code ? `✓ ${t('assistant.copied')}` : o.code}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {m.cta && (
+                  <button
+                    type="button"
+                    className="asw-cta"
+                    onClick={() => { setOpen(false); navigate(m.cta.to); }}
+                  >
+                    {m.cta.label} →
+                  </button>
+                )}
+
                 {m.actions?.some(a => a.type === 'confirm_clear_cart') && !m.confirmed && (
                   <div className="asw-confirm-row">
                     <button className="asw-confirm-yes" onClick={() => handleConfirmClear(idx, true)}>{t('assistant.confirmYes')}</button>
@@ -277,10 +407,23 @@ export default function AssistantWidget() {
             <input
               type="text"
               className="asw-input"
-              placeholder={t('assistant.placeholder')}
+              placeholder={listening ? t('assistant.listening') : t('assistant.placeholder')}
               value={input}
               onChange={e => setInput(e.target.value)}
             />
+            {SpeechRecognition && (
+              <button
+                type="button"
+                className={`asw-mic ${listening ? 'listening' : ''}`}
+                onClick={listening ? stopVoice : startVoice}
+                disabled={sending && !listening}
+                aria-pressed={listening}
+                aria-label={listening ? t('assistant.voiceStop') : t('assistant.voiceStart')}
+                title={listening ? t('assistant.voiceStop') : t('assistant.voiceStart')}
+              >
+                {listening ? <Square size={14} fill="currentColor" /> : <Mic size={17} />}
+              </button>
+            )}
             <button type="submit" className="asw-send" aria-label={t('assistant.send')} disabled={sending || !input.trim()}>
               <Send size={16} />
             </button>
