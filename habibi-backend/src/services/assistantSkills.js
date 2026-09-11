@@ -38,7 +38,7 @@ async function hoursReply() {
   const n = rows.length;
   if (rows.every(l => is24h(l.working_days_hours) && l.accepting_orders !== false)) {
     const where = n === 1 ? `our ${rows[0].title} location is` : `all ${n} of our locations are`;
-    return `Yes, we're open right now — ${where} open 24 hours a day, every day. 🌙`;
+    return `We're open right now — ${where} open 24 hours a day, every day, so we never close. 🌙`;
   }
 
   const status = (l) => (l.accepting_orders === false ? 'paused' : isOpenNow(l.working_days_hours));
@@ -64,15 +64,15 @@ const TRACK_PAGE = '/order-tracking';
 const TRACK_ASK = "Send me your order number — it's in your confirmation text or email and starts with HBB-.";
 
 const STATUS_TEXT = {
-  pending:          () => "we've got it, and the kitchen will start on it shortly.",
-  accepted:         () => 'accepted — the kitchen has it.',
-  preparing:        () => 'being prepared right now 🍳',
-  ready:            (pickup) => (pickup ? 'ready for pickup! 🎉' : 'ready, waiting for the driver to collect it.'),
-  out_for_delivery: () => 'on its way to you 🚗',
-  delivered:        () => 'delivered ✅',
-  completed:        () => 'completed ✅',
-  cancelled:        () => 'cancelled.',
-  refunded:         () => 'refunded.',
+  pending:          () => 'Received — the kitchen will start on it shortly.',
+  accepted:         () => 'Accepted — the kitchen has it.',
+  preparing:        () => 'Being prepared right now 🍳',
+  ready:            (pickup) => (pickup ? 'Ready for pickup! 🎉' : 'Ready — waiting for the driver to collect it.'),
+  out_for_delivery: () => 'On its way to you 🚗',
+  delivered:        () => 'Delivered ✅',
+  completed:        () => 'Completed ✅',
+  cancelled:        () => 'This order was cancelled.',
+  refunded:         () => 'This order was refunded.',
 };
 
 async function trackReply(rawNumber) {
@@ -97,7 +97,7 @@ async function trackReply(rawNumber) {
   const o = rows[0];
   const pickup = o.delivery_method === 'pickup';
   const describe = STATUS_TEXT[o.order_status];
-  let text = `Order ${num} is ${describe ? describe(pickup) : `${String(o.order_status).replace(/_/g, ' ')}.`}`;
+  let text = `Order ${num}: ${describe ? describe(pickup) : `status is ${String(o.order_status).replace(/_/g, ' ')}.`}`;
 
   const inKitchen = ['pending', 'accepted', 'preparing'].includes(o.order_status);
   const now = Date.now();
@@ -164,6 +164,7 @@ async function deliveryReply(address) {
   if (!nearest) return { ok: false, text: "I can't check delivery right now. You'll see the price at checkout, and pickup is always available." };
 
   const pickupLine = `Pickup is always available at our ${nearest.title} store (${nearest.exact_address}).`;
+  const where = String(dest.formatted || address).replace(/,\s*USA$/, '');
   const dist = await getDistance(nearest.exact_address, dest.formatted);
   if (!dist || dist.unavailable) {
     return { ok: false, text: `I can't check delivery prices right now — you'll see the price at checkout. ${pickupLine}` };
@@ -178,13 +179,13 @@ async function deliveryReply(address) {
   });
   if (resolved.fee === null) {
     return resolved.reason === 'not_serviceable'
-      ? { ok: true, text: `Sorry, ${dest.formatted} is outside our delivery area. ${pickupLine}` }
+      ? { ok: true, text: `Sorry, ${where} is outside our delivery area. ${pickupLine}` }
       : { ok: false, text: `I can't get a delivery price right now — you'll see it at checkout. ${pickupLine}` };
   }
   const price = resolved.fee === 0 ? 'free' : `about ${money(resolved.fee)}`;
   return {
     ok: true,
-    text: `Yes, we deliver to ${dest.formatted}! It's ${dist.text} from our ${nearest.title} store, and delivery is ${price}. You'll see the exact price at checkout.`,
+    text: `Yes, we deliver to ${where}! It's ${dist.text} from our ${nearest.title} store, and delivery is ${price}. You'll see the exact price at checkout.`,
   };
 }
 
@@ -239,6 +240,30 @@ function rankedMains(menu, onlyCategory) {
     .filter(m => { const k = m.name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
+// The dish's main ingredient, for variety: "Chicken over Rice" and "Chicken
+// Salad" are both chicken; "Habibi Halal Lamb Taco" is lamb.
+const mainWord = (name) => name.toLowerCase().replace(/^habibi\s+(?:halal\s+)?/, '').split(/\s+/)[0];
+
+// Best-ranked dishes, but mixed up: one per category in turn, never repeating
+// a main ingredient while there's an alternative. Without this, "feed 4" came
+// back as chicken over rice, chicken salad and chicken fries.
+function pickVariety(ranked, n) {
+  const picks = [];
+  const used = new Set();
+  const cats = [...new Set(ranked.map(m => m.category))];
+  let progressed = true;
+  while (picks.length < n && progressed) {
+    progressed = false;
+    for (const cat of cats) {
+      if (picks.length >= n) break;
+      const next = ranked.find(m => m.category === cat && !picks.includes(m) && !used.has(mainWord(m.name)));
+      if (next) { picks.push(next); used.add(mainWord(next.name)); progressed = true; }
+    }
+  }
+  for (const m of ranked) { if (picks.length >= n) break; if (!picks.includes(m)) picks.push(m); }
+  return picks;
+}
+
 const cheapest = (menu, category, nameRe) => menu
   .filter(m => m.category === category && (!nameRe || nameRe.test(m.name)))
   .sort((a, b) => parseFloat(a.price) - parseFloat(b.price))[0] || null;
@@ -262,7 +287,7 @@ function buildMeal(menu, people, budget, onlyCategory) {
   }
 
   // Up to 3 different dishes, shared out round-robin.
-  const picks = choices.slice(0, Math.min(3, people));
+  const picks = pickVariety(choices, Math.min(3, people));
   const counts = new Map();
   for (let i = 0; i < people; i++) {
     const m = picks[i % picks.length];
@@ -370,7 +395,7 @@ function parseGuests(lower) {
 module.exports = {
   ORDER_NO_RE, TRACK_ASK,
   ADDRESS_RE, DELIVERY_ASK, DELIVERY_ASK_MARK, extractAddress,
-  MEAL_CUE_RE, MEAL_MAX_PEOPLE, parsePeople, parseBudget, categoryFilter, buildMeal, rankedMains,
+  MEAL_CUE_RE, MEAL_MAX_PEOPLE, parsePeople, parseBudget, categoryFilter, buildMeal, rankedMains, pickVariety,
   parseEventDate, parseGuests,
   hoursReply, trackReply, deliveryReply, contactReply,
 };

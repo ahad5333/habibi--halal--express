@@ -557,7 +557,7 @@ const assistantChat = async (req, res) => {
       // "what can I get under $10?" -- dishes within the budget, best first.
       intent = 'budget_browse';
       const cat = skills.categoryFilter(lower);
-      const within = skills.rankedMains(menu, cat).filter(m => parseFloat(m.price) <= budget).slice(0, 5);
+      const within = skills.pickVariety(skills.rankedMains(menu, cat).filter(m => parseFloat(m.price) <= budget), 5);
       if (within.length) {
         text = `Here's what you can get for ${fmtBudget(budget)} or less:`;
         items = within.map(toItemPayload);
