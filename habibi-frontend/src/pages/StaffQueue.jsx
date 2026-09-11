@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut } from 'lucide-react';
+import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut, Printer } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, ROLE_STATION, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
+import PrinterPanel from '../components/PrinterPanel';
+import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -158,6 +160,8 @@ export default function StaffQueue() {
         else if (hasOther) beep();
       }
       prevIds.current = newIds;
+      // Only on the device where auto-print was switched on; each order once.
+      printNewOrders(list);
       setOrders(list);
       setLastSync(new Date());
       setError(null);
@@ -244,6 +248,7 @@ export default function StaffQueue() {
           <span className="kd-header-title">Order Queue</span>
         </div>
         <div className="kd-header-right">
+          <PrinterPanel orders={orders} />
           <span className="kd-staff-who" style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
             {session.name || 'Staff'} · {ROLE_LABEL[session.role] || session.role}
           </span>
@@ -454,6 +459,9 @@ function OrderCard({ order, onBump, bumping, tick, isManager, onHistory }) {
               History
             </button>
           )}
+          <button className="kd-history-btn kd-card-print" onClick={() => printTicket(order)} title="Print ticket" aria-label="Print ticket">
+            <Printer size={12} />
+          </button>
           {blocked ? (
             <span className="kd-awaiting-driver"><Truck size={12} /> {blocked}</span>
           ) : label && (

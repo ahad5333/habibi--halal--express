@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag } from 'lucide-react';
+import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, Printer } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
+import PrinterPanel from '../components/PrinterPanel';
+import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -101,6 +103,8 @@ export default function KitchenDisplay() {
         else if (hasOther) beep();
       }
       prevIds.current = newIds;
+      // Only on the device where auto-print was switched on; each order once.
+      printNewOrders(list);
       setOrders(list);
       setLastSync(new Date());
       setError(null);
@@ -171,6 +175,7 @@ export default function KitchenDisplay() {
           <span className="kd-header-title">Kitchen Display</span>
         </div>
         <div className="kd-header-right">
+          <PrinterPanel orders={orders} />
           <button className="kd-manual-refresh" onClick={fetchOrders}>
             <RefreshCw size={13} />
           </button>
@@ -305,18 +310,23 @@ function OrderCard({ order, onBump, bumping, tick }) {
           {elapsedLabel(order.placed_at)}
           {urgency === 'urgent' && ' ⚠'}
         </span>
-        {blocked ? (
-          <span className="kd-awaiting-driver"><Truck size={12} /> {blocked}</span>
-        ) : label && (
-          <button
-            className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
-            onClick={() => onBump(order)}
-            disabled={bumping}
-          >
-            {bumping ? '…' : label}
-            {!bumping && <ChevronRight size={13} />}
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <button className="kd-history-btn kd-card-print" onClick={() => printTicket(order)} title="Print ticket" aria-label="Print ticket">
+            <Printer size={12} />
           </button>
-        )}
+          {blocked ? (
+            <span className="kd-awaiting-driver"><Truck size={12} /> {blocked}</span>
+          ) : label && (
+            <button
+              className={`kd-bump-btn${isPaymentPending ? ' kd-bump-btn--verify' : ''}`}
+              onClick={() => onBump(order)}
+              disabled={bumping}
+            >
+              {bumping ? '…' : label}
+              {!bumping && <ChevronRight size={13} />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
