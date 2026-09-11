@@ -56,6 +56,7 @@ const PaymentProcessors = lazy(() => import('./pages/PaymentProcessors'));
 const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const AssistantInsights = lazy(() => import('./pages/AssistantInsights'));
+const WasteLog         = lazy(() => import('./pages/WasteLog'));
 const LoyaltyProgram   = lazy(() => import('./pages/LoyaltyProgram'));
 const GlobalAddons     = lazy(() => import('./pages/GlobalAddons'));
 const ArticlesAdmin    = lazy(() => import('./pages/ArticlesAdmin'));
@@ -118,6 +119,7 @@ function AdminLayout() {
             <Route path="/audit-log"      element={<AuditLog />} />
             <Route path="/chat"           element={<ChatInbox />} />
             <Route path="/assistant"      element={<AssistantInsights />} />
+            <Route path="/waste"          element={<WasteLog />} />
             <Route path="/loyalty"        element={<LoyaltyProgram />} />
             <Route path="/global-addons"  element={<GlobalAddons />} />
             <Route path="/articles"       element={<ArticlesAdmin />} />

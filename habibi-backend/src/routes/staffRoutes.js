@@ -18,4 +18,11 @@ router.patch('/:id/reset-pin', protect, admin, adminResetStaffPin);
 router.post('/:id/sign-out-everywhere', protect, admin, signOutStaffEverywhere);
 router.post('/fcm-token', staffAuth, saveStaffFcmToken);
 
+// Waste log from the staff PIN screen
+const waste = require('../controllers/wasteController');
+router.get('/waste/options', staffAuth, waste.staffWasteOptions);
+router.get('/waste/mine',    staffAuth, waste.staffMyWaste);
+router.post('/waste',        staffAuth, waste.staffLogWaste);
+router.delete('/waste/:id',  staffAuth, waste.staffUndoWaste);
+
 module.exports = router;

@@ -1013,6 +1013,36 @@ const createTables = async () => {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_assistant_queries_created ON assistant_queries(created_at DESC)`);
 
+    // ── Waste log ──────────────────────────────────────────────────
+    // Food thrown away: a dish (menu item) or an ingredient (inventory item),
+    // logged by kitchen staff from their PIN screen or by an admin in CPanel.
+    // Cost is a snapshot at the time (dish cost_price / ingredient
+    // cost_per_unit; NULL when none was set). stock_adjustments records exactly
+    // which inventory rows were lowered and by how much, so deleting the entry
+    // puts back precisely that -- no more, even if stock was clamped at zero.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS waste_log (
+        id                 SERIAL PRIMARY KEY,
+        location_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+        menu_item_id       INTEGER REFERENCES menus(id) ON DELETE SET NULL,
+        inventory_item_id  INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL,
+        item_name          VARCHAR(255) NOT NULL,
+        item_kind          VARCHAR(12)  NOT NULL CHECK (item_kind IN ('dish', 'ingredient')),
+        quantity           NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
+        unit               VARCHAR(50)  NOT NULL DEFAULT 'portion',
+        reason             VARCHAR(30)  NOT NULL,
+        note               VARCHAR(300),
+        unit_cost          NUMERIC(10,2),
+        total_cost         NUMERIC(12,2),
+        stock_adjustments  JSONB NOT NULL DEFAULT '[]',
+        logged_by_type     VARCHAR(10)  NOT NULL CHECK (logged_by_type IN ('staff', 'admin')),
+        logged_by_id       INTEGER,
+        logged_by_name     VARCHAR(255),
+        created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_waste_log_created ON waste_log(created_at DESC)`);
+
     // ── Notification Broadcasts ────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS broadcasts (

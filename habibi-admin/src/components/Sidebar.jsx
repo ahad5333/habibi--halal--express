@@ -7,7 +7,7 @@ import {
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
-  Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot,
+  Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot, Trash2, CalendarClock,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -31,6 +31,7 @@ const NAV = [
   { to: '/careers',   icon: <Briefcase size={17} />,       label: 'Careers' },
   { to: '/reviews',   icon: <Star size={17} />,            label: 'Reviews' },
   { to: '/inventory',  icon: <Package size={17} />,         label: 'Inventory' },
+  { to: '/waste',      icon: <Trash2 size={17} />,          label: 'Waste Log' },
   { to: '/locations',  icon: <MapPin size={17} />,          label: 'Locations' },
   { to: '/zones',      icon: <Truck size={17} />,           label: 'Delivery Zones' },
   { to: '/dispatch',          icon: <Navigation size={17} />, label: 'Dispatch',          badge: 'live' },

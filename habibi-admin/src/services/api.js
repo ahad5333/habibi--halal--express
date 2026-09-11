@@ -251,6 +251,10 @@ export const adminAPI = {
   }),
   reportPeakHours:    (qs = '') => req(`/api/admin/reports/peak-hours${qs}`),
   assistantInsights:  (days = 30) => req(`/api/admin/assistant/insights?days=${days}`),
+  wasteReport:        (days = 30, locationId = '') => req(`/api/admin/waste?days=${days}${locationId ? `&location_id=${locationId}` : ''}`),
+  wasteOptions:       () => req('/api/admin/waste/options'),
+  logWaste:           (body) => req('/api/admin/waste', { method: 'POST', body: JSON.stringify(body) }),
+  deleteWaste:        (id) => req(`/api/admin/waste/${id}`, { method: 'DELETE' }),
   reportPrepForecast: (qs = '') => req(`/api/admin/reports/prep-forecast${qs}`),
 
   // Subscriptions ("Habibi Weekly")

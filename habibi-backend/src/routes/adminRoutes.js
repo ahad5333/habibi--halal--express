@@ -439,6 +439,13 @@ router.get("/reports/prep-forecast",getPrepForecast);
 router.get("/reports/menu-profitability", getMenuProfitability);
 router.patch("/reports/menu-profitability/:id/cost", updateMenuItemCost);
 
+// Waste log
+const waste = require("../controllers/wasteController");
+router.get("/waste",          waste.getWasteReport);
+router.get("/waste/options",  waste.adminWasteOptions);
+router.post("/waste",         waste.adminLogWaste);
+router.delete("/waste/:id",   waste.adminDeleteWaste);
+
 // AI Assistant — what customers ask it, and what it couldn't answer
 const { getAssistantInsights } = require("../controllers/assistantController");
 router.get("/assistant/insights", getAssistantInsights);

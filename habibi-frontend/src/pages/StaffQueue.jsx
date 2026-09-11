@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut, Printer } from 'lucide-react';
+import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, LogOut, Printer, Trash2 } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, ROLE_STATION, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
 import PrinterPanel from '../components/PrinterPanel';
+import WasteSheet from '../components/WasteSheet';
 import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
 
@@ -132,6 +133,7 @@ export default function StaffQueue() {
     const station = ROLE_STATION[session?.role];
     return COLUMNS.find(c => c.station === station)?.key || 'new';
   });
+  const [showWaste, setShowWaste] = useState(false);
   const prevIds = useRef(new Set());
   const isManager = session?.role === 'manager';
 
@@ -249,6 +251,10 @@ export default function StaffQueue() {
         </div>
         <div className="kd-header-right">
           <PrinterPanel orders={orders} />
+          <button className="kd-manual-refresh kd-print-btn" onClick={() => setShowWaste(true)} title="Log waste">
+            <Trash2 size={13} />
+            <span className="kd-print-state">Waste</span>
+          </button>
           <span className="kd-staff-who" style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
             {session.name || 'Staff'} · {ROLE_LABEL[session.role] || session.role}
           </span>
@@ -319,6 +325,8 @@ export default function StaffQueue() {
           })}
         </div>
       )}
+
+      {showWaste && <WasteSheet headers={staffHeaders} onClose={() => setShowWaste(false)} />}
 
       {historyOrder && (
         <div className="kd-history-overlay" onClick={() => setHistoryOrder(null)}>
