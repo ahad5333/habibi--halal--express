@@ -10,7 +10,7 @@ export default function StaffSetPin() {
   const staffId = params.get('id');
   const token   = params.get('token');
 
-  usePageFavicon('/images/icons/serving.png');
+  usePageFavicon('/images/icons/tab-staff.png');
 
   const [step, setStep]       = useState('set');   // 'set' | 'confirm' | 'done'
   const [pin, setPin]         = useState('');

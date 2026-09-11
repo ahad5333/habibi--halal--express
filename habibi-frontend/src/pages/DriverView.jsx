@@ -368,7 +368,7 @@ export default function DriverView() {
     const origFavs = [];
     favicons.forEach(fav => {
       origFavs.push({ el: fav, href: fav.href });
-      fav.href = '/images/icons/delivery.png';
+      fav.href = '/images/icons/tab-driver.png'; // bold white-on-green: readable on dark tab bars too
     });
 
     return () => {

@@ -75,7 +75,7 @@ function zelleChime() {
 }
 
 export default function KitchenDisplay() {
-  usePageFavicon('/images/icons/kitchen.png');
+  usePageFavicon('/images/icons/tab-kitchen.png');
 
   const [orders,    setOrders]    = useState([]);
   const [loading,   setLoading]   = useState(true);

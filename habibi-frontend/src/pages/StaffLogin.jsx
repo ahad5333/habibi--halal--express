@@ -22,7 +22,7 @@ function maskPhone(raw) {
 
 export default function StaffLogin() {
   const navigate = useNavigate();
-  usePageFavicon('/images/icons/serving.png');
+  usePageFavicon('/images/icons/tab-staff.png');
 
   // Staff sign in on the same device every shift, so the number is remembered
   // and they land straight on the PIN pad. "Not you?" clears it.

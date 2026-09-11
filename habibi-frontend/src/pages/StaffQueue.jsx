@@ -106,7 +106,7 @@ export default function StaffQueue() {
   // re-renders, which reads session again...).
   const [session] = useState(() => readSession());
 
-  usePageFavicon('/images/icons/serving.png');
+  usePageFavicon('/images/icons/tab-staff.png');
 
   useEffect(() => {
     if (!session) window.location.replace('/staff/login');
