@@ -641,7 +641,9 @@ const uploadProof = async (req, res) => {
     // Only now — after auth AND ownership have both been verified — does
     // anything get written to the public uploads directory.
     const ext      = PROOF_IMAGE_EXTENSIONS[req.file.mimetype] || '.jpg';
-    const filename = `proof_${assignment_id}_${Date.now()}${ext}`;
+    // Random name: /uploads is public, and assignment id + timestamp could be
+    // guessed to find a photo of someone's doorstep.
+    const filename = `proof_${crypto.randomBytes(16).toString('hex')}${ext}`;
     const destDir  = path.join(__dirname, '../../public/uploads/proofs');
     fs.mkdirSync(destDir, { recursive: true });
     fs.writeFileSync(path.join(destDir, filename), req.file.buffer);

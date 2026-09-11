@@ -11,8 +11,10 @@ if (!fs.existsSync(resumeDir)) fs.mkdirSync(resumeDir, { recursive: true });
 const resumeStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, resumeDir),
   filename: (_req, file, cb) => {
-    const stamp = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'resume-' + stamp + path.extname(file.originalname));
+    // Unguessable name: /uploads is public, and a CV is personal. (Was a
+    // timestamp plus Math.random, far easier to enumerate.)
+    const stamp = require('crypto').randomBytes(16).toString('hex');
+    cb(null, 'resume-' + stamp + path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, ''));
   },
 });
 

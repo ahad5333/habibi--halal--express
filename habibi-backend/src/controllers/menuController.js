@@ -2,12 +2,16 @@ const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { logAudit } = require('./auditController');
 
+// Public menu. partner_price (what wholesale partners pay) and the internal
+// notes field are left out: the Partner Portal gets partner prices from its
+// own logged-in catalog and CPanel edits through /api/admin. Both used to go
+// to anyone who loaded the menu.
 const getMenus = async (req, res) => {
   try {
     let result;
     try {
       result = await pool.query(`
-        SELECT id, name, description, name_ar, description_ar, price, partner_price,
+        SELECT id, name, description, name_ar, description_ar, price,
                image_url AS image, category,
                COALESCE(categories, '{}'::TEXT[]) AS categories,
                is_available, choices, addons, dietary_info,
@@ -19,7 +23,7 @@ const getMenus = async (req, res) => {
       `);
     } catch {
       result = await pool.query(`
-        SELECT id, name, description, name_ar, description_ar, price, partner_price,
+        SELECT id, name, description, name_ar, description_ar, price,
                image_url AS image, category,
                '{}'::TEXT[] AS categories,
                is_available, choices, addons, dietary_info,
@@ -45,20 +49,20 @@ const getMenuById = async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `SELECT id, name, description, name_ar, description_ar, price, partner_price,
+        `SELECT id, name, description, name_ar, description_ar, price,
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
-                is_available, choices, addons, dietary_info, temperature, notes,
+                is_available, choices, addons, dietary_info, temperature,
                 quota_required, slug
          FROM menus WHERE ${whereClause}`,
         [whereValue]
       );
     } catch {
       result = await pool.query(
-        `SELECT id, name, description, name_ar, description_ar, price, partner_price,
+        `SELECT id, name, description, name_ar, description_ar, price,
                 image_url, category,
                 COALESCE(categories, ARRAY[]::TEXT[]) AS categories,
-                is_available, choices, addons, dietary_info, temperature, notes,
+                is_available, choices, addons, dietary_info, temperature,
                 NULL::INTEGER AS quota_required, slug
          FROM menus WHERE ${whereClause}`,
         [whereValue]
