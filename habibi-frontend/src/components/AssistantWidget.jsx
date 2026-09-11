@@ -12,26 +12,25 @@ import './AssistantWidget.css';
 // source PNG. Transparent background: the orange circles come from CSS.
 const ASSISTANT_AVATAR = '/images/assistant/habibi-assistant-face.webp';
 
-// Greeting bubble beside the launcher, so a first-time visitor knows the
-// button is an AI assistant they can order through. Shown once per browser
-// session, a few seconds after the page settles; closing it or opening the
-// chat hides it for a week. Storage can throw (private mode, blocked site
-// data) -- then it simply shows.
+// Greeting bubble beside the launcher, so a visitor knows the button is an AI
+// assistant they can order through. Shown once per visit (browser session), a
+// few seconds after the page settles, on every visit until the person has
+// opened the chat once -- after that they know it's there. Closing the bubble
+// only hides it for the current visit. Storage can throw (private mode,
+// blocked site data) -- then it simply shows.
 const TEASER_DELAY_MS = 3000;
 const TEASER_VISIBLE_MS = 20000;
-const TEASER_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
-const TEASER_SEEN_KEY = 'habibi_asw_teaser_seen';
-const TEASER_SNOOZE_KEY = 'habibi_asw_teaser_snoozed_at';
+const TEASER_SEEN_KEY = 'habibi_asw_teaser_seen'; // sessionStorage: shown this visit
+const ASSISTANT_USED_KEY = 'habibi_asw_used';     // localStorage: has opened the chat
 
 const teaserAllowed = () => {
   try {
     if (sessionStorage.getItem(TEASER_SEEN_KEY)) return false;
-    const snoozedAt = Number(localStorage.getItem(TEASER_SNOOZE_KEY) || 0);
-    return !(snoozedAt && Date.now() - snoozedAt < TEASER_SNOOZE_MS);
+    return !localStorage.getItem(ASSISTANT_USED_KEY);
   } catch { return true; }
 };
-const snoozeTeaser = () => {
-  try { localStorage.setItem(TEASER_SNOOZE_KEY, String(Date.now())); } catch { /* ignore */ }
+const markAssistantUsed = () => {
+  try { localStorage.setItem(ASSISTANT_USED_KEY, '1'); } catch { /* ignore */ }
 };
 
 // Browser speech-to-text: Chrome, Edge, Safari (iPhone too). Firefox has none,
@@ -93,14 +92,12 @@ export default function AssistantWidget() {
 
   const openChat = () => {
     setTeaser(false);
-    snoozeTeaser();
+    markAssistantUsed();
     setOpen(true);
   };
 
-  const dismissTeaser = () => {
-    setTeaser(false);
-    snoozeTeaser();
-  };
+  // Hidden for this visit only; it's already marked as seen for the session.
+  const dismissTeaser = () => setTeaser(false);
 
   useEffect(() => {
     if (open && messages.length === 0) {
