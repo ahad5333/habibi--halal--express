@@ -6,6 +6,7 @@ const crypto    = require('crypto');
 const protect   = require('../middleware/authMiddleware');
 const admin     = require('../middleware/adminMiddleware');
 const { getDriverSecretSalt } = require('../utils/driverSecret');
+const pool      = require('../config/db');
 
 const isDev = process.env.NODE_ENV !== 'production';
 const gpsLimiter = rateLimit({
@@ -102,43 +103,59 @@ const {
 // "this is some valid driver," it does NOT prove req.body.driver_id is that
 // same driver, so trusting the body field there would let any driver claim
 // to be any other driver_id and act on their assignments.
-function driverOrAdmin(req, res, next) {
-  // 1. JWT — httpOnly cookie (admin panel) or Bearer header (driver app)
-  const cookieToken = req.cookies?.auth_token;
-  const authHeader  = req.headers.authorization || '';
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  const jwtToken     = cookieToken || bearerToken;
-  if (jwtToken) {
-    try {
-      const jwt     = require('jsonwebtoken');
-      const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
-      if (decoded.role === 'admin' || decoded.role === 'driver' || decoded.role === 'delivery') {
+// A driver's HMAC token is derived from their id alone, so it never changes
+// and can't be revoked. Checking the row is still an active delivery driver on
+// every request is what makes "deactivate" in CPanel actually cut access --
+// before this, a removed driver whose app was still signed in could keep
+// claiming orders (and see the customer's name, phone and address).
+async function isActiveDriver(id) {
+  const r = await pool.query(
+    `SELECT 1 FROM staff_members WHERE id = $1 AND role = 'delivery' AND is_active = TRUE`, [id]
+  );
+  return r.rows.length > 0;
+}
+
+async function driverOrAdmin(req, res, next) {
+  const deny = () => res.status(401).json({ message: 'Driver authentication required' });
+  try {
+    // 1. JWT — httpOnly cookie (admin panel) or Bearer header (driver app)
+    const cookieToken = req.cookies?.auth_token;
+    const authHeader  = req.headers.authorization || '';
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const jwtToken     = cookieToken || bearerToken;
+    if (jwtToken) {
+      let decoded = null;
+      try { decoded = require('jsonwebtoken').verify(jwtToken, process.env.JWT_SECRET); } catch (_) {}
+      if (decoded && (decoded.role === 'admin' || decoded.role === 'driver' || decoded.role === 'delivery')) {
+        if (decoded.role !== 'admin' && !(await isActiveDriver(decoded.id))) return deny();
         req.user     = decoded;
         req.isAdmin  = decoded.role === 'admin';
         req.driverId = req.isAdmin ? null : decoded.id;
         return next();
       }
-    } catch (_) {}
-  }
+    }
 
-  // 2. HMAC token from X-Driver-Token header
-  const driverToken = req.headers['x-driver-token'] || '';
-  const driverId    = req.params.driver_id || req.params.assignment_id
-                      ? (req.params.driver_id || req.body?.driver_id || '')
-                      : (req.body?.driver_id || req.query?.driver_id || '');
-  if (driverId && driverToken) {
-    try {
+    // 2. HMAC token from X-Driver-Token header
+    const driverToken = req.headers['x-driver-token'] || '';
+    const driverId    = req.params.driver_id || req.params.assignment_id
+                        ? (req.params.driver_id || req.body?.driver_id || '')
+                        : (req.body?.driver_id || req.query?.driver_id || '');
+    if (driverId && driverToken) {
       const salt     = getDriverSecretSalt();
       const expected = crypto.createHmac('sha256', salt).update(String(driverId)).digest('hex');
-      if (crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected))) {
+      let valid = false;
+      try { valid = crypto.timingSafeEqual(Buffer.from(driverToken), Buffer.from(expected)); } catch (_) {}
+      if (valid && (await isActiveDriver(parseInt(driverId, 10)))) {
         req.isAdmin  = false;
         req.driverId = parseInt(driverId, 10);
         return next();
       }
-    } catch (_) {}
-  }
+    }
 
-  return res.status(401).json({ message: 'Driver authentication required' });
+    return deny();
+  } catch (err) {
+    return res.status(500).json({ message: 'Authentication error' });
+  }
 }
 
 // ── Public routes ──────────────────────────────────────────────────
