@@ -1,4 +1,8 @@
-.ai-range { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.ai-range { display: flex; align-items: center; gap: 0.4rem; }
+/* On phones the CPanel stretches every header button to full width, which
+   turned the three range buttons into a stack; keep them on one row. */
+.page-hdr .ai-range { flex-wrap: nowrap; }
+.page-hdr .ai-range .btn { width: auto; }
 
 .ai-spin { animation: ai-spin 0.9s linear infinite; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
