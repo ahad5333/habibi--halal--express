@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { X, Send, Mic, Square } from 'lucide-react';
+import { X, Send, Mic, Square, Phone, Mail } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { assistantAPI } from '../services/api';
+import { assistantAPI, cateringAPI } from '../services/api';
+import { setPendingCoupon } from '../utils/pendingCoupon';
 import './AssistantWidget.css';
 
 // Habibi's cartoon character, cropped to head and shoulders so the face still
@@ -53,11 +54,110 @@ const getFallbackImg = (id) => `/images/menu/${((id || 1) % 70) + 1}.jpg`;
 
 const QUICK_REPLIES = [
   { key: 'quickReplyDeals', text: 'Any deals today?' },
-  { key: 'quickReplySpicy', text: "What's spicy?" },
-  { key: 'quickReplyVegetarian', text: 'Vegetarian options?' },
-  { key: 'quickReplyHours', text: 'What are your hours?' },
-  { key: 'quickReplyCatering', text: 'Do you do catering?' },
+  { key: 'quickReplyTrack', text: 'Track my order' },
+  { key: 'quickReplyMeal', text: 'Feed 4 under $50' },
+  { key: 'quickReplyHours', text: 'Are you open now?' },
+  { key: 'quickReplyCatering', text: 'Catering for my event' },
+  { key: 'quickReplyContact', text: 'Talk to a person' },
 ];
+
+// Catering quote request inside the chat. Posts to the same endpoint as the
+// Catering page, so it lands in CPanel → Catering Quotes with the same
+// validation, confirmation email and rough estimate.
+function CateringForm({ prefill }) {
+  const [f, setF] = useState({
+    date: prefill?.date || '',
+    guests: prefill?.guests ? String(prefill.guests) : '',
+    service: 'delivery',
+    address: '',
+    name: '',
+    phone: '',
+    email: '',
+  });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [done, setDone] = useState(null);
+  const set = (k) => (e) => setF(p => ({ ...p, [k]: e.target.value }));
+  const today = new Date().toLocaleDateString('en-CA');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr('');
+    const guests = parseInt(f.guests, 10);
+    if (!f.date) return setErr('Pick the date of your event.');
+    if (!guests || guests < 10) return setErr('Catering starts at 10 guests.');
+    if (f.service === 'delivery' && !f.address.trim()) return setErr('Add the event address, or choose pickup.');
+    if (!f.name.trim()) return setErr('Add your name.');
+    if (f.phone.replace(/\D/g, '').length < 10) return setErr('Add a phone number we can call you on.');
+    if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) return setErr('Add a valid email — the quote is sent there.');
+    setBusy(true);
+    try {
+      const res = await cateringAPI.requestQuote({
+        full_name: f.name.trim(),
+        email: f.email.trim(),
+        phone: f.phone.trim(),
+        event_type: 'Other',
+        event_date: `${f.date}T12:00:00`,
+        guest_count: guests,
+        service_type: f.service,
+        event_address: f.service === 'delivery' ? f.address.trim() : '',
+        notes: 'Sent from the website assistant.',
+      });
+      setDone({ id: res?.data?.id, estimate: Number(res?.estimated_total) || 0, email: f.email.trim(), guests });
+    } catch (e2) {
+      setErr(e2.message || 'Something went wrong — please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="asw-cater-done">
+        <strong>✓ Request sent{done.id ? ` — reference #CAT-${String(done.id).padStart(4, '0')}` : ''}.</strong>{' '}
+        We'll email a quote to {done.email} within 24–48 hours.
+        {done.estimate > 0 && (
+          <> Rough estimate for {done.guests} guests: ~${done.estimate.toLocaleString('en-US')} (your final quote may vary).</>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <form className="asw-cater" onSubmit={submit} noValidate>
+      <div className="asw-cater-row">
+        <label>Event date<input type="date" min={today} value={f.date} onChange={set('date')} /></label>
+        <label>Guests<input type="number" min="10" inputMode="numeric" placeholder="10+" value={f.guests} onChange={set('guests')} /></label>
+      </div>
+      <div className="asw-cater-toggle" role="radiogroup" aria-label="Delivery or pickup">
+        {['delivery', 'pickup'].map(s => (
+          <button
+            key={s}
+            type="button"
+            role="radio"
+            aria-checked={f.service === s}
+            className={f.service === s ? 'on' : ''}
+            onClick={() => setF(p => ({ ...p, service: s }))}
+          >
+            {s === 'delivery' ? 'Delivery' : 'Pickup'}
+          </button>
+        ))}
+      </div>
+      {f.service === 'delivery' && (
+        <label>Event address<input type="text" autoComplete="street-address" value={f.address} onChange={set('address')} /></label>
+      )}
+      <label>Your name<input type="text" autoComplete="name" value={f.name} onChange={set('name')} /></label>
+      <div className="asw-cater-row">
+        <label>Phone<input type="tel" autoComplete="tel" value={f.phone} onChange={set('phone')} /></label>
+        <label>Email<input type="email" autoComplete="email" value={f.email} onChange={set('email')} /></label>
+      </div>
+      {err && <p className="asw-cater-err" role="alert">{err}</p>}
+      <button type="submit" className="asw-cater-submit" disabled={busy}>
+        {busy ? 'Sending…' : 'Request a quote'}
+      </button>
+    </form>
+  );
+}
 
 export default function AssistantWidget() {
   const { t } = useTranslation();
@@ -70,7 +170,7 @@ export default function AssistantWidget() {
   const [sending, setSending] = useState(false);
   const [teaser, setTeaser] = useState(false);
   const [listening, setListening] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(null);
+  const [chosenCode, setChosenCode] = useState(null);
   const bodyRef = useRef(null);
   // What was added on the previous turn, so "make that 3" knows its target.
   const lastItemsRef = useRef([]);
@@ -170,14 +270,13 @@ export default function AssistantWidget() {
 
   const stopVoice = () => recognitionRef.current?.stop();
 
-  const copyCode = async (code) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopiedCode(code);
-      setTimeout(() => setCopiedCode(c => (c === code ? null : c)), 2000);
-    } catch {
-      // Clipboard blocked: the code is on the button to type in by hand.
-    }
+  // One tap on a deal: checkout applies it automatically (and validates it
+  // like a typed code). Also copied, for anyone who'd rather paste it.
+  // Checkout takes one code, so tapping another replaces the first.
+  const pickDeal = (code) => {
+    setPendingCoupon(code);
+    setChosenCode(code);
+    navigator.clipboard?.writeText(code).catch(() => {});
   };
 
   const cartSnapshot = () =>
@@ -240,6 +339,7 @@ export default function AssistantWidget() {
       setMessages(prev => [...prev, {
         role: 'bot', text: res.text, items: res.items || [],
         suggestions: res.suggestions || [], offers: res.offers || [], cta: res.cta || null,
+        details: res.details || [], meal: res.meal || null, contact: res.contact || null, form: res.form || null,
         actions, addedIds,
       }]);
     } catch (err) {
@@ -260,9 +360,25 @@ export default function AssistantWidget() {
       note: '',
       qty: 1,
     });
+    // Mark it added wherever it's shown -- product cards, dish cards, and the
+    // "customers usually add" chips (which previously never showed their ✓).
+    const shows = (m) => [m.items, m.details, m.suggestions].some(list => list?.some(i => i.id === item.id));
     setMessages(prev => prev.map(m =>
-      m.items?.some(i => i.id === item.id) ? { ...m, addedIds: [...(m.addedIds || []), item.id] } : m
+      shows(m) ? { ...m, addedIds: [...(m.addedIds || []), item.id] } : m
     ));
+  };
+
+  const addMeal = (msgIdx, meal) => {
+    meal.lines.forEach(l => addItem({
+      id: l.id,
+      name: l.name,
+      price: parseFloat(l.price || 0),
+      img: l.image_url || getFallbackImg(l.id),
+      tag: 'Assistant',
+      note: '',
+      qty: l.qty,
+    }));
+    setMessages(prev => prev.map((m, i) => (i === msgIdx ? { ...m, mealAdded: true } : m)));
   };
 
   const handleConfirmClear = (msgIdx, confirmed) => {
@@ -350,16 +466,101 @@ export default function AssistantWidget() {
                         </div>
                         <button
                           type="button"
-                          className={`asw-offer-code ${copiedCode === o.code ? 'copied' : ''}`}
-                          onClick={() => copyCode(o.code)}
-                          aria-label={`${t('assistant.copyCode')} ${o.code}`}
+                          className={`asw-offer-code ${chosenCode === o.code ? 'chosen' : ''}`}
+                          onClick={() => pickDeal(o.code)}
+                          aria-pressed={chosenCode === o.code}
+                          aria-label={`${t('assistant.useDeal')} ${o.code}`}
                         >
-                          {copiedCode === o.code ? `✓ ${t('assistant.copied')}` : o.code}
+                          {chosenCode === o.code ? `✓ ${t('assistant.dealChosen')}` : o.code}
                         </button>
+                      </div>
+                    ))}
+                    <p className="asw-offer-hint">{t('assistant.dealHint')}</p>
+                  </div>
+                )}
+
+                {m.details && m.details.length > 0 && (
+                  <div className="asw-details">
+                    {m.details.map(d => (
+                      <div key={d.id} className="asw-detail">
+                        <img
+                          src={d.image_url || getFallbackImg(d.id)}
+                          alt={d.name}
+                          className="asw-detail-img"
+                          loading="lazy"
+                          onError={e => { e.target.src = getFallbackImg(d.id); }}
+                        />
+                        <div className="asw-detail-body">
+                          <div className="asw-detail-head">
+                            <p className="asw-detail-name">{d.name}</p>
+                            <p className="asw-detail-price">${parseFloat(d.price || 0).toFixed(2)}</p>
+                          </div>
+                          <p className="asw-detail-desc">{d.description || t('assistant.noDescription')}</p>
+                          <button
+                            className={`asw-card-add ${m.addedIds?.includes(d.id) ? 'added' : ''}`}
+                            onClick={() => handleAddCard(d)}
+                          >
+                            {m.addedIds?.includes(d.id) ? `✓ ${t('assistant.added')}` : t('assistant.addToCart')}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
+
+                {m.meal && (
+                  <div className="asw-meal">
+                    <ul className="asw-meal-lines">
+                      {m.meal.lines.map(l => (
+                        <li key={l.id}>
+                          <span className="asw-meal-qty">{l.qty}×</span>
+                          <span className="asw-meal-name">{l.name}</span>
+                          <span className="asw-meal-price">${(parseFloat(l.price) * l.qty).toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="asw-meal-total">
+                      <span>{t('assistant.mealTotal')}</span>
+                      <strong>${Number(m.meal.total).toFixed(2)}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      className={`asw-meal-add ${m.mealAdded ? 'added' : ''}`}
+                      onClick={() => addMeal(idx, m.meal)}
+                      disabled={m.mealAdded}
+                    >
+                      {m.mealAdded ? `✓ ${t('assistant.mealAdded')}` : t('assistant.mealAddAll')}
+                    </button>
+                  </div>
+                )}
+
+                {m.contact && (
+                  <div className="asw-contact">
+                    {m.contact.phone && (
+                      <a className="asw-contact-call" href={`tel:${m.contact.phone.replace(/[^\d+]/g, '')}`}>
+                        <Phone size={15} /> {t('assistant.callUs')} {m.contact.phone}
+                      </a>
+                    )}
+                    {m.contact.email && (
+                      <a className="asw-contact-link" href={`mailto:${m.contact.email}`}>
+                        <Mail size={13} /> {m.contact.email}
+                      </a>
+                    )}
+                    {m.contact.locations?.length > 0 && (
+                      <ul className="asw-contact-locs">
+                        {m.contact.locations.map(l => (
+                          <li key={l.title}>
+                            <strong>{l.title}</strong>
+                            <span>{l.address}</span>
+                            {l.phone && <a href={`tel:${l.phone.replace(/[^\d+]/g, '')}`}>{l.phone}</a>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {m.form?.type === 'catering' && <CateringForm prefill={m.form} />}
 
                 {m.cta && (
                   <button

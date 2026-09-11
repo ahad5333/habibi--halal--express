@@ -1,6 +1,7 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { getPublicOffers } = require('../utils/publicOffers');
+const skills = require('../services/assistantSkills');
 
 // ── Habibi Assistant ──────────────────────────────────────────────────────────
 // Rule-based conversational ordering — no external AI API. Every menu match is
@@ -23,9 +24,16 @@ const VIEW_CART_RE = /what.?s in my cart|show (my )?(cart|order)|my cart/i;
 const CLEAR_CART_RE = /clear (my )?cart|empty (my )?cart|start over|remove everything/i;
 const CHECKOUT_RE  = /\bcheckout\b|place (my )?order|that.?s all|i.?m done|ready to (pay|order|checkout)/i;
 const REMOVE_RE    = /\bremove\b|take off|no more|\bdelete\b/i;
-const TRACK_RE     = /\btrack\b|order status|where.?s my order/i;
-const HOURS_RE      = /\bhours?\b|\bopen\b|what time/i;
-const CATERING_RE   = /catering|\bevent\b|\bparty\b|\bbulk\b/i;
+const TRACK_RE     = /\btrack\b|order status|where.?s my (?:order|food|delivery)|where is my (?:order|food|delivery)|when will my (?:order|food) (?:arrive|come|be ready)|how long (?:for|until|till) my (?:order|food)/i;
+const HOURS_RE      = /\bhours?\b|\bopen\b|what time|\bclos(?:e|es|ed|ing)\b/i;
+const CATERING_RE   = /catering|\bcater\b|\bevent\b|\bparty\b|\bbulk\b|\bwedding\b|\bcorporate\b/i;
+const HUMAN_RE      = /\b(?:talk|speak|chat) (?:to|with) (?:a |an |the )?(?:person|human|someone|somebody|real person|manager|staff|agent|team|owner)\b|\breal person\b|\bcustomer (?:service|support)\b|\bcall (?:you|the store|the restaurant|someone)\b|\bphone number\b|\bcontact (?:you|number|info|details)\b|\bhow (?:do|can) i (?:contact|reach|call)\b|\bcomplaints?\b|\bmanager\b/i;
+const DELIVERY_RE   = /\bdeliver(?:y|ies|ing|s)?\b|\bdo you (?:come|go) to\b/i;
+// A question about a dish ("what comes with the chicken over rice?", "how much
+// is the beef burger?") shows the dish instead of silently adding it -- unless
+// the message also says to add it.
+const DETAILS_RE    = /\bwhat(?: s|s| is| are)? in\b|\bcomes? with\b|\btell me (?:more )?about\b|\bdescribe\b|\bingredients?\b|\bhow (?:much|big) (?:is|are)\b|\bhow much (?:does|do|for)\b|\bprice (?:of|for|on)\b|\bcost of\b|\bdo you (?:have|sell|make|serve|guys have)\b|\bis there (?:a|an|any)\b|\bwhat(?: s|s| is) (?:the|a|an)\b|\bhow is the\b/i;
+const STRONG_ADD_RE = /\badd\b|get me|give me|i.?ll (?:have|take)|\bput\b/i;
 const HALAL_RE      = /\bhalal\b/i;
 const BEST_RE        = /\bbest\b|recommend|popular/i;
 const VEGAN_RE       = /vegan|vegetarian|meatless/i;
@@ -306,6 +314,26 @@ function toItemPayload(m) {
   return { id: m.id, name: m.name, price: parseFloat(m.price || 0), image_url: m.image_url || null };
 }
 
+// A dish card for "what comes with ...": the menu's own description, never an
+// allergen or dietary claim (those still go to the restaurant).
+function toDetailPayload(m) {
+  return { ...toItemPayload(m), description: (m.description || '').trim(), category: m.category || null };
+}
+
+const fmtBudget = (n) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+const fmtMoney = (n) => `$${Number(n).toFixed(2)}`;
+
+function cateringForm(lower, guests) {
+  return {
+    text: "We'd love to cater your event! 🎉 We cater for 10 to 500+ guests. Fill this in and our team will email you a quote within 24–48 hours:",
+    form: {
+      type: 'catering',
+      guests: guests || skills.parseGuests(lower),
+      date: skills.parseEventDate(lower),
+    },
+  };
+}
+
 // ── Deals ─────────────────────────────────────────────────────────────────────
 // Same list the public Offers page shows (utils/publicOffers), so the assistant
 // can never read out a code the page wouldn't -- personal coupons included.
@@ -374,7 +402,8 @@ const assistantChat = async (req, res) => {
     const inputMode = req.body.inputMode === 'voice' ? 'voice' : 'text';
 
     const menuRes = await pool.query(
-      `SELECT id, name, price, image_url, description FROM menus WHERE is_available = TRUE AND is_active = TRUE`
+      `SELECT id, name, price, image_url, description, category, is_featured, sort_order
+         FROM menus WHERE is_available = TRUE AND is_active = TRUE`
     );
     const menu = menuRes.rows;
     const candidates = buildCandidates(menu);
@@ -382,18 +411,45 @@ const assistantChat = async (req, res) => {
     // Typo-corrected text is used for intent/menu matching only; the original
     // message is still what allergy detection and cart matching see.
     const norm = correctTypos(normalize(message), candidates);
-    // Deals words are checked on the uncorrected text: the typo corrector only
+    // Topic words are checked on the uncorrected text: the typo corrector only
     // knows menu words, so it could "fix" deals -> meals if a dish had that word.
-    const asksDeals = DEALS_RE.test(normalize(message));
+    const rawNorm = normalize(message);
+    const lower = message.toLowerCase(); // keeps "$" for budgets
+    const asksDeals = DEALS_RE.test(rawNorm);
+    const asksHuman = HUMAN_RE.test(rawNorm);
+    const orderNo = (message.match(skills.ORDER_NO_RE) || [])[0] || null;
+    const people = skills.parsePeople(lower);
+    const budget = skills.parseBudget(lower);
+    const mealCue = skills.MEAL_CUE_RE.test(lower);
+    // "party of 4" is dinner; "birthday party for 40" is catering.
+    const asksCatering = CATERING_RE.test(rawNorm) && !(people && people < 10);
+    // Answering "send me your street address": the next message is the address
+    // even without "deliver" in it.
+    const lastBot = [...(Array.isArray(history) ? history : [])].reverse().find(h => h && h.role === 'bot');
+    const awaitingAddress = String(lastBot?.text || '').toLowerCase().includes(skills.DELIVERY_ASK_MARK);
+    const address = skills.extractAddress(message)
+      || (awaitingAddress && /\d/.test(message) && message.length < 150 ? message.trim() : null);
+    const asksDelivery = DELIVERY_RE.test(rawNorm);
 
     let text = '';
     let items = [];
     let actions = [];
     let suggestions = [];
     let offers = null;
+    let details = null;
+    let meal = null;
+    let contact = null;
+    let form = null;
+    let cta = null;
     // For the CPanel question log: what was asked, and whether it got an answer.
     let intent = 'unanswered';
     let outcome = 'answered';
+    let logText = message;
+
+    // A greeting only when there's nothing else in the message: "hi, do you
+    // deliver to 123 Main St?" is a delivery question with a hello in front.
+    const isJustGreeting = GREETING_RE.test(norm) && !(asksDeals || asksHuman || orderNo || mealCue || budget
+      || asksCatering || asksDelivery || address || TRACK_RE.test(norm) || HOURS_RE.test(norm) || ADD_CUE_RE.test(norm));
 
     // "make that 3" -- only meaningful against whatever was just added, so it's
     // checked before anything else and skipped entirely when there's no prior
@@ -409,10 +465,17 @@ const assistantChat = async (req, res) => {
       text = `Updated — ${followupQty}x ${target.name}.`;
       actions.push({ type: 'set_cart_qty', item: target, qty: followupQty });
 
-    } else if (GREETING_RE.test(norm) && !asksDeals) {
-      // "hi, any deals today?" is a deals question with a greeting in front.
+    } else if (orderNo) {
+      // An order number anywhere in the message is a tracking question.
+      intent = 'track_order';
+      const t = await skills.trackReply(orderNo);
+      text = t.text;
+      cta = t.cta || null;
+      if (!t.found) outcome = 'unanswered';
+
+    } else if (isJustGreeting) {
       intent = 'greeting';
-      text = "Hi! I'm Habibi, your AI ordering assistant 👋 Ask me about the menu or today's deals, or tell me what you'd like and I'll add it to your cart — try \"add two beef burgers\".";
+      text = "Hi! I'm Habibi, your AI ordering assistant 👋 I can find dishes and add them to your cart, show today's deals, check delivery to your address, track your order, or build a meal for your group — try \"feed 4 under $50\".";
 
     } else if (CLEAR_CART_RE.test(norm)) {
       intent = 'clear_cart';
@@ -451,6 +514,10 @@ const assistantChat = async (req, res) => {
         text = "I couldn't find that in your cart — want to tell me exactly what to remove?";
       }
 
+    } else if (asksHuman) {
+      intent = 'contact';
+      ({ text, contact } = await skills.contactReply());
+
     } else if (asksDeals && !ADD_CUE_RE.test(norm)) {
       // Ahead of menu matching so "any deals on burgers?" answers the question
       // instead of adding a burger. With an order cue ("add the ... deal") the
@@ -459,9 +526,70 @@ const assistantChat = async (req, res) => {
       intent = 'deals';
       ({ text, offers } = await dealsReply());
 
+    } else if (asksCatering) {
+      intent = 'catering';
+      ({ text, form } = cateringForm(lower, people));
+
+    } else if (mealCue) {
+      intent = 'meal_builder';
+      if (!people) {
+        text = 'Happy to build a meal! How many people, and what budget? Try "feed 4 under $50".';
+      } else if (people > skills.MEAL_MAX_PEOPLE) {
+        // Past a dozen it's a catering order, which has its own pricing.
+        intent = 'catering';
+        ({ text, form } = cateringForm(lower, people));
+      } else {
+        const built = skills.buildMeal(menu, people, budget, skills.categoryFilter(lower));
+        if (!built) {
+          outcome = 'unanswered';
+          text = "I couldn't put a meal together from the menu right now — have a look at the full menu page.";
+        } else {
+          const who = people === 1 ? 'one' : people;
+          const total = fmtMoney(built.total);
+          if (built.tight) text = `${fmtBudget(budget)} is a little tight for ${who} — the lowest I can do is ${total} before tax and delivery:`;
+          else if (budget) text = `Here's a meal for ${who} under ${fmtBudget(budget)} — ${total} before tax and delivery:`;
+          else text = `Here's a meal for ${who} — ${total} before tax and delivery:`;
+          meal = { people, budget, total: built.total, lines: built.lines.map(l => ({ ...toItemPayload(l.item), qty: l.qty })) };
+        }
+      }
+
+    } else if (budget && !STRONG_ADD_RE.test(norm)) {
+      // "what can I get under $10?" -- dishes within the budget, best first.
+      intent = 'budget_browse';
+      const cat = skills.categoryFilter(lower);
+      const within = skills.rankedMains(menu, cat).filter(m => parseFloat(m.price) <= budget).slice(0, 5);
+      if (within.length) {
+        text = `Here's what you can get for ${fmtBudget(budget)} or less:`;
+        items = within.map(toItemPayload);
+      } else {
+        outcome = 'unanswered';
+        text = `Nothing${cat ? ' like that' : ''} comes in under ${fmtBudget(budget)}, sorry! Try a slightly higher budget.`;
+      }
+
+    } else if (TRACK_RE.test(norm)) {
+      intent = 'track_order';
+      text = skills.TRACK_ASK;
+      cta = { label: 'Open order tracking', to: '/order-tracking' };
+
+    } else if (address && (asksDelivery || awaitingAddress || !ADD_CUE_RE.test(norm))) {
+      intent = 'delivery_check';
+      // The address itself stays out of the CPanel question log.
+      logText = message.replace(address, '[address]');
+      const d = await skills.deliveryReply(address);
+      text = d.text;
+      if (!d.ok) outcome = 'unanswered';
+
+    } else if (asksDelivery) {
+      intent = 'delivery_check';
+      text = skills.DELIVERY_ASK;
+
     } else {
       const found = matchMenuItems(norm, candidates);
-      if (found.length > 0) {
+      if (found.length > 0 && DETAILS_RE.test(norm) && !STRONG_ADD_RE.test(norm)) {
+        intent = 'dish_details';
+        details = found.slice(0, 2).map(f => toDetailPayload(f.item));
+        text = details.length === 1 ? `Here's the ${details[0].name}:` : "Here's what I found:";
+      } else if (found.length > 0) {
         intent = 'add_to_cart';
         text = found.length === 1
           ? `Added ${found[0].qty}x ${found[0].item.name} to your cart!`
@@ -482,17 +610,9 @@ const assistantChat = async (req, res) => {
         intent = 'deals';
         ({ text, offers } = await dealsReply());
 
-      } else if (TRACK_RE.test(norm)) {
-        intent = 'track_order';
-        text = 'You can track your order in real-time on our tracking page — enter your order number (HAB-...) to see live updates!';
-
       } else if (HOURS_RE.test(norm)) {
         intent = 'hours';
-        text = "We're open daily from 11:00 AM to 3:00 AM. 🌙";
-
-      } else if (CATERING_RE.test(norm)) {
-        intent = 'catering';
-        text = 'We do catering! We can serve anywhere from 20 to 500+ guests. Visit our Catering page to get a free quote. 🎉';
+        text = await skills.hoursReply();
 
       } else if (HALAL_RE.test(norm)) {
         intent = 'halal';
@@ -588,13 +708,19 @@ const assistantChat = async (req, res) => {
       text = `${text} ${ALLERGY_DISCLAIMER}`.trim();
     }
 
-    logQuery({ message, intent, outcome, inputMode, itemNames: items.map(i => i.name) });
+    const shownNames = [...items, ...(details || []), ...(meal?.lines || [])].map(i => i.name);
+    logQuery({ message: logText, intent, outcome, inputMode, itemNames: shownNames });
 
     const reply = { role: 'bot', text, items, actions, suggestions };
     if (offers) {
       reply.offers = offers;
       reply.cta = OFFERS_CTA;
     }
+    if (cta) reply.cta = cta;
+    if (details) reply.details = details;
+    if (meal) reply.meal = meal;
+    if (contact) reply.contact = contact;
+    if (form) reply.form = form;
     res.json(reply);
   } catch (error) {
     console.error('[Assistant] Error:', error);
@@ -650,7 +776,7 @@ const getAssistantInsights = async (req, res) => {
       pool.query(`
         SELECT name, count(*)::int AS times
           FROM assistant_queries, unnest(item_names) AS name
-         WHERE ${inRange} AND intent IN ('add_to_cart', 'menu_search')
+         WHERE ${inRange} AND intent IN ('add_to_cart', 'menu_search', 'dish_details')
          GROUP BY name ORDER BY times DESC LIMIT 10`, [days]),
       pool.query(`
         SELECT id, message, intent, outcome, input_mode, created_at

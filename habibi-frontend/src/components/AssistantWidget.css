@@ -464,7 +464,8 @@
   white-space: nowrap;
 }
 .asw-offer-code:hover { background: rgba(229, 182, 78, 0.12); border-style: solid; }
-.asw-offer-code.copied { border: 1px solid #22c55e; color: #4ade80; }
+.asw-offer-code.chosen { border: 1px solid #22c55e; color: #4ade80; }
+.asw-offer-hint { margin: 0.1rem 0 0; font-size: 0.68rem; color: rgba(255, 255, 255, 0.45); }
 
 .asw-cta {
   justify-self: start;
@@ -510,3 +511,167 @@
 @media (prefers-reduced-motion: reduce) {
   .asw-mic.listening { animation: none; }
 }
+
+/* Hours come back as one line per location. */
+.asw-bubble { white-space: pre-line; }
+
+/* ── Dish details ("what comes with ...") ─────────────────────────────────── */
+.asw-details { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.35rem; width: 100%; }
+.asw-detail {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.asw-detail-img { width: 64px; height: 64px; flex: none; border-radius: 8px; object-fit: cover; }
+.asw-detail-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-start; }
+.asw-detail-head { display: flex; justify-content: space-between; gap: 0.5rem; width: 100%; }
+.asw-detail-name { margin: 0; font-size: 0.8rem; font-weight: 700; color: #f1f1f1; line-height: 1.3; }
+.asw-detail-price { margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--color-gold, #E5B64E); white-space: nowrap; }
+.asw-detail-desc { margin: 0; font-size: 0.74rem; line-height: 1.45; color: rgba(255, 255, 255, 0.7); }
+
+/* ── Meal for a group ─────────────────────────────────────────────────────── */
+.asw-meal {
+  margin-top: 0.35rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.asw-meal-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.asw-meal-lines li {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: #f1f1f1;
+  line-height: 1.35;
+}
+.asw-meal-qty { color: var(--color-gold, #E5B64E); font-weight: 700; font-variant-numeric: tabular-nums; }
+.asw-meal-price { color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
+.asw-meal-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.asw-meal-total strong { color: #fff; font-variant-numeric: tabular-nums; }
+.asw-meal-add {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary, #F97316);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.asw-meal-add.added { background: rgba(34, 197, 94, 0.15); color: #4ade80; cursor: default; }
+
+/* ── Talk to a person ─────────────────────────────────────────────────────── */
+.asw-contact { margin-top: 0.35rem; width: 100%; display: flex; flex-direction: column; gap: 0.45rem; }
+.asw-contact-call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  background: var(--color-primary, #F97316);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.asw-contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--color-gold, #E5B64E);
+  text-decoration: none;
+}
+.asw-contact-link:hover { text-decoration: underline; }
+.asw-contact-locs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.asw-contact-locs li { display: flex; flex-direction: column; font-size: 0.72rem; line-height: 1.4; color: rgba(255, 255, 255, 0.6); }
+.asw-contact-locs strong { color: #f1f1f1; font-weight: 600; }
+.asw-contact-locs a { color: var(--color-gold, #E5B64E); text-decoration: none; }
+
+/* ── Catering quote form ──────────────────────────────────────────────────── */
+.asw-cater {
+  margin-top: 0.35rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.asw-cater label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.asw-cater input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.8rem;
+  color-scheme: dark;
+}
+.asw-cater input:focus { outline: none; border-color: var(--color-gold, #E5B64E); }
+.asw-cater-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.asw-cater-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+.asw-cater-toggle button {
+  padding: 0.4rem;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #f1f1f1;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.asw-cater-toggle button.on { border-color: var(--color-gold, #E5B64E); background: rgba(229, 182, 78, 0.12); color: var(--color-gold, #E5B64E); }
+.asw-cater-err { margin: 0; font-size: 0.72rem; color: #f87171; }
+.asw-cater-submit {
+  padding: 0.55rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary, #F97316);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.asw-cater-submit:disabled { opacity: 0.6; cursor: default; }
+.asw-cater-done {
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #d1fae5;
+}
+.asw-cater-done strong { color: #4ade80; }

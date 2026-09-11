@@ -417,6 +417,15 @@ export const subscriptionsAPI = {
   cancel: (id) => request(`/api/subscriptions/${id}/cancel`, { method: 'POST' }),
 };
 
+export const cateringAPI = {
+  /** POST /api/reservations/public — the same endpoint as the Catering page's form */
+  requestQuote: (payload) =>
+    request('/api/reservations/public', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+};
+
 export const assistantAPI = {
   chat: (message, cart, history, lastItems, inputMode = 'text') =>
     request('/api/assistant/chat', {

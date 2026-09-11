@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { ordersAPI, couponsAPI, giftCardsAPI, menuAPI, userAPI, locationsAPI, settingsAPI, savedPaymentsAPI, chargeSavedCard, subscriptionsAPI } from '../services/api';
 import { trackBeginCheckout } from '../utils/analytics';
 import { getStoredUtm } from '../utils/utm';
+import { takePendingCoupon } from '../utils/pendingCoupon';
 import { useDineIn } from '../context/DineInContext';
 import AuthNetForm from '../components/AuthNetForm';
 import '../components/AuthNetForm.css';
@@ -647,6 +648,17 @@ const Checkout = () => {
       setCouponLoading(false);
     }
   };
+
+  // A deal tapped in the home-page assistant is applied here as if it had been
+  // typed -- same validation, same error if it doesn't qualify. Waits until
+  // there's a subtotal to apply it to, and only ever applies it once.
+  useEffect(() => {
+    if (subtotal <= 0 || couponApplied) return;
+    const pending = takePendingCoupon();
+    if (!pending) return;
+    setShowCouponPanel(true);
+    handleApplyCoupon(pending);
+  }, [subtotal > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Gift card ─────────────────────────────────────────────────────────────
   const handleApplyGiftCard = async (codeOverride) => {

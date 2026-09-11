@@ -32,6 +32,11 @@ const TOPICS = {
   checkout: 'Went to checkout',
   greeting: 'Said hi / asked for help',
   ai_reply: 'Answered by AI',
+  dish_details: 'Asked about a dish',
+  delivery_check: 'Delivery to their address',
+  meal_builder: 'Meal for a group',
+  budget_browse: 'Food within a budget',
+  contact: 'Wanted to talk to a person',
   unanswered: "Couldn't answer",
 };
 const topicName = (intent) => TOPICS[intent] || intent;
@@ -55,6 +60,10 @@ function gapDetail(g) {
   }
   if (g.intent === 'not_on_menu') return 'Asked for something that isn’t on the menu';
   if (g.intent === 'remove_item') return 'Tried to remove something that wasn’t in their cart';
+  if (g.intent === 'track_order') return 'Order number not found';
+  if (g.intent === 'delivery_check') return 'Couldn’t check that address (not found, or pricing unavailable)';
+  if (g.intent === 'budget_browse') return 'Nothing on the menu within that budget';
+  if (g.intent === 'meal_builder') return 'Couldn’t build a meal from the menu';
   return 'Had no answer';
 }
 
@@ -209,7 +218,7 @@ export default function AssistantInsights() {
 
             <div className="card ai-section">
               <p className="ai-section-title">Dishes asked for by name</p>
-              <p className="ai-section-help">Only dishes customers named themselves, when ordering or searching.</p>
+              <p className="ai-section-help">Only dishes customers named themselves: ordering, searching, or asking about them.</p>
               {dishes.length === 0 ? (
                 <p className="text-muted ai-none">No dishes named yet in this period.</p>
               ) : (
