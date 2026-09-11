@@ -19,8 +19,12 @@ async function computeCouponDiscount({ code, amount, userId, locationId, cart = 
     const err = new Error('Coupon code is required.'); err.statusCode = 400; throw err;
   }
 
+  // expiry_date (a DATE, last valid day in New York) is what the birthday
+  // reward sets -- it never sets valid_until -- so checking valid_until alone
+  // left every "valid for 7 days" birthday coupon usable forever.
   const result = await pool.query(
-    "SELECT * FROM coupons WHERE code=$1 AND is_active=TRUE",
+    `SELECT *, (expiry_date IS NOT NULL AND expiry_date < (NOW() AT TIME ZONE 'America/New_York')::date) AS past_expiry_date
+       FROM coupons WHERE code=$1 AND is_active=TRUE`,
     [code.toUpperCase()]
   );
   if (result.rows.length === 0) {
@@ -28,7 +32,7 @@ async function computeCouponDiscount({ code, amount, userId, locationId, cart = 
   }
   const coupon = result.rows[0];
 
-  if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+  if ((coupon.valid_until && new Date(coupon.valid_until) < new Date()) || coupon.past_expiry_date) {
     const err = new Error('This coupon has expired.'); err.statusCode = 400; throw err;
   }
   if (coupon.valid_from && new Date(coupon.valid_from) > new Date()) {

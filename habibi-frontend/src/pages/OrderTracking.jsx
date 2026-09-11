@@ -1188,7 +1188,9 @@ export default function OrderTracking() {
                   <span>
                     {order.delivery_method === 'pickup'
                       ? t('orderTracking.pickupFrom')
-                      : t('orderTracking.deliveringTo', { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', ') })}
+                      : order.delivery_address
+                        ? t('orderTracking.deliveringTo', { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', ') })
+                        : t('orderTracking.deliveringToHidden')}
                   </span>
                 </div>
 

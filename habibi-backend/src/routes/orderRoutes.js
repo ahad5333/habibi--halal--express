@@ -77,14 +77,20 @@ router.get("/queue/:orderNumber", async (req, res) => {
   }
 });
 
-/* ── Public order tracking (no auth) — PII redacted ── */
-router.get("/track/:orderNumber", async (req, res) => {
+/* ── Public order tracking ──
+   Anyone with the order number sees the status, timing, items and driver
+   progress -- enough to follow the order. The customer's full name and the
+   delivery address are only returned to the logged-in account that owns the
+   order (or an admin); everyone else gets the first name and no address.
+   Before this, both went to anyone who had the order number (a shared
+   screenshot, a forwarded text). ── */
+router.get("/track/:orderNumber", optionalAuth, async (req, res) => {
   try {
     const { orderNumber } = req.params;
 
     const [orderRes, roadieRes, ddRes, inHouseRes] = await Promise.all([
       pool.query(
-        `SELECT order_number, customer_name,
+        `SELECT order_number, customer_name, user_id,
                 delivery_method, delivery_address, delivery_city,
                 sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
@@ -177,7 +183,15 @@ router.get("/track/:orderNumber", async (req, res) => {
     const cancel_seconds_left = Math.max(0, Math.round(CANCEL_WINDOW_SECONDS - secondsSincePlaced));
     delete o.seconds_since_placed;
 
-    res.json({ ...o, items, driver, cancel_seconds_left });
+    const isOwner = !!req.user && (req.user.role === 'admin' || (o.user_id && o.user_id === req.user.id));
+    delete o.user_id;
+    if (!isOwner) {
+      o.customer_name = String(o.customer_name || '').trim().split(/\s+/)[0] || null;
+      o.delivery_address = null;
+      o.delivery_city = null;
+    }
+
+    res.json({ ...o, items, driver, cancel_seconds_left, details_hidden: !isOwner });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

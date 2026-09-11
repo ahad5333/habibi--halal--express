@@ -605,6 +605,7 @@
     "rateYourOrder": "Rate Your Order",
     "pickupFrom": "Pickup from Habibi Bedford Park Blvd",
     "deliveringTo": "Delivering to {{address}}",
+    "deliveringToHidden": "Delivering to the address on your order",
     "cancelTrigger": "Need to cancel? You can for the next {{time}}",
     "cancelExpired": "Cancellation window has passed — call us if you need help.",
     "cancelFormTitle": "Cancel this order?",
