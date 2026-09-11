@@ -7,6 +7,7 @@ const squareService = require('../services/squareService');
 const cloverService = require('../services/cloverService');
 const { logAudit } = require('./auditController');
 const { normalizeZelleHandle, displayZelleHandle, zelleHandleFromConfig } = require('../utils/zelleHandle');
+const paypalApi = require('../utils/paypalApi');
 const { resolveChargeAmount } = require('../utils/resolveChargeAmount');
 const { restockOrderItems } = require('./inventoryController');
 const { finalizePendingCheckout } = require('./orderController');
@@ -42,9 +43,47 @@ const refundOrder = async (req, res) => {
 
     if (order.order_status === "refunded") return res.status(400).json({ message: "Order already refunded." });
 
-    let refundId;
+    // Never refund more than the order took. The processors should reject an
+    // over-refund themselves, but that shouldn't be the only line of defence.
+    const orderTotal   = parseFloat(order.total) || 0;
+    const refundAmount = parseFloat(amount) > 0 ? parseFloat(amount) : orderTotal;
+    if (refundAmount > orderTotal + 0.005) {
+      return res.status(400).json({ message: `Refund can't exceed the order total ($${orderTotal.toFixed(2)}).` });
+    }
 
-    if (order.payment_intent_id && (order.payment_method || '').toLowerCase() === 'card') {
+    const method = (order.payment_method || '').toLowerCase();
+    let refundId;
+    let resultMessage = 'Refund processed successfully.';
+    let manual = false;
+
+    // PayPal and Google Pay (which is carried by PayPal) refund through
+    // PayPal's API. Routed on the processor that actually took the money, so
+    // an order mis-recorded as 'card' by the old checkout bug still refunds
+    // through PayPal rather than failing against a card processor.
+    const isPayPal = order.payment_processor === 'paypal' || method === 'paypal' || method === 'googlepay';
+
+    if (isPayPal) {
+      if (!order.payment_intent_id) {
+        return res.status(409).json({
+          message: 'No PayPal transaction is recorded for this order, so it can’t be refunded from here. Refund it in the PayPal dashboard.',
+        });
+      }
+      if (!paypalApi.isConfigured()) {
+        return res.status(503).json({ message: 'PayPal is not configured — cannot process this refund.' });
+      }
+      try {
+        const r = await paypalApi.refundCapture({
+          captureId: order.payment_intent_id, amount: refundAmount, orderNumber,
+        });
+        refundId = r.refundId;
+        resultMessage = r.status === 'COMPLETED'
+          ? `Refunded $${refundAmount.toFixed(2)} to the customer’s ${method === 'googlepay' ? 'Google Pay' : 'PayPal'}.`
+          : `Refund of $${refundAmount.toFixed(2)} submitted to PayPal (status: ${r.status}). PayPal will complete it.`;
+      } catch (refundErr) {
+        // Nothing is marked refunded unless PayPal actually accepted it.
+        return res.status(502).json({ message: 'PayPal refund failed: ' + refundErr.message });
+      }
+    } else if (order.payment_intent_id && method === 'card') {
       // Refund through whichever processor actually charged this order —
       // NOT whatever's currently active in the admin panel. An order
       // charged via Square yesterday must still refund through Square even
@@ -56,7 +95,6 @@ const refundOrder = async (req, res) => {
       if (!account) {
         return res.status(503).json({ message: `Payment processor (${provider}) not configured — cannot process card refund.` });
       }
-      const refundAmount = parseFloat(amount) > 0 ? parseFloat(amount) : parseFloat(order.total);
       try {
         let refunded;
         if (provider === 'authorize_net') {
@@ -90,8 +128,16 @@ const refundOrder = async (req, res) => {
         return res.status(502).json({ message: `${provider} refund failed: ` + refundErr.message });
       }
     } else {
-      // Cash/Zelle/CashApp/PayPal — no automated refund API, record-keeping only.
+      // Zelle, Cash App and cash have no refund API: the money has to be sent
+      // back by hand. The order is still marked refunded for the records, but
+      // the admin is told plainly that nothing was sent -- previously this
+      // branch also said "Refund processed successfully", which for a
+      // customer still waiting on their money is worse than saying nothing.
       refundId = "REFUND_MANUAL_" + Date.now();
+      manual = true;
+      const label = { zelle: 'Zelle', cashapp: 'Cash App', cash: 'Cash' }[method] || (order.payment_method || 'This payment method');
+      resultMessage = `Marked as refunded — but ${label} payments can’t be refunded automatically. ` +
+                      `Send $${refundAmount.toFixed(2)} back to the customer yourself.`;
     }
 
     await pool.query(
@@ -116,9 +162,9 @@ const refundOrder = async (req, res) => {
     }
 
     logAudit(pool, req.user?.id, req.user?.name, 'refund_order', 'payment', orderNumber,
-      { refundId, amount: parseFloat(amount) > 0 ? parseFloat(amount) : parseFloat(order.total), payment_method: order.payment_method }, req.ip);
+      { refundId, amount: refundAmount, payment_method: order.payment_method, manual }, req.ip);
 
-    res.json({ success: true, refundId, message: "Refund processed successfully." });
+    res.json({ success: true, refundId, manual, message: resultMessage });
   } catch (err) {
     res.status(500).json(safeError(err));
   }

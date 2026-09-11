@@ -94,7 +94,10 @@ export default function Payments() {
       const res = await adminAPI.refundOrder(refundTarget.order_number);
       setRefundMsg(res.message || 'Refund processed.');
       await load();
-      setTimeout(() => { setRefundTarget(null); setRefundMsg(''); }, 2000);
+      // A manual refund (Zelle / Cash App / cash) means nothing was sent --
+      // the admin still has to send the money. Leave that instruction up
+      // until they close it, rather than auto-dismissing it in 2 seconds.
+      if (!res.manual) setTimeout(() => { setRefundTarget(null); setRefundMsg(''); }, 2000);
     } catch (err) {
       setRefundMsg('Error: ' + (err.message || 'Refund failed.'));
     } finally {
@@ -393,7 +396,8 @@ export default function Payments() {
               For cash/offline orders, this marks it as refunded for record-keeping.
             </p>
             {refundMsg && (
-              <p className={`pay-modal-msg ${refundMsg.startsWith('Error') ? 'error' : 'success'}`}>
+              <p className={`pay-modal-msg ${refundMsg.startsWith('Error') ? 'error' : refundMsg.includes('refunded automatically') ? 'warning' : 'success'}`}
+                 style={refundMsg.includes('refunded automatically') ? { color: '#b45309', background: '#fffbeb', border: '1px solid #fcd34d' } : undefined}>
                 {refundMsg}
               </p>
             )}
