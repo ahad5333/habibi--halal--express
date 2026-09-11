@@ -49,42 +49,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
     <title>Habibi Halal Express | Authentic Mediterranean Street Food</title>
 
-    <!-- JSON-LD: LocalBusiness / Restaurant structured data (id matched by SEO.jsx to prevent duplicates) -->
+    <!-- JSON-LD fallback for crawlers that don't run JavaScript: only details
+         that can't go stale. Each page replaces it (SEO.jsx, same id) with the
+         full version built from CPanel -- phone, opening hours, the 3 stores,
+         payment methods (utils/businessSchema.js). The old hand-typed copy here
+         said 10 AM-10 PM, listed cash, and gave the 888 number. -->
     <script id="json-ld-schema" type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Restaurant",
+      "@id": "https://habibihe.com/#restaurant",
       "name": "Habibi Halal Express",
       "url": "https://habibihe.com",
       "logo": "https://habibihe.com/images/logos/logo-badge.webp",
       "image": "https://habibihe.com/favicon.png",
-      "description": "Fresh, authentic halal platters, gyros, shawarma and burgers made to order. Fast delivery and pickup in the Bronx, NY.",
-      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "American"],
+      "description": "Fresh, authentic halal platters, gyros, shawarma and burgers made to order. Delivery and pickup in the Bronx, NY.",
+      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros", "Burgers"],
       "priceRange": "$$",
-      "telephone": "+1-888-887-5571",
+      "hasMenu": "https://habibihe.com/menu",
+      "acceptsReservations": false,
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "The Bronx",
         "addressLocality": "Bronx",
         "addressRegion": "NY",
         "addressCountry": "US"
-      },
-      "hasMenu": "https://habibihe.com/menu",
-      "acceptsReservations": false,
-      "paymentAccepted": ["Cash", "Credit Card", "Debit Card", "PayPal", "Zelle"],
-      "currenciesAccepted": "USD",
-      "openingHoursSpecification": [
-        {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-          "opens": "10:00",
-          "closes": "22:00"
-        }
-      ],
-      "sameAs": [
-        "https://www.instagram.com/habibihalal",
-        "https://www.facebook.com/habibihalal"
-      ]
+      }
     }
     </script>
   </head>

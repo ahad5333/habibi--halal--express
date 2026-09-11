@@ -4,6 +4,7 @@ import { Star, ChevronRight, ChevronLeft, Sparkles, Shield, Eye, ShoppingCart } 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SEO from '../components/SEO';
+import { useBusinessSchema } from '../utils/businessSchema';
 import { menuAPI } from '../services/api';
 import './Home.css';
 
@@ -63,44 +64,6 @@ const EDITORIAL_REVIEWS = [
   }
 ];
 
-const restaurantSchema = {
-  "@context": "https://schema.org",
-  "@type": "Restaurant",
-  "name": "Habibi Halal Express",
-  "image": "https://habibihalalexpress.com/images/logos/logo.png",
-  "@id": "https://habibihalalexpress.com",
-  "url": "https://habibihalalexpress.com",
-  "telephone": "+1-718-400-0443",
-  "priceRange": "$$",
-  "menu": "https://habibihalalexpress.com/menu",
-  "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern", "Platters", "Gyros", "Bergers"],
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "Bedford Park Blvd & Jerome Ave",
-    "addressLocality": "Bronx",
-    "addressRegion": "NY",
-    "postalCode": "10458",
-    "addressCountry": "US"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": 40.873426,
-    "longitude": -73.890060
-  },
-  "openingHoursSpecification": [
-    {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-      "opens": "11:00",
-      "closes": "23:00"
-    }
-  ],
-  "sameAs": [
-    "https://facebook.com/habibihalalexpress",
-    "https://instagram.com/habibihalalexpress",
-    "https://youtube.com/habibihalalexpress"
-  ]
-};
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -199,6 +162,8 @@ function StatsRow() {
 
 const Home = () => {
   const { t, i18n } = useTranslation();
+  // What Google reads about the business, from CPanel (hours, phone, stores, payments).
+  const businessSchema = useBusinessSchema();
   const navigate = useNavigate();
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
@@ -270,7 +235,7 @@ const Home = () => {
         title="Home | Authentic Halal Dining & Fast Delivery"
         description="Order fresh, healthy halal platters, gyros, bergers, and sides from Habibi Halal Express. Serving the Bronx, NY, with fast delivery and premium ingredients."
         keywords="halal food bronx, mediterranean restaurant nyc, halal delivery near me, gyro wrap, chicken over rice platter"
-        schema={restaurantSchema}
+        schema={businessSchema}
       />
       {/* ═══════════════════════════════════════════════════════
           HERO SECTION

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   MessageSquare, Star, AlertTriangle, Phone, Handshake,
@@ -8,19 +8,9 @@ import {
 import { contactAPI } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
 import SEO from '../components/SEO';
+import { SITE_URL, schemaPhone } from '../utils/businessSchema';
 import './Contact.css';
 
-const contactSchema = {
-  "@context": "https://schema.org",
-  "@type": "ContactPage",
-  "name": "Contact Habibi Halal Express",
-  "description": "Get in touch with Habibi Halal Express. Suggestions, feedback, active order issue reporting, manager callbacks, partnership, and media inquiries.",
-  "mainEntity": {
-    "@type": "Organization",
-    "name": "Habibi Halal Express",
-    "email": "habibi@habibihe.com"
-  }
-};
 
 const FORM_TYPES = [
   {
@@ -130,6 +120,21 @@ const StarRating = ({ value, onChange }) => (
 
 const Contact = () => {
   const settings = useSettings();
+  // Contact details for Google come from CPanel Settings, not a typed copy.
+  const contactSchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact Habibi Halal Express",
+    "description": "Get in touch with Habibi Halal Express. Suggestions, feedback, active order issue reporting, manager callbacks, partnership, and media inquiries.",
+    "mainEntity": {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#restaurant`,
+      "name": "Habibi Halal Express",
+      "url": SITE_URL,
+      "email": settings.email_contact || undefined,
+      "telephone": schemaPhone(settings.phone_main),
+    },
+  }), [settings]);
   const [searchParams] = useSearchParams();
   const [activeType, setActiveType] = useState(() => {
     const t = searchParams.get('type');

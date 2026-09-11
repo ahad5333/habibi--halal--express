@@ -4,6 +4,7 @@ import { MapPin, Phone, Clock, Navigation, Star, ChevronDown, Wifi } from 'lucid
 import { useTranslation } from 'react-i18next';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
+import { locationAnchor, useBusinessSchema } from '../utils/businessSchema';
 import './Locations.css';
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -128,13 +129,8 @@ const parseHoursTable = (hoursStr) => {
   return result;
 };
 
-const getAnchorId = (title) => {
-  const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))          return 'bedford';
-  if (t.includes('kingsbridge'))      return 'kingsbridge';
-  if (t.includes('white plains'))     return 'white-plains';
-  return t.replace(/\W+/g, '-');
-};
+// Shared with the structured data so each store has one id across pages.
+const getAnchorId = locationAnchor;
 
 // Used only if the live /api/locations call fails or returns empty —
 // must be kept in sync with the real `locations` table by hand.
@@ -400,6 +396,7 @@ const Locations = () => {
   const [loading,   setLoading]   = useState(true);
   const [userCoords, setUserCoords] = useState(null);
   const [heroVisible, setHeroVisible] = useState(false);
+  const businessSchema = useBusinessSchema(locations);
 
   useEffect(() => {
     setTimeout(() => setHeroVisible(true), 100);
@@ -429,26 +426,7 @@ const Locations = () => {
       })
     : locations;
 
-  const locationsSchema = {
-    "@context": "https://schema.org",
-    "@graph": locations.map(loc => ({
-      "@type": "Restaurant",
-      "@id": `https://habibihe.com/locations#${getAnchorId(loc.title)}`,
-      "name": `Habibi Halal Express - ${sanitizeTitle(loc.title)}`,
-      "image": "https://habibihe.com/images/logos/logo.png",
-      "telephone": loc.phone_number || "+1-718-400-0443",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": loc.brief_address || loc.exact_address,
-        "addressLocality": "Bronx",
-        "addressRegion": "NY",
-        "addressCountry": "US"
-      },
-      "openingHours": loc.working_days_hours || "Mo-Su 11:00-23:00",
-      "servesCuisine": ["Halal", "Mediterranean", "Middle Eastern"],
-      "priceRange": "$$"
-    }))
-  };
+
 
   return (
     <div className="locations-page page-watermark">
@@ -456,7 +434,7 @@ const Locations = () => {
         title="Locations | 3 Bronx Outlets & Tri-State Delivery"
         description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Kingsbridge Road, and White Plains Road."
         keywords="halal food nyc, locations habibi halal, bedford park restaurant, kingsbridge road food, white plains road bronx, bronx halal"
-        schema={locations.length > 0 ? locationsSchema : null}
+        schema={businessSchema}
       />
 
       {/* ── Hero ── */}
