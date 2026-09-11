@@ -669,6 +669,8 @@ const setDriverDuty = async (req, res) => {
       `UPDATE staff_members SET is_on_duty=$1, duty_started_at = CASE WHEN $1 THEN NOW() ELSE NULL END WHERE id=$2 AND role='delivery'`,
       [on_duty, driver_id]
     );
+    // Going on/off duty is a driver's clock in/out for the hours report.
+    require('./scheduleController').syncDriverDuty(parseInt(driver_id, 10), on_duty);
     const io = req.app.get('io');
     if (io) io.to('admins').emit('driver_duty_change', { driver_id: parseInt(driver_id), on_duty });
 

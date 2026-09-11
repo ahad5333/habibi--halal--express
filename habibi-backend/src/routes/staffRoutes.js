@@ -25,4 +25,12 @@ router.get('/waste/mine',    staffAuth, waste.staffMyWaste);
 router.post('/waste',        staffAuth, waste.staffLogWaste);
 router.delete('/waste/:id',  staffAuth, waste.staffUndoWaste);
 
+// My schedule: shifts, clock in/out, time off
+const schedule = require('../controllers/scheduleController');
+router.get('/schedule/me',               staffAuth, schedule.staffMe);
+router.post('/schedule/clock-in',        staffAuth, schedule.staffClockIn);
+router.post('/schedule/clock-out',       staffAuth, schedule.staffClockOut);
+router.post('/schedule/time-off',        staffAuth, schedule.staffRequestTimeOff);
+router.delete('/schedule/time-off/:id',  staffAuth, schedule.staffCancelTimeOff);
+
 module.exports = router;

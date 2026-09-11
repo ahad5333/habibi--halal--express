@@ -201,6 +201,12 @@ router.patch ('/assignments/:id/collect-cash',     driverOrAdmin,              c
 router.patch ('/assignments/:id/cod-failed',       driverOrAdmin,              codDeliveryFailed);
 router.post  ('/assignments/:assignment_id/proof', proofUpload.single('photo'), driverOrAdmin, uploadProof);
 router.patch ('/drivers/:driver_id/duty',          driverOrAdmin,              setDriverDuty);
+
+// Driver's own schedule and time off (clocking in is going on duty)
+const schedule = require('../controllers/scheduleController');
+router.get   ('/drivers/:driver_id/schedule',          driverOrAdmin, schedule.driverMe);
+router.post  ('/drivers/:driver_id/time-off',          driverOrAdmin, schedule.driverRequestTimeOff);
+router.delete('/drivers/:driver_id/time-off/:id',      driverOrAdmin, schedule.driverCancelTimeOff);
 router.patch ('/drivers/:driver_id/location',      driverOrAdmin,              updateDriverLocation);
 router.get   ('/drivers/:driver_id/status',        driverOrAdmin,              getDriverStatus);
 router.get   ('/drivers/:driver_id/cash-summary',  driverOrAdmin,              getDriverCashSummary);

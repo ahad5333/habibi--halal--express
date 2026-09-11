@@ -446,6 +446,21 @@ router.get("/waste/options",  waste.adminWasteOptions);
 router.post("/waste",         waste.adminLogWaste);
 router.delete("/waste/:id",   waste.adminDeleteWaste);
 
+// Staff scheduling
+const schedule = require("../controllers/scheduleController");
+router.get("/schedule",                  schedule.getWeek);
+router.post("/schedule/shifts",          schedule.createShift);
+router.put("/schedule/shifts/:id",       schedule.updateShift);
+router.delete("/schedule/shifts/:id",    schedule.deleteShift);
+router.post("/schedule/copy-week",       schedule.copyWeek);
+router.post("/schedule/notify",          schedule.notifyWeek);
+router.get("/schedule/hours",            schedule.getHours);
+router.post("/schedule/clock",           schedule.addClockEntry);
+router.put("/schedule/clock/:id",        schedule.updateClockEntry);
+router.delete("/schedule/clock/:id",     schedule.deleteClockEntry);
+router.get("/schedule/time-off",         schedule.listTimeOff);
+router.patch("/schedule/time-off/:id",   schedule.decideTimeOff);
+
 // AI Assistant — what customers ask it, and what it couldn't answer
 const { getAssistantInsights } = require("../controllers/assistantController");
 router.get("/assistant/insights", getAssistantInsights);

@@ -1043,6 +1043,75 @@ const createTables = async () => {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_waste_log_created ON waste_log(created_at DESC)`);
 
+    // ── Staff scheduling ───────────────────────────────────────────
+    // Shifts are New York wall-clock (DATE + TIME, no zone); an end_time at or
+    // before start_time means the shift runs past midnight. notified_at is the
+    // last time that person was texted their week, so edits since then show up
+    // as "changes to send".
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_shifts (
+        id           SERIAL PRIMARY KEY,
+        staff_id     INTEGER NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+        location_id  INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+        shift_date   DATE NOT NULL,
+        start_time   TIME NOT NULL,
+        end_time     TIME NOT NULL,
+        note         VARCHAR(200),
+        notified_at  TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_staff_shifts_date ON staff_shifts(shift_date)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_staff_shifts_staff ON staff_shifts(staff_id, shift_date)`);
+    // A shift deleted after it was texted: kept just long enough to tell the
+    // person it's gone the next time the week is sent.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_shift_removals (
+        id           SERIAL PRIMARY KEY,
+        staff_id     INTEGER NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+        shift_date   DATE NOT NULL,
+        notified_at  TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    // Clock in/out. source: 'app' (staff PIN screen), 'driver_duty' (a driver
+    // going on/off duty), 'admin' (added or fixed in CPanel). One open entry
+    // per person at a time.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS time_clock (
+        id           SERIAL PRIMARY KEY,
+        staff_id     INTEGER NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+        shift_id     INTEGER REFERENCES staff_shifts(id) ON DELETE SET NULL,
+        clock_in     TIMESTAMPTZ NOT NULL,
+        clock_out    TIMESTAMPTZ,
+        source       VARCHAR(20) NOT NULL DEFAULT 'app',
+        note         VARCHAR(200),
+        edited_by    VARCHAR(255),
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        CHECK (clock_out IS NULL OR clock_out > clock_in)
+      );
+    `);
+    await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_time_clock_open ON time_clock(staff_id) WHERE clock_out IS NULL`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_time_clock_in ON time_clock(clock_in)`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS time_off_requests (
+        id             SERIAL PRIMARY KEY,
+        staff_id       INTEGER NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+        start_date     DATE NOT NULL,
+        end_date       DATE NOT NULL,
+        reason         VARCHAR(300),
+        status         VARCHAR(10) NOT NULL DEFAULT 'pending'
+                         CHECK (status IN ('pending', 'approved', 'declined', 'cancelled')),
+        decided_by     VARCHAR(255),
+        decided_at     TIMESTAMPTZ,
+        decision_note  VARCHAR(300),
+        created_at     TIMESTAMPTZ DEFAULT NOW(),
+        CHECK (end_date >= start_date)
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_time_off_dates ON time_off_requests(start_date, end_date)`);
+
     // ── Notification Broadcasts ────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS broadcasts (
