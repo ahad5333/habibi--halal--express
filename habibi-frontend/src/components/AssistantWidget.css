@@ -287,3 +287,39 @@
     border-radius: 0;
   }
 }
+
+/* ── Habibi character ─────────────────────────────────────────────────────
+   The assistant's face: on the launcher, in the panel header, and beside the
+   bot's messages. The image has a transparent background; each placement
+   supplies its own circle so the white cap and robe stay readable. */
+.asw-fab { padding: 0; overflow: hidden; }
+.asw-fab-avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.asw-header-id { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+
+.asw-avatar { border-radius: 50%; object-fit: cover; flex: none; display: block; }
+.asw-avatar-header {
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+.asw-avatar-msg {
+  width: 28px;
+  height: 28px;
+  background: var(--color-primary, #F97316);
+  grid-row: 1;
+  align-self: start;
+}
+
+/* Bot messages put the avatar in a narrow left column; the bubble, product
+   cards, suggestions and confirm buttons stack in the right column as before. */
+.asw-msg-bot {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 0.5rem;
+  align-items: start;
+  max-width: 94%;
+}
+.asw-msg-bot > :not(.asw-avatar-msg) { grid-column: 2; }
+.asw-msg-bot > .asw-bubble { justify-self: start; }

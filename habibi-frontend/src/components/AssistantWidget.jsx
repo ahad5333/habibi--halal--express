@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { assistantAPI } from '../services/api';
 import './AssistantWidget.css';
+
+// Habibi's cartoon character, cropped to head and shoulders so the face still
+// reads at the launcher's 56px (full-body, it shrank to a few pixels). Served
+// as a 192px WebP -- 3x the largest display size, ~12KB against the 113KB
+// source PNG. Transparent background: the orange circles come from CSS.
+const ASSISTANT_AVATAR = '/images/assistant/habibi-assistant-face.webp';
 
 const getFallbackImg = (id) => `/images/menu/${((id || 1) % 70) + 1}.jpg`;
 
@@ -134,7 +140,10 @@ export default function AssistantWidget() {
       {open && (
         <div className="asw-panel">
           <div className="asw-header">
-            <span className="asw-header-title">{t('assistant.title')}</span>
+            <span className="asw-header-id">
+              <img src={ASSISTANT_AVATAR} alt="" className="asw-avatar asw-avatar-header" />
+              <span className="asw-header-title">{t('assistant.title')}</span>
+            </span>
             <button className="asw-close" onClick={() => setOpen(false)} aria-label={t('assistant.close')}>
               <X size={18} />
             </button>
@@ -143,6 +152,7 @@ export default function AssistantWidget() {
           <div className="asw-body" ref={bodyRef}>
             {messages.map((m, idx) => (
               <div key={idx} className={`asw-msg asw-msg-${m.role}`}>
+                {m.role === 'bot' && <img src={ASSISTANT_AVATAR} alt="" className="asw-avatar asw-avatar-msg" />}
                 <div className="asw-bubble">{m.text}</div>
 
                 {m.items && m.items.length > 0 && (
@@ -196,6 +206,7 @@ export default function AssistantWidget() {
             ))}
             {sending && (
               <div className="asw-msg asw-msg-bot">
+                <img src={ASSISTANT_AVATAR} alt="" className="asw-avatar asw-avatar-msg" />
                 <div className="asw-bubble asw-typing"><span /><span /><span /></div>
               </div>
             )}
@@ -231,7 +242,7 @@ export default function AssistantWidget() {
 
       {!open && (
         <button className="asw-fab" onClick={() => setOpen(true)} aria-label={t('assistant.open')}>
-          <MessageCircle size={24} />
+          <img src={ASSISTANT_AVATAR} alt="" className="asw-fab-avatar" />
         </button>
       )}
     </div>
