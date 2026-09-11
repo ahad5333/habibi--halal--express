@@ -15,6 +15,17 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+// Store-tablet login credentials never go out on the public routes. These
+// handlers return SELECT * rows, so until this every store tablet's username
+// and bcrypt password hash went to anyone who opened /api/locations. CPanel
+// reads locations through /api/admin/locations, which is unaffected.
+const PRIVATE_FIELDS = ['tablet_username', 'tablet_password_hash'];
+const publicLocation = (row) => {
+  const out = { ...row };
+  PRIVATE_FIELDS.forEach(k => delete out[k]);
+  return out;
+};
+
 const getAllLocations = async (req, res) => {
   const { lat, lng } = req.query;
   
@@ -40,7 +51,7 @@ const getAllLocations = async (req, res) => {
     }
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json(result.rows.map(publicLocation));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to retrieve locations' });
@@ -51,7 +62,7 @@ const getLocationById = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM locations WHERE id = $1', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Location not found' });
-    res.json(result.rows[0]);
+    res.json(publicLocation(result.rows[0]));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to retrieve location' });
@@ -195,7 +206,7 @@ const findBestLocation = async (req, res) => {
     }
 
     if (bestLoc) {
-      res.json({ ...bestLoc, distance: minDistance });
+      res.json({ ...publicLocation(bestLoc), distance: minDistance });
     } else {
       res.status(404).json({ error: 'No delivery location found within radius' });
     }
