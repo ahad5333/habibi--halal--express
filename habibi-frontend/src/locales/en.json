@@ -1194,9 +1194,14 @@
   },
   "assistant": {
     "title": "Habibi Assistant",
+    "subtitle": "AI ordering assistant · replies instantly",
+    "teaserHi": "Hi! 👋 I'm Habibi, your AI assistant.",
+    "teaserText": "Tell me what you're craving and I'll add it to your cart.",
+    "dismiss": "Dismiss",
+    "aiBadge": "AI",
     "placeholder": "Ask about the menu or order something...",
     "send": "Send",
-    "open": "Chat with us",
+    "open": "Chat with Habibi, our AI assistant",
     "close": "Close chat",
     "quickReplySpicy": "🔥 What's spicy?",
     "quickReplyVegetarian": "🥗 Vegetarian options",
@@ -1206,6 +1211,6 @@
     "added": "Added",
     "confirmYes": "Yes, clear it",
     "confirmNo": "No, keep it",
-    "greeting": "Hi! I'm the Habibi Assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart."
+    "greeting": "Hi! I'm Habibi, your AI ordering assistant 👋 Ask me about the menu, or tell me what you'd like and I'll add it to your cart."
   }
 }

@@ -292,10 +292,30 @@
    The assistant's face: on the launcher, in the panel header, and beside the
    bot's messages. The image has a transparent background; each placement
    supplies its own circle so the white cap and robe stay readable. */
-.asw-fab { padding: 0; overflow: hidden; }
-.asw-fab-avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
+.asw-fab { padding: 0; position: relative; }
+.asw-fab-avatar { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+
+/* "AI" tag on the launcher -- keeps saying what the button is after the
+   greeting bubble has gone. Top-left, clear of the bubble's tail. */
+.asw-fab-badge {
+  position: absolute;
+  top: -3px;
+  left: -6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-primary, #F97316);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
 
 .asw-header-id { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+.asw-header-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.asw-header-sub { font-size: 0.7rem; font-weight: 500; opacity: 0.9; }
 
 .asw-avatar { border-radius: 50%; object-fit: cover; flex: none; display: block; }
 .asw-avatar-header {
@@ -323,3 +343,76 @@
 }
 .asw-msg-bot > :not(.asw-avatar-msg) { grid-column: 2; }
 .asw-msg-bot > .asw-bubble { justify-self: start; }
+
+/* ── Greeting bubble ──────────────────────────────────────────────────────
+   Sits above the launcher (the root stacks right-aligned), tail pointing down
+   at the button's centre: 28px from the right edge on a 56px button. White on
+   the dark site so it reads as a chat message, not part of the page. */
+.asw-teaser {
+  position: relative;
+  width: min(270px, calc(100vw - 32px));
+  background: #fff;
+  color: #1c1917;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  transform-origin: bottom right;
+  animation: asw-teaser-in 0.35s ease-out both;
+}
+.asw-teaser::after {
+  content: '';
+  position: absolute;
+  right: 21px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 0 0 3px 0;
+  transform: rotate(45deg);
+}
+
+.asw-teaser-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.8rem 2.2rem 0.85rem 0.95rem;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.asw-teaser-hi { font-size: 0.9rem; font-weight: 700; line-height: 1.3; }
+.asw-teaser-text { font-size: 0.82rem; line-height: 1.4; color: #57534e; }
+
+.asw-teaser-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #78716c;
+  cursor: pointer;
+}
+.asw-teaser-close:hover { background: #f5f5f4; color: #1c1917; }
+.asw-teaser-body:focus-visible,
+.asw-teaser-close:focus-visible {
+  outline: 2px solid var(--color-primary, #F97316);
+  outline-offset: 2px;
+}
+
+@keyframes asw-teaser-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asw-teaser { animation: none; }
+}

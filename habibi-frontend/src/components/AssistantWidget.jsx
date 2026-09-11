@@ -12,6 +12,28 @@ import './AssistantWidget.css';
 // source PNG. Transparent background: the orange circles come from CSS.
 const ASSISTANT_AVATAR = '/images/assistant/habibi-assistant-face.webp';
 
+// Greeting bubble beside the launcher, so a first-time visitor knows the
+// button is an AI assistant they can order through. Shown once per browser
+// session, a few seconds after the page settles; closing it or opening the
+// chat hides it for a week. Storage can throw (private mode, blocked site
+// data) -- then it simply shows.
+const TEASER_DELAY_MS = 3000;
+const TEASER_VISIBLE_MS = 20000;
+const TEASER_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+const TEASER_SEEN_KEY = 'habibi_asw_teaser_seen';
+const TEASER_SNOOZE_KEY = 'habibi_asw_teaser_snoozed_at';
+
+const teaserAllowed = () => {
+  try {
+    if (sessionStorage.getItem(TEASER_SEEN_KEY)) return false;
+    const snoozedAt = Number(localStorage.getItem(TEASER_SNOOZE_KEY) || 0);
+    return !(snoozedAt && Date.now() - snoozedAt < TEASER_SNOOZE_MS);
+  } catch { return true; }
+};
+const snoozeTeaser = () => {
+  try { localStorage.setItem(TEASER_SNOOZE_KEY, String(Date.now())); } catch { /* ignore */ }
+};
+
 const getFallbackImg = (id) => `/images/menu/${((id || 1) % 70) + 1}.jpg`;
 
 const QUICK_REPLIES = [
@@ -30,9 +52,32 @@ export default function AssistantWidget() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [teaser, setTeaser] = useState(false);
   const bodyRef = useRef(null);
   // What was added on the previous turn, so "make that 3" knows its target.
   const lastItemsRef = useRef([]);
+
+  useEffect(() => {
+    if (!teaserAllowed()) return undefined;
+    let hideTimer;
+    const showTimer = setTimeout(() => {
+      try { sessionStorage.setItem(TEASER_SEEN_KEY, '1'); } catch { /* ignore */ }
+      setTeaser(true);
+      hideTimer = setTimeout(() => setTeaser(false), TEASER_VISIBLE_MS);
+    }, TEASER_DELAY_MS);
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
+  }, []);
+
+  const openChat = () => {
+    setTeaser(false);
+    snoozeTeaser();
+    setOpen(true);
+  };
+
+  const dismissTeaser = () => {
+    setTeaser(false);
+    snoozeTeaser();
+  };
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -142,7 +187,10 @@ export default function AssistantWidget() {
           <div className="asw-header">
             <span className="asw-header-id">
               <img src={ASSISTANT_AVATAR} alt="" className="asw-avatar asw-avatar-header" />
-              <span className="asw-header-title">{t('assistant.title')}</span>
+              <span className="asw-header-text">
+                <span className="asw-header-title">{t('assistant.title')}</span>
+                <span className="asw-header-sub">{t('assistant.subtitle')}</span>
+              </span>
             </span>
             <button className="asw-close" onClick={() => setOpen(false)} aria-label={t('assistant.close')}>
               <X size={18} />
@@ -240,9 +288,22 @@ export default function AssistantWidget() {
         </div>
       )}
 
+      {!open && teaser && (
+        <div className="asw-teaser">
+          <button type="button" className="asw-teaser-body" onClick={openChat}>
+            <span className="asw-teaser-hi">{t('assistant.teaserHi')}</span>
+            <span className="asw-teaser-text">{t('assistant.teaserText')}</span>
+          </button>
+          <button type="button" className="asw-teaser-close" onClick={dismissTeaser} aria-label={t('assistant.dismiss')}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {!open && (
-        <button className="asw-fab" onClick={() => setOpen(true)} aria-label={t('assistant.open')}>
+        <button className="asw-fab" onClick={openChat} aria-label={t('assistant.open')}>
           <img src={ASSISTANT_AVATAR} alt="" className="asw-fab-avatar" />
+          <span className="asw-fab-badge" aria-hidden="true">{t('assistant.aiBadge')}</span>
         </button>
       )}
     </div>
