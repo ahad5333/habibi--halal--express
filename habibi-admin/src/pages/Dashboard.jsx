@@ -32,7 +32,11 @@ const since = (mins) => {
   const m = Math.max(0, parseInt(mins, 10) || 0);
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
-  return `${h}h ${m % 60}m`;
+  if (h < 24) return `${h}h ${m % 60}m`;
+  // An order abandoned days ago reads as nonsense in hours ("1076h 13m"), and
+  // there are real ones sitting in the data that were never finished.
+  const d = Math.floor(h / 24);
+  return h % 24 ? `${d}d ${h % 24}h` : `${d}d`;
 };
 
 const greeting = () => {
