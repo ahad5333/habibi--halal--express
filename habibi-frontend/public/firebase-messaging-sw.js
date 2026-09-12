@@ -18,8 +18,10 @@ function initFirebase(config) {
       const data = payload.data || {};
       const notifOptions = {
         body:  body  || 'You have a new notification.',
-        icon:  icon  || '/favicon.png',
-        badge: '/favicon.png',
+        // The app mark, not the full logo: a notification icon is shown small,
+        // and the detailed logo turned into a smudge at that size.
+        icon:  icon  || '/icon-192.png',
+        badge: '/icon-192.png',
         data,
         tag:   data.tag || 'habibi-notification',
       };
