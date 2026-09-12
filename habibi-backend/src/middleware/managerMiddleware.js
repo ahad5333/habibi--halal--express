@@ -74,8 +74,9 @@ const merchantOrManager = (req, res, next) => {
 //   /settings, /audit-log, /integrations, /platform-credentials
 //   write access to /locations  — branch address, phone and tablet credentials
 const MANAGER_ALLOWED = [
-  // Dashboard. getDashboardStats strips the revenue figures for managers.
+  // Dashboard. getDashboardStats and getToday both strip the takings for managers.
   ['GET',   /^\/stats$/],
+  ['GET',   /^\/today$/],
 
   // Orders: see them, and move them through the kitchen and delivery flow.
   ['GET',   /^\/orders$/],

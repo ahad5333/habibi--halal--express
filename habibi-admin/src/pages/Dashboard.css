@@ -110,3 +110,161 @@
   .stat-card  { padding: 0.875rem; }
   .stat-card-value { font-size: 1.5rem; }
 }
+
+/* ── Today view (rebuilt 2026-09-12) ───────────────────────────────── */
+.dash-hello {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dash-greeting {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Things that want doing now */
+.dash-attention {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dash-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: filter 0.15s;
+}
+
+.dash-flag:hover { filter: brightness(0.97); }
+.dash-flag span:first-of-type { flex: 1; }
+.dash-flag svg { flex-shrink: 0; }
+
+.dash-flag-bad  { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.dash-flag-warn { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+
+/* Two columns: the queue, and a rail of smaller panels */
+.dash-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.dash-groups { padding: 0.35rem 0 0.75rem; }
+
+.dash-group + .dash-group { border-top: 1px solid var(--color-border); margin-top: 0.5rem; padding-top: 0.5rem; }
+
+.dash-group-hd {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1.25rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.dash-order-list, .dash-mini {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-order-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) auto 3.4rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 1.25rem;
+  font-size: 0.82rem;
+  border-left: 3px solid transparent;
+}
+
+.dash-order-list li.is-stuck { background: #fffbeb; border-left-color: #f59e0b; }
+
+.dash-order-no { font-size: 0.72rem; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-order-who { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-order-via { font-size: 0.75rem; white-space: nowrap; }
+
+.dash-order-age {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dash-order-age.is-stuck-age { color: #b45309; font-weight: 700; }
+
+/* Rail panels */
+.dash-rail { display: flex; flex-direction: column; gap: 1rem; }
+
+.dash-panel { padding: 1rem 1.1rem; }
+.dash-panel .dash-section-title { display: flex; align-items: center; gap: 0.4rem; }
+.dash-panel .dash-section-sub { margin-bottom: 0.6rem; }
+
+.dash-mini li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dash-mini li:last-child { border-bottom: 0; }
+.dash-mini li span:nth-child(2) { font-weight: 500; }
+.dash-mini li .dash-order-age { margin-left: auto; }
+
+.dash-mini-hd {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0.75rem 0 0.35rem;
+}
+
+.dash-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.dash-chips li {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.dash-chips li.is-out { background: #fef2f2; border-color: #fecaca; color: #b91c1c; font-weight: 600; }
+.dash-chips li small { color: var(--color-text-muted); }
+
+.dash-panel-btn { margin-top: 0.9rem; width: 100%; justify-content: center; }
+
+@media (max-width: 1000px) {
+  .dash-split { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .dash-order-list li { grid-template-columns: minmax(0, 1fr) auto; }
+  .dash-order-list li .dash-order-no, .dash-order-list li .dash-order-via { display: none; }
+}

@@ -67,6 +67,7 @@ export const authAPI = {
 
 export const adminAPI = {
   stats:       () => req('/api/admin/stats'),
+  today:       () => req('/api/admin/today'),
   sidebar:     () => req('/api/admin/sidebar'),
 
   orders:      ({ page, limit } = {}) =>

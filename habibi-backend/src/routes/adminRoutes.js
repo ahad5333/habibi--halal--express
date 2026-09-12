@@ -98,6 +98,8 @@ router.get("/sidebar", getSidebarItems);
 
 // Analytics & Stats
 router.get("/stats", getDashboardStats);
+const { getToday } = require("../controllers/dashboardController");
+router.get("/today", adminOrManager, getToday);
 router.get("/analytics/revenue", getRevenueAnalytics);
 router.get("/analytics/growth", getCustomerGrowth);
 
