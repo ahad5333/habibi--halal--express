@@ -29,7 +29,7 @@ const PROVIDER_FIELDS = {
   ],
 };
 
-export default function PaymentProcessors() {
+export default function PaymentProcessors({ embedded = false }) {
   const [accounts, setAccounts]     = useState([]);   // card_processor_accounts (Square/Clover)
   const [authNetAccounts, setAuthNetAccounts] = useState([]); // for the combined active banner only
   const [loading, setLoading]       = useState(true);
@@ -113,10 +113,10 @@ export default function PaymentProcessors() {
     : null;
 
   return (
-    <div>
+    <div className="pp-page">
       <div className="page-hdr">
         <div>
-          <h1 className="page-title">Payment Processors</h1>
+          {!embedded && <h1 className="page-title">Payment Processors</h1>}
           <p className="page-sub">Square &amp; Clover merchant accounts — switch which one is live anytime</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>

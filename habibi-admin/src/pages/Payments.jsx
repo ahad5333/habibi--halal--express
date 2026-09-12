@@ -31,7 +31,7 @@ function methodLabel(m) {
   return map[(m || '').toLowerCase()] || m || '—';
 }
 
-export default function Payments() {
+export default function Payments({ embedded = false }) {
   const [data, setData]             = useState(null);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
@@ -140,7 +140,7 @@ export default function Payments() {
       {/* Header */}
       <div className="page-hdr">
         <div>
-          <p className="page-title">Payments</p>
+          {!embedded && <p className="page-title">Payments</p>}
           <p className="page-sub">All transactions &amp; revenue breakdown</p>
         </div>
         <div className="pay-hdr-actions">

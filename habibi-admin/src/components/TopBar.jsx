@@ -17,7 +17,7 @@ const TITLES = {
   '/catering':       { label: 'Catering',             sub: 'Event & catering requests' },
   '/careers':        { label: 'Careers',              sub: 'Job listings & applications' },
   '/reviews':        { label: 'Reviews',              sub: 'Customer ratings & feedback' },
-  '/payments':       { label: 'Payments',             sub: 'Transactions & refunds' },
+  '/payments':       { label: 'Payments',             sub: 'Transactions, refunds & how money comes in' },
   '/urgent':         { label: 'Urgent Requests',      sub: 'Active alerts from customers' },
   '/settings':       { label: 'Settings',             sub: 'System configuration' },
   '/staff':          { label: 'Staff',                sub: 'Team members & roles' },

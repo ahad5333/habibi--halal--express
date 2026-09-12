@@ -123,7 +123,7 @@ function OfflineHandlesCard() {
   );
 }
 
-export default function PaymentAccounts() {
+export default function PaymentAccounts({ embedded = false }) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [modal, setModal]       = useState(null); // null | 'add' | account object
@@ -191,8 +191,8 @@ export default function PaymentAccounts() {
     <div>
       <div className="page-hdr">
         <div>
-          <h1 className="page-title">Payment Accounts</h1>
-          <p className="page-sub">Authorize.net merchant accounts — switch active account anytime</p>
+          {!embedded && <h1 className="page-title">Payment Accounts</h1>}
+          <p className="page-sub">Zelle, PayPal and Cash App handles, plus legacy Authorize.net accounts</p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Account</button>
       </div>

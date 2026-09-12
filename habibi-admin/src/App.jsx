@@ -38,7 +38,7 @@ const Subscriptions    = lazy(() => import('./pages/Subscriptions'));
 const Coupons          = lazy(() => import('./pages/Coupons'));
 const GiftCards        = lazy(() => import('./pages/GiftCards'));
 const Settings         = lazy(() => import('./pages/Settings'));
-const Payments         = lazy(() => import('./pages/Payments'));
+const PaymentsHub      = lazy(() => import('./pages/PaymentsHub'));
 const Staff            = lazy(() => import('./pages/Staff'));
 const Inventory        = lazy(() => import('./pages/Inventory'));
 const Locations        = lazy(() => import('./pages/Locations'));
@@ -50,8 +50,6 @@ const DeliveryDispatch = lazy(() => import('./pages/DeliveryDispatch'));
 const CateringAdmin    = lazy(() => import('./pages/CateringAdmin'));
 const CareersAdmin     = lazy(() => import('./pages/Careers'));
 const Reviews          = lazy(() => import('./pages/Reviews'));
-const PaymentAccounts  = lazy(() => import('./pages/PaymentAccounts'));
-const PaymentProcessors = lazy(() => import('./pages/PaymentProcessors'));
 const AuditLog         = lazy(() => import('./pages/AuditLog'));
 const ChatInbox        = lazy(() => import('./pages/ChatInbox'));
 const AssistantInsights = lazy(() => import('./pages/AssistantInsights'));
@@ -105,7 +103,7 @@ function AdminLayout() {
             {/* Analytics was folded into Reports (Daily Revenue tab + New Customers
                 card). Kept as a redirect so old bookmarks still land somewhere. */}
             <Route path="/analytics" element={<Navigate to="/reports" replace />} />
-            <Route path="/payments"  element={<Payments />} />
+            <Route path="/payments"  element={<PaymentsHub />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/staff"     element={<Staff />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -116,8 +114,9 @@ function AdminLayout() {
             <Route path="/broadcasts"  element={<Broadcasts />} />
             <Route path="/dispatch"   element={<DeliveryDispatch />} />
             <Route path="/cash-log"   element={<CashLog />} />
-            <Route path="/payment-accounts" element={<PaymentAccounts />} />
-            <Route path="/payment-processors" element={<PaymentProcessors />} />
+            {/* Folded into the Payments page as tabs; kept for old bookmarks. */}
+            <Route path="/payment-accounts" element={<Navigate to="/payments?tab=accounts" replace />} />
+            <Route path="/payment-processors" element={<Navigate to="/payments?tab=processors" replace />} />
             <Route path="/audit-log"      element={<AuditLog />} />
             <Route path="/chat"           element={<ChatInbox />} />
             <Route path="/assistant"      element={<AssistantInsights />} />

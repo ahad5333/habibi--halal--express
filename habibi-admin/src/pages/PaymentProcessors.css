@@ -43,7 +43,9 @@
   gap: 0.875rem;
   color: var(--color-text-muted);
 }
-.an-nickname {
+/* Scoped: PaymentAccounts.css defines .an-nickname too, and both files now
+   load together on the merged Payments page. */
+.pp-page .an-nickname {
   font-weight: 700;
   font-size: 1rem;
   color: var(--color-text-main);

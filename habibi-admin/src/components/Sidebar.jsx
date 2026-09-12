@@ -8,7 +8,7 @@ import {
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
   Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot, Trash2, CalendarClock,
-  Search, ChevronDown, Wallet, Map as MapIcon, Eye, EyeOff,
+  Search, ChevronDown, Map as MapIcon, Eye, EyeOff,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import './Sidebar.css';
@@ -74,11 +74,9 @@ const GROUPS = [
     name: 'Money',
     icon: <DollarSign size={13} />,
     items: [
-      { to: '/payments',            icon: <CreditCard size={17} />, label: 'Payments',            kw: 'refund transactions charges paid' },
+      { to: '/payments',            icon: <CreditCard size={17} />, label: 'Payments',            kw: 'refund transactions charges paid square clover paypal zelle cash app processors accounts' },
       { to: '/reports',             icon: <FileText size={17} />,   label: 'Reports',             kw: 'sales tax revenue profit margin forecast analytics growth daily chart new customers' },
       { to: '/cash-log',            icon: <DollarSign size={17} />, label: 'Cash Log',            adv: true, kw: 'driver hand in drawer' },
-      { to: '/payment-accounts',    icon: <Wallet size={17} />,     label: 'Payment Accounts',    adv: true, kw: 'paypal zelle cash app' },
-      { to: '/payment-processors',  icon: <CreditCard size={17} />, label: 'Payment Processors',  adv: true, kw: 'square clover card gateway' },
     ],
   },
   {
