@@ -640,18 +640,6 @@ const createTables = async () => {
       );
     `);
 
-    // ── Admin Sidebar ─────────────────────────────────────────────
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS admin_sidebar (
-        id         SERIAL PRIMARY KEY,
-        title      VARCHAR(100) NOT NULL,
-        icon       VARCHAR(50),
-        route      VARCHAR(100),
-        sort_order INTEGER DEFAULT 1,
-        is_active  BOOLEAN DEFAULT TRUE
-      );
-    `);
-
     // ── Payment Settings ──────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS payment_settings (
@@ -1946,25 +1934,6 @@ const seedDefaults = async () => {
     console.log("✅ Default delivery tiers seeded");
   }
 
-  // Seed admin sidebar
-  const sidebarCount = await pool.query("SELECT COUNT(*) FROM admin_sidebar");
-  if (parseInt(sidebarCount.rows[0].count) === 0) {
-    await pool.query(`
-      INSERT INTO admin_sidebar (title, icon, route, sort_order) VALUES
-        ('Dashboard',         'LayoutDashboard', '/admin',                1),
-        ('Orders',            'ShoppingBag',     '/admin/orders',         2),
-        ('Menu Manager',      'UtensilsCrossed', '/admin/menu',           3),
-        ('Locations',         'MapPin',          '/admin/locations',      4),
-        ('Customers',         'Users',           '/admin/customers',      5),
-        ('Coupons',           'Tag',             '/admin/coupons',        6),
-        ('Reports',           'BarChart2',       '/admin/reports',        7),
-        ('Delivery Partners', 'Truck',           '/admin/delivery',       8),
-        ('Business Partners', 'Handshake',       '/admin/partners',       9),
-        ('Staff',             'BadgeCheck',      '/admin/staff',         10),
-        ('Settings',          'Settings',        '/admin/settings',      11)
-    `);
-    console.log("✅ Admin sidebar seeded");
-  }
 
   // Seed locations
   const locCount = await pool.query("SELECT COUNT(*) FROM locations");

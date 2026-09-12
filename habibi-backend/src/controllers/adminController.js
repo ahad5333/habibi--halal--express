@@ -464,18 +464,6 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-// 5. Dynamic Sidebar Items
-const getSidebarItems = async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT * FROM admin_sidebar WHERE is_active = TRUE ORDER BY sort_order ASC"
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json(safeError(error));
-  }
-};
-
 // 6. User Management
 const CUSTOMER_ROLES = ['customer', 'business', 'merchant'];
 const CUSTOMER_SORT_COLUMNS = { name: 'name', created_at: 'created_at', total_orders: 'total_orders', total_spent: 'total_spent' };
@@ -1004,17 +992,6 @@ const updateDeliveryTier = async (req, res) => {
       [min_distance, max_distance, provider_type, is_active, id]
     );
     res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json(safeError(error));
-  }
-};
-
-const updateOrderProvider = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { provider_type } = req.body;
-    await pool.query("UPDATE orders SET delivery_partner = $1 WHERE id = $2", [provider_type, id]);
-    res.json({ message: "Delivery provider updated successfully" });
   } catch (error) {
     res.status(500).json(safeError(error));
   }
@@ -1577,7 +1554,6 @@ module.exports = {
   updateOrderStatus,
   updatePaymentStatus,
   addItemToOrder,
-  getSidebarItems,
   getAllCustomers,
   exportCustomers,
   getTopCustomers,
@@ -1590,7 +1566,6 @@ module.exports = {
   bulkImportCustomers,
   getDeliveryTiers,
   updateDeliveryTier,
-  updateOrderProvider,
   getAdminLocations,
   updateAdminLocation,
   toggleLocation,

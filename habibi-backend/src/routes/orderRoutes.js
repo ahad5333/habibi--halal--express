@@ -13,7 +13,6 @@ const {
   cancelOrder,
   deleteGuestOrder,
   clearCompletedOrders,
-  createOrder,
   getOrders,
   getOrderById,
   updateOrderStatus,
@@ -334,7 +333,6 @@ router.post("/:orderNumber/redeem-points", async (req, res) => {
   }
 });
 
-router.post("/", createOrder);
 router.get("/", getOrders);
 router.get("/:id", getOrderById);
 router.put("/:id/status", updateOrderStatus);

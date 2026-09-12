@@ -14,7 +14,6 @@ const {
   updateOrderStatus,
   updatePaymentStatus,
   addItemToOrder,
-  getSidebarItems,
   getAllCustomers,
   exportCustomers,
   getTopCustomers,
@@ -27,7 +26,6 @@ const {
   bulkImportCustomers,
   getDeliveryTiers,
   updateDeliveryTier,
-  updateOrderProvider,
   getAdminLocations,
   updateAdminLocation,
   toggleLocation,
@@ -93,9 +91,6 @@ router.get("/panel-users",      admin, listPanelUsers);
 router.post("/panel-users",     admin, grantPanelAccess);
 router.patch("/panel-users/:id", admin, updatePanelUser);
 
-// Sidebar items
-router.get("/sidebar", getSidebarItems);
-
 // Analytics & Stats
 router.get("/stats", getDashboardStats);
 const { getToday } = require("../controllers/dashboardController");
@@ -107,7 +102,6 @@ router.get("/analytics/growth", getCustomerGrowth);
 router.get("/orders", getAllOrders);
 router.get("/orders/unified", getUnifiedOrders);
 router.post("/orders/:id/add-item", protect, admin, addItemToOrder);
-router.patch("/orders/:id/provider", updateOrderProvider);
 
 // Customers
 router.get("/customers", getAllCustomers);

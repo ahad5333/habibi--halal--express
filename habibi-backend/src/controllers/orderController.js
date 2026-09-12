@@ -1778,43 +1778,12 @@ const clearCompletedOrders = async (req, res) => {
 };
 
 /* ── Auth-protected: legacy/future endpoints ── */
-const createOrder = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const cart = await pool.query("SELECT * FROM carts WHERE user_id=$1", [userId]);
-    if (cart.rows.length === 0) return res.status(400).json({ message: "Cart is empty" });
-
-    const cartId = cart.rows[0].id;
-    const items = await pool.query(
-      `SELECT ci.menu_item_id AS menu_id, ci.quantity, m.price
-       FROM cart_items ci JOIN menus m ON ci.menu_item_id = m.id
-       WHERE ci.cart_id = $1`,
-      [cartId]
-    );
-    if (items.rows.length === 0) return res.status(400).json({ message: "No items in cart" });
-
-    let total = 0;
-    items.rows.forEach(item => { total += item.price * item.quantity; });
-
-    const order = await pool.query(
-      "INSERT INTO orders(customer_id,total,order_status,payment_status) VALUES($1,$2,'pending','unpaid') RETURNING *",
-      [userId, total]
-    );
-    const orderId = order.rows[0].id;
-
-    for (const item of items.rows) {
-      await pool.query(
-        "INSERT INTO order_items(order_id,menu_item_id,quantity,unit_price) VALUES($1,$2,$3,$4)",
-        [orderId, item.menu_id, item.quantity, item.price]
-      );
-    }
-
-    await pool.query("DELETE FROM cart_items WHERE cart_id=$1", [cartId]);
-    res.status(201).json({ message: "Order created successfully", order_id: orderId, total });
-  } catch (err) {
-    res.status(500).json(safeError(err));
-  }
-};
+// createOrder used to live here, mounted at POST /api/orders. It built an order
+// from the `carts` tables into the legacy `orders` / `order_items` tables, which
+// nothing else in the system reads — the real checkout writes `guest_orders` via
+// /api/orders/guest. No client ever called it (web, mobile and admin all use
+// /guest), so an order created through it would simply never have appeared in
+// the panel. Removed 2026-09-12 along with its route.
 
 const getOrders = async (req, res) => {
   try {
@@ -1885,7 +1854,6 @@ module.exports = {
   cancelOrder,
   deleteGuestOrder,
   clearCompletedOrders,
-  createOrder,
   getOrders,
   getOrderById,
   updateOrderStatus,
