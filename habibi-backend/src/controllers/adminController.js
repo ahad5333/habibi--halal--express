@@ -1,4 +1,5 @@
 const safeError = require('../utils/safeError');
+const { MANAGER_ROLE } = require('../middleware/managerMiddleware');
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -20,14 +21,24 @@ const getDashboardStats = async (req, res) => {
       pool.query("SELECT COUNT(*) as total FROM guest_orders WHERE placed_at >= CURRENT_DATE"),
     ]);
 
-    res.json({
+    const payload = {
       revenue:        parseFloat(revenueRes.rows[0].total  || 0).toFixed(2),
       orders:         parseInt(ordersRes.rows[0].total     || 0),
       pending:        parseInt(pendingRes.rows[0].total    || 0),
       menus:          parseInt(menuRes.rows[0].total       || 0),
       today_revenue:  parseFloat(todayRevRes.rows[0].total || 0).toFixed(2),
       today_orders:   parseInt(todayOrdRes.rows[0].total   || 0),
-    });
+    };
+
+    // Managers get the dashboard (they need the pending-order count, and the
+    // sidebar badge reads this endpoint) but not the takings. Stripped here
+    // rather than only hidden in the UI, so the numbers never reach the browser.
+    if (req.user?.role === MANAGER_ROLE) {
+      delete payload.revenue;
+      delete payload.today_revenue;
+    }
+
+    res.json(payload);
   } catch (error) {
     res.status(500).json(safeError(error));
   }

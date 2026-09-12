@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DollarSign, ShoppingBag, Clock, Utensils, TrendingUp, ChevronRight, Circle } from 'lucide-react';
 import { adminAPI } from '../services/api';
+import { useAdminAuth } from '../context/AdminAuthContext';
+import { isManager, canOpen } from '../utils/roles';
 import './Dashboard.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
@@ -29,6 +31,7 @@ const StatCard = ({ icon, label, value, sub, color }) => (
 );
 
 export default function Dashboard() {
+  const { role } = useAdminAuth();
   const [stats, setStats]     = useState(null);
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +58,15 @@ export default function Dashboard() {
     <div className="dashboard">
       {/* Stats */}
       <div className="dash-stats">
-        <StatCard
-          icon={<DollarSign size={20} />} color="#22c55e"
-          label="Today's Revenue" value={`$${parseFloat(stats?.today_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          sub={`$${parseFloat(stats?.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} all time`}
-        />
+        {/* The server leaves the takings out of /stats for a manager, so there is
+            nothing to show them here either. */}
+        {!isManager(role) && (
+          <StatCard
+            icon={<DollarSign size={20} />} color="#22c55e"
+            label="Today's Revenue" value={`$${parseFloat(stats?.today_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            sub={`$${parseFloat(stats?.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} all time`}
+          />
+        )}
         <StatCard
           icon={<ShoppingBag size={20} />} color="#3b82f6"
           label="Today's Orders" value={parseInt(stats?.today_orders || 0).toLocaleString()}
@@ -139,7 +146,7 @@ export default function Dashboard() {
           { to: '/menu',           label: 'Menu Builder',    icon: <TrendingUp size={16} />, color: '#3b82f6' },
           { to: '/business-hours', label: 'Business Hours',  icon: <Clock size={16} />,      color: '#8b5cf6' },
           { to: '/coupons',        label: 'Coupons',         icon: <Circle size={16} />,     color: '#22c55e' },
-        ].map(q => (
+        ].filter(q => canOpen(role, q.to)).map(q => (
           <Link key={q.to} to={q.to} className="dash-quick-card">
             <div className="dash-quick-icon" style={{ color: q.color, background: q.color + '18' }}>
               {q.icon}

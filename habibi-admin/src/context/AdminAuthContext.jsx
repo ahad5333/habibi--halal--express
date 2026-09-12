@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import { isPanelRole } from '../utils/roles';
 
 const Ctx = createContext(null);
 
@@ -9,18 +10,18 @@ export function AdminAuthProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('habibi_admin_user') || 'null'); } catch { return null; }
   })();
 
-  const [admin, setAdmin]         = useState(cached?.role === 'admin' ? cached : null);
+  const [admin, setAdmin]         = useState(isPanelRole(cached?.role) ? cached : null);
   const [mfaEmail, setMfaEmail]   = useState(null);
   const [mfaSentTo, setMfaSentTo] = useState(null);
   // If we have a cached user, don't block the UI — validate silently in background
-  const [loading, setLoading]     = useState(!cached || cached?.role !== 'admin');
+  const [loading, setLoading]     = useState(!cached || !isPanelRole(cached?.role));
 
   useEffect(() => {
     const revalidate = () =>
       authAPI.me()
         .then(userData => {
-          if (userData.role !== 'admin') {
-            // Server says this user is not an admin — clear everything
+          if (!isPanelRole(userData.role)) {
+            // Server says this account can't use the panel — clear everything
             localStorage.removeItem('habibi_admin_user');
             setAdmin(null);
           } else {
@@ -55,7 +56,7 @@ export function AdminAuthProvider({ children }) {
       setMfaSentTo(data.sent_to || data.email);
       return data;
     }
-    if (data.user?.role !== 'admin') throw new Error('Access denied — admin accounts only.');
+    if (!isPanelRole(data.user?.role)) throw new Error('Access denied — this account cannot sign in to the panel.');
     // Token is in httpOnly cookie — just cache user data
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
@@ -65,7 +66,7 @@ export function AdminAuthProvider({ children }) {
   const verifyMfa = async (otp) => {
     if (!mfaEmail) throw new Error('No MFA session. Please log in again.');
     const data = await authAPI.verifyAdminMfa(mfaEmail, otp);
-    if (data.user?.role !== 'admin') throw new Error('Access denied.');
+    if (!isPanelRole(data.user?.role)) throw new Error('Access denied.');
     localStorage.setItem('habibi_admin_user', JSON.stringify(data.user));
     setAdmin(data.user);
     setMfaEmail(null);
@@ -82,7 +83,7 @@ export function AdminAuthProvider({ children }) {
   };
 
   return (
-    <Ctx.Provider value={{ admin, loading, login, verifyMfa, logout, isAdmin: !!admin, mfaRequired: !!mfaEmail, mfaSentTo }}>
+    <Ctx.Provider value={{ admin, role: admin?.role || null, loading, login, verifyMfa, logout, isAdmin: !!admin, mfaRequired: !!mfaEmail, mfaSentTo }}>
       {children}
     </Ctx.Provider>
   );

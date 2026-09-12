@@ -30,6 +30,8 @@ function exportOrdersCsv(orders) {
   a.click(); URL.revokeObjectURL(url);
 }
 import { adminAPI } from '../services/api';
+import { useAdminAuth } from '../context/AdminAuthContext';
+import { isManager } from '../utils/roles';
 import './Orders.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
@@ -100,6 +102,11 @@ function OrderRow({ order, onUpdate, onUpdatePayment }) {
   const [cancelling, setCancelling] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
   const nexts = NEXT_STEPS[order.status] || [];
+  // Marking a payment received or unverified is a money decision, so it stays
+  // with administrators. The server refuses it for a manager either way; this
+  // keeps a button off the screen that would only ever fail.
+  const { role } = useAdminAuth();
+  const canVerifyPayment = !isManager(role);
   const needsPaymentVerification = MANUAL_PAYMENT_METHODS.has((order.payment_method || '').toLowerCase());
 
   const handleStatus = async (s, reason) => {
@@ -220,7 +227,9 @@ function OrderRow({ order, onUpdate, onUpdatePayment }) {
                     </div>
                   </div>
                   <div className="order-action-btns" style={{ marginTop: '0.6rem' }}>
-                    {order.payment_status === 'Paid' ? (
+                    {!canVerifyPayment ? (
+                      <p className="text-muted" style={{ fontSize: '0.75rem' }}>Only an administrator can confirm a payment.</p>
+                    ) : order.payment_status === 'Paid' ? (
                       <button className="btn btn-sm btn-secondary" onClick={(e) => handleMarkPayment(e, 'unpaid')} disabled={markingPaid}>
                         {markingPaid ? <span className="spinner" style={{ width: 12, height: 12 }} /> : 'Mark as Unverified'}
                       </button>

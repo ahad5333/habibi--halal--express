@@ -6,7 +6,11 @@ const crypto = require("crypto");
 const emailService = require("../services/emailService");
 const { sendAdminOTP } = require('../services/emailService');
 const { sendSMS } = require('../services/smsService');
-const { ALLOWED_ROLES: PRIVILEGED_ROLES } = require('../middleware/adminMiddleware');
+// Every role that can sign in to the CPanel must pass email MFA -- including
+// 'manager', which is not in adminMiddleware's ALLOWED_ROLES on purpose. Keying
+// the MFA gate off that narrower set would have let managers in on a password
+// alone.
+const { PANEL_ROLES: PRIVILEGED_ROLES } = require('../middleware/managerMiddleware');
 
 function setAuthCookie(res, token, maxAgeMs) {
   const isProd = process.env.NODE_ENV === 'production';

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const protect = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/authMiddleware');
+const { adminOrManager } = require('../middleware/managerMiddleware');
 const staffAuth = require('../middleware/staffMiddleware');
 const {
   staffLogin, staffSetPin, sendStaffSetupSms, adminResetStaffPin,
@@ -13,9 +14,9 @@ router.post('/login', staffLogin);
 // the driver app) -- staffAuth verifies it matches a real, active, allowed-role
 // row before staffSetPin is ever reached.
 router.post('/set-pin', staffAuth, staffSetPin);
-router.post('/send-setup-sms', protect, admin, sendStaffSetupSms);
-router.patch('/:id/reset-pin', protect, admin, adminResetStaffPin);
-router.post('/:id/sign-out-everywhere', protect, admin, signOutStaffEverywhere);
+router.post('/send-setup-sms', protect, adminOrManager, sendStaffSetupSms);
+router.patch('/:id/reset-pin', protect, adminOrManager, adminResetStaffPin);
+router.post('/:id/sign-out-everywhere', protect, adminOrManager, signOutStaffEverywhere);
 router.post('/fcm-token', staffAuth, saveStaffFcmToken);
 
 // Waste log from the staff PIN screen

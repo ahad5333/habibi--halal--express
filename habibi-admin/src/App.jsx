@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
   state = { error: null };
@@ -22,6 +22,8 @@ class ErrorBoundary extends React.Component {
 
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import Sidebar from './components/Sidebar';
+import { canOpen } from './utils/roles';
+import { Lock } from 'lucide-react';
 import TopBar from './components/TopBar';
 
 // Eagerly loaded — needed before auth resolves
@@ -40,6 +42,7 @@ const GiftCards        = lazy(() => import('./pages/GiftCards'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const PaymentsHub      = lazy(() => import('./pages/PaymentsHub'));
 const Refunds          = lazy(() => import('./pages/Refunds'));
+const PanelUsers       = lazy(() => import('./pages/PanelUsers'));
 const Staff            = lazy(() => import('./pages/Staff'));
 const Inventory        = lazy(() => import('./pages/Inventory'));
 const Locations        = lazy(() => import('./pages/Locations'));
@@ -78,6 +81,26 @@ import './App.css';
 
 const PageLoader = () => <div className="admin-loading"><div className="spinner" aria-label="Loading" role="status" /></div>;
 
+// Typing the URL of a page this role can't open shouldn't render the page shell
+// and then fill it with failed requests. The server returns 403 for the data
+// regardless — this just makes the panel say so plainly.
+function RoleGuard({ children }) {
+  const { role } = useAdminAuth();
+  const location = useLocation();
+  if (!canOpen(role, location.pathname)) {
+    return (
+      <div className="empty" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+        <Lock size={32} />
+        <p style={{ fontWeight: 600, marginTop: '0.75rem' }}>This part of the panel isn’t available on your account.</p>
+        <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+          Ask an administrator if you need access to it.
+        </p>
+      </div>
+    );
+  }
+  return children;
+}
+
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   return (
@@ -88,6 +111,7 @@ function AdminLayout() {
         <TopBar onMenuToggle={() => setSidebarOpen(o => !o)} />
         <div className="admin-content">
           <Suspense fallback={<PageLoader />}>
+          <RoleGuard>
           <Routes>
             <Route path="/"          element={<Dashboard />} />
             <Route path="/orders"    element={<Orders />} />
@@ -106,6 +130,7 @@ function AdminLayout() {
             <Route path="/analytics" element={<Navigate to="/reports" replace />} />
             <Route path="/payments"  element={<PaymentsHub />} />
             <Route path="/refunds"   element={<Refunds />} />
+            <Route path="/panel-users" element={<PanelUsers />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/staff"     element={<Staff />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -142,6 +167,7 @@ function AdminLayout() {
             <Route path="/saved-customs"        element={<SavedCustoms />} />
             <Route path="*"                     element={<Navigate to="/" replace />} />
           </Routes>
+          </RoleGuard>
           </Suspense>
         </div>
       </div>

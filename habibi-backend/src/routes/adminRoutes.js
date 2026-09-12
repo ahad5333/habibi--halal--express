@@ -65,18 +65,33 @@ const {
 } = require("../controllers/modifierController");
 
 const merchant = require("../middleware/merchantMiddleware");
+const { adminOrManager, merchantOrManager, managerScope, refreshPanelRole } = require("../middleware/managerMiddleware");
 
-// All admin routes require authentication
+// All admin routes require authentication. refreshPanelRole then re-reads the
+// role from the database, so a demotion or a switched-off account takes effect
+// immediately instead of when the token expires.
 router.use(protect);
+router.use(refreshPanelRole);
 
 // ── Merchant-accessible routes (admin / superadmin / merchant) ────────────
 // These must come BEFORE router.use(admin) so merchant tokens can reach them.
 router.get("/orders/merchant", merchant, getMerchantOrders);
-router.patch("/orders/:id/status", merchant, updateOrderStatus);
+router.patch("/orders/:id/status", merchantOrManager, updateOrderStatus);
 router.patch("/orders/:id/payment-status", merchant, updatePaymentStatus);
 
-// ── Admin-only routes (admin / superadmin only) ───────────────────────────
-router.use(admin);
+// ── Admin routes ──────────────────────────────────────────────────────────
+// Managers get through this door, then managerScope restricts them to the
+// paths listed in managerMiddleware. Everything else stays admin-only.
+router.use(adminOrManager);
+router.use(managerScope);
+
+// ── Who can sign in to the CPanel (admin only) ────────────────────────────
+// managerScope already default-denies these, and `admin` is mounted again here
+// so privilege management never rests on one check.
+const { listPanelUsers, grantPanelAccess, updatePanelUser } = require("../controllers/panelUserController");
+router.get("/panel-users",      admin, listPanelUsers);
+router.post("/panel-users",     admin, grantPanelAccess);
+router.patch("/panel-users/:id", admin, updatePanelUser);
 
 // Sidebar items
 router.get("/sidebar", getSidebarItems);

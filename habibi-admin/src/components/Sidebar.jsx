@@ -8,9 +8,10 @@ import {
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
   Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot, Trash2, CalendarClock,
-  Search, ChevronDown, Map as MapIcon, Eye, EyeOff, RotateCcw,
+  Search, ChevronDown, Map as MapIcon, Eye, EyeOff, RotateCcw, ShieldCheck,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
+import { canOpen, isManager, ROLE_LABEL } from '../utils/roles';
 import './Sidebar.css';
 
 // Every page in the panel lives here, in one of eight groups.
@@ -108,6 +109,7 @@ const GROUPS = [
     items: [
       { to: '/settings',              icon: <Settings size={17} />, label: 'Settings',        kw: 'site config general' },
       { to: '/business-hours',        icon: <Clock size={17} />,    label: 'Business Hours',  kw: 'open close times holiday' },
+      { to: '/panel-users',           icon: <ShieldCheck size={17} />, label: 'Panel Logins',  kw: 'admin manager roles access permissions who can log in' },
       { to: '/audit-log',             icon: <Shield size={17} />,   label: 'Audit Log',       kw: 'who changed what history security' },
       { to: '/integrations',          icon: <Link2 size={17} />,    label: 'Integrations',    adv: true, kw: 'webhook connect' },
       { to: '/platform-credentials',  icon: <KeyRound size={17} />, label: 'API Credentials', adv: true, kw: 'keys tokens secrets' },
@@ -146,7 +148,7 @@ function usePendingCount() {
 }
 
 export default function Sidebar({ open, onClose }) {
-  const { admin, logout } = useAdminAuth();
+  const { admin, role, logout } = useAdminAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const pending = usePendingCount();
@@ -194,12 +196,14 @@ export default function Sidebar({ open, onClose }) {
     const out = [];
     for (const group of [{ name: 'Dashboard', items: [HOME] }, ...GROUPS]) {
       for (const item of group.items) {
+        // Search reaches hidden pages, but never pages this role can't open.
+        if (!canOpen(role, item.to)) continue;
         const hay = norm(`${item.label} ${item.kw || ''} ${group.name}`);
         if (tokens.every(t => hay.includes(t))) out.push({ ...item, group: group.name });
       }
     }
     return out;
-  }, [query]);
+  }, [query, role]);
 
   useEffect(() => { setCursor(0); }, [query]);
 
@@ -247,8 +251,9 @@ export default function Sidebar({ open, onClose }) {
   );
 
   // A page that is hidden by the toggle still shows while you are standing on it.
-  const visible = (item) => showAll || !item.adv || item.to === location.pathname;
-  const hiddenCount = GROUPS.reduce((n, g) => n + g.items.filter(i => i.adv).length, 0);
+  const allowedHere = (item) => canOpen(role, item.to);
+  const visible = (item) => allowedHere(item) && (showAll || !item.adv || item.to === location.pathname);
+  const hiddenCount = GROUPS.reduce((n, g) => n + g.items.filter(i => i.adv && allowedHere(i)).length, 0);
 
   return (
     <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
@@ -315,10 +320,12 @@ export default function Sidebar({ open, onClose }) {
               );
             })}
 
-            <button className="sidebar-advtoggle" onClick={() => setShowAll(v => !v)}>
-              {showAll ? <EyeOff size={13} /> : <Eye size={13} />}
-              <span>{showAll ? 'Hide extra pages' : `Show all pages (${hiddenCount} more)`}</span>
-            </button>
+            {(showAll || hiddenCount > 0) && (
+              <button className="sidebar-advtoggle" onClick={() => setShowAll(v => !v)}>
+                {showAll ? <EyeOff size={13} /> : <Eye size={13} />}
+                <span>{showAll ? 'Hide extra pages' : `Show all pages (${hiddenCount} more)`}</span>
+              </button>
+            )}
           </>
         )}
       </nav>
@@ -329,7 +336,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="sidebar-avatar">{(admin?.name || 'A').charAt(0).toUpperCase()}</div>
           <div className="sidebar-user-info">
             <p className="sidebar-user-name">{admin?.name || 'Admin'}</p>
-            <p className="sidebar-user-role">Administrator</p>
+            <p className="sidebar-user-role">{ROLE_LABEL[role] || 'Administrator'}</p>
           </div>
         </div>
         <button className="sidebar-logout" onClick={logout} title="Sign out">

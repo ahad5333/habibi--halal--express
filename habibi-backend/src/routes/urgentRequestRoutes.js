@@ -3,6 +3,7 @@ const router = express.Router();
 const { createUrgentRequest, getUrgentRequests, updateUrgentRequestStatus } = require("../controllers/urgentRequestController");
 const protect = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
+const { adminOrManager } = require("../middleware/managerMiddleware");
 const { handleValidation, body } = require('../middleware/validate');
 
 router.post("/",
@@ -14,7 +15,7 @@ router.post("/",
   createUrgentRequest
 );
 
-router.get("/", protect, admin, getUrgentRequests);
-router.patch("/:id/status", protect, admin, updateUrgentRequestStatus);
+router.get("/", protect, adminOrManager, getUrgentRequests);
+router.patch("/:id/status", protect, adminOrManager, updateUrgentRequestStatus);
 
 module.exports = router;

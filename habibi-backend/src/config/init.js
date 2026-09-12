@@ -15,13 +15,26 @@ const createTables = async () => {
         phone_number  VARCHAR(20),
         password_hash VARCHAR(255) NOT NULL,
         role          VARCHAR(50) DEFAULT 'customer'
-                        CHECK (role IN ('customer','merchant','admin','business')),
+                        CHECK (role IN ('customer','merchant','admin','business','manager','superadmin')),
         is_active     BOOLEAN DEFAULT TRUE,
         is_partner    BOOLEAN DEFAULT FALSE,
         partner_id    INTEGER,
         created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // ── Users: role list ──────────────────────────────────────────
+    // Existing databases were created before 'manager' (the CPanel manager
+    // login) and 'superadmin' existed, and their CHECK constraint rejects both.
+    // 'superadmin' had been referenced in code for a long time while the
+    // database refused to store it, which is why no superadmin account exists.
+    // Rebuilt rather than patched because a CHECK constraint can't be altered
+    // in place; harmless to repeat on every boot.
+    await client.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+    await client.query(`
+      ALTER TABLE users ADD CONSTRAINT users_role_check
+        CHECK (role IN ('customer','merchant','admin','business','manager','superadmin'))
     `);
 
     // ── Users: safe migration columns ─────────────────────────────

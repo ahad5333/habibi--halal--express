@@ -5,6 +5,7 @@ const multer    = require('multer');
 const crypto    = require('crypto');
 const protect   = require('../middleware/authMiddleware');
 const admin     = require('../middleware/adminMiddleware');
+const { adminOrManager } = require('../middleware/managerMiddleware');
 const { getDriverSecretSalt } = require('../utils/driverSecret');
 const pool      = require('../config/db');
 
@@ -202,8 +203,8 @@ router.get('/directions', publicLimiter, async (req, res) => {
 // ── Driver PIN auth — no token needed ─────────────────────────────
 router.post('/driver/login',          driverLogin);
 router.post('/driver/set-pin',        driverOrAdmin, driverSetPin);
-router.patch('/drivers/:id/reset-pin',  protect, admin, adminResetDriverPin);
-router.post('/driver/send-setup-sms',  protect, admin, driverSendSetupSms);
+router.patch('/drivers/:id/reset-pin',  protect, adminOrManager, adminResetDriverPin);
+router.post('/driver/send-setup-sms',  protect, adminOrManager, driverSendSetupSms);
 router.post('/drivers/bulk-import',    protect, admin, bulkImportDrivers);
 router.post('/driver/fcm-token',      saveDriverFcmToken);
 

@@ -166,6 +166,9 @@ export const adminAPI = {
   payments:    () => req('/api/admin/payments'),
   refundOrder: (orderNumber, reason) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST', body: JSON.stringify({ reason: reason || '' }) }),
   refunds:     (qs = '') => req(`/api/admin/refunds${qs}`),
+  panelUsers:        ()            => req('/api/admin/panel-users'),
+  grantPanelAccess:  (email, role) => req('/api/admin/panel-users', { method: 'POST', body: JSON.stringify({ email, role }) }),
+  updatePanelUser:   (id, patch)   => req(`/api/admin/panel-users/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   // Coupon stats
   couponStats: () => req('/api/admin/coupon-stats'),

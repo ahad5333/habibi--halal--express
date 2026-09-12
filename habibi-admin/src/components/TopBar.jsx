@@ -19,6 +19,7 @@ const TITLES = {
   '/reviews':        { label: 'Reviews',              sub: 'Customer ratings & feedback' },
   '/payments':       { label: 'Payments',             sub: 'Transactions, refunds & how money comes in' },
   '/refunds':        { label: 'Refunds',              sub: 'Refunds issued and what still needs paying back' },
+  '/panel-users':    { label: 'Panel Logins',         sub: 'Who can sign in, and how much they see' },
   '/urgent':         { label: 'Urgent Requests',      sub: 'Active alerts from customers' },
   '/settings':       { label: 'Settings',             sub: 'System configuration' },
   '/staff':          { label: 'Staff',                sub: 'Team members & roles' },
