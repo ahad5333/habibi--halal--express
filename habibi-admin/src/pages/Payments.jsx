@@ -39,9 +39,13 @@ export default function Payments({ embedded = false }) {
   const [sort, setSort]             = useState({ col: 'placed_at', dir: 'desc' });
   const [page, setPage]             = useState(1);
   const [refundTarget, setRefundTarget] = useState(null); // { order_number, total }
+  const [refundReason, setRefundReason] = useState('');
   const [refunding, setRefunding]       = useState(false);
   const [refundMsg, setRefundMsg]       = useState('');
   const PER_PAGE = 20;
+
+  // A reason belongs to one refund only -- never carry it into the next modal.
+  useEffect(() => { if (refundTarget) setRefundReason(''); }, [refundTarget]);
 
   const load = async () => {
     setLoading(true);
@@ -91,7 +95,7 @@ export default function Payments({ embedded = false }) {
     if (!refundTarget) return;
     setRefunding(true); setRefundMsg('');
     try {
-      const res = await adminAPI.refundOrder(refundTarget.order_number);
+      const res = await adminAPI.refundOrder(refundTarget.order_number, refundReason);
       setRefundMsg(res.message || 'Refund processed.');
       await load();
       // A manual refund (Zelle / Cash App / cash) means nothing was sent --
@@ -392,9 +396,21 @@ export default function Payments({ embedded = false }) {
               <strong>{refundTarget.order_number}</strong>?
             </p>
             <p className="pay-modal-sub">
-              If this order was paid by card, the refund will be processed automatically via Authorize.net.
-              For cash/offline orders, this marks it as refunded for record-keeping.
+              Card and PayPal orders are refunded automatically, through whichever
+              processor originally took the payment. Zelle, Cash App and cash orders
+              can only be marked refunded here — you still have to send that money back yourself.
             </p>
+            <label className="pay-modal-field">
+              <span>Reason <em>(optional, saved to the refund record)</em></span>
+              <input
+                className="input"
+                value={refundReason}
+                onChange={e => setRefundReason(e.target.value)}
+                placeholder="e.g. Wrong item delivered"
+                maxLength={300}
+                disabled={refunding}
+              />
+            </label>
             {refundMsg && (
               <p className={`pay-modal-msg ${refundMsg.startsWith('Error') ? 'error' : refundMsg.includes('refunded automatically') ? 'warning' : 'success'}`}
                  style={refundMsg.includes('refunded automatically') ? { color: '#b45309', background: '#fffbeb', border: '1px solid #fcd34d' } : undefined}>

@@ -164,7 +164,8 @@ export const adminAPI = {
   updateSystemSettings:   (body) => req('/api/admin/settings/checkout', { method: 'PATCH', body: JSON.stringify(body) }),
 
   payments:    () => req('/api/admin/payments'),
-  refundOrder: (orderNumber) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST' }),
+  refundOrder: (orderNumber, reason) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST', body: JSON.stringify({ reason: reason || '' }) }),
+  refunds:     (qs = '') => req(`/api/admin/refunds${qs}`),
 
   // Coupon stats
   couponStats: () => req('/api/admin/coupon-stats'),

@@ -31,7 +31,10 @@ pool.query(
 const refundOrder = async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const { amount } = req.body || {}; // optional partial amount, defaults to the order total
+    const { amount, reason } = req.body || {}; // optional partial amount, defaults to the order total
+    // Free text, recorded only in the audit trail so the Refunds page can show
+    // why each one was issued. Capped so a paste can't bloat the log row.
+    const refundReason = typeof reason === 'string' ? reason.trim().slice(0, 300) : '';
 
     const result = await pool.query(
       "SELECT id, payment_intent_id, total, payment_method, payment_processor, order_status, items FROM guest_orders WHERE order_number=$1",
@@ -162,9 +165,65 @@ const refundOrder = async (req, res) => {
     }
 
     logAudit(pool, req.user?.id, req.user?.name, 'refund_order', 'payment', orderNumber,
-      { refundId, amount: refundAmount, payment_method: order.payment_method, manual }, req.ip);
+      { refundId, amount: refundAmount, payment_method: order.payment_method, manual,
+        processor: order.payment_processor || null, reason: refundReason || null }, req.ip);
 
     res.json({ success: true, refundId, manual, message: resultMessage });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
+// ─── Refund history (admin) ──────────────────────────────────────────────────
+// Every refund already writes an admin_audit_log row carrying who issued it,
+// how much, through which method, the processor's refund id and whether it was
+// manual. That is the record — this just reads it back, so there is no second
+// source of truth to drift. Dates are compared in New York wall-clock time,
+// like every other date filter in the panel.
+const getRefunds = async (req, res) => {
+  try {
+    const start = req.query.start || null;
+    const end   = req.query.end   || null;
+    const range = `
+      AND ($1::date IS NULL OR (a.created_at AT TIME ZONE 'America/New_York')::date >= $1::date)
+      AND ($2::date IS NULL OR (a.created_at AT TIME ZONE 'America/New_York')::date <= $2::date)`;
+
+    const [list, totals] = await Promise.all([
+      pool.query(`
+        SELECT
+          a.id,
+          a.entity_id                                        AS order_number,
+          a.created_at                                       AS refunded_at,
+          a.admin_name,
+          a.details->>'refundId'                             AS refund_id,
+          COALESCE((a.details->>'amount')::numeric, 0)       AS amount,
+          a.details->>'payment_method'                       AS payment_method,
+          COALESCE((a.details->>'manual')::boolean, false)   AS manual,
+          a.details->>'processor'                            AS processor,
+          a.details->>'reason'                               AS reason,
+          o.customer_name,
+          o.customer_email,
+          o.total                                            AS order_total,
+          o.placed_at
+        FROM admin_audit_log a
+        LEFT JOIN guest_orders o ON o.order_number = a.entity_id
+        WHERE a.action = 'refund_order' ${range}
+        ORDER BY a.created_at DESC
+        LIMIT 500
+      `, [start, end]),
+      pool.query(`
+        SELECT
+          COUNT(*)::int                                                     AS count,
+          COALESCE(SUM(COALESCE((a.details->>'amount')::numeric, 0)), 0)    AS total,
+          COUNT(*) FILTER (WHERE COALESCE((a.details->>'manual')::boolean, false))::int AS manual_count,
+          COALESCE(SUM(COALESCE((a.details->>'amount')::numeric, 0))
+                   FILTER (WHERE COALESCE((a.details->>'manual')::boolean, false)), 0)  AS manual_total
+        FROM admin_audit_log a
+        WHERE a.action = 'refund_order' ${range}
+      `, [start, end]),
+    ]);
+
+    res.json({ refunds: list.rows, summary: totals.rows[0] });
   } catch (err) {
     res.status(500).json(safeError(err));
   }
@@ -389,6 +448,7 @@ const verifyPayment = async (req, res) => {
 
 module.exports = {
   refundOrder,
+  getRefunds,
   getOfflinePaymentInfo,
   paypalCreateOrder,
   paypalCapture,

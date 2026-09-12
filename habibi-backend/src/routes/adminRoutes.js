@@ -212,8 +212,9 @@ router.get("/payments", async (req, res) => {
 });
 
 // Refund
-const { refundOrder } = require("../controllers/paymentController");
+const { refundOrder, getRefunds } = require("../controllers/paymentController");
 router.post("/payments/:orderNumber/refund", refundOrder);
+router.get("/refunds", getRefunds);
 
 // Sold-out item waitlist — pending-signup counts for the Inventory page's "N waiting" badge
 const { getWaitlistCounts } = require("../controllers/waitlistController");

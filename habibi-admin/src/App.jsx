@@ -39,6 +39,7 @@ const Coupons          = lazy(() => import('./pages/Coupons'));
 const GiftCards        = lazy(() => import('./pages/GiftCards'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const PaymentsHub      = lazy(() => import('./pages/PaymentsHub'));
+const Refunds          = lazy(() => import('./pages/Refunds'));
 const Staff            = lazy(() => import('./pages/Staff'));
 const Inventory        = lazy(() => import('./pages/Inventory'));
 const Locations        = lazy(() => import('./pages/Locations'));
@@ -104,6 +105,7 @@ function AdminLayout() {
                 card). Kept as a redirect so old bookmarks still land somewhere. */}
             <Route path="/analytics" element={<Navigate to="/reports" replace />} />
             <Route path="/payments"  element={<PaymentsHub />} />
+            <Route path="/refunds"   element={<Refunds />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/staff"     element={<Staff />} />
             <Route path="/inventory" element={<Inventory />} />
