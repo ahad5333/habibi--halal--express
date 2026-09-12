@@ -24,8 +24,14 @@ const getPlatformSettings = async (req, res) => {
     const result = settings.rows.map(p => {
       const s = statsMap[p.platform] || {};
       const gross = parseFloat(s.gross_revenue || 0);
+      // `credentials` holds each marketplace's API keys. They are all empty
+      // today, but spreading the row would ship them to the browser the moment
+      // anyone fills one in — the same shape of mistake that put tablet
+      // passwords on the public locations endpoint. `api_key_set` already
+      // tells the UI everything it needs to know.
+      const { credentials, ...safe } = p;
       return {
-        ...p,
+        ...safe,
         commission_rate: parseFloat(p.commission_rate),
         order_count:     parseInt(s.order_count   || 0),
         pending_count:   parseInt(s.pending_count || 0),
@@ -52,7 +58,8 @@ const updatePlatformSettings = async (req, res) => {
            notes           = COALESCE($4, notes),
            updated_at      = NOW()
        WHERE platform = $5
-       RETURNING *`,
+       RETURNING id, platform, display_name, commission_rate, is_active,
+               api_key_set, notes, last_sync_at, created_at, updated_at`,
       [commission_rate ?? null, is_active ?? null, api_key_set ?? null, notes ?? null, platform]
     );
     if (!result.rows[0]) return res.status(404).json({ message: 'Platform not found' });

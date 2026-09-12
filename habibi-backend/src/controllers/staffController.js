@@ -11,10 +11,24 @@ function driverToken(driver_id) {
 
 const VALID_ROLES = ['kitchen', 'delivery', 'manager', 'cashier', 'server'];
 
+// Never `SELECT *` from this table into a response. It carries driver_pin_hash,
+// and a staff PIN is exactly four digits (see staffAuthController) — 10,000
+// possibilities against a bcrypt cost-10 hash is minutes of offline work, so
+// handing out the hash is equivalent to handing out the PIN. session_epoch and
+// driver_fcm_token have no business leaving the server either. This list is
+// what callers actually use; `has_pin` replaces the hash for the UI's purposes.
+const STAFF_FIELDS = `
+  id, name, email, phone, role, shift_start, shift_end, is_active, notes,
+  created_at, updated_at, is_on_duty, duty_started_at,
+  driver_pin_attempts, driver_pin_lockout_until,
+  current_lat, current_lng, last_location_update,
+  vehicle_type, vehicle_plate, insurance_expiry,
+  (driver_pin_hash IS NOT NULL) AS has_pin`;
+
 exports.getStaff = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM staff_members ORDER BY is_active DESC, name ASC`
+      `SELECT ${STAFF_FIELDS} FROM staff_members ORDER BY is_active DESC, name ASC`
     );
     res.json(result.rows);
   } catch (err) {
@@ -29,7 +43,8 @@ exports.createStaff = async (req, res) => {
     const normalizedPhone = phone ? toE164(String(phone).trim()) : null;
     const result = await pool.query(
       `INSERT INTO staff_members (name, email, phone, role, shift_start, shift_end, notes, vehicle_type, vehicle_plate, insurance_expiry)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING ${STAFF_FIELDS}`,
       [name, email || null, normalizedPhone, role || 'kitchen',
        shift_start || null, shift_end || null, notes || null,
        vehicle_type || null, vehicle_plate || null, insurance_expiry || null]
@@ -52,7 +67,7 @@ exports.updateStaff = async (req, res) => {
            shift_start=$5, shift_end=$6, notes=$7, is_active=$8,
            vehicle_type=$9, vehicle_plate=$10, insurance_expiry=$11,
            updated_at=NOW()
-       WHERE id=$12 RETURNING *`,
+       WHERE id=$12 RETURNING ${STAFF_FIELDS}`,
       [name, email || null, normalizedPhone, role, shift_start || null,
        shift_end || null, notes || null, is_active !== false,
        vehicle_type || null, vehicle_plate || null, insurance_expiry || null, id]
