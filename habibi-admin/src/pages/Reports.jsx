@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle, TrendingUp } from 'lucide-react';
+import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle, TrendingUp, Users } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import MenuProfitability from './MenuProfitability';
 import './Reports.css';
@@ -95,6 +95,8 @@ export default function Reports() {
     setLoading(true); setErr('');
     try {
       const qs = `?start=${overrideStart || start}&end=${overrideEnd || end}`;
+      const s = overrideStart || start;
+      const e = overrideEnd || end;
       const results = await Promise.allSettled([
         adminAPI.reportRevenue(qs),
         adminAPI.reportTransactions(qs),
@@ -102,12 +104,16 @@ export default function Reports() {
         adminAPI.reportByLocation(qs),
         adminAPI.reportTax(qs),
         adminAPI.reportCouponUsage(qs),
+        // Absorbed from the old Analytics page: the day-by-day revenue chart and
+        // the new-customer count. Both take the same start/end as the rest.
+        adminAPI.revenue(s, e),
+        adminAPI.growth(s, e),
       ]);
-      const [rev, tx, byCat, byLoc, tax, coupon] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+      const [rev, tx, byCat, byLoc, tax, coupon, daily, growth] = results.map(r => r.status === 'fulfilled' ? r.value : null);
       const failed = results.filter(r => r.status === 'rejected');
       if (failed.length === results.length) throw new Error(failed[0].reason?.message || 'All report endpoints failed');
       if (failed.length) setErr(`${failed.length} report section(s) failed to load.`);
-      setData({ rev, tx, byCat, byLoc, tax, coupon });
+      setData({ rev, tx, byCat, byLoc, tax, coupon, daily, growth });
       setRanRange({ start: overrideStart || start, end: overrideEnd || end });
       setRunCount(c => c + 1);
     } catch (e) {
@@ -121,6 +127,7 @@ export default function Reports() {
 
   const TABS = [
     { id: 'summary',    label: 'Summary' },
+    { id: 'daily',      label: 'Daily Revenue' },
     { id: 'orders',     label: 'Transactions' },
     { id: 'by_category',label: 'By Category' },
     { id: 'by_location',label: 'By Location' },
@@ -184,6 +191,7 @@ export default function Reports() {
             <StatCard label="Delivery Fees" value={fmt(r.delivery_fees)} sub="Delivery charges" icon={MapPin} color="#8b5cf6" />
             <StatCard label="Tips" value={fmt(r.tips)} sub="Customer tips" icon={DollarSign} color="#06b6d4" />
             <StatCard label="Cancelled" value={fmt(r.cancelled_amount)} sub={`${r.cancelled_orders||0} order${r.cancelled_orders===1?'':'s'}`} icon={XCircle} color="#dc2626" />
+            <StatCard label="New Customers" value={data.growth?.new_customers ?? '—'} sub={`${data.growth?.total_customers ?? '—'} in total`} icon={Users} color="#0ea5e9" />
           </div>
 
           {/* Tab nav */}
@@ -208,6 +216,39 @@ export default function Reports() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {tab === 'daily' && (
+              <div>
+                <div className="rpt-section-hdr">
+                  <span>Daily Revenue</span>
+                  <button className="btn btn-secondary btn-sm" onClick={() => csvExport(data.daily?.daily_revenue || [], `daily_revenue_${start}_${end}.csv`)}><Download size={13}/> CSV</button>
+                </div>
+                {!data.daily?.daily_revenue?.length ? (
+                  <div className="empty"><BarChart2 size={32}/><p>No completed orders in this range.</p></div>
+                ) : (
+                  <div className="rpt-daily-chart">
+                    {(() => {
+                      const rows = data.daily.daily_revenue;
+                      const maxRev = Math.max(...rows.map(row => parseFloat(row.revenue) || 0), 1);
+                      return rows.map((row, i) => (
+                        <div key={i} className="rpt-daily-col">
+                          <span className="rpt-daily-val">${parseFloat(row.revenue || 0).toFixed(0)}</span>
+                          <div className="rpt-daily-bar-track">
+                            <div
+                              className="rpt-daily-bar-fill"
+                              style={{ height: `${Math.max(4, (parseFloat(row.revenue || 0) / maxRev) * 100)}%` }}
+                              title={`${row.date}: $${parseFloat(row.revenue || 0).toFixed(2)} · ${row.order_count} orders`}
+                            />
+                          </div>
+                          <span className="rpt-daily-count">{row.order_count} {row.order_count === 1 ? 'order' : 'orders'}</span>
+                          <span className="rpt-daily-label">{row.date}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
               </div>
             )}
 

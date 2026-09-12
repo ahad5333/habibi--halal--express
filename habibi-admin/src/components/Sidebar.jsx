@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Utensils, Users, Tag,
-  BarChart2, Settings, LogOut, Zap, CreditCard,
+  Settings, LogOut, Zap, CreditCard,
   UserCheck, Package, MapPin, Truck, FileText, Monitor, Bell, Navigation,
   CalendarDays, Star, Shield, X, Briefcase, Clock,
   MessageSquare, Gift, BookOpen, DollarSign,
@@ -75,8 +75,7 @@ const GROUPS = [
     icon: <DollarSign size={13} />,
     items: [
       { to: '/payments',            icon: <CreditCard size={17} />, label: 'Payments',            kw: 'refund transactions charges paid' },
-      { to: '/reports',             icon: <FileText size={17} />,   label: 'Reports',             kw: 'sales tax revenue profit margin forecast' },
-      { to: '/analytics',           icon: <BarChart2 size={17} />,  label: 'Analytics',           adv: true, kw: 'growth charts trends' },
+      { to: '/reports',             icon: <FileText size={17} />,   label: 'Reports',             kw: 'sales tax revenue profit margin forecast analytics growth daily chart new customers' },
       { to: '/cash-log',            icon: <DollarSign size={17} />, label: 'Cash Log',            adv: true, kw: 'driver hand in drawer' },
       { to: '/payment-accounts',    icon: <Wallet size={17} />,     label: 'Payment Accounts',    adv: true, kw: 'paypal zelle cash app' },
       { to: '/payment-processors',  icon: <CreditCard size={17} />, label: 'Payment Processors',  adv: true, kw: 'square clover card gateway' },

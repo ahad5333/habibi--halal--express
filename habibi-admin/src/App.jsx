@@ -37,7 +37,6 @@ const Customers        = lazy(() => import('./pages/Customers'));
 const Subscriptions    = lazy(() => import('./pages/Subscriptions'));
 const Coupons          = lazy(() => import('./pages/Coupons'));
 const GiftCards        = lazy(() => import('./pages/GiftCards'));
-const Analytics        = lazy(() => import('./pages/Analytics'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const Payments         = lazy(() => import('./pages/Payments'));
 const Staff            = lazy(() => import('./pages/Staff'));
@@ -103,7 +102,9 @@ function AdminLayout() {
             <Route path="/catering"         element={<CateringAdmin />} />
           <Route path="/careers"          element={<CareersAdmin />} />
             <Route path="/reviews"          element={<Reviews />} />
-            <Route path="/analytics" element={<Analytics />} />
+            {/* Analytics was folded into Reports (Daily Revenue tab + New Customers
+                card). Kept as a redirect so old bookmarks still land somewhere. */}
+            <Route path="/analytics" element={<Navigate to="/reports" replace />} />
             <Route path="/payments"  element={<Payments />} />
             <Route path="/settings"  element={<Settings />} />
             <Route path="/staff"     element={<Staff />} />

@@ -68,3 +68,50 @@
 .rpt-prep-block-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 .rpt-prep-block-list li { font-size: 0.78rem; color: var(--color-text-main); display: flex; justify-content: space-between; gap: 0.5rem; }
 .rpt-prep-block-list li strong { color: var(--color-text-muted); white-space: nowrap; }
+
+/* ── Daily revenue chart (absorbed from the old Analytics page) ── */
+.rpt-daily-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 190px;
+  padding: 0.5rem 0 0.25rem;
+  overflow-x: auto;
+}
+.rpt-daily-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 52px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.rpt-daily-val {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rpt-daily-bar-track {
+  width: 100%;
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+}
+.rpt-daily-bar-fill {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.4s ease;
+  min-height: 4px;
+}
+.rpt-daily-count,
+.rpt-daily-label {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.rpt-daily-label { font-weight: 600; font-size: 0.65rem; }
