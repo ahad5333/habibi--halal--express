@@ -7,8 +7,12 @@ import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const KITCHEN_TOKEN = import.meta.env.VITE_KITCHEN_TOKEN || '';
-const KITCHEN_HEADERS = KITCHEN_TOKEN ? { 'X-Kitchen-Token': KITCHEN_TOKEN } : {};
+// This screen used to send a shared X-Kitchen-Token read from VITE_KITCHEN_TOKEN.
+// Every VITE_ value is compiled into the public bundle, so that token was being
+// served to anyone who loaded the site, and it was enough to read live orders
+// and change their status. It is gone from here and from the server; this page
+// now authenticates as the signed-in admin, and per-person kitchen access is
+// /staff with a PIN, which also records who bumped what.
 const POLL_MS  = 15000;
 
 // No dine_in entry: the client doesn't offer dine-in service, the QR-landing
@@ -89,7 +93,7 @@ export default function KitchenDisplay() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, { headers: KITCHEN_HEADERS });
+      const res = await fetch(`${API_BASE}${endpoint}`, { credentials: 'include' });
       if (!res.ok) throw new Error(`Server ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
@@ -136,7 +140,8 @@ export default function KitchenDisplay() {
     try {
       const res = await fetch(`${API_BASE}/api/dine-in/kitchen/orders/${order.id}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...KITCHEN_HEADERS },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next }),
       });
       if (!res.ok) throw new Error();

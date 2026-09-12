@@ -240,7 +240,7 @@ function App() {
           <Route path="/driver"          element={<DriverView />} />
           <Route path="/driver/login"    element={<DriverLogin />} />
           <Route path="/driver/set-pin"  element={<DriverSetPin />} />
-          <Route path="/kitchen" element={<InternalGuard><KitchenDisplay /></InternalGuard>} />
+          <Route path="/kitchen" element={<InternalGuard requireAdmin><KitchenDisplay /></InternalGuard>} />
           <Route path="/staff/login"    element={<StaffLogin />} />
           <Route path="/staff/set-pin"  element={<StaffSetPin />} />
           <Route path="/staff"          element={<StaffQueue />} />
