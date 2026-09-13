@@ -14,6 +14,22 @@ LOCAL_DIST="$(dirname "$0")/dist"
 # which meant a customer who already had the site open, then navigated to a
 # route they hadn't loaded yet, could hit a "failed to fetch dynamically
 # imported module" error if that chunk's old filename was already gone.
+#
+# SECURITY CONSEQUENCE, worth knowing before you need it: because superseded
+# chunks are kept for this long, removing a secret from the source and
+# redeploying does NOT stop it being served. The old chunk still answers 200
+# until it ages out. This is not hypothetical -- VITE_KITCHEN_TOKEN was found
+# in 38 historical chunks on 2026-09-12, still fetchable by anyone, after it
+# had been removed from the build.
+#
+# If a secret ever ships in a bundle again, do all three:
+#   1. invalidate it at the source (rotate/remove the server-side value), then
+#   2. remove it from the app and redeploy, then
+#   3. delete the old chunks immediately rather than waiting out the retention:
+#        printf '%s' 'THE_LEAKED_VALUE' > /tmp/tok
+#        grep -rlF -f /tmp/tok /var/www/habibi/habibi-frontend/dist/assets | xargs rm -f
+#        rm -f /tmp/tok
+# Step 1 is the one that actually protects you; 2 and 3 stop it spreading further.
 ASSET_RETENTION_DAYS=14
 
 echo "▶ Building..."
@@ -25,11 +41,16 @@ ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_new"
 scp -r "${LOCAL_DIST}/assets" "${REMOTE}:${REMOTE_DIR}/assets_new"
 
 echo "▶ Merging new assets (old ones kept for ${ASSET_RETENTION_DAYS} days)..."
+# Reports what the prune did, so the asset folder can't quietly grow without
+# anyone noticing -- previously it ran silently and nobody knew whether it was
+# working or how much was accumulating.
 ssh "$REMOTE" "
   mkdir -p ${REMOTE_DIR}/assets
   cp -rf ${REMOTE_DIR}/assets_new/. ${REMOTE_DIR}/assets/
   rm -rf ${REMOTE_DIR}/assets_new
+  STALE=\$(find ${REMOTE_DIR}/assets -type f -mtime +${ASSET_RETENTION_DAYS} | wc -l)
   find ${REMOTE_DIR}/assets -type f -mtime +${ASSET_RETENTION_DAYS} -delete
+  echo \"  pruned \$STALE file(s) older than ${ASSET_RETENTION_DAYS} days; \$(ls ${REMOTE_DIR}/assets | wc -l) remain (\$(du -sh ${REMOTE_DIR}/assets | cut -f1))\"
 "
 
 echo "▶ Uploading index.html..."
