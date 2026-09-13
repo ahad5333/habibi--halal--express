@@ -3092,6 +3092,16 @@
 /* ── Beyond the Plate ── */
 @media (max-width: 768px) {
   .beyond-image-wrapper { max-width: 100%; }
+  /* The 117% bleed is deliberate on desktop, where this image sits in one
+     column of a two-column row and is meant to overhang it. On a phone the
+     column is the full screen, so 117% put the image 45px past the viewport
+     with nothing clipping it — which widened the whole document to 435px.
+     A position:fixed element anchors to the layout viewport, so that dragged
+     the assistant widget 33px off the right edge: its greeting was cut
+     mid-sentence and the mascot was sliced in half. It only appeared on
+     scroll because the image is loading="lazy", so the page was the correct
+     width until you reached it. Found on a real phone, 2026-09-14. */
+  .beyond-img { width: 100%; }
   .beyond-quote-box { padding: 2.25rem; }
   .quote-text { font-size: 0.95rem; }
   .feature-item { gap: 0.75rem; }

@@ -314,6 +314,15 @@
 }
 
 @media (max-width: 480px) {
+  /* .steps-inner is a single non-wrapping flex line (buttons + connectors).
+     At this width it came out 9px wider than the screen, and nothing clipped
+     it, so the whole page could scroll sideways — the same class of bug that
+     pushed the assistant widget off-screen on the home page. Tighter padding
+     makes it fit; overflow-x keeps it contained whatever the step labels say. */
+  .steps-inner { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .steps-inner::-webkit-scrollbar { display: none; }
+  .step-btn { padding: 0.5rem 0.6rem; font-size: 0.8rem; }
+
   .wholesale-hero { padding: 4rem 0 3rem; }
   .wholesale-title { font-size: 1.75rem; }
   .wholesale-form-card { padding: 1.25rem 1rem; }
