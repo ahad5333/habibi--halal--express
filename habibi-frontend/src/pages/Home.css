@@ -3101,6 +3101,7 @@
      mid-sentence and the mascot was sliced in half. It only appeared on
      scroll because the image is loading="lazy", so the page was the correct
      width until you reached it. Found on a real phone, 2026-09-14. */
+  /* See also the 1200px rule below — 768 alone left tablets overflowing. */
   .beyond-img { width: 100%; }
   .beyond-quote-box { padding: 2.25rem; }
   .quote-text { font-size: 0.95rem; }
@@ -4278,4 +4279,13 @@
   .cust-img-crop    { width: 160px; height: 160px; }
   .cust-orbiter-1, .cust-orbiter-2, .cust-orbiter-3 { display: none; }
   .cust-orbit-ring  { width: 196px; height: 196px; }
+}
+
+/* The 117% bleed on .beyond-img only works where the layout has slack to
+   absorb the overhang. It does at 1440px; it does not at 1024px, where the
+   image ran 43px past the viewport and let the whole page scroll sideways.
+   Fixing it only at 768px (when this was first found on a phone) left every
+   tablet width still overflowing. Anything below 1200px gets the plain width. */
+@media (max-width: 1200px) {
+  .beyond-img { width: 100%; }
 }

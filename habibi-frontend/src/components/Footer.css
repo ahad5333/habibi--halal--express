@@ -610,6 +610,27 @@
 /* ── Mobile Responsive (added) ─────────────────────────────── */
 @media (max-width: 900px) {
   .footer-newsletter { max-width: 100%; width: 100%; }
+
+  /* The whole footer was 398px wide inside a 328px parent, so "Legal & Support"
+     and the newsletter (email box included) were sliced off by 54px at 360px
+     wide, and 94px at 320px. Nothing flagged it because footer has
+     overflow-x:hidden — the page never scrolled sideways, the content was just
+     silently cut.
+
+     The cause was this one row. Four badge cards in a nowrap flex row have a
+     398px minimum, so .footer-cert-badges could not shrink; that inflated
+     .footer-brand, which set the width of the whole flex line, and
+     .footer-links (flex-grow:3) then STRETCHED to match it. The columns that
+     fell off the edge were a symptom — constraining them changed nothing while
+     this row still forced the line wide. Letting it wrap takes everything back
+     to 328px. Found on a real phone. */
+  .footer-cert-badges { flex-wrap: wrap; }
+
+  /* Belt and braces: both are flex items whose default min-width:auto stops
+     them shrinking below their content, which is how a single wide descendant
+     gets to dictate the whole footer's width. */
+  .footer-brand,
+  .footer-links { min-width: 0; }
 }
 
 @media (max-width: 900px) {
