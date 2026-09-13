@@ -675,3 +675,48 @@
   color: #d1fae5;
 }
 .asw-cater-done strong { color: #4ade80; }
+
+/* ── Greeting-bubble chips ────────────────────────────────────────────────
+   One tap sends the question and opens the chat on its answer. The quick
+   replies inside the panel only helped people who had already opened it. */
+.asw-teaser-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0 0.95rem 0.85rem;
+}
+
+.asw-teaser-chip {
+  flex: 0 0 auto;
+  max-width: 100%;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #fafaf9;
+  color: #1c1917;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.asw-teaser-chip:hover,
+.asw-teaser-chip:focus-visible {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.asw-teaser-chip:active { transform: scale(0.97); }
+
+/* The body button already pads the bottom; with chips below it that doubles up. */
+.asw-teaser-chips ~ * { margin-top: 0; }
+.asw-teaser .asw-teaser-body { padding-bottom: 0.55rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .asw-teaser-chip { transition: none; }
+  .asw-teaser-chip:active { transform: none; }
+}

@@ -1197,7 +1197,7 @@
     "title": "Habibi Assistant",
     "subtitle": "AI ordering assistant · replies instantly",
     "teaserHi": "Hi! 👋 I'm Habibi, your AI assistant.",
-    "teaserText": "Tell me what you're craving and I'll add it to your cart.",
+    "teaserText": "I can find you a deal, check if we deliver to you, or put a meal together for the table.",
     "dismiss": "Dismiss",
     "aiBadge": "AI",
     "placeholder": "Ask about the menu or order something...",
@@ -1226,6 +1226,13 @@
     "listening": "Listening… say something like \"two beef burgers\"",
     "confirmYes": "Yes, clear it",
     "confirmNo": "No, keep it",
-    "greeting": "Hi! I'm Habibi, your AI ordering assistant 👋 Ask me about the menu, today's deals, delivery to your address or your order — or tell me what you'd like and I'll add it to your cart."
+    "greeting": "Hi! I'm Habibi, your AI ordering assistant 👋 Ask me about the menu, today's deals, delivery to your address or your order — or tell me what you'd like and I'll add it to your cart.",
+    "teaserHiMorning": "Morning! ☀️ I'm Habibi.",
+    "teaserHiAfternoon": "Hungry? 👋 I'm Habibi.",
+    "teaserHiEvening": "Evening! 👋 I'm Habibi.",
+    "teaserHiLate": "Still here 👋 I'm Habibi.",
+    "teaserChipDeals": "🏷️ Deals",
+    "teaserChipHours": "🕒 Open?",
+    "teaserChipMeal": "🍽️ Feed 4 under $50"
   }
 }

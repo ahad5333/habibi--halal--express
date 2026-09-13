@@ -61,6 +61,25 @@ const QUICK_REPLIES = [
   { key: 'quickReplyContact', text: 'Talk to a person' },
 ];
 
+// Shown on the greeting bubble itself. The quick replies above only appeared
+// once the chat was already open, which asked people to think of a question
+// before they knew what could be asked. These three send straight through, so
+// one tap gets an actual answer rather than an empty chat box.
+const TEASER_CHIPS = [
+  { key: 'teaserChipDeals', text: 'Any deals today?' },
+  { key: 'teaserChipHours', text: 'Are you open now?' },
+  { key: 'teaserChipMeal',  text: 'Feed 4 under $50' },
+];
+
+// Keeps the bubble from reading identically on every visit.
+const teaserHiKey = () => {
+  const h = new Date().getHours();
+  if (h < 11) return 'assistant.teaserHiMorning';
+  if (h < 17) return 'assistant.teaserHiAfternoon';
+  if (h < 22) return 'assistant.teaserHiEvening';
+  return 'assistant.teaserHiLate';
+};
+
 // Catering quote request inside the chat. Posts to the same endpoint as the
 // Catering page, so it lands in CPanel → Catering Quotes with the same
 // validation, confirmation email and rough estimate.
@@ -178,6 +197,7 @@ export default function AssistantWidget() {
   // Latest send(), for the speech callback: it fires after the render that
   // started listening, and must not send with that render's stale state.
   const sendRef = useRef(null);
+  const [pendingAsk, setPendingAsk] = useState(null);
 
   useEffect(() => {
     if (!teaserAllowed()) return undefined;
@@ -196,6 +216,12 @@ export default function AssistantWidget() {
     setOpen(true);
   };
 
+  // A chip on the greeting bubble opens the chat AND asks its question. The
+  // question is queued rather than sent inline: the greeting message is added
+  // by an effect once `open` flips, so sending immediately would race it and
+  // the user's question could be wiped by that first setMessages.
+  const askFromTeaser = (text) => { setPendingAsk(text); openChat(); };
+
   // Hidden for this visit only; it's already marked as seen for the session.
   const dismissTeaser = () => setTeaser(false);
 
@@ -204,6 +230,16 @@ export default function AssistantWidget() {
       setMessages([{ role: 'bot', text: t('assistant.greeting'), items: [], actions: [] }]);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fire a question queued by a greeting-bubble chip, but only once the
+  // greeting above has actually been added — otherwise that setMessages would
+  // land second and wipe the question out.
+  useEffect(() => {
+    if (!open || !pendingAsk || messages.length === 0 || sending) return;
+    const q = pendingAsk;
+    setPendingAsk(null);
+    sendRef.current?.(q);
+  }, [open, pendingAsk, messages.length, sending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
@@ -632,9 +668,24 @@ export default function AssistantWidget() {
       {!open && teaser && (
         <div className="asw-teaser">
           <button type="button" className="asw-teaser-body" onClick={openChat}>
-            <span className="asw-teaser-hi">{t('assistant.teaserHi')}</span>
+            <span className="asw-teaser-hi">{t(teaserHiKey())}</span>
             <span className="asw-teaser-text">{t('assistant.teaserText')}</span>
           </button>
+          {/* Separate buttons, not nested inside the one above — a button
+              inside a button is invalid and the inner one stops being
+              clickable in some browsers. */}
+          <div className="asw-teaser-chips">
+            {TEASER_CHIPS.map(c => (
+              <button
+                key={c.key}
+                type="button"
+                className="asw-teaser-chip"
+                onClick={() => askFromTeaser(c.text)}
+              >
+                {t(`assistant.${c.key}`)}
+              </button>
+            ))}
+          </div>
           <button type="button" className="asw-teaser-close" onClick={dismissTeaser} aria-label={t('assistant.dismiss')}>
             <X size={14} />
           </button>
