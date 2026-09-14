@@ -73,6 +73,16 @@ else
   echo "  none"
 fi
 
+# public/.well-known/ -- Square's Apple Pay domain association file. It's a
+# dot-folder, so the root-files step above never picks it up, and when the file
+# is missing nginx answers that path with index.html and verification fails.
+if [ -d "${LOCAL_DIST}/.well-known" ]; then
+  echo "▶ Uploading .well-known/..."
+  ssh "$REMOTE" "mkdir -p '${REMOTE_DIR}/.well-known'" < /dev/null && \
+    scp "${LOCAL_DIST}"/.well-known/* "${REMOTE}:${REMOTE_DIR}/.well-known/" && \
+    echo "  uploaded: $(find "${LOCAL_DIST}/.well-known" -maxdepth 1 -type f | wc -l | tr -d ' ') file(s)"
+fi
+
 # public/images/ (391MB, ~1000 files) is a direct copy into dist/images/ but
 # was never synced by this script at all -- it only ever handled assets/ +
 # index.html, so any newly-added image silently 404'd in production despite
