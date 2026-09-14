@@ -5,11 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SEO from '../components/SEO';
 import { useBusinessSchema } from '../utils/businessSchema';
-import { menuAPI } from '../services/api';
+import { menuAPI, locationsAPI } from '../services/api';
 import './Home.css';
 
 const featFallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
 const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
+// The home page shows this many stores; the rest are a link away on /locations.
+const HOME_STORE_LIMIT = 6;
+// A CPanel store photo; photos bundled with the site also ship as .webp.
+const storeImg = url => (url && url.startsWith('/images/') ? toWebp(url) : url);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const FEAST_VIDEOS = [
@@ -103,7 +107,7 @@ const FeastVideo = ({ src }) => {
 const STATS = [
   { value: 500,  suffix: '+',  labelKey: 'home.stats.menuItems',      icon: '🍽️' },
   { value: 10,   suffix: 'K+', labelKey: 'home.stats.happyCustomers', icon: '❤️' },
-  { value: 3,    suffix: '',   labelKey: 'home.stats.bronxLocations', icon: '📍' },
+  { value: 0,    suffix: '',   labelKey: 'home.stats.bronxLocations', icon: '📍' }, // the CPanel store count
   { value: 100,  suffix: '%',  labelKey: 'home.stats.halalCertified', icon: '✅' },
 ];
 
@@ -137,7 +141,7 @@ function StatCard({ icon, value, suffix, labelKey, animate }) {
   );
 }
 
-function StatsRow() {
+function StatsRow({ storeCount = 0 }) {
   const ref = useRef(null);
   const [fired, setFired] = useState(false);
   useEffect(() => {
@@ -152,9 +156,12 @@ function StatsRow() {
   return (
     <div className="stats-row" ref={ref}>
       <div className="stats-row-inner">
-        {STATS.map((s, i) => (
-          <StatCard key={i} {...s} animate={fired} />
-        ))}
+        {STATS
+          .map(s => (s.labelKey === 'home.stats.bronxLocations' ? { ...s, value: storeCount } : s))
+          .filter(s => s.value > 0)
+          .map(s => (
+            <StatCard key={s.labelKey} {...s} animate={fired} />
+          ))}
       </div>
     </div>
   );
@@ -169,6 +176,12 @@ const Home = () => {
   const [reviewStats, setReviewStats] = useState(null);
   const [featItems, setFeatItems] = useState([]);
   const carouselRef = useRef(null);
+  // Stores for the locations section, straight from CPanel.
+  const [stores, setStores] = useState([]);
+  useEffect(() => {
+    locationsAPI.getAll().then(d => setStores(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+  const allDayStore = stores.find(s => /24\s*hours?/i.test(s.working_days_hours || ''));
 
   const [typedText, setTypedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
@@ -322,7 +335,7 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════
           STATS COUNTER ROW
       ═══════════════════════════════════════════════════════ */}
-      <StatsRow />
+      <StatsRow storeCount={stores.length} />
 
       {/* ═══════════════════════════════════════════════════════
           BUILD YOUR OWN — CTA STRIP (Redesigned)
@@ -741,16 +754,20 @@ const Home = () => {
                 <p className="rb-badge-num">4.9</p>
                 <p className="rb-badge-label">{t('home.banner.averageRating')}</p>
               </div>
-              <div className="rb-badge">
-                <span className="rb-badge-icon">📍</span>
-                <p className="rb-badge-num">3</p>
-                <p className="rb-badge-label">{t('home.stats.bronxLocations')}</p>
-              </div>
-              <div className="rb-badge">
-                <span className="rb-badge-icon">⏰</span>
-                <p className="rb-badge-num">24/7</p>
-                <p className="rb-badge-label">{t('home.banner.bedfordParkOpen')}</p>
-              </div>
+              {stores.length > 0 && (
+                <div className="rb-badge">
+                  <span className="rb-badge-icon">📍</span>
+                  <p className="rb-badge-num">{stores.length}</p>
+                  <p className="rb-badge-label">{t('home.stats.bronxLocations')}</p>
+                </div>
+              )}
+              {allDayStore && (
+                <div className="rb-badge">
+                  <span className="rb-badge-icon">⏰</span>
+                  <p className="rb-badge-num">24/7</p>
+                  <p className="rb-badge-label">{t('home.banner.storeOpen247', { store: allDayStore.title })}</p>
+                </div>
+              )}
             </div>
 
             <div className="rb-pull-quote">
@@ -774,47 +791,28 @@ const Home = () => {
           </p>
 
           <div className="locations-grid mt-5">
-
-            <div className="location-card">
-              <div className="location-img-wrapper">
-                <img src="/images/locations/bedford-park.webp" alt="Bedford Park" className="location-img" />
-                <span className="location-badge outline">{t('home.locations.open247')}</span>
+            {stores.slice(0, HOME_STORE_LIMIT).map(loc => (
+              <div className="location-card" key={loc.id}>
+                <div className="location-img-wrapper">
+                  {loc.image_url && <img src={storeImg(loc.image_url)} alt={loc.title} className="location-img" loading="lazy" />}
+                  {/24\s*hours?/i.test(loc.working_days_hours || '') && (
+                    <span className="location-badge outline">{t('home.locations.open247')}</span>
+                  )}
+                </div>
+                <div className="location-info">
+                  <h3 className="location-title">{loc.title}</h3>
+                  <p className="location-address">{loc.exact_address}</p>
+                  {loc.working_days_hours && <p className="location-hours">{loc.working_days_hours}</p>}
+                  <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
+                </div>
               </div>
-              <div className="location-info">
-                <h3 className="location-title">{t('home.locations.bedfordPark')}</h3>
-                <p className="location-address">2974 Jerome Ave, Bronx, NY 10468</p>
-                <p className="location-hours">{t('home.locations.hours')}</p>
-                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
-              </div>
-            </div>
-
-            <div className="location-card">
-              <div className="location-img-wrapper">
-                <img src="/images/locations/kings-bridge.webp" alt="Kingsbridge Road" className="location-img" />
-                <span className="location-badge outline">{t('home.locations.nowOpen')}</span>
-              </div>
-              <div className="location-info">
-                <h3 className="location-title">{t('home.locations.kingsbridge')}</h3>
-                <p className="location-address">2 E Kingsbridge Rd, Bronx, NY 10468</p>
-                <p className="location-hours">{t('home.locations.hours')}</p>
-                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
-              </div>
-            </div>
-
-            <div className="location-card">
-              <div className="location-img-wrapper">
-                <img src="/images/locations/white-plains.webp" alt="White Plains Road" className="location-img" />
-                <span className="location-badge outline">{t('home.locations.nowOpen')}</span>
-              </div>
-              <div className="location-info">
-                <h3 className="location-title">{t('home.locations.whitePlains')}</h3>
-                <p className="location-address">3971 White Plains Rd, Bronx, NY 10466</p>
-                <p className="location-hours">{t('home.locations.hours')}</p>
-                <Link to="/menu" className="location-link text-gold">{t('home.locations.orderNow')} <ChevronRight size={14}/></Link>
-              </div>
-            </div>
-
+            ))}
           </div>
+          {stores.length > HOME_STORE_LIMIT && (
+            <Link to="/locations" className="location-link text-gold mt-4" style={{ display: 'inline-flex' }}>
+              {t('home.locations.seeAll', { count: stores.length })} <ChevronRight size={14}/>
+            </Link>
+          )}
         </div>
       </section>
     </div>

@@ -252,6 +252,10 @@ const createTables = async () => {
         PRIMARY KEY (menu_id, location_id)
       )
     `);
+    // Who set a store's status for an item: 'manual' (CPanel) or 'stock' (the
+    // inventory ran out). Stock only lifts the sold-outs it set itself -- see
+    // syncMenuAvailability -- so a store's own Sold Out/Inactive survives orders.
+    await client.query(`ALTER TABLE menu_location_availability ADD COLUMN IF NOT EXISTS set_by VARCHAR(10) NOT NULL DEFAULT 'manual'`);
 
     // Dietary flag columns (idempotent — safe to run on existing table)
     await client.query(`

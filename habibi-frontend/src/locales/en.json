@@ -63,6 +63,13 @@
     "selectRestaurant": "SELECT RESTAURANT",
     "selectRestaurantPlaceholder": "Select a restaurant…",
     "chooseRestaurantHint": "Choose which restaurant will prepare your delivery",
+    "storeRecommended": "Recommended",
+    "storeRecommendedHint": "Recommended: the nearest store that has everything in your cart.",
+    "storeMilesAway": "{{miles}} mi",
+    "storeMissingItems": "Doesn’t have {{items}} right now",
+    "storeNotTakingOrders": "Not taking online orders right now",
+    "storeUnavailable": "Not available for this order",
+    "noStoreCanServe": "None of our stores has everything in your cart right now. Remove the unavailable item to continue.",
     "deliveryAddress": "DELIVERY ADDRESS",
     "locating": "Locating…",
     "useMyLocation": "Use my location",
@@ -603,7 +610,8 @@
     "ratingPrompt": "Rate your delivery driver",
     "rateDriverAria": "Rate your driver from 1 to 5 stars",
     "rateYourOrder": "Rate Your Order",
-    "pickupFrom": "Pickup from Habibi Bedford Park Blvd",
+    "pickupFrom": "Pickup from {{store}}",
+    "pickupOrder": "Pickup order",
     "deliveringTo": "Delivering to {{address}}",
     "deliveringToHidden": "Delivering to the address on your order",
     "cancelTrigger": "Need to cancel? You can for the next {{time}}",
@@ -659,6 +667,8 @@
     "cardFallback": "Card"
   },
   "locations": {
+    "loadFailed": "We couldn’t load our locations. Please refresh the page.",
+    "noneYet": "No locations to show right now.",
     "days": {
       "sun": "Sunday",
       "mon": "Monday",
@@ -1026,19 +1036,15 @@
       "line4": "\"Delivering across 300+ miles, from Bronx to your door.\"",
       "ourStory": "Our Story ➔",
       "averageRating": "Average Rating",
-      "bedfordParkOpen": "Bedford Park Open"
+      "storeOpen247": "{{store}} Open"
     },
     "locations": {
       "eyebrow": "THE BRONX, NY",
       "title": "Find Your Habibi",
       "desc": "Several locations across New York City, all open, all serving the same fresh halal you love.",
       "open247": "OPEN 24/7",
-      "nowOpen": "NOW OPEN",
-      "bedfordPark": "Bedford Park Blvd",
-      "kingsbridge": "Kingsbridge Road",
-      "whitePlains": "White Plains Road",
-      "hours": "Open 24 Hours · 365 Days a Year",
-      "orderNow": "Order Now"
+      "orderNow": "Order Now",
+      "seeAll": "See all {{count}} locations"
     }
   },
   "footer": {
@@ -1133,9 +1139,7 @@
         "label": "Locations",
         "caption": "Find Your Nearest Location",
         "sub": {
-          "bedford": "Bedford Park & Jerome Ave",
-          "kingsbridge": "Kingsbridge Road",
-          "whitePlains": "White Plains Road"
+          "all": "All locations"
         }
       }
     },

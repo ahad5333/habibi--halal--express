@@ -124,6 +124,13 @@ export const locationsAPI = {
 
   /** GET /api/locations/status — lightweight open/closed check */
   getStatus: () => request('/api/locations/status'),
+
+  /** POST /api/locations/serving — stores that could serve this cart, best first */
+  serving: (items, point) =>
+    request('/api/locations/serving', {
+      method: 'POST',
+      body: JSON.stringify({ items, ...(point || {}) }),
+    }),
 };
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────

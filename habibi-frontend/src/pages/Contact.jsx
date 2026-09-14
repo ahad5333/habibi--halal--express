@@ -5,7 +5,7 @@ import {
   Tv, Mail, HelpCircle, CheckCircle, MapPin, ChevronRight,
   Building2, Printer, PhoneCall, Globe
 } from 'lucide-react';
-import { contactAPI } from '../services/api';
+import { contactAPI, locationsAPI } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
 import SEO from '../components/SEO';
 import { SITE_URL, schemaPhone } from '../utils/businessSchema';
@@ -89,9 +89,6 @@ const FORM_TYPES = [
   },
 ];
 
-const LOCATIONS = [
-  'Bedford Park & Jerome Ave', 'Kingsbridge Road', 'White Plains Road', 'All Locations',
-];
 
 const PARTNER_TYPES = [
   'Food Supplier', 'Delivery Partner', 'Catering Client',
@@ -157,6 +154,12 @@ const Contact = () => {
   const [partnerType, setPartnerType] = useState('');
   const [businessName, setBusiness]   = useState('');
   const [outlet, setOutlet]           = useState('');
+
+  // Store names for the location picker, from CPanel.
+  const [storeTitles, setStoreTitles] = useState([]);
+  useEffect(() => {
+    locationsAPI.getAll().then(d => setStoreTitles(Array.isArray(d) ? d.map(l => l.title) : [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const t = searchParams.get('type');
@@ -473,7 +476,7 @@ const Contact = () => {
                       <label className="form-label">LOCATION</label>
                       <select className="form-input form-select" value={location} onChange={e => setLocation(e.target.value)}>
                         <option value="">Select a location...</option>
-                        {LOCATIONS.map(l => <option key={l}>{l}</option>)}
+                        {[...storeTitles, 'All Locations'].map(l => <option key={l}>{l}</option>)}
                       </select>
                     </div>
                   )}

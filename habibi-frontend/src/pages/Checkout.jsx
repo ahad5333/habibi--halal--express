@@ -156,6 +156,11 @@ const Checkout = () => {
   const [activePaymentProviders, setActivePaymentProviders] = useState(null); // null = not loaded yet, show everything
   const [locations, setLocations]               = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  // Stores that could serve this cart, best first (server: utils/servingLocation.js).
+  // null until the first answer; the plain store list stays as the fallback.
+  const [serving, setServing]                   = useState(null);
+  const [devicePoint, setDevicePoint]           = useState(null);
+  const storeChosenRef = useRef(null); // a store the customer picked themselves
   const [storeOpen, setStoreOpen]               = useState(true);
   const feeTimerRef     = useRef(null);
   const addressInputRef = useRef(null);
@@ -452,6 +457,91 @@ const Checkout = () => {
       })
       .catch(() => {});
   }, []);
+  // Where the customer is, for ranking stores by distance: the confirmed delivery
+  // address, otherwise the device's position -- only if the browser already
+  // allows it, so this never pops a permission prompt.
+  useEffect(() => {
+    if (!navigator.geolocation || !navigator.permissions) return;
+    navigator.permissions.query({ name: 'geolocation' })
+      .then(result => {
+        if (result.state !== 'granted') return;
+        navigator.geolocation.getCurrentPosition(
+          pos => setDevicePoint({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {},
+          { timeout: 10000, maximumAge: 300000 }
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  const rankPoint = (!isDineIn && deliveryMode === 'delivery' && addressLatLng) ? addressLatLng : devicePoint;
+  // Only what decides the store: which menu items (bundled sides and drinks
+  // included) and where the customer is -- not quantities or options.
+  const servingKey = JSON.stringify({
+    items: items.map(i => [
+      i.id ?? i.menu_id,
+      Object.keys(i.customCfg?.extras || {}),
+      Object.keys(i.customCfg?.drinks || {}),
+    ]),
+    point: rankPoint ? [Number(rankPoint.lat).toFixed(4), Number(rankPoint.lng).toFixed(4)] : null,
+  });
+
+  // Ask which stores can serve this cart whenever the items or the position change.
+  useEffect(() => {
+    if (isDineIn || items.length === 0) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      locationsAPI.serving(
+        items.map(i => ({ id: i.id, menu_id: i.menu_id, customCfg: i.customCfg })),
+        rankPoint ? { lat: rankPoint.lat, lng: rankPoint.lng } : undefined
+      )
+        .then(data => { if (!cancelled && Array.isArray(data?.locations)) setServing(data); })
+        // Keep the plain store list; the server still checks the store at order time.
+        .catch(() => {});
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [servingKey, isDineIn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pick the store: the customer's own choice while it can still serve this
+  // cart, otherwise the recommended one. Re-applied when the plain store list
+  // lands too, since that load sets its own default and can finish later.
+  useEffect(() => {
+    if (!serving) return;
+    const byId = (id) => serving.locations.find(l => l.id === id);
+    const chosen = storeChosenRef.current ? byId(storeChosenRef.current) : null;
+    const next = chosen?.can_serve ? chosen : (byId(serving.recommended_id) || null);
+    if (!chosen?.can_serve) storeChosenRef.current = null;
+    // Same store -> keep the old object, so the delivery fee isn't re-quoted.
+    setSelectedLocation(prev => (prev && next && prev.id === next.id ? prev : next));
+    if (next) localStorage.setItem('habibi_service_location', JSON.stringify({ id: next.id, title: next.title }));
+  }, [serving, locations]);
+
+  // The ranked stores once known, else the plain list.
+  const storeList = serving?.locations || locations;
+
+  const chooseStore = (loc) => {
+    if (!loc || loc.can_serve === false) return;
+    storeChosenRef.current = loc.id;
+    setSelectedLocation(loc);
+    localStorage.setItem('habibi_service_location', JSON.stringify({ id: loc.id, title: loc.title }));
+  };
+
+  // Why a store can't take this cart, or '' when it can.
+  const storeUnavailableReason = (loc) => {
+    if (loc.can_serve !== false) return '';
+    if (loc.accepting_orders === false) return t('checkout.storeNotTakingOrders');
+    const names = (loc.missing_items || []).map(m => m.name);
+    return names.length ? t('checkout.storeMissingItems', { items: names.join(', ') }) : t('checkout.storeUnavailable');
+  };
+
+  const storeOptionLabel = (loc) => {
+    const parts = [`${loc.title} — ${loc.brief_address || ''}`];
+    if (loc.distance_miles != null) parts.push(t('checkout.storeMilesAway', { miles: loc.distance_miles }));
+    if (serving && loc.id === serving.recommended_id) parts.push(t('checkout.storeRecommended'));
+    const reason = storeUnavailableReason(loc);
+    return reason ? `${parts.join(' · ')} (${reason})` : parts.join(' · ');
+  };
+
   // Fetch delivery fee when address changes (debounced 800 ms)
   useEffect(() => {
     if (deliveryMode !== 'delivery' || !address.trim() || !selectedLocation) {
@@ -933,6 +1023,8 @@ const Checkout = () => {
     const digits = (customerPhone.match(/\d/g) || []).join('');
     const usDigits = digits.startsWith('1') && digits.length === 11 ? digits.slice(1) : digits;
     if (usDigits.length !== 10) { setOrderError(t('checkout.errInvalidPhone')); return false; }
+    // The store ranking came back and no store has everything in this cart.
+    if (!isDineIn && serving && !selectedLocation) { setOrderError(t('checkout.noStoreCanServe')); return false; }
     if (!isDineIn && deliveryMode === 'delivery') {
       if (!address.trim()) { setOrderError(t('checkout.errPleaseEnterAddress')); return false; }
       if (feeLoading) { setOrderError(t('checkout.errWaitForFee')); return false; }
@@ -1465,23 +1557,24 @@ const Checkout = () => {
                           id="ck-select-restaurant"
                           className="form-input form-select"
                           value={selectedLocation?.id || ''}
-                          onChange={e => {
-                            const loc = locations.find(l => l.id === parseInt(e.target.value, 10));
-                            if (loc) {
-                              setSelectedLocation(loc);
-                              localStorage.setItem('habibi_service_location', JSON.stringify({ id: loc.id, title: loc.title }));
-                            }
-                          }}
+                          onChange={e => chooseStore(storeList.find(l => l.id === parseInt(e.target.value, 10)))}
                           required
                         >
                           <option value="" disabled>{t('checkout.selectRestaurantPlaceholder')}</option>
-                          {locations.map(loc => (
-                            <option key={loc.id} value={loc.id}>{loc.title} — {loc.brief_address}</option>
+                          {storeList.map(loc => (
+                            <option key={loc.id} value={loc.id} disabled={loc.can_serve === false}>
+                              {storeOptionLabel(loc)}
+                            </option>
                           ))}
                         </select>
                         {!selectedLocation && (
                           <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
-                            {t('checkout.chooseRestaurantHint')}
+                            {serving ? t('checkout.noStoreCanServe') : t('checkout.chooseRestaurantHint')}
+                          </p>
+                        )}
+                        {selectedLocation && serving && selectedLocation.id === serving.recommended_id && (
+                          <p className="text-xs text-muted" style={{ marginTop: '0.35rem' }}>
+                            ✓ {t('checkout.storeRecommendedHint')}
                           </p>
                         )}
                       </div>
@@ -1752,25 +1845,42 @@ const Checkout = () => {
                     <>
                       <div className="form-group mb-6">
                         <label className="form-label" id="ck-pickup-location-label">{t('checkout.selectPickupLocation')}</label>
-                        {locations.length === 0 ? (
+                        {serving && !serving.recommended_id && (
+                          <p style={{ fontSize: '0.72rem', color: '#f59e0b', margin: '0.35rem 0 0' }}>{t('checkout.noStoreCanServe')}</p>
+                        )}
+                        {storeList.length === 0 ? (
                           <p className="text-muted text-sm" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>{t('checkout.loadingPickupLocations')}</p>
                         ) : (
                           <div role="group" aria-labelledby="ck-pickup-location-label" className="pickup-locations-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
-                            {locations.map(loc => {
+                            {storeList.map(loc => {
                               const active = selectedLocation?.id === loc.id;
+                              const reason = storeUnavailableReason(loc);
+                              const recommended = !!serving && loc.id === serving.recommended_id;
                               return (
                                 <button
                                   key={loc.id}
                                   type="button"
                                   className={`timing-card ${active ? 'active' : ''}`}
-                                  onClick={() => { setSelectedLocation(loc); localStorage.setItem('habibi_service_location', JSON.stringify({ id: loc.id, title: loc.title })); }}
-                                  style={{ width: '100%', margin: 0 }}
+                                  onClick={() => chooseStore(loc)}
+                                  disabled={!!reason}
+                                  style={{ width: '100%', margin: 0, opacity: reason ? 0.55 : 1, cursor: reason ? 'not-allowed' : 'pointer' }}
                                 >
                                   <span className="timing-icon">📍</span>
                                   <div>
-                                    <p className="font-bold text-sm" style={{ color: active ? 'var(--color-primary)' : 'inherit' }}>{loc.title}</p>
-                                    <p className="text-xs text-muted" style={{ marginTop: '0.15rem' }}>{loc.brief_address}</p>
-                                    {loc.phone_number && <p className="text-xs text-muted" style={{ fontSize: '0.72rem', marginTop: '0.2rem' }}>📞 {loc.phone_number}</p>}
+                                    <p className="font-bold text-sm" style={{ color: active ? 'var(--color-primary)' : 'inherit' }}>
+                                      {loc.title}
+                                      {recommended && (
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#1a1a1a', background: '#E5B64E', borderRadius: 999, padding: '0.1rem 0.45rem', verticalAlign: 'middle' }}>
+                                          {t('checkout.storeRecommended')}
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="text-xs text-muted" style={{ marginTop: '0.15rem' }}>
+                                      {loc.brief_address}{loc.distance_miles != null ? ` · ${t('checkout.storeMilesAway', { miles: loc.distance_miles })}` : ''}
+                                    </p>
+                                    {reason
+                                      ? <p className="text-xs" style={{ color: '#f59e0b', marginTop: '0.2rem' }}>{reason}</p>
+                                      : loc.phone_number && <p className="text-xs text-muted" style={{ fontSize: '0.72rem', marginTop: '0.2rem' }}>📞 {loc.phone_number}</p>}
                                   </div>
                                 </button>
                               );

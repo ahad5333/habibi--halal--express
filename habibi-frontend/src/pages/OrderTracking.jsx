@@ -1187,7 +1187,9 @@ export default function OrderTracking() {
                   <MapPin size={14} className="ot-loc-icon" />
                   <span>
                     {order.delivery_method === 'pickup'
-                      ? t('orderTracking.pickupFrom')
+                      ? (order.delivery_address
+                        ? t('orderTracking.pickupFrom', { store: order.delivery_address })
+                        : t('orderTracking.pickupOrder'))
                       : order.delivery_address
                         ? t('orderTracking.deliveringTo', { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(', ') })
                         : t('orderTracking.deliveringToHidden')}

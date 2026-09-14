@@ -1,6 +1,7 @@
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { isOpenNow } = require('../utils/businessHours');
+const { rankServingLocations } = require('../utils/servingLocation');
 
 // Helper for distance calculation (Haversine)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -239,7 +240,28 @@ const getStatus = async (req, res) => {
   }
 };
 
+// POST /api/locations/serving — the stores that could serve a cart, best first,
+// with the one checkout should pick (rules in utils/servingLocation.js).
+// Body: { items: [cart items], lat?, lng? }
+const getServingLocations = async (req, res) => {
+  try {
+    const { items, lat, lng } = req.body || {};
+    if (!Array.isArray(items) || items.length > 200) {
+      return res.status(400).json({ error: 'items must be a list of up to 200 cart items.' });
+    }
+    const la = parseFloat(lat);
+    const ln = parseFloat(lng);
+    const point = Number.isFinite(la) && Number.isFinite(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180
+      ? { lat: la, lng: ln }
+      : {};
+    res.json(await rankServingLocations({ items, ...point }));
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+};
+
 module.exports = {
+  getServingLocations,
   getAllLocations,
   getLocationById,
   createLocation,

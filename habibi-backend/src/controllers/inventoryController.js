@@ -2,12 +2,16 @@ const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { notifyWaitlist } = require('./waitlistController');
 
-// Recomputes sold_out/available across all active locations for a menu item, based on
-// the MINIMUM stock across every inventory item currently linked to it -- not just the
+// Recomputes the stock-driven sold out/available state of a menu item, based on the
+// MINIMUM stock across every inventory item currently linked to it -- not just the
 // one that was just touched. Otherwise restocking one of two linked ingredients (e.g.
 // buns) would mark the item available again even though another (e.g. patties) is still
 // at zero. A menu item with no linked inventory left (e.g. after a delete/unlink) is
-// treated as available, since there's no more stock constraint on it.
+// treated as in stock, since there's no more stock constraint on it.
+//
+// Stock is shared by every store, but it only undoes what stock did: an item a store
+// marked Sold Out or Inactive in CPanel (set_by 'manual') is left alone. Store routing
+// reads these rows to decide which store can serve a cart, and this runs after orders.
 async function syncMenuAvailability(menu_item_id) {
   if (!menu_item_id) return;
   const stockRes = await pool.query(
@@ -16,29 +20,33 @@ async function syncMenuAvailability(menu_item_id) {
     [menu_item_id]
   );
   const { min_stock, linked_count } = stockRes.rows[0];
-  const status = (linked_count > 0 && parseFloat(min_stock) <= 0) ? 'sold_out' : 'available';
+  const outOfStock = linked_count > 0 && parseFloat(min_stock) <= 0;
 
-  // Any location's prior status reflects them all -- this function always
-  // writes the same status everywhere (see comment above), so checking one
-  // row is enough to detect a real sold_out -> available transition below.
-  const wasRes = await pool.query(
-    `SELECT status FROM menu_location_availability WHERE menu_id = $1 LIMIT 1`,
-    [menu_item_id]
-  );
-  const wasSoldOut = wasRes.rows[0]?.status === 'sold_out';
-
-  const locs = await pool.query(`SELECT id FROM locations WHERE is_active = TRUE`);
-  for (const loc of locs.rows) {
-    await pool.query(
-      `INSERT INTO menu_location_availability (menu_id, location_id, status, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (menu_id, location_id) DO UPDATE SET status = $3, updated_at = NOW()`,
-      [menu_item_id, loc.id, status]
-    );
+  if (outOfStock) {
+    const locs = await pool.query(`SELECT id FROM locations WHERE is_active = TRUE`);
+    for (const loc of locs.rows) {
+      await pool.query(
+        `INSERT INTO menu_location_availability (menu_id, location_id, status, set_by, updated_at)
+         VALUES ($1, $2, 'sold_out', 'stock', NOW())
+         ON CONFLICT (menu_id, location_id) DO UPDATE SET status = 'sold_out', set_by = 'stock', updated_at = NOW()
+         WHERE menu_location_availability.status = 'available'`,
+        [menu_item_id, loc.id]
+      );
+    }
+    return;
   }
 
+  // Back in stock: lift only the sold-outs stock itself set.
+  const lifted = await pool.query(
+    `UPDATE menu_location_availability
+        SET status = 'available', updated_at = NOW()
+      WHERE menu_id = $1 AND status = 'sold_out' AND set_by = 'stock'
+      RETURNING location_id`,
+    [menu_item_id]
+  );
+
   // Fire-and-forget: notify anyone waiting on this item now that it's back.
-  if (wasSoldOut && status === 'available') {
+  if (lifted.rows.length) {
     notifyWaitlist(menu_item_id)
       .catch(err => console.error('[Waitlist] Notify on restock failed:', err.message));
   }

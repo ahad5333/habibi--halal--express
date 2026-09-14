@@ -12,32 +12,14 @@ import './Locations.css';
 // below) -- translated only at render time via `locations.days.<key>`.
 const DAY_KEYS    = ['sun','mon','tue','wed','thu','fri','sat'];
 
-const getLocationImage = (title) => {
-  const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))                                     return '/images/locations/bedford-park.webp';
-  if (t.includes('kingsbridge') || t.includes('king'))          return '/images/locations/kings-bridge.webp';
-  if (t.includes('white plains') || t.includes('white-plains')) return '/images/locations/white-plains.webp';
-  return null; // no local image — will use map embed
+// The store photo set in CPanel. Photos bundled with the site also ship as .webp.
+const storeImage = (url) => {
+  if (!url) return null;
+  return url.startsWith('/images/') ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 };
 
 /* Strip " Area" suffix that should not appear in displayed titles */
 const sanitizeTitle = (title) => (title || '').replace(/\s+area\b/gi, '').trim();
-
-const getShortTitle = (title) => {
-  const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))      return 'Bedford Park';
-  if (t.includes('kingsbridge'))  return 'Kingsbridge';
-  if (t.includes('white plains')) return 'White Plains';
-  return (title || '').split(/\s+/).slice(0, 3).join(' ');
-};
-
-const getNeighborhood = (title) => {
-  const t = (title || '').toLowerCase();
-  if (t.includes('bedford'))      return 'Jerome Ave · Bronx';
-  if (t.includes('kingsbridge'))  return 'Kingsbridge · Bronx';
-  if (t.includes('white plains')) return 'White Plains · Bronx';
-  return 'Bronx, New York';
-};
 
 const isOpenNow = (hoursStr) => {
   if (!hoursStr) return null;
@@ -132,35 +114,6 @@ const parseHoursTable = (hoursStr) => {
 // Shared with the structured data so each store has one id across pages.
 const getAnchorId = locationAnchor;
 
-// Used only if the live /api/locations call fails or returns empty —
-// must be kept in sync with the real `locations` table by hand.
-const FALLBACK_LOCATIONS = [
-  {
-    id: 1, title: 'Bedford Park Blvd',
-    brief_address: 'Bedford Park & Jerome Ave',
-    phone_number: '(718) 400-0443',
-    working_days_hours: 'Open 24 Hours · 365 Days a Year',
-    delivery_radius_miles: 5, is_active: true, preference_level: 1,
-    latitude: 40.873092, longitude: -73.8892829,
-  },
-  {
-    id: 2, title: 'Kingsbridge Road',
-    brief_address: "Kings' Bridge Road & Jerome Ave",
-    phone_number: '(718) 400-0443',
-    working_days_hours: 'Open 24 Hours · 365 Days a Year',
-    delivery_radius_miles: 4, is_active: true, preference_level: 2,
-    latitude: 40.8672738, longitude: -73.8972187,
-  },
-  {
-    id: 3, title: 'White Plains Road',
-    brief_address: 'White Plains Road and 225th Street',
-    phone_number: '(718) 400-0443',
-    working_days_hours: 'Open 24 Hours · 365 Days a Year',
-    delivery_radius_miles: 4, is_active: true, preference_level: 3,
-    latitude: 40.887949, longitude: -73.860493,
-  },
-];
-
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R    = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -184,9 +137,9 @@ function getDistanceBadge(miles, t) {
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
   const { t } = useTranslation();
-  // Priority: cPanel-uploaded image → local PNG → OpenStreetMap embed (no API key, never errors)
-  const localImg   = getLocationImage(loc.title);
-  const displayImg = loc.image || localImg;
+  // The CPanel photo, else an OpenStreetMap embed (no API key, never errors)
+  const [imgFailed, setImgFailed] = useState(false);
+  const displayImg = imgFailed ? null : storeImage(loc.image_url);
 
   const lat = parseFloat(loc.latitude);
   const lng = parseFloat(loc.longitude);
@@ -209,8 +162,8 @@ function LocationCard({ loc, userCoords, index }) {
   const distBadge = getDistanceBadge(distMiles, t);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.title + ' ' + (loc.brief_address || 'Bronx, NY'))}`;
-  const shortTitle = getShortTitle(loc.title);
-  const neighborhood = getNeighborhood(loc.title);
+  const shortTitle = sanitizeTitle(loc.title);
+  const neighborhood = loc.brief_address || 'Bronx, New York';
 
   return (
     <div
@@ -225,7 +178,7 @@ function LocationCard({ loc, userCoords, index }) {
             src={displayImg}
             alt={sanitizeTitle(loc.title)}
             className="lcn-img"
-            onError={e => { e.target.onerror = null; e.target.src = '/images/locations/bedford-park.webp'; }}
+            onError={() => setImgFailed(true)}
           />
         ) : mapEmbedSrc ? (
           <iframe
@@ -394,6 +347,7 @@ const Locations = () => {
   const { t } = useTranslation();
   const [locations, setLocations] = useState([]);
   const [loading,   setLoading]   = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
   const [heroVisible, setHeroVisible] = useState(false);
   const businessSchema = useBusinessSchema(locations);
@@ -409,12 +363,10 @@ const Locations = () => {
   }, []);
 
   useEffect(() => {
+    // Every store switched on in CPanel, however many there are.
     locationsAPI.getAll()
-      .then(data => {
-        const arr = Array.isArray(data) ? data.slice(0, 3) : [];
-        setLocations(arr.length > 0 ? arr : FALLBACK_LOCATIONS);
-      })
-      .catch(() => setLocations(FALLBACK_LOCATIONS))
+      .then(data => setLocations(Array.isArray(data) ? data : []))
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -431,9 +383,9 @@ const Locations = () => {
   return (
     <div className="locations-page page-watermark">
       <SEO
-        title="Locations | 3 Bronx Outlets & Tri-State Delivery"
-        description="Find a Habibi Halal Express outlet near you in the Bronx. Locations include Bedford Park & Jerome Ave, Kingsbridge Road, and White Plains Road."
-        keywords="halal food nyc, locations habibi halal, bedford park restaurant, kingsbridge road food, white plains road bronx, bronx halal"
+        title="Locations | Our Bronx Stores & Tri-State Delivery"
+        description="Find a Habibi Halal Express store near you in the Bronx, with hours, directions and phone numbers for every location."
+        keywords="halal food nyc, habibi halal express locations, bronx halal restaurant, halal food near me, bronx halal"
         schema={businessSchema}
       />
 
@@ -475,7 +427,7 @@ const Locations = () => {
         {/* Stats bar */}
         <div className="loc-hero-stats">
           <div className="loc-hero-stat">
-            <span className="loc-hero-stat-num">3</span>
+            <span className="loc-hero-stat-num">{loading ? '…' : locations.length}</span>
             <span className="loc-hero-stat-label">{t('locations.statLocations')}</span>
           </div>
           <div className="loc-hero-stat-divider" />
@@ -519,6 +471,10 @@ const Locations = () => {
             </div>
             <p>{t('locations.findingLocations')}</p>
           </div>
+        ) : loadFailed || sortedLocations.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '2rem 1rem', color: 'rgba(255,255,255,0.7)' }}>
+            {loadFailed ? t('locations.loadFailed') : t('locations.noneYet')}
+          </p>
         ) : (
           <div className="lcn-grid">
             {sortedLocations.map((loc, i) => (

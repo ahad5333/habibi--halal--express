@@ -4,13 +4,14 @@ import { ShoppingBag, User, LogOut, Menu as MenuIcon, X, ChevronDown, Bell } fro
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { notificationsAPI } from '../services/api';
+import { notificationsAPI, locationsAPI } from '../services/api';
+import { locationAnchor } from '../utils/businessSchema';
 import './Navbar.css';
 
 // Built as functions (not module-level constants) so labels/captions can
 // pull from the active i18n language -- path/id/highlight/icon metadata
 // stays hardcoded, it's not translatable content.
-const buildLeftItems = (t) => [
+const buildLeftItems = (t, stores = []) => [
   {
     id: 'menu',
     label: t('nav.left.menu.label'),
@@ -61,10 +62,10 @@ const buildLeftItems = (t) => [
     label: t('nav.left.locations.label'),
     path: '/locations',
     panel: { bg: 'linear-gradient(160deg,#faf5ff 0%,#e9d5ff 100%)', emoji: '📍', caption: t('nav.left.locations.caption') },
+    // The stores switched on in CPanel, in CPanel's order.
     sub: [
-      { label: t('nav.left.locations.sub.bedford'), path: '/locations#bedford' },
-      { label: t('nav.left.locations.sub.kingsbridge'), path: '/locations#kingsbridge' },
-      { label: t('nav.left.locations.sub.whitePlains'), path: '/locations#white-plains' },
+      ...stores.slice(0, 8).map(s => ({ label: s.title, path: `/locations#${locationAnchor(s.title)}` })),
+      { label: t('nav.left.locations.sub.all'), path: '/locations', highlight: true },
     ],
   },
 ];
@@ -199,9 +200,14 @@ const Navbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
+  const [stores, setStores] = useState([]);
+
+  useEffect(() => {
+    locationsAPI.getAll().then(d => setStores(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
 
   // Rebuilt whenever the language changes so every label/caption re-resolves.
-  const LEFT_ITEMS   = useMemo(() => buildLeftItems(t),   [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
+  const LEFT_ITEMS   = useMemo(() => buildLeftItems(t, stores), [i18n.language, stores]); // eslint-disable-line react-hooks/exhaustive-deps
   const CENTER_ITEM  = useMemo(() => buildCenterItem(t),  [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
   const RIGHT_ITEMS  = useMemo(() => buildRightItems(t),  [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
 

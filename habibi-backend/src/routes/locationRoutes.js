@@ -6,6 +6,7 @@ const { admin } = require('../middleware/authMiddleware');
 
 // Public Routes
 router.get('/status', locationController.getStatus);
+router.post('/serving', locationController.getServingLocations);
 router.get('/', locationController.getAllLocations);
 router.get('/:id', locationController.getLocationById);
 

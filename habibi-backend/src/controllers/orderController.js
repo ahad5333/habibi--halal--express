@@ -12,6 +12,7 @@ const {
   createDelivery: uberCreateDelivery,
 } = require("../utils/uberDirect");
 const { validateClientDeliveryFee, loadQuote, markQuoteConsumed } = require("../utils/deliveryPricing");
+const { locationProblem } = require("../utils/servingLocation");
 const { applyOrderStatusEffects } = require("../services/orderStatusEffects");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
@@ -332,6 +333,15 @@ const createGuestOrder = async (req, res, overrides = {}) => {
     // (mandatory dropdown) -- only trusted for looking up that location's own
     // address below, never for bypassing the fee recompute itself.
     const resolvedLocationId = parseInt(location_id, 10) || null;
+
+    // The chosen store must be able to take this order: switched on in CPanel,
+    // taking online orders, and carrying every item (utils/servingLocation.js).
+    // Not re-checked when finalizing a paid checkout -- prepare checked it, and
+    // by then the customer's money has already moved.
+    if (resolvedLocationId && !overrides.order_number && (delivery_method || '').toLowerCase() !== 'dine_in') {
+      const problem = await locationProblem(resolvedLocationId, items);
+      if (problem) return res.status(400).json({ message: problem });
+    }
 
     // 3. Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';
@@ -1202,6 +1212,12 @@ const createPendingCheckout = async (req, res) => {
     }
 
     const resolvedLocationId = parseInt(location_id, 10) || null;
+
+    // Same store check as createGuestOrder, before the customer pays.
+    if (resolvedLocationId && (delivery_method || '').toLowerCase() !== 'dine_in') {
+      const problem = await locationProblem(resolvedLocationId, items);
+      if (problem) return res.status(400).json({ message: problem });
+    }
 
     // Server-side delivery fee enforcement
     const isDeliveryOrder = (delivery_method || '').toLowerCase() === 'delivery';

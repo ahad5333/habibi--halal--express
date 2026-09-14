@@ -1157,9 +1157,9 @@ const setLocationMenuAvailability = async (req, res) => {
     const allowed = ['available', 'sold_out', 'inactive'];
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     await pool.query(
-      `INSERT INTO menu_location_availability (menu_id, location_id, status, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, updated_at=NOW()`,
+      `INSERT INTO menu_location_availability (menu_id, location_id, status, set_by, updated_at)
+       VALUES ($1, $2, $3, 'manual', NOW())
+       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, set_by='manual', updated_at=NOW()`,
       [menu_id, location_id, status]
     );
     logAudit(pool, req.user?.id, req.user?.name, 'set_location_menu_availability', 'menu', String(menu_id), { location_id, status }, req.ip);
@@ -1178,9 +1178,9 @@ const setBulkLocationMenuAvailability = async (req, res) => {
     const allowed = ['available', 'sold_out', 'inactive'];
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     await pool.query(
-      `INSERT INTO menu_location_availability (menu_id, location_id, status, updated_at)
-       SELECT unnest($1::int[]), $2, $3, NOW()
-       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, updated_at=NOW()`,
+      `INSERT INTO menu_location_availability (menu_id, location_id, status, set_by, updated_at)
+       SELECT unnest($1::int[]), $2, $3, 'manual', NOW()
+       ON CONFLICT (menu_id, location_id) DO UPDATE SET status=$3, set_by='manual', updated_at=NOW()`,
       [menu_ids, location_id, status]
     );
     logAudit(pool, req.user?.id, req.user?.name, 'bulk_set_location_menu_availability', 'menu', menu_ids.join(','), { location_id, status, count: menu_ids.length }, req.ip);
