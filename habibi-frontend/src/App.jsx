@@ -66,6 +66,16 @@ import { captureUtm } from './utils/utm';
 
 const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin', '/staff', '/staff/login', '/staff/set-pin'];
 
+// Pages the ordering assistant floats on. See the mount below for why this is
+// an allow-list and why checkout/account are not in it.
+const ASSISTANT_EXACT = new Set(['/', '/locations', '/offers', '/deals']);
+const ASSISTANT_PREFIXES = ['/menu'];   // /menu, /menu/:cat, /menu/item/:slug
+function showsAssistant(pathname) {
+  const p = (pathname || '').replace(/\/+$/, '') || '/';
+  if (ASSISTANT_EXACT.has(p)) return true;
+  return ASSISTANT_PREFIXES.some(pre => p === pre || p.startsWith(pre + '/'));
+}
+
 // Routes that must never appear in search results
 const NOINDEX_PATHS = new Set([
   '/login', '/signup', '/register', '/forgot-password', '/reset-password',
@@ -194,10 +204,18 @@ function Layout() {
         </ErrorBoundary>
       </main>
       {!isFullscreen && <Footer />}
-      {/* Home page only, by request -- the assistant used to float on every
-          page, which put a chat bubble over checkout and account screens where
-          it competes with the actual task. */}
-      {location.pathname === '/' && <AssistantWidget />}
+      {/* Browsing pages only. It was on every page once and was cut back to the
+          home page by request, because a floating chat bubble competed with the
+          task on checkout and account screens. That reason still holds: on
+          mobile the widget (z-index 900) would sit directly on top of
+          checkout's fixed Place Order bar (z-index 120).
+          Menu, dish, locations and offers are where the questions it answers
+          actually come up -- "is this spicy?", "what's in it?", "do you deliver
+          to me?" -- so it earns its place there without covering anything that
+          has to be completed.
+          Deliberately an allow-list: a page added later gets no assistant until
+          someone decides it should have one. */}
+      {showsAssistant(location.pathname) && <AssistantWidget />}
     </>
   );
 }

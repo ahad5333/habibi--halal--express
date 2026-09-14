@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { X, Send, Mic, Square, Phone, Mail } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -23,6 +23,37 @@ const TEASER_DELAY_MS = 3000;
 const TEASER_VISIBLE_MS = 20000;
 const TEASER_SEEN_KEY = 'habibi_asw_teaser_seen'; // sessionStorage: shown this visit
 const ASSISTANT_USED_KEY = 'habibi_asw_used';     // localStorage: has opened the chat
+
+// Keeps the conversation when the widget is remounted: a reload, or leaving the
+// pages it appears on (checkout, account) and coming back. Between Home, Menu,
+// Locations and Offers it stays mounted, so walking between those keeps the chat
+// in memory anyway. Kept in sessionStorage: it should survive moving around the
+// site, not come back days later as a stale conversation. Only role/text/items
+// are stored, never actions -- runAction only runs on a fresh reply, so a
+// restored "added to your cart" message can't add the item a second time.
+// Capped so a long chat can't fill the quota.
+const CHAT_KEY = 'habibi_asw_chat';
+const CHAT_MAX = 20;
+
+const loadChat = () => {
+  try {
+    const raw = sessionStorage.getItem(CHAT_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!Array.isArray(v?.messages) || !v.messages.length) return null;
+    return { messages: v.messages, lastItems: Array.isArray(v.lastItems) ? v.lastItems : [] };
+  } catch { return null; }
+};
+
+const saveChat = (messages, lastItems) => {
+  try {
+    if (!messages.length) { sessionStorage.removeItem(CHAT_KEY); return; }
+    const trimmed = messages.slice(-CHAT_MAX).map(m => ({
+      role: m.role, text: m.text, items: Array.isArray(m.items) ? m.items.slice(0, 6) : [],
+    }));
+    sessionStorage.setItem(CHAT_KEY, JSON.stringify({ messages: trimmed, lastItems: (lastItems || []).slice(0, 6) }));
+  } catch { /* private mode or quota — the chat just won't persist */ }
+};
 
 const teaserAllowed = () => {
   try {
@@ -181,10 +212,15 @@ function CateringForm({ prefill }) {
 export default function AssistantWidget() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const onMenu = /^\/menu(\/|$)/.test(routeLocation.pathname);
+  const rootRef = useRef(null);
   const { items: cartItems, addItem, removeItem, updateQty, clearCart } = useCart();
 
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
+  // Restored synchronously so the panel never flashes empty before the effect runs.
+  const restored = loadChat();
+  const [messages, setMessages] = useState(restored ? restored.messages : []);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [teaser, setTeaser] = useState(false);
@@ -192,14 +228,21 @@ export default function AssistantWidget() {
   const [chosenCode, setChosenCode] = useState(null);
   const bodyRef = useRef(null);
   // What was added on the previous turn, so "make that 3" knows its target.
-  const lastItemsRef = useRef([]);
+  const lastItemsRef = useRef(restored ? restored.lastItems : []);
   const recognitionRef = useRef(null);
   // Latest send(), for the speech callback: it fires after the render that
   // started listening, and must not send with that render's stale state.
   const sendRef = useRef(null);
   const [pendingAsk, setPendingAsk] = useState(null);
 
+  // The greeting bubble stays off the Menu: there it covered the category strip
+  // and the search box, and anyone on the Menu has already found the food. The
+  // launcher still shows, raised clear of the page's bottom bars (lift effect
+  // below). Keyed on the route because the widget stays mounted between Home and
+  // Menu -- a bubble armed on Home must not pop up after arriving on the Menu,
+  // and one never shown there must still be able to appear back on Home.
   useEffect(() => {
+    if (onMenu) { setTeaser(false); return undefined; }
     if (!teaserAllowed()) return undefined;
     let hideTimer;
     const showTimer = setTimeout(() => {
@@ -208,7 +251,42 @@ export default function AssistantWidget() {
       hideTimer = setTimeout(() => setTeaser(false), TEASER_VISIBLE_MS);
     }, TEASER_DELAY_MS);
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, []);
+  }, [onMenu]);
+
+  // Pages mark their fixed bottom bars with data-bottom-bar and the widget rises
+  // clear of them. On the Menu the launcher otherwise sat on the cart strip: the
+  // browser reported the widget as the topmost element across the entire View
+  // Cart button, on phone and on desktop. Measured, not hardcoded, because the
+  // cart strip mounts and unmounts as the cart fills and empties, and the
+  // category strip only exists below 900px. A childList observer catches bars
+  // appearing; resize catches breakpoints. Only bars in the lower half of the
+  // screen count, so a stray marker near the top can't fling the widget upward.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const vh = window.innerHeight;
+      let lift = 0;
+      document.querySelectorAll('[data-bottom-bar]').forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.height < 1 || r.top < vh / 2 || r.top >= vh) return;
+        lift = Math.max(lift, Math.ceil(vh - r.top));
+      });
+      root.style.setProperty('--asw-lift', `${lift}px`);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    measure();
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [routeLocation.pathname]);
 
   const openChat = () => {
     setTeaser(false);
@@ -240,6 +318,10 @@ export default function AssistantWidget() {
     setPendingAsk(null);
     sendRef.current?.(q);
   }, [open, pendingAsk, messages.length, sending]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist after every exchange so the conversation survives navigating
+  // between the pages the widget now appears on.
+  useEffect(() => { saveChat(messages, lastItemsRef.current); }, [messages]);
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
@@ -426,7 +508,7 @@ export default function AssistantWidget() {
   };
 
   return (
-    <div className="asw-root">
+    <div className="asw-root" ref={rootRef}>
       {open && (
         <div className="asw-panel">
           <div className="asw-header">

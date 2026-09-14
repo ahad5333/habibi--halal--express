@@ -844,8 +844,8 @@ const Menu = () => {
 
       {/* ── Category tabs — bottom bar on mobile, hidden on desktop ── */}
       <div
-        className="menu-cats-wrap"
-        style={cartItems.length > 0 ? { bottom: '62px' } : {}}
+        className={`menu-cats-wrap${cartItems.length > 0 ? ' menu-cats-wrap--above-cart' : ''}`}
+        data-bottom-bar
       >
         <div className="menu-cats-track" ref={tabsRef}>
           {/* Only shown to someone who actually has favourites — an empty
@@ -1334,8 +1334,11 @@ const Menu = () => {
       )}
 
       {/* ── Sticky cart strip ─────────────────────────────── */}
+      {/* data-bottom-bar, here and on the category tabs: the assistant widget
+          measures these and rises clear of them, so it never sits on View Cart.
+          Remove the attribute and the widget lands back on the button. */}
       {cartItems.length > 0 && (
-        <div className="menu-cart-strip">
+        <div className="menu-cart-strip" data-bottom-bar>
           <div className="menu-cart-strip-left">
             <ShoppingBag size={16} />
             <span className="menu-cart-count">{cartItems.reduce((s, c) => s + c.qty, 0)} items</span>

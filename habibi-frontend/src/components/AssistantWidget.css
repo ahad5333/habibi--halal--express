@@ -1,8 +1,12 @@
 .asw-root {
   position: fixed;
-  bottom: 20px;
+  /* --asw-lift is set by the widget: the height of any fixed bottom bar the page
+     has marked with data-bottom-bar (the Menu's category and cart strips), so the
+     launcher rises clear of them instead of covering them. */
+  bottom: calc(20px + var(--asw-lift, 0px));
   right: 20px;
   z-index: 900;
+  transition: bottom 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -30,7 +34,8 @@
 
 .asw-panel {
   width: 340px;
-  max-height: 70vh;
+  /* Raised by --asw-lift on the Menu, so cap it to the space left above the bars. */
+  max-height: min(70vh, calc(100vh - 40px - var(--asw-lift, 0px)));
   display: flex;
   flex-direction: column;
   background: #111111;
@@ -278,7 +283,7 @@
 .asw-send:disabled { opacity: 0.5; cursor: default; }
 
 @media (max-width: 480px) {
-  .asw-root { bottom: 12px; right: 12px; }
+  .asw-root { bottom: calc(12px + var(--asw-lift, 0px)); right: 12px; }
   .asw-panel {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -415,6 +420,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .asw-teaser { animation: none; }
+  .asw-root { transition: none; }
 }
 
 /* ── Deals (reply to "any deals?") ────────────────────────────────────────

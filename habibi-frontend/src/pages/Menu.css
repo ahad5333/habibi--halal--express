@@ -1449,7 +1449,13 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(249, 115, 22, 0.25);
-  padding: 0.875rem 1.5rem;
+  /* A fixed height, shared with the category tabs' offset below, so the two bars
+     can't drift apart. They had: Menu.jsx lifted the tabs by a hardcoded 62px
+     while this strip measured 69px, and the two overlapped by 7px. The content
+     is vertically centred, so it looks the same as the old padded version. */
+  box-sizing: border-box;
+  height: var(--menu-cart-strip-h);
+  padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2266,3 +2272,10 @@
 @media (max-width: 640px) {
   .menu-offline-banner { margin: 0.75rem 0.9rem 0; font-size: 0.8rem; }
 }
+
+/* ── Cart strip height, shared ─────────────────────────────────────────────
+   One number for the strip's height and for how far the mobile category tabs
+   sit above it, so the tabs always meet the strip exactly. */
+:root { --menu-cart-strip-h: 69px; }
+
+.menu-cats-wrap--above-cart { bottom: var(--menu-cart-strip-h); }
