@@ -153,6 +153,7 @@ const Checkout = () => {
   const [storeOpen, setStoreOpen]               = useState(true);
   const feeTimerRef     = useRef(null);
   const addressInputRef = useRef(null);
+  const autocompleteInputRef = useRef(null); // the input Places Autocomplete is attached to
   const mapContainerRef    = useRef(null);
   const mapInstanceRef     = useRef(null);
   const mapMarkerRef       = useRef(null);
@@ -525,13 +526,19 @@ const Checkout = () => {
   // mounts once the auth gate clears, so addressInputRef.current is null on the
   // effect's first run for any user whose login check resolves after mount —
   // without these deps the effect never re-runs once the input actually exists.
+  // A re-run can find the same input still mounted, so initAC skips an input that
+  // already has an autocomplete (two would stack two suggestion dropdowns).
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
     if (!key || !addressInputRef.current || deliveryMode !== 'delivery') return;
     const scriptId = 'gm-places-script';
     const initAC = () => {
-      if (!window.google?.maps?.places) return;
-      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      // Read the input when Maps is ready, not when the effect ran: the script can
+      // finish loading after the customer switched to Pickup, which unmounts it.
+      const input = addressInputRef.current;
+      if (!window.google?.maps?.places || !input?.isConnected || autocompleteInputRef.current === input) return;
+      autocompleteInputRef.current = input;
+      const ac = new window.google.maps.places.Autocomplete(input, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
         fields: ['formatted_address', 'geometry'],
@@ -553,14 +560,20 @@ const Checkout = () => {
     };
     if (window.google?.maps?.places) {
       initAC();
-    } else if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
+      return;
+    }
+    let script = document.getElementById(scriptId);
+    if (!script) {
+      script = document.createElement('script');
       script.id = scriptId;
       script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
       script.async = true;
-      script.onload = initAC;
       document.head.appendChild(script);
     }
+    // Only the latest run waits for the script: a run left behind by a switch to
+    // Pickup or a finished login check drops its listener here.
+    script.addEventListener('load', initAC);
+    return () => script.removeEventListener('load', initAC);
   }, [deliveryMode, isLoggedIn, isDineIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize real Google Maps when a valid address lat/lng is available
