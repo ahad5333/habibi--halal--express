@@ -1,0 +1,39 @@
+/* Apple Pay's official button, drawn by Safari from -apple-pay-button. White
+   on this dark checkout, as Apple's guidelines ask for on dark backgrounds.
+   The component only renders where Apple Pay works, which is Safari. */
+.sq-applepay-wrap {
+  margin-top: 0.75rem;
+}
+
+.sq-applepay-btn {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+@supports (-webkit-appearance: -apple-pay-button) {
+  .sq-applepay-btn {
+    -webkit-appearance: -apple-pay-button;
+    -apple-pay-button-type: pay;
+    -apple-pay-button-style: white;
+  }
+}
+
+.sq-applepay-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sq-applepay-btn:focus-visible {
+  outline: 2px solid #E5B64E;
+  outline-offset: 3px;
+}
+
+.sq-applepay-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}

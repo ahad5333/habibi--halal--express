@@ -18,6 +18,7 @@ import CloverCardForm from '../components/CloverCardForm';
 import '../components/CloverCardForm.css';
 import PayPalButton from '../components/PayPalButton';
 import GooglePayButton from '../components/GooglePayButton';
+import SquareApplePayButton, { useSquareApplePayAvailable } from '../components/SquareApplePayButton';
 import OfflinePayModal from '../components/OfflinePayModal';
 import IngCanvas, { DEFAULT_PROTEIN_OPTS, DEFAULT_SAUCE_OPTS } from '../components/IngCanvas';
 import './Checkout.css';
@@ -28,6 +29,7 @@ const TIP_PCTS    = [0, 0.05, 0.1, 0.15, 0.2, 'custom'];
 const ALT_PAYMENTS = [
   { id: 'paypal',    label: 'PayPal',           img: '/images/partners/paypal.png' },
   { id: 'googlepay', label: 'Google Pay',       img: '/images/partners/google-pay-v2.png' },
+  { id: 'applepay',  label: 'Apple Pay',        img: '/images/partners/apple-pay.png' },
   { id: 'zelle',     label: 'Zelle',            img: '/images/partners/zelle.png' },
   { id: 'cashapp',   label: 'Cash App',         img: '/images/partners/cashapp.png' },
   // Cash on Delivery is deliberately absent: the owner confirmed (2026-09-08)
@@ -41,11 +43,12 @@ const ALT_PAYMENTS = [
 // chosen at checkout.
 const OFFLINE_METHODS = new Set(['cash', 'zelle', 'cashapp']);
 
-// Methods that render their own SDK button inline instead of using the
-// shared "Place Order" CTA -- googlepay isn't admin-toggleable like the
-// others (see isPaymentActive bypass below), its visibility is purely
-// eligibility-based (does this browser/device actually support it).
-const PAYPAL_METHODS  = new Set(['paypal', 'googlepay']);
+// Methods that render their own button inline instead of using the shared
+// "Place Order" CTA. googlepay isn't admin-toggleable like the others (see
+// isPaymentActive bypass below): its visibility is purely eligibility-based.
+// applepay rides on Card (the same Square charge, recorded as 'card'), so it
+// shows only when Card is on, Square is the processor, and the device can pay.
+const INLINE_PAY_METHODS = new Set(['paypal', 'googlepay', 'applepay']);
 
 const getFoodPhoto = (itemId) => {
   const n = ((itemId || 1) % 70) + 1;
@@ -118,6 +121,9 @@ const Checkout = () => {
   const [editingItem,  setEditingItem]          = useState(null); // { item, itemKey } for re-edit modal
   const [showCouponPanel, setShowCouponPanel]   = useState(false);
   const [pendingOrderNum, setPendingOrderNum]   = useState('');
+  // The total the server staged for pendingOrderNum. The charge is for this
+  // amount, not the live total, so Apple Pay's sheet shows it.
+  const [preparedTotal, setPreparedTotal]       = useState(null);
   const [isGift, setIsGift]                     = useState(false);
   const [giftRecipientName, setGiftRecipientName] = useState('');
   const [giftRecipientPhone, setGiftRecipientPhone] = useState('');
@@ -304,6 +310,7 @@ const Checkout = () => {
   // reappears with no code change or redeploy needed.
   const [activeCardConfig, setActiveCardConfig] = useState(null);
   const cardConfigured = !!activeCardConfig;
+  const applePayAvailable = useSquareApplePayAvailable(activeCardConfig);
   useEffect(() => {
     const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     fetch(`${BASE}/api/payments/card/config`)
@@ -1099,8 +1106,8 @@ const Checkout = () => {
     if (giftCardCoversFull) { handleGiftCardOnlyOrder(); return; }
     if (!paymentMethod) { setOrderError(t('checkout.errPleaseSelectPaymentMethod')); return; }
     if (OFFLINE_METHODS.has(paymentMethod)) { handleOfflineClick(); return; }
-    // PayPal/Google Pay are rendered inline — "Place Order" shouldn't fire for them
-    if (PAYPAL_METHODS.has(paymentMethod)) return;
+    // PayPal/Google Pay/Apple Pay are rendered inline — "Place Order" shouldn't fire for them
+    if (INLINE_PAY_METHODS.has(paymentMethod)) return;
     // card, paying with a saved one — charges directly, no card form needed
     if (paymentMethod === 'card' && selectedSavedCardId) { handleChargeSavedCard(selectedSavedCardId); return; }
     // card, new — reveal AuthNetForm
@@ -1113,8 +1120,9 @@ const Checkout = () => {
   // until prepareGuest returns a real order_number to charge against.
   const showPayPal    = !giftCardCoversFull && paymentMethod === 'paypal' && intentReady;
   const showGooglePay = !giftCardCoversFull && paymentMethod === 'googlepay' && intentReady;
-  const showPaypalLoading = !giftCardCoversFull && PAYPAL_METHODS.has(paymentMethod) && !intentReady && placing;
-  const showCTABtn    = giftCardCoversFull || !PAYPAL_METHODS.has(paymentMethod);
+  const showApplePay  = !giftCardCoversFull && paymentMethod === 'applepay' && intentReady;
+  const showPaypalLoading = !giftCardCoversFull && INLINE_PAY_METHODS.has(paymentMethod) && !intentReady && placing;
+  const showCTABtn    = giftCardCoversFull || !INLINE_PAY_METHODS.has(paymentMethod);
 
   const ctaLabel = () => {
     if (placing) return t('checkout.pleaseWait');
@@ -2010,7 +2018,11 @@ const Checkout = () => {
 
                 {/* Alt payment buttons */}
                 <div className="payment-alt-grid">
-                  {ALT_PAYMENTS.filter(m => m.id === 'googlepay' || isPaymentActive(m.id)).map(m => (
+                  {ALT_PAYMENTS.filter(m => (
+                    m.id === 'googlepay' ? true
+                      : m.id === 'applepay' ? (applePayAvailable && isPaymentActive('card'))
+                      : isPaymentActive(m.id)
+                  )).map(m => (
                     <button
                       key={m.id}
                       className={`alt-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
@@ -2022,13 +2034,16 @@ const Checkout = () => {
                         // charge) shouldn't still be showing once the
                         // customer has moved on to a different one.
                         setOrderError('');
-                        if (PAYPAL_METHODS.has(m.id)) {
+                        if (INLINE_PAY_METHODS.has(m.id)) {
                           if (items.length === 0 || !validateOrder()) return;
                           trackBeginCheckout(items, total);
                           setPlacing(true);
                           try {
-                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, m.id));
+                            // Apple Pay is a Square card charge, so it's staged
+                            // and recorded as 'card' -- refunds route on that.
+                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, m.id === 'applepay' ? 'card' : m.id));
                             setPendingOrderNum(prepared.order_number);
+                            setPreparedTotal(prepared.total);
                             setIntentReady(true);
                           } catch (err) {
                             setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
@@ -2112,6 +2127,18 @@ const Checkout = () => {
                     onSuccess={handlePayPalSuccess}
                     onError={(msg) => setOrderError(msg)}
                     onValidate={validateOrder}
+                  />
+                )}
+
+                {/* Apple Pay (via Square) -- charged through the same card
+                    endpoint, so the order already exists when it succeeds. */}
+                {showApplePay && activeCardConfig?.provider === 'square' && (
+                  <SquareApplePayButton
+                    config={activeCardConfig}
+                    amount={preparedTotal ?? total}
+                    orderNumber={pendingOrderNum}
+                    onSuccess={handleAuthNetSuccess}
+                    onError={handleCardError}
                   />
                 )}
 
