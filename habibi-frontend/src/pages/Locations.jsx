@@ -410,7 +410,7 @@ const Locations = () => {
         <div className="loc-hero-content">
           <div className="loc-hero-badge">
             <MapPin size={14} />
-            <span>{t('locations.locationsCountBadge')}</span>
+            <span>{loading || !locations.length ? t('locations.locationsBadgeLoading') : t('locations.locationsCountBadge', { count: locations.length })}</span>
           </div>
           <h1 className="loc-hero-title">
             {t('locations.findUsNear')} <span className="loc-hero-accent">{t('locations.nearYou')}</span>

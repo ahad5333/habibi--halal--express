@@ -60,13 +60,13 @@ const EXTERNAL_LINKS = [
   {
     slug: null,
     externalPath: '/our-journey',
-    title: 'Our Journey: From One Window to Three Locations',
+    title: 'Our Journey: From One Window to Locations Across the Bronx',
     subtitle: 'The Story of Habibi Halal Express',
     category: 'Our Story',
     dateLabel: 'Est. 2018',
     readTimeLabel: '7 min read',
     image: '/images/food/journey-hero.png',
-    excerpt: `From a single window in Bedford Park to three locations across the Bronx — this is how Habibi Halal Express came to be, and where we're headed next.`,
+    excerpt: `From a single window in Bedford Park to locations across the Bronx — this is how Habibi Halal Express came to be, and where we're headed next.`,
   },
 ];
 

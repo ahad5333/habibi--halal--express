@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Star, ArrowRight, Heart, Users, Award } from 'lucide-react';
 import SEO from '../components/SEO';
+import { locationsAPI } from '../services/api';
 import { VIDEOS, VideoCard } from './videoData';
 import './Videos.css';
 import './SubVideoPage.css';
@@ -31,8 +32,8 @@ const MILESTONES = [
   },
   {
     year: '2024',
-    title: 'Three Locations Strong',
-    desc: 'The White Plains Road corridor gets its own Habibi. Three locations across the borough, one uncompromising standard. More people than ever can access the food they love without travelling across the Bronx.',
+    title: 'Growing Across the Bronx',
+    desc: 'The White Plains Road corridor gets its own Habibi, and more locations follow across the borough — one uncompromising standard at every one. More people than ever can access the food they love without travelling across the Bronx.',
   },
 ];
 
@@ -60,6 +61,12 @@ const VALUES = [
 ];
 
 export default function OurJourney() {
+  // The store count in the hero comes from CPanel, so it never goes stale.
+  const [storeCount, setStoreCount] = useState(0);
+  useEffect(() => {
+    locationsAPI.getAll().then(d => setStoreCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
+  }, []);
+
   return (
     <div className="videos-page svp-page">
       <SEO
@@ -81,7 +88,7 @@ export default function OurJourney() {
           <div className="svp-hero-tags">
             <span className="svp-tag"><MapPin size={12} /> The Bronx</span>
             <span className="svp-tag">Est. 2018</span>
-            <span className="svp-tag"><Star size={12} /> 3 Locations</span>
+            {storeCount > 0 && <span className="svp-tag"><Star size={12} /> {storeCount} Locations</span>}
           </div>
         </div>
       </section>

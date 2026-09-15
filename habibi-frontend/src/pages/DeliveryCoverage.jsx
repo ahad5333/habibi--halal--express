@@ -239,7 +239,7 @@ export default function DeliveryCoverage() {
         <section className="dc-map-section">
           <div className="dc-map-hdr">
             <h2 className="dc-section-title">Coverage Map</h2>
-            <p className="dc-section-sub">Our 3 Bronx locations, each with its own delivery radius shown below.</p>
+            <p className="dc-section-sub">Our {locations.length > 0 ? `${locations.length} ` : ''}Bronx locations, each with its own delivery radius shown below.</p>
           </div>
           <div className="dc-map-wrap">
             <div ref={mapContainerRef} className="dc-map-container" role="img" aria-label="Map showing our delivery locations and their delivery radii" />
