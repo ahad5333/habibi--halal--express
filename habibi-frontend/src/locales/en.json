@@ -684,6 +684,9 @@
   },
   "locations": {
     "loadFailed": "We couldn’t load our locations. Please refresh the page.",
+    "viewOnMap": "View on map",
+    "useMyLocation": "Sort by distance from me",
+    "locating": "Finding you…",
     "noneYet": "No locations to show right now.",
     "days": {
       "sun": "Sunday",

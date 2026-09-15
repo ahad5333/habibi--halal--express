@@ -115,9 +115,20 @@ export const byoIngredientsAPI = {
 
 // ─── Locations ───────────────────────────────────────────────────────────────
 
+// The navbar, the page and the business info each ask for the store list on the
+// same page load; one request answers all of them for 30 seconds.
+let locationsCache = null; // { at, promise }
+
 export const locationsAPI = {
   /** GET /api/locations */
-  getAll: () => request('/api/locations'),
+  getAll: () => {
+    const now = Date.now();
+    if (!locationsCache || now - locationsCache.at > 30000) {
+      const promise = request('/api/locations').catch((err) => { locationsCache = null; throw err; });
+      locationsCache = { at: now, promise };
+    }
+    return locationsCache.promise;
+  },
 
   /** GET /api/locations/:id */
   getById: (id) => request(`/api/locations/${id}`),

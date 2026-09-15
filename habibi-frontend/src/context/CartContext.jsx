@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { trackAddToCart } from '../utils/analytics';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
@@ -25,6 +26,8 @@ export function CartProvider({ children }) {
   });
 
   const syncTimerRef = useRef(null);
+  // A guest's cart lives in this browser only -- the server would just answer 401.
+  const { isLoggedIn } = useAuth();
 
   // Debounced server sync — fires 1 second after the last cart change
   const scheduleSyncToServer = useCallback((newItems) => {
@@ -32,8 +35,9 @@ export function CartProvider({ children }) {
     syncTimerRef.current = setTimeout(() => serverSync(newItems), 1000);
   }, []);
 
-  // On mount: try to pull server cart — uses httpOnly cookie, 401 if not logged in is handled gracefully
+  // Once logged in (on load, or right after signing in): pull the server cart and merge it in.
   useEffect(() => {
+    if (!isLoggedIn) return;
     fetch(`${API_BASE}/api/cart`, {
       credentials: 'include',
     })
@@ -60,14 +64,15 @@ export function CartProvider({ children }) {
         localStorage.setItem('habibi_cart', JSON.stringify(merged));
       })
       .catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync to server after every items change (outside state updater — safe for React Strict Mode)
   const isMounted = useRef(false);
   useEffect(() => {
     if (!isMounted.current) { isMounted.current = true; return; } // skip initial mount
+    if (!isLoggedIn) return;
     scheduleSyncToServer(items);
-  }, [items, scheduleSyncToServer]);
+  }, [items, isLoggedIn, scheduleSyncToServer]);
 
   const persist = (newItems) => {
     setItems(newItems);

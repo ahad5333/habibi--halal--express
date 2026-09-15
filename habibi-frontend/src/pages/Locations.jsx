@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import { locationAnchor, useBusinessSchema } from '../utils/businessSchema';
+import { getGrantedDevicePoint } from '../utils/devicePoint';
 import './Locations.css';
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -130,6 +131,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 // should never be presented as a delivery restriction.
 function getDistanceBadge(miles, t) {
   if (miles === undefined || miles === null || Number.isNaN(miles)) return null;
+  if (miles > 350) return null; // too far from every store for the number to mean anything
   if (miles < 0.5) return { label: t('locations.nearby'), color: '#22c55e' };
   return { label: t('locations.milesAway', { miles: miles.toFixed(1) }), color: '#3b82f6' };
 }
@@ -137,19 +139,10 @@ function getDistanceBadge(miles, t) {
 /* ── Location Card ─────────────────────────────────────────── */
 function LocationCard({ loc, userCoords, index }) {
   const { t } = useTranslation();
-  // The CPanel photo, else an OpenStreetMap embed (no API key, never errors)
+  // The CPanel photo, else a light "View on map" link. (A live map embed per
+  // store used to load 7 maps at once for the stores without photos.)
   const [imgFailed, setImgFailed] = useState(false);
   const displayImg = imgFailed ? null : storeImage(loc.image_url);
-
-  const lat = parseFloat(loc.latitude);
-  const lng = parseFloat(loc.longitude);
-  const mapEmbedSrc = !displayImg
-    ? (loc.latitude && loc.longitude
-        ? `https://www.openstreetmap.org/export/embed.html?bbox=${(lng-0.012).toFixed(5)},${(lat-0.009).toFixed(5)},${(lng+0.012).toFixed(5)},${(lat+0.009).toFixed(5)}&layer=mapnik&marker=${lat}%2C${lng}`
-        : loc.brief_address
-          ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(loc.brief_address)}`
-          : null)
-    : null;
   const open        = isOpenNow(loc.working_days_hours);
   const anchorId   = getAnchorId(loc.title);
   const hoursTable = parseHoursTable(loc.working_days_hours);
@@ -180,21 +173,11 @@ function LocationCard({ loc, userCoords, index }) {
             className="lcn-img"
             onError={() => setImgFailed(true)}
           />
-        ) : mapEmbedSrc ? (
-          <iframe
-            title={`Map – ${sanitizeTitle(loc.title)}`}
-            src={mapEmbedSrc}
-            className="lcn-map-iframe"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
         ) : (
-          <img
-            src="/images/locations/bedford-park.jpg"
-            alt={sanitizeTitle(loc.title)}
-            className="lcn-img"
-          />
+          <a className="lcn-photo-none" href={mapsUrl} target="_blank" rel="noopener noreferrer">
+            <MapPin size={30} />
+            <span>{t('locations.viewOnMap')}</span>
+          </a>
         )}
         <div className="lcn-img-gradient" />
 
@@ -354,13 +337,21 @@ const Locations = () => {
 
   useEffect(() => {
     setTimeout(() => setHeroVisible(true), 100);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {}
-      );
-    }
+    // Spec: no location prompt when the page opens. Use the position only if the
+    // browser already allows it; otherwise the visitor can tap "Sort by distance".
+    getGrantedDevicePoint().then(p => { if (p) setUserCoords(p); });
   }, []);
+
+  const [locating, setLocating] = useState(false);
+  const locateMe = () => {
+    if (!navigator.geolocation || locating) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => { setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
+      () => setLocating(false),
+      { timeout: 10000, maximumAge: 300000 }
+    );
+  };
 
   useEffect(() => {
     // Every store switched on in CPanel, however many there are.
@@ -370,7 +361,11 @@ const Locations = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const sortedLocations = userCoords
+  // Sort by distance only when the visitor is within reach of a store (350 mi,
+  // ~563 km); from farther away the distances say nothing, so keep CPanel's order.
+  const nearUser = !!userCoords && locations.some(l => l.latitude && l.longitude
+    && haversineKm(userCoords.lat, userCoords.lng, parseFloat(l.latitude), parseFloat(l.longitude)) <= 563);
+  const sortedLocations = nearUser
     ? [...locations].sort((a, b) => {
         const dA = (a.latitude && a.longitude) ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(a.latitude), parseFloat(a.longitude)) : 9999;
         const dB = (b.latitude && b.longitude) ? haversineKm(userCoords.lat, userCoords.lng, parseFloat(b.latitude), parseFloat(b.longitude)) : 9999;
@@ -422,6 +417,11 @@ const Locations = () => {
             <span>{t('locations.exploreLocations')}</span>
             <ChevronDown size={18} className="loc-scroll-arrow" />
           </a>
+          {!userCoords && typeof navigator !== 'undefined' && 'geolocation' in navigator && (
+            <button type="button" className="loc-hero-locate" onClick={locateMe} disabled={locating}>
+              <Navigation size={15} /> {locating ? t('locations.locating') : t('locations.useMyLocation')}
+            </button>
+          )}
         </div>
 
         {/* Stats bar */}

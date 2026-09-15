@@ -6,13 +6,17 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AssistantWidget from './components/AssistantWidget';
 
-// Critical path — eagerly loaded
+// Critical path — eagerly loaded (the landing page and the menu)
 import Home from './pages/Home';
 import Menu from './pages/Menu';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Checkout from './pages/Checkout';
-import OrderConfirmation from './pages/OrderConfirmation';
+
+// Checkout, confirmation and sign-in load on the first visit to those pages.
+// Bundled eagerly they made every other page download the whole checkout
+// (the main file was 738 KB) before showing anything.
+const Login             = lazy(() => import('./pages/Login'));
+const Signup            = lazy(() => import('./pages/Signup'));
+const Checkout          = lazy(() => import('./pages/Checkout'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 
 // Lazy-loaded — split into separate chunks
 const Locations        = lazy(() => import('./pages/Locations'));

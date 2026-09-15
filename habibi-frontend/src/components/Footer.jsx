@@ -30,7 +30,7 @@ const Footer = () => {
       <div className="footer-container">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <img src="/images/logos/logo-full.jpg" alt="Habibi Halal Express" className="footer-logo-img" />
+            <img loading="lazy" decoding="async" src="/images/logos/logo-full.jpg" alt="Habibi Halal Express" className="footer-logo-img" />
           </Link>
           <p className="footer-tagline">
             {t('footer.tagline')}
@@ -68,6 +68,8 @@ const Footer = () => {
             ].map(({ label, src, href }) => (
               <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="footer-qr-item" title={t('footer.scanToFollow', { platform: label })}>
                 <img
+                  loading="lazy"
+                  decoding="async"
                   src={src}
                   alt={`QR code for ${label}`}
                   className="footer-qr-img"
@@ -80,19 +82,19 @@ const Footer = () => {
           {/* Certification & service badges */}
           <div className="footer-cert-badges">
             <div className="footer-badge-card">
-              <img src="/images/logos/halal-certified-premium.webp" alt={t('footer.badges.halalCertified')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/halal-certified-premium.webp" alt={t('footer.badges.halalCertified')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.halalCertified')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/grade-a-badge.png" alt={t('footer.badges.gradeA')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/grade-a-badge.png" alt={t('footer.badges.gradeA')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.gradeA')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/delivery-badge.png" alt={t('footer.badges.fastDelivery')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/delivery-badge.png" alt={t('footer.badges.fastDelivery')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.fastDelivery')}</span>
             </div>
             <div className="footer-badge-card">
-              <img src="/images/logos/pickup-badge.png" alt={t('footer.badges.onlinePickup')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/pickup-badge.png" alt={t('footer.badges.onlinePickup')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.onlinePickup')}</span>
             </div>
           </div>
@@ -173,19 +175,19 @@ const Footer = () => {
             <span className="footer-badge-card-label">{t('footer.badges.sslSecured')}</span>
           </div>
           <div className="footer-badge-card footer-badge-card--authnet">
-            <img src="/images/partners/authorize-net.png" alt="Authorize.Net" className="footer-badge-partner-img" />
+            <img loading="lazy" decoding="async" src="/images/partners/authorize-net.png" alt="Authorize.Net" className="footer-badge-partner-img" />
             <span className="footer-badge-card-label">{t('footer.badges.securePayments')}</span>
           </div>
           <div className="footer-badge-card footer-badge-card--paypal">
-            <img src="/images/partners/paypal.png" alt="PayPal" className="footer-badge-partner-img" />
+            <img loading="lazy" decoding="async" src="/images/partners/paypal.png" alt="PayPal" className="footer-badge-partner-img" />
             <span className="footer-badge-card-label">{t('footer.badges.payWithPaypal')}</span>
           </div>
         </div>
         <div className="footer-delivery-badges">
           <span className="footer-delivery-label">{t('footer.orderVia')}</span>
-          <img src="/images/partners/ubereats.png" alt="UberEats" className="delivery-partner-logo" title="UberEats" onError={e => { e.target.style.display='none'; }} />
-          <img src="/images/partners/doordash.png" alt="DoorDash" className="delivery-partner-logo" title="DoorDash" onError={e => { e.target.style.display='none'; }} />
-          <img src="/images/partners/grubhub.png" alt="GrubHub" className="delivery-partner-logo" title="GrubHub" onError={e => { e.target.style.display='none'; }} />
+          <img loading="lazy" decoding="async" src="/images/partners/ubereats.png" alt="UberEats" className="delivery-partner-logo" title="UberEats" onError={e => { e.target.style.display='none'; }} />
+          <img loading="lazy" decoding="async" src="/images/partners/doordash.png" alt="DoorDash" className="delivery-partner-logo" title="DoorDash" onError={e => { e.target.style.display='none'; }} />
+          <img loading="lazy" decoding="async" src="/images/partners/grubhub.png" alt="GrubHub" className="delivery-partner-logo" title="GrubHub" onError={e => { e.target.style.display='none'; }} />
         </div>
       </div>
 
@@ -196,14 +198,14 @@ const Footer = () => {
         <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         <div className="footer-payments">
           <span className="payment-label">{t('footer.weAccept')}</span>
-          <img src="/images/partners/visa.png" alt="Visa" className="payment-logo" title="Visa" />
-          <img src="/images/partners/apple-pay.png" alt="Apple Pay" className="payment-logo" title="Apple Pay" />
-          <img src="/images/partners/google-pay-v2.png" alt="Google Pay" className="payment-logo" title="Google Pay" />
-          <img src="/images/partners/paypal.png" alt="PayPal" className="payment-logo" title="PayPal" />
+          <img loading="lazy" decoding="async" src="/images/partners/visa.png" alt="Visa" className="payment-logo" title="Visa" />
+          <img loading="lazy" decoding="async" src="/images/partners/apple-pay.png" alt="Apple Pay" className="payment-logo" title="Apple Pay" />
+          <img loading="lazy" decoding="async" src="/images/partners/google-pay-v2.png" alt="Google Pay" className="payment-logo" title="Google Pay" />
+          <img loading="lazy" decoding="async" src="/images/partners/paypal.png" alt="PayPal" className="payment-logo" title="PayPal" />
           <span className="payment-badge">Mastercard</span>
           <span className="payment-badge">Amex</span>
-          <img src="/images/partners/cashapp.png" alt="Cash App" className="payment-logo" title="Cash App" />
-          <img src="/images/partners/zelle.png" alt="Zelle" className="payment-logo" title="Zelle" />
+          <img loading="lazy" decoding="async" src="/images/partners/cashapp.png" alt="Cash App" className="payment-logo" title="Cash App" />
+          <img loading="lazy" decoding="async" src="/images/partners/zelle.png" alt="Zelle" className="payment-logo" title="Zelle" />
           {/* Cash on Delivery removed 2026-09-08 — it's a wholesale arrangement
               for business customers, not a website payment option, so "We
               Accept" must not advertise it to retail customers. */}
