@@ -37,7 +37,10 @@ export default function AuthNetForm({ config, amount, orderNumber, customerName,
   // stale error from an abandoned card attempt reappearing after the
   // customer has already switched to a different payment method.
   const unmountedRef = useRef(false);
-  useEffect(() => () => { unmountedRef.current = true; }, []);
+  useEffect(() => {
+    unmountedRef.current = false; // StrictMode remounts in development
+    return () => { unmountedRef.current = true; };
+  }, []);
 
   // Load Accept.js from Authorize.net CDN
   useEffect(() => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Minus, Plus, Heart, Star, Flame, Share2, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { menuAPI, favoritesAPI, waitlistAPI } from '../services/api';
+import { menuAPI, favoritesAPI, waitlistAPI, locationsAPI } from '../services/api';
+import { getGrantedDevicePoint } from '../utils/devicePoint';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './MenuItemModal.css';
@@ -95,7 +96,7 @@ export default function MenuItemModal({
   addLabel         = null,
 }) {
   const { t, i18n } = useTranslation();
-  const { addItem, removeItem } = useCart();
+  const { addItem, removeItem, items: cartItems } = useCart();
   const { isLoggedIn, user } = useAuth();
   const isDefaultAddLabel = !addLabel;
   const displayAddLabel = addLabel || t('menuModal.addToCart');
@@ -130,6 +131,41 @@ export default function MenuItemModal({
   const [waitlistSubmitting, setWaitlistSubmitting]  = useState(false);
   const [waitlistJoined,     setWaitlistJoined]      = useState(false);
   const [waitlistError,      setWaitlistError]       = useState('');
+
+  // Spec: before adding an item, say so if it would move the order to another
+  // store (the store is the one with everything in the cart, then the nearest).
+  // Not for Group Order, a sold-out item, or editing a line already in the cart.
+  const [storeNote, setStoreNote] = useState(null); // { kind: 'change', store } | { kind: 'none' }
+  const cartStoreKey = JSON.stringify(cartItems.map(i => [
+    i.id ?? i.menu_id,
+    Object.keys(i.customCfg?.extras || {}),
+    Object.keys(i.customCfg?.drinks || {}),
+  ]));
+  useEffect(() => {
+    setStoreNote(null);
+    if (onAddOverride || editCartKey || soldOut || !item?.id) return undefined;
+    let cancelled = false;
+    const cart = cartItems.map(i => ({ id: i.id, menu_id: i.menu_id, customCfg: i.customCfg }));
+    getGrantedDevicePoint()
+      .then(point => Promise.all([
+        locationsAPI.serving(cart, point || undefined),
+        locationsAPI.serving([...cart, { id: item.id }], point || undefined),
+      ]))
+      .then(([now, withItem]) => {
+        if (cancelled) return;
+        if (!withItem.recommended_id) {
+          // Only this item's doing if the cart can be served without it.
+          if (now.recommended_id) setStoreNote({ kind: 'none' });
+          return;
+        }
+        if (now.recommended_id && withItem.recommended_id !== now.recommended_id) {
+          const store = withItem.locations.find(l => l.id === withItem.recommended_id);
+          if (store) setStoreNote({ kind: 'change', store });
+        }
+      })
+      .catch(() => {}); // no note is better than a wrong one
+    return () => { cancelled = true; };
+  }, [item?.id, cartStoreKey, soldOut, editCartKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Load item + modifiers ── */
   useEffect(() => {
@@ -674,6 +710,19 @@ export default function MenuItemModal({
             {/* ── Item header — fixed, does not scroll ── */}
             {!loading && item && (
               <div className="mim-item-hd">
+                {storeNote && (
+                  <p className="mim-store-note" role="status">
+                    {storeNote.kind === 'none'
+                      ? t('menuModal.noStoreForItem')
+                      : t(cartItems.length ? 'menuModal.storeChangeWarning' : 'menuModal.storeOnlyAt', {
+                          store: storeNote.store.title,
+                          address: storeNote.store.exact_address,
+                          distance: storeNote.store.distance_miles != null
+                            ? t('menuModal.storeDistance', { miles: storeNote.store.distance_miles })
+                            : '',
+                        })}
+                  </p>
+                )}
                 <div className="mim-item-pills">
                   <span className="mim-halal-pill">{t('menuModal.halal')}</span>
                   {item.is_spicy && <span className="mim-spicy-pill">🌶 {t('menu.spicy')}</span>}

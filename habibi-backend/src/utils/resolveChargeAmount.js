@@ -38,7 +38,17 @@ async function resolveChargeAmount(orderNumber, clientAmount) {
     [orderNumber]
   );
   if (pending.rows.length) {
-    return { amount: parseFloat(pending.rows[0].total), order: null };
+    const staged = parseFloat(pending.rows[0].total);
+    // The page sends the total it showed. If that isn't what checkout staged,
+    // the order changed after "Continue to Payment" and the staged copy is out
+    // of date -- refuse, rather than charge an amount the customer didn't see.
+    const shown = parseFloat(clientAmount);
+    if (Number.isFinite(shown) && shown > 0 && Math.abs(shown - staged) > 0.02) {
+      const err = new Error('Your order total changed. Please check it and try paying again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    return { amount: staged, order: null };
   }
 
   const err = new Error('Order not found.');

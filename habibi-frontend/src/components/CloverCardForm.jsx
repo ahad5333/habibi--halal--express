@@ -38,7 +38,10 @@ export default function CloverCardForm({ config, amount, orderNumber, customerNa
   // stale error from an abandoned card attempt reappearing after the
   // customer has already switched to a different payment method.
   const unmountedRef   = useRef(false);
-  useEffect(() => () => { unmountedRef.current = true; }, []);
+  useEffect(() => {
+    unmountedRef.current = false; // StrictMode remounts in development
+    return () => { unmountedRef.current = true; };
+  }, []);
   const numberContainerRef = useRef(null);
   const dateContainerRef   = useRef(null);
   const cvvContainerRef    = useRef(null);

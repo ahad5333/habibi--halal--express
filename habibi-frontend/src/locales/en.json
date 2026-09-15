@@ -64,6 +64,7 @@
     "selectRestaurantPlaceholder": "Select a restaurant…",
     "chooseRestaurantHint": "Choose which restaurant will prepare your delivery",
     "storeRecommended": "Recommended",
+    "updatingOrderTotal": "Updating your order total…",
     "storeRecommendedHint": "Recommended: the nearest store that has everything in your cart.",
     "storeMilesAway": "{{miles}} mi",
     "storeMissingItems": "Doesn’t have {{items}} right now",
@@ -898,6 +899,10 @@
     }
   },
   "menuModal": {
+    "storeChangeWarning": "Adding this item will change your order’s store to {{store}} at {{address}}{{distance}}, because your current store doesn’t have it.",
+    "storeOnlyAt": "This item isn’t available at every store, so your order would come from {{store}} at {{address}}{{distance}}.",
+    "storeDistance": ", about {{miles}} miles from you",
+    "noStoreForItem": "None of our stores has this item together with everything else in your cart right now.",
     "waitlistPrompt": "Want to know when it's back? We'll email or text you.",
     "waitlistEmailPlaceholder": "Email address",
     "waitlistPhonePlaceholder": "Phone number (optional)",

@@ -124,6 +124,9 @@ const Checkout = () => {
   // The total the server staged for pendingOrderNum. The charge is for this
   // amount, not the live total, so Apple Pay's sheet shows it.
   const [preparedTotal, setPreparedTotal]       = useState(null);
+  // What "Continue to Payment" last saved with the server (see the re-save effect).
+  const stagedRef = useRef({ key: null, method: null });
+  const [restaging, setRestaging]               = useState(false);
   const [isGift, setIsGift]                     = useState(false);
   const [giftRecipientName, setGiftRecipientName] = useState('');
   const [giftRecipientPhone, setGiftRecipientPhone] = useState('');
@@ -1055,8 +1058,11 @@ const Checkout = () => {
     try {
       // Explicitly 'card': the Card tile calls this in the same click that
       // selects Card, before that selection has reached state.
-      const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, 'card'));
+      const staged = stagePayload('card');
+      const prepared = await ordersAPI.prepareGuest(staged.payload);
+      stagedRef.current = { key: staged.key, method: 'card' };
       setPendingOrderNum(prepared.order_number);
+      setPreparedTotal(prepared.total);
       // Re-fetch rather than trusting the on-mount check — the active
       // processor could have changed in the admin panel since page load.
       const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -1206,6 +1212,41 @@ const Checkout = () => {
     if (!intentReady) { handlePrepareCardPayment(); return; }
     // AuthNetForm has its own submit button
   };
+
+  // "Continue to Payment" saves the order as it is at that moment, and the charge
+  // is for exactly that saved copy. A tip, coupon, cart, address or store changed
+  // afterwards used to be shown but not charged -- so when the order changes,
+  // save it again, and hold the payment buttons until that's done.
+  const stagePayload = (method) => {
+    const payload = buildPayload(undefined, undefined, method);
+    return { payload, key: JSON.stringify(payload) };
+  };
+  const currentStageKey = intentReady && stagedRef.current.method ? stagePayload(stagedRef.current.method).key : null;
+  const stagingStale = !!currentStageKey && currentStageKey !== stagedRef.current.key;
+  const paymentLocked = stagingStale || restaging;
+
+  useEffect(() => {
+    if (!stagingStale || restaging) return undefined;
+    const timer = setTimeout(async () => {
+      const { method } = stagedRef.current;
+      // Nothing valid to save any more: back to "Continue to Payment".
+      if (items.length === 0 || giftCardCoversFull || !validateOrder()) { setIntentReady(false); return; }
+      const staged = stagePayload(method);
+      setRestaging(true);
+      try {
+        const prepared = await ordersAPI.prepareGuest(staged.payload);
+        stagedRef.current = { key: staged.key, method };
+        setPendingOrderNum(prepared.order_number);
+        setPreparedTotal(prepared.total);
+      } catch (err) {
+        setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
+        setIntentReady(false);
+      } finally {
+        setRestaging(false);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [currentStageKey, restaging]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showCardForm  = !giftCardCoversFull && paymentMethod === 'card' && intentReady && !selectedSavedCardId;
   // Gated on intentReady, same as the card form -- the button can't render
@@ -2151,7 +2192,10 @@ const Checkout = () => {
                           try {
                             // Apple Pay is a Square card charge, so it's staged
                             // and recorded as 'card' -- refunds route on that.
-                            const prepared = await ordersAPI.prepareGuest(buildPayload(undefined, undefined, m.id === 'applepay' ? 'card' : m.id));
+                            const stageMethod = m.id === 'applepay' ? 'card' : m.id;
+                            const staged = stagePayload(stageMethod);
+                            const prepared = await ordersAPI.prepareGuest(staged.payload);
+                            stagedRef.current = { key: staged.key, method: stageMethod };
                             setPendingOrderNum(prepared.order_number);
                             setPreparedTotal(prepared.total);
                             setIntentReady(true);
@@ -2176,6 +2220,8 @@ const Checkout = () => {
                   ))}
                 </div>
 
+                {paymentLocked && <p className="payment-locked-note" role="status">{t('checkout.updatingOrderTotal')}</p>}
+                <div className={paymentLocked ? 'payment-locked' : undefined} aria-busy={paymentLocked || undefined}>
                 {/* Card form — which component mounts depends entirely on
                     which processor is active in the admin panel; the
                     customer never sees a difference either way. */}
@@ -2232,6 +2278,9 @@ const Checkout = () => {
                     so it reuses handlePayPalSuccess */}
                 {showGooglePay && (
                   <GooglePayButton
+                    // Its Google button keeps the order it was created with, so
+                    // a re-saved order needs a fresh one.
+                    key={pendingOrderNum}
                     amount={total}
                     orderNumber={pendingOrderNum}
                     onSuccess={handlePayPalSuccess}
@@ -2251,6 +2300,8 @@ const Checkout = () => {
                     onError={handleCardError}
                   />
                 )}
+
+                </div>
 
                 {/* Offline method note */}
                 {OFFLINE_METHODS.has(paymentMethod) && (

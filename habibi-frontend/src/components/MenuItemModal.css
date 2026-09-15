@@ -226,6 +226,18 @@
   flex-shrink: 0;
 }
 
+/* Spec: a red note when adding this item would move the order to another store */
+.mim-store-note {
+  margin: 0 2rem 0.75rem 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .mim-item-pills {
   display: flex;
   gap: 0.4rem;

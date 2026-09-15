@@ -68,7 +68,12 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
   // they fire in the same tick as the click, before any unmount could
   // happen.
   const unmountedRef  = useRef(false);
-  useEffect(() => () => { unmountedRef.current = true; }, []);
+  // Reset on mount too: StrictMode's mount-unmount-mount in development would
+  // otherwise leave this stuck true, and every payment would stop after tokenize.
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => { unmountedRef.current = true; };
+  }, []);
 
   useEffect(() => {
     if (!config?.applicationId || !config?.locationId || mountedRef.current) return;

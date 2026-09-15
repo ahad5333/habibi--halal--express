@@ -2189,3 +2189,16 @@
   letter-spacing: 0;
   margin-left: 0.25rem;
 }
+
+/* Payment held while checkout re-saves an order that changed after "Continue to
+   Payment" -- paying in that moment would charge the old total. */
+.payment-locked {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.payment-locked-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: #E5B64E;
+}
