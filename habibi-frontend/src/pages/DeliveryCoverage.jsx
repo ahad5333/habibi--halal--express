@@ -59,12 +59,20 @@ export default function DeliveryCoverage() {
       center: BRONX_CENTER,
       zoom: 12,
       scrollWheelZoom: false,
+      attributionControl: false,
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
+    // CARTO's dark_all tiles now need a paid API key and draw "API KEY REQUIRED"
+    // over the map without one. Same key-free Esri dark basemap as OrderTracking
+    // and DriverMap: the base, plus a separate layer of place labels.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
     }).addTo(map);
-    L.control.attribution({ prefix: false, position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+    }).addTo(map);
+    L.control.attribution({ prefix: false, position: 'bottomright' })
+      .addAttribution('© <a href="https://openstreetmap.org/copyright">OSM</a> © <a href="https://www.esri.com">Esri</a>')
+      .addTo(map);
     markersRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
@@ -244,7 +252,7 @@ export default function DeliveryCoverage() {
           <div className="dc-map-wrap">
             <div ref={mapContainerRef} className="dc-map-container" role="img" aria-label="Map showing our delivery locations and their delivery radii" />
             <p className="dc-map-credit">
-              Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors, tiles by <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+              Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors, tiles © <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a>
             </p>
           </div>
         </section>

@@ -1857,6 +1857,10 @@
   height: 100%;
   border-radius: inherit;
   background: #0d0d0d;
+  /* Keep Leaflet's own z-indexes (panes/controls up to 1000) inside the map,
+     so markers and attribution never slide over the sticky navbar (500). */
+  z-index: 0;
+  isolation: isolate;
 }
 
 /* Dark-theme attribution */
