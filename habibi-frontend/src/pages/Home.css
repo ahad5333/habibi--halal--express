@@ -2504,6 +2504,26 @@
   transform: scale(1.05);
 }
 
+/* A store with no photo in CPanel yet */
+.location-img--none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.location-img-pin {
+  font-size: 2rem;
+  line-height: 1;
+}
+
 .location-badge {
   position: absolute;
   top: 1rem;

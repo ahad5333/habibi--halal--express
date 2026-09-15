@@ -794,7 +794,15 @@ const Home = () => {
             {stores.slice(0, HOME_STORE_LIMIT).map(loc => (
               <div className="location-card" key={loc.id}>
                 <div className="location-img-wrapper">
-                  {loc.image_url && <img src={storeImg(loc.image_url)} alt={loc.title} className="location-img" loading="lazy" />}
+                  {loc.image_url ? (
+                    <img src={storeImg(loc.image_url)} alt={loc.title} className="location-img" loading="lazy" />
+                  ) : (
+                    // No photo in CPanel yet
+                    <div className="location-img location-img--none" aria-hidden="true">
+                      <span className="location-img-pin">📍</span>
+                      <span>{loc.brief_address || loc.title}</span>
+                    </div>
+                  )}
                   {/24\s*hours?/i.test(loc.working_days_hours || '') && (
                     <span className="location-badge outline">{t('home.locations.open247')}</span>
                   )}
