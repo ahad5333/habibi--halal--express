@@ -19,6 +19,7 @@ import '../components/CloverCardForm.css';
 import PayPalButton from '../components/PayPalButton';
 import GooglePayButton from '../components/GooglePayButton';
 import SquareApplePayButton, { useSquareApplePayAvailable } from '../components/SquareApplePayButton';
+import StorePicker from '../components/StorePicker';
 import OfflinePayModal from '../components/OfflinePayModal';
 import IngCanvas, { DEFAULT_PROTEIN_OPTS, DEFAULT_SAUCE_OPTS } from '../components/IngCanvas';
 import './Checkout.css';
@@ -477,7 +478,9 @@ const Checkout = () => {
       .catch(() => {});
   }, []);
 
-  const rankPoint = (!isDineIn && deliveryMode === 'delivery' && addressLatLng) ? addressLatLng : devicePoint;
+  // Delivery is measured from the confirmed address only -- the device may be
+  // nowhere near where the food is going.
+  const rankPoint = (!isDineIn && deliveryMode === 'delivery') ? addressLatLng : devicePoint;
   // Only what decides the store: which menu items (bundled sides and drinks
   // included) and where the customer is -- not quantities or options.
   const servingKey = JSON.stringify({
@@ -537,13 +540,6 @@ const Checkout = () => {
     return names.length ? t('checkout.storeMissingItems', { items: names.join(', ') }) : t('checkout.storeUnavailable');
   };
 
-  const storeOptionLabel = (loc) => {
-    const parts = [`${loc.title} — ${loc.brief_address || ''}`];
-    if (loc.distance_miles != null) parts.push(t('checkout.storeMilesAway', { miles: loc.distance_miles }));
-    if (serving && loc.id === serving.recommended_id) parts.push(t('checkout.storeRecommended'));
-    const reason = storeUnavailableReason(loc);
-    return reason ? `${parts.join(' · ')} (${reason})` : parts.join(' · ');
-  };
 
   // Fetch delivery fee when address changes (debounced 800 ms)
   useEffect(() => {
@@ -1593,33 +1589,6 @@ const Checkout = () => {
                   {deliveryMode === 'delivery' && (
                     <>
                       <div className="form-group mb-4">
-                        <label className="form-label" htmlFor="ck-select-restaurant">{t('checkout.selectRestaurant')} <span style={{ color: '#f87171' }}>*</span></label>
-                        <select
-                          id="ck-select-restaurant"
-                          className="form-input form-select"
-                          value={selectedLocation?.id || ''}
-                          onChange={e => chooseStore(storeList.find(l => l.id === parseInt(e.target.value, 10)))}
-                          required
-                        >
-                          <option value="" disabled>{t('checkout.selectRestaurantPlaceholder')}</option>
-                          {storeList.map(loc => (
-                            <option key={loc.id} value={loc.id} disabled={loc.can_serve === false}>
-                              {storeOptionLabel(loc)}
-                            </option>
-                          ))}
-                        </select>
-                        {!selectedLocation && (
-                          <p style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.35rem' }}>
-                            {serving ? t('checkout.noStoreCanServe') : t('checkout.chooseRestaurantHint')}
-                          </p>
-                        )}
-                        {selectedLocation && serving && selectedLocation.id === serving.recommended_id && (
-                          <p className="text-xs text-muted" style={{ marginTop: '0.35rem' }}>
-                            ✓ {t('checkout.storeRecommendedHint')}
-                          </p>
-                        )}
-                      </div>
-                      <div className="form-group mb-4">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                           <label className="form-label" style={{ margin: 0 }} htmlFor="ck-delivery-address">{t('checkout.deliveryAddress')}</label>
                           {'geolocation' in navigator && (
@@ -1723,6 +1692,18 @@ const Checkout = () => {
                           {t('checkout.dragPinHint')}
                         </p>
                       )}
+
+                      {/* Where the order is prepared -- chosen from the address and cart */}
+                      <StorePicker
+                        mode="delivery"
+                        stores={storeList}
+                        selected={selectedLocation}
+                        recommendedId={serving?.recommended_id ?? null}
+                        rankingReady={!!serving}
+                        waitingForAddress={!addressValidated}
+                        reasonFor={storeUnavailableReason}
+                        onChoose={chooseStore}
+                      />
 
                       {/* Apt / Suite / Gate / Floor */}
                       <div className="form-group mb-4">
@@ -1884,51 +1865,16 @@ const Checkout = () => {
                   )}
                   {deliveryMode === 'pickup' && (
                     <>
-                      <div className="form-group mb-6">
-                        <label className="form-label" id="ck-pickup-location-label">{t('checkout.selectPickupLocation')}</label>
-                        {serving && !serving.recommended_id && (
-                          <p style={{ fontSize: '0.72rem', color: '#f59e0b', margin: '0.35rem 0 0' }}>{t('checkout.noStoreCanServe')}</p>
-                        )}
-                        {storeList.length === 0 ? (
-                          <p className="text-muted text-sm" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>{t('checkout.loadingPickupLocations')}</p>
-                        ) : (
-                          <div role="group" aria-labelledby="ck-pickup-location-label" className="pickup-locations-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
-                            {storeList.map(loc => {
-                              const active = selectedLocation?.id === loc.id;
-                              const reason = storeUnavailableReason(loc);
-                              const recommended = !!serving && loc.id === serving.recommended_id;
-                              return (
-                                <button
-                                  key={loc.id}
-                                  type="button"
-                                  className={`timing-card ${active ? 'active' : ''}`}
-                                  onClick={() => chooseStore(loc)}
-                                  disabled={!!reason}
-                                  style={{ width: '100%', margin: 0, opacity: reason ? 0.55 : 1, cursor: reason ? 'not-allowed' : 'pointer' }}
-                                >
-                                  <span className="timing-icon">📍</span>
-                                  <div>
-                                    <p className="font-bold text-sm" style={{ color: active ? 'var(--color-primary)' : 'inherit' }}>
-                                      {loc.title}
-                                      {recommended && (
-                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#1a1a1a', background: '#E5B64E', borderRadius: 999, padding: '0.1rem 0.45rem', verticalAlign: 'middle' }}>
-                                          {t('checkout.storeRecommended')}
-                                        </span>
-                                      )}
-                                    </p>
-                                    <p className="text-xs text-muted" style={{ marginTop: '0.15rem' }}>
-                                      {loc.brief_address}{loc.distance_miles != null ? ` · ${t('checkout.storeMilesAway', { miles: loc.distance_miles })}` : ''}
-                                    </p>
-                                    {reason
-                                      ? <p className="text-xs" style={{ color: '#f59e0b', marginTop: '0.2rem' }}>{reason}</p>
-                                      : loc.phone_number && <p className="text-xs text-muted" style={{ fontSize: '0.72rem', marginTop: '0.2rem' }}>📞 {loc.phone_number}</p>}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <StorePicker
+                        mode="pickup"
+                        stores={storeList}
+                        selected={selectedLocation}
+                        recommendedId={serving?.recommended_id ?? null}
+                        rankingReady={!!serving}
+                        waitingForAddress={false}
+                        reasonFor={storeUnavailableReason}
+                        onChoose={chooseStore}
+                      />
 
                       {/* Pickup ETA badge */}
                       <div className="eta-badge eta-badge--pickup">

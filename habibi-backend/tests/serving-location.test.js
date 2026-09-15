@@ -68,6 +68,14 @@ const check = (label, pass, detail = '') => {
   check('unreadable hours do not count as closed', r.recommended_id === 1, String(r.recommended_id));
 }
 {
+  // A browser in India: thousands of miles from every store.
+  const r = rankLocations([S1, S2, S3], [], { lat: 17.385, lng: 78.4867, isOpen: OPEN });
+  check('customer beyond 350 miles -> preference order, as if unknown', order(r) === '2,3,1' && r.recommended_id === 2, order(r));
+  check('customer beyond 350 miles -> no distances shown', r.locations.every((l) => l.distance_miles === null));
+  const philly = rankLocations([S1, S2, S3], [], { lat: 39.9526, lng: -75.1652, isOpen: OPEN });
+  check('customer within 350 miles still ranks by distance', philly.locations.every((l) => l.distance_miles > 50 && l.distance_miles < 350));
+}
+{
   const noCoords = store(4, null, null, 0);
   const r = rankLocations([noCoords, S3], [], { ...CUSTOMER, isOpen: OPEN });
   check('a store without coordinates sorts after stores with a distance', order(r) === '3,4', order(r));

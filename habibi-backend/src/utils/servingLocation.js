@@ -10,6 +10,10 @@ const { isOpenNow } = require('./businessHours');
 // or missing an item, are still listed so checkout can say why, but can't serve.
 
 const BLOCKING_STATUSES = ['sold_out', 'inactive'];
+// Spec: long-distance delivery reaches up to 350 miles. A customer farther than
+// that from every store (a browser abroad, say) says nothing about which store
+// is best, so ranking falls back to preference as if we didn't know.
+const MAX_RELEVANT_MILES = 350;
 
 function milesBetween(lat1, lng1, lat2, lng2) {
   const R = 3959;
@@ -84,6 +88,14 @@ function rankLocations(locations, blocked, { lat, lng, isOpen = isOpenNow } = {}
       },
     };
   });
+
+  const nearest = Math.min(...ranked.map((r) => (r.miles === null ? Infinity : r.miles)));
+  if (nearest > MAX_RELEVANT_MILES) {
+    for (const r of ranked) {
+      r.miles = null;
+      r.entry.distance_miles = null;
+    }
+  }
 
   // Stores that can serve first, open ones before closed ones, then nearest,
   // then lowest preference number. A store with no coordinates, or no customer
