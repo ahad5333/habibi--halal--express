@@ -341,26 +341,31 @@
 
 .lcn-card:hover .lcn-img { transform: scale(1.08); }
 
-/* A store with no photo in CPanel yet: a light link to the map, not an embed */
+/* A store with no photo in CPanel yet: a map picture of where it is, linking out
+   to the map. A photo set in CPanel replaces this. */
 .lcn-photo-none {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding-bottom: 3.5rem; /* clear of the title overlay along the bottom */
-  background: radial-gradient(circle at 50% 35%, rgba(249, 115, 22, 0.14), transparent 60%), #111;
-  color: #F97316;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  display: block;
   text-decoration: none;
 }
 
-.lcn-photo-none span { color: rgba(255, 255, 255, 0.75); }
-.lcn-photo-none:hover span { color: #fff; text-decoration: underline; }
+.lcn-photo-none-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, 1.6rem);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.lcn-photo-none:hover .lcn-photo-none-label { color: #fff; text-decoration: underline; }
 .lcn-photo-none:focus-visible { outline: 2px solid #F97316; outline-offset: -4px; }
 
 /* Hero: sort stores by distance, asking for location only when tapped */

@@ -6,6 +6,7 @@ import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import { locationAnchor, useBusinessSchema } from '../utils/businessSchema';
 import { getGrantedDevicePoint } from '../utils/devicePoint';
+import StoreMapImage from '../components/StoreMapImage';
 import './Locations.css';
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -175,8 +176,8 @@ function LocationCard({ loc, userCoords, index }) {
           />
         ) : (
           <a className="lcn-photo-none" href={mapsUrl} target="_blank" rel="noopener noreferrer">
-            <MapPin size={30} />
-            <span>{t('locations.viewOnMap')}</span>
+            <StoreMapImage lat={loc.latitude} lng={loc.longitude} />
+            <span className="lcn-photo-none-label">{t('locations.viewOnMap')}</span>
           </a>
         )}
         <div className="lcn-img-gradient" />

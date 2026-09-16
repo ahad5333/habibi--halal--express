@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import SEO from '../components/SEO';
 import { useBusinessSchema } from '../utils/businessSchema';
 import { menuAPI, locationsAPI } from '../services/api';
+import StoreMapImage from '../components/StoreMapImage';
 import './Home.css';
 
 const featFallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg`;
@@ -797,11 +798,13 @@ const Home = () => {
                   {loc.image_url ? (
                     <img src={storeImg(loc.image_url)} alt={loc.title} className="location-img" loading="lazy" />
                   ) : (
-                    // No photo in CPanel yet
-                    <div className="location-img location-img--none" aria-hidden="true">
-                      <span className="location-img-pin">📍</span>
-                      <span>{loc.brief_address || loc.title}</span>
-                    </div>
+                    // No photo in CPanel yet -- show where the store is instead
+                    <StoreMapImage
+                      className="location-img"
+                      lat={loc.latitude}
+                      lng={loc.longitude}
+                      label={loc.brief_address || loc.title}
+                    />
                   )}
                   {/24\s*hours?/i.test(loc.working_days_hours || '') && (
                     <span className="location-badge outline">{t('home.locations.open247')}</span>
