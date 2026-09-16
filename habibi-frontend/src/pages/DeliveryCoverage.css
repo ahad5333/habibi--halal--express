@@ -231,6 +231,12 @@
   border: 1px solid rgba(239,68,68,0.25);
   color: #f87171;
 }
+/* Couldn't get a price right now — deliberately not the red of a refusal. */
+.dc-checker-result--wait {
+  background: rgba(229,182,78,0.08);
+  border: 1px solid rgba(229,182,78,0.3);
+  color: #E5B64E;
+}
 .dc-checker-result-text { flex: 1; }
 .dc-checker-result-title { margin: 0 0 0.2rem; font-weight: 700; font-size: 0.95rem; color: #fff; }
 .dc-checker-result-sub { margin: 0; font-size: 0.82rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
@@ -383,7 +389,6 @@
   font-size: 0.75rem;
   color: rgba(255,255,255,0.45);
 }
-.dc-radius { color: rgba(229,182,78,0.7); }
 .dc-loc-status {
   display: inline-flex;
   align-items: center;

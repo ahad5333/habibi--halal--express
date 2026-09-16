@@ -9,9 +9,9 @@ import './DeliveryCoverage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const BRONX_CENTER = [40.8448, -73.8648];
-const MILES_TO_METERS = 1609.34;
 
-// Straight-line distance — matches the radius each location is actually configured with.
+// Straight-line distance, used only to pick which store to quote from.
+// Whether we deliver to an address is never decided here — see handleCheckAddress.
 function haversineMiles(lat1, lon1, lat2, lon2) {
   const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -20,10 +20,10 @@ function haversineMiles(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Neighborhoods within our real delivery radii — verified against each
-// location's actual delivery_radius_miles, not just "somewhere in the Bronx".
-// Kept deliberately conservative: a neighborhood's centroid can be in range while
-// its far edge isn't, so use the address checker above for a definitive answer.
+// Neighborhoods we deliver to regularly. This is a familiarity guide, not a
+// limit: there is no radius cutoff anywhere in the system, so an address that
+// isn't listed here is still quoted and delivered whenever a courier will take
+// it. The address checker above is the definitive answer.
 const COVERED_AREAS = [
   'Hunts Point', 'Longwood', 'Melrose',
   'Morrisania', 'Crotona Park East', 'Claremont Village', 'Tremont',
@@ -97,16 +97,12 @@ export default function DeliveryCoverage() {
     withCoords.forEach((loc, i) => {
       const lat = parseFloat(loc.latitude);
       const lng = parseFloat(loc.longitude);
-      const radiusMiles = parseFloat(loc.delivery_radius_miles) || 5;
 
-      L.circle([lat, lng], {
-        radius: radiusMiles * MILES_TO_METERS,
-        color: '#E5B64E',
-        weight: 1.5,
-        fillColor: '#E5B64E',
-        fillOpacity: 0.08,
-      }).addTo(layer);
-
+      // No radius circles: nothing in the system caps delivery by distance, so
+      // drawing one would claim a boundary that doesn't exist in either
+      // direction — it both overstates where we reach and implies we refuse
+      // everywhere else. The pins show where we cook; the checker answers
+      // whether we deliver to a given address.
       const pinIcon = L.divIcon({
         className: '',
         html: `<div class="dc-map-pin">${i + 1}</div>`,
@@ -115,7 +111,8 @@ export default function DeliveryCoverage() {
       });
 
       L.marker([lat, lng], { icon: pinIcon }).addTo(layer).bindPopup(
-        `<strong>${loc.title}</strong><br>${loc.brief_address || loc.exact_address || ''}<br>${radiusMiles} mi delivery radius`
+        `<strong>${loc.title}</strong><br>${loc.brief_address || loc.exact_address || ''}` +
+        (loc.accepting_orders === false ? '<br>Pickup only right now' : '')
       );
     });
 
@@ -142,13 +139,43 @@ export default function DeliveryCoverage() {
         setCheckResult({ error: "We couldn't find that address. Try adding the city and state." });
         return;
       }
-      const ranked = locations
-        .filter(l => l.latitude && l.longitude)
+      // Quote from the nearest store that's actually taking online orders — the
+      // rest can't fulfil it however close they happen to be.
+      const nearest = locations
+        .filter(l => l.latitude && l.longitude && l.accepting_orders !== false)
         .map(l => ({ ...l, distance: haversineMiles(data.lat, data.lng, parseFloat(l.latitude), parseFloat(l.longitude)) }))
-        .sort((a, b) => a.distance - b.distance);
-      const nearest = ranked[0];
-      const radius = parseFloat(nearest?.delivery_radius_miles) || 5;
-      setCheckResult({ nearest, inRange: !!nearest && nearest.distance <= radius, radius });
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (!nearest) {
+        setCheckResult({ error: 'None of our stores are taking online orders right now.' });
+        return;
+      }
+
+      // The same quote checkout runs, and the only thing that actually decides
+      // whether we deliver somewhere. Distance never vetoes it: the owner's rule
+      // is that we deliver as far as a courier will go.
+      const feeRes = await fetch(`${API_BASE}/api/dispatch/calculate-fee`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_address: addr, location_id: nearest.id, subtotal: 0 }),
+      });
+      const quote = await feeRes.json();
+      if (quote.out_of_range) {
+        // A courier genuinely refused this address — the one real "no".
+        setCheckResult({ verdict: 'no', nearest });
+      } else if (quote.delivery_unavailable || typeof quote.fee !== 'number') {
+        // We couldn't get a price just now. Not the same as a refusal, so it
+        // must not read like one.
+        setCheckResult({ verdict: 'wait', nearest });
+      } else {
+        setCheckResult({
+          verdict: 'yes',
+          nearest,
+          fee: quote.fee,
+          freeDelivery: quote.free_delivery_applied,
+          distanceText: quote.distance_text,
+          etaText: quote.estimated_delivery_text,
+        });
+      }
     } catch {
       setCheckResult({ error: 'Something went wrong checking that address. Please try again.' });
     } finally {
@@ -209,13 +236,15 @@ export default function DeliveryCoverage() {
               <p className="dc-checker-error"><AlertCircle size={14} /> {checkResult.error}</p>
             )}
 
-            {checkResult && !checkResult.error && checkResult.inRange && (
+            {checkResult?.verdict === 'yes' && (
               <div className="dc-checker-result dc-checker-result--yes">
                 <CheckCircle size={22} />
                 <div className="dc-checker-result-text">
-                  <p className="dc-checker-result-title">You're in range!</p>
+                  <p className="dc-checker-result-title">Yes — we deliver to you</p>
                   <p className="dc-checker-result-sub">
-                    {checkResult.nearest.distance.toFixed(1)} mi from our {checkResult.nearest.title} location.
+                    {checkResult.freeDelivery ? 'Delivery is free on this order' : `$${checkResult.fee.toFixed(2)} delivery`}
+                    {checkResult.distanceText ? ` · ${checkResult.distanceText}` : ''} from our {checkResult.nearest.title} location
+                    {checkResult.etaText ? ` · about ${checkResult.etaText}` : ''}.
                   </p>
                 </div>
                 <Link to={`/checkout?location=${checkResult.nearest.id}`} className="dc-checker-cta">
@@ -224,19 +253,32 @@ export default function DeliveryCoverage() {
               </div>
             )}
 
-            {checkResult && !checkResult.error && !checkResult.inRange && (
+            {checkResult?.verdict === 'no' && (
               <div className="dc-checker-result dc-checker-result--no">
                 <AlertCircle size={22} />
                 <div className="dc-checker-result-text">
-                  <p className="dc-checker-result-title">
-                    {checkResult.nearest?.distance <= checkResult.radius * 1.5 ? 'Just outside our delivery zone' : 'Outside our delivery zone'}
-                  </p>
+                  <p className="dc-checker-result-title">We can't deliver to this address</p>
                   <p className="dc-checker-result-sub">
-                    Our nearest location ({checkResult.nearest?.title}) is {checkResult.nearest?.distance.toFixed(1)} mi away, past its {checkResult.radius} mi delivery radius. You're welcome to order for pickup, or call us to ask.
+                    No courier will pick this one up right now. You're welcome to order for pickup from our {checkResult.nearest.title} location, or call us to ask.
                   </p>
                 </div>
                 <Link to="/menu" className="dc-checker-cta dc-checker-cta--outline">
                   Order Pickup <ChevronRight size={14} />
+                </Link>
+              </div>
+            )}
+
+            {checkResult?.verdict === 'wait' && (
+              <div className="dc-checker-result dc-checker-result--wait">
+                <AlertCircle size={22} />
+                <div className="dc-checker-result-text">
+                  <p className="dc-checker-result-title">We couldn't price delivery just now</p>
+                  <p className="dc-checker-result-sub">
+                    This isn't a no — we just couldn't reach our courier for a price. Try again in a moment, or start an order and we'll quote it at checkout.
+                  </p>
+                </div>
+                <Link to="/checkout" className="dc-checker-cta dc-checker-cta--outline">
+                  Start an Order <ChevronRight size={14} />
                 </Link>
               </div>
             )}
@@ -247,7 +289,7 @@ export default function DeliveryCoverage() {
         <section className="dc-map-section">
           <div className="dc-map-hdr">
             <h2 className="dc-section-title">Coverage Map</h2>
-            <p className="dc-section-sub">Our {locations.length > 0 ? `${locations.length} ` : ''}Bronx locations, each with its own delivery radius shown below.</p>
+            <p className="dc-section-sub">Our {locations.length > 0 ? `${locations.length} ` : ''}Bronx locations. We deliver well beyond the pins — check your address above for the exact fee.</p>
           </div>
           <div className="dc-map-wrap">
             <div ref={mapContainerRef} className="dc-map-container" role="img" aria-label="Map showing our delivery locations and their delivery radii" />
@@ -260,7 +302,7 @@ export default function DeliveryCoverage() {
         {/* Location cards */}
         <section className="dc-locations-section">
           <h2 className="dc-section-title">Our Delivery Locations</h2>
-          <p className="dc-section-sub">Each location has its own delivery radius. Order from the nearest one for the fastest service.</p>
+          <p className="dc-section-sub">Order from the nearest one for the fastest service.</p>
 
           {loading ? (
             <div className="dc-loading"><div className="dc-spinner" /></div>
@@ -279,9 +321,6 @@ export default function DeliveryCoverage() {
                       {loc.working_days_hours && (
                         <span className="dc-loc-meta-item"><Clock size={11} /> {loc.working_days_hours}</span>
                       )}
-                      <span className="dc-loc-meta-item dc-radius">
-                        <MapPin size={11} /> {loc.delivery_radius_miles || 5} mi radius · ${parseFloat(loc.delivery_cost || 0).toFixed(2)} fee
-                      </span>
                     </div>
                     <div className={`dc-loc-status ${loc.accepting_orders !== false ? 'open' : 'closed'}`}>
                       <span className="dc-loc-dot" />
@@ -300,7 +339,7 @@ export default function DeliveryCoverage() {
         {/* Neighborhoods */}
         <section className="dc-neighborhoods-section">
           <h2 className="dc-section-title">Neighborhoods We Cover</h2>
-          <p className="dc-section-sub">A general guide to our reach — some addresses near the edge of a neighborhood may fall outside our radius. Use the address checker above for a definitive answer.</p>
+          <p className="dc-section-sub">Where we deliver most often — not a boundary. If your address isn't listed, check it above: we deliver as far as a courier will take us.</p>
           <div className="dc-neighborhood-grid">
             {COVERED_AREAS.map(area => (
               <div key={area} className="dc-neighborhood-chip">
