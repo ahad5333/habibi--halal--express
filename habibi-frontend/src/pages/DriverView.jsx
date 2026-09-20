@@ -90,6 +90,28 @@ import ScheduleSheet from '../components/ScheduleSheet';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+// A 401 from any driver endpoint means the saved session is no longer valid:
+// the staff row was deactivated or deleted, its role moved off 'delivery', or
+// DRIVER_PIN_SALT was rotated (which invalidates every driver token at once).
+// None of those are transient, so there is nothing to retry and nothing useful
+// to show -- send the driver straight back to the login screen.
+//
+// Without this, a dead session surfaced as raw API error text on every panel
+// simultaneously (assignment, chat, cash summary, duty status all 401 together)
+// and left the driver stranded with no way back to login except clearing site
+// data by hand. StaffQueue.jsx already handled 401 this way; DriverView had no
+// 401 handling at all, so the two screens behaved differently on the same
+// failure.
+let driverSessionExpired = false;
+function forceDriverReLogin() {
+  // Several requests 401 together, so guard the navigation -- otherwise each
+  // in-flight call fires its own location.replace().
+  if (driverSessionExpired) return;
+  driverSessionExpired = true;
+  try { localStorage.removeItem('habibi_driver_session'); } catch (_) {}
+  window.location.replace('/driver/login');
+}
+
 function makeApiFetch(driverId, token) {
   return async function apiFetch(path, opts = {}) {
     const headers = {
@@ -99,6 +121,7 @@ function makeApiFetch(driverId, token) {
     };
     const res  = await fetch(`${API_BASE}${path}`, { ...opts, headers });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { forceDriverReLogin(); throw new Error('Signed out'); }
     if (!res.ok) throw new Error(data.message || `${res.status}`);
     return data;
   };
