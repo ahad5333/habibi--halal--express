@@ -41,7 +41,7 @@ const SQUARE_CARD_STYLE = {
   '.message-icon': { color: '#c0392b' },
 };
 
-export default function SquareCardForm({ config, amount, orderNumber, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError, endpoint = '/api/payments/card/charge', extraFields = {} }) {
+export default function SquareCardForm({ config, amount, orderNumber, onPrepare, customerName, customerPhone, reason, note, showSaveOption, onSuccess, onError, endpoint = '/api/payments/card/charge', extraFields = {} }) {
   const [cardName,   setCardName]   = useState('');
   const [billingZip, setBillingZip] = useState('');
   const [saveCard,   setSaveCard]   = useState(true);
@@ -142,6 +142,19 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
     setProcessing(true);
 
     try {
+      // The card fields now render before the order has been staged, so the
+      // staging happens here instead -- deliberately BEFORE tokenize(), for two
+      // reasons: a validation failure (missing address, empty cart) surfaces
+      // without ever touching the customer's card, and Square's 3D Secure
+      // check below is handed the same amount the server just locked in.
+      // onPrepare returns null when it has already reported the problem.
+      let orderNum = orderNumber;
+      if (onPrepare) {
+        orderNum = await onPrepare();
+        if (unmountedRef.current) return;
+        if (!orderNum) { setProcessing(false); return; }
+      }
+
       // Square's tokenize() validates whatever object you pass it as a full
       // "verificationDetails" payload -- passing billingContact alone (the
       // old code) triggered "verificationDetails.intent is required", then
@@ -175,7 +188,7 @@ export default function SquareCardForm({ config, amount, orderNumber, customerNa
         body:    JSON.stringify({
           sourceId: result.token,
           amount,
-          orderNumber,
+          orderNumber: orderNum,
           customerName,
           customerPhone,
           reason,

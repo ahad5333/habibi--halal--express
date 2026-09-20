@@ -76,11 +76,16 @@ const Checkout = () => {
   const [timing, setTiming]               = useState('asap');
   const [scheduleDate, setScheduleDate]   = useState(() => toDateStr(new Date()));
   const [scheduleTime, setScheduleTime]   = useState('19:30');
-  // No method pre-selected -- "Credit or Debit Card" looking already-active
-  // on page load (checkmark, active styling) with no form underneath it was
-  // confusing (looked selected but nothing to fill in); clicking it now
-  // both selects it AND reveals the form/saved-card picker, same click.
-  const [paymentMethod, setPaymentMethod] = useState(null);
+  // Card is pre-selected (Amgad, 2026-09-16). This was previously null, because
+  // a pre-selected "Credit or Debit Card" tile with no form underneath it looked
+  // broken -- but that emptiness was caused by the intentReady gate, which kept
+  // the fields hidden until "Continue to Payment" was clicked. Now that Square's
+  // fields render as soon as Card is selected, the tile and the form appear
+  // together and the original confusion is gone.
+  // Safe to default: if Card turns out to be disabled (Payment Methods toggle)
+  // or has no live processor, the two effects below fall back to the first
+  // method that actually works, so this can never strand the customer.
+  const [paymentMethod, setPaymentMethod] = useState('card');
   const [tipIndex, setTipIndex]           = useState(2);
   const [customTip, setCustomTip]         = useState('');
   const [extraHelpNeeded, setExtraHelpNeeded] = useState(false);
@@ -1046,6 +1051,51 @@ const Checkout = () => {
   // card form. Without the prepare step, the charge endpoint has nothing
   // to look up and every real payment fails immediately -- see
   // createPendingCheckout/finalizePendingCheckout in orderController.js.
+  // Staging used to be the "Continue to Payment" click. The card fields now
+  // appear without it, so the same work happens here on the first charge
+  // attempt -- the server-side amount lock is MOVED, not removed. The server
+  // still rejects any charge whose total differs from what it staged, which is
+  // what stops a customer being charged a stale amount after changing their
+  // tip, coupon, cart or store.
+  // Returns the order number, or null once it has reported the problem itself.
+  const preparePaymentIfNeeded = async () => {
+    // Re-stage if anything priced has changed since the last staging -- a
+    // matching key is the only thing that makes the existing order reusable.
+    if (intentReady && pendingOrderNum
+        && stagedRef.current.key === stagePayload('card').key) {
+      return pendingOrderNum;
+    }
+    // validateOrder() covers name/phone/store/address but not these two -- they
+    // were carried by the CTA button's `disabled`, which is now hidden whenever
+    // the card form is showing.
+    if (items.length === 0) return null;  // silent, as the old flow was
+    if (!storeOpen) { setOrderError(t('checkout.currentlyClosed')); return null; }
+    if (!validateOrder()) return null;
+    try {
+      // Kept from the old flow: the active processor can be changed in the admin
+      // panel after this page loaded, and charging against a stale config would
+      // send the payment to the wrong place.
+      const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const cfgRes = await fetch(`${BASE}/api/payments/card/config`);
+      const cfg = await cfgRes.json().catch(() => null);
+      if (!cfgRes.ok || cfg?.provider !== 'square') {
+        if (cfg?.provider) setActiveCardConfig(cfg);
+        setOrderError(t('checkout.errPaymentSetupFailed'));
+        return null;
+      }
+      const staged = stagePayload('card');
+      const prepared = await ordersAPI.prepareGuest(staged.payload);
+      stagedRef.current = { key: staged.key, method: 'card' };
+      setPendingOrderNum(prepared.order_number);
+      setPreparedTotal(prepared.total);
+      setIntentReady(true);
+      return prepared.order_number;
+    } catch (err) {
+      setOrderError(err.message || t('checkout.errFailedToInitiatePayment'));
+      return null;
+    }
+  };
+
   const handlePrepareCardPayment = async () => {
     if (items.length === 0) return;
     if (!validateOrder()) return;
@@ -1244,14 +1294,31 @@ const Checkout = () => {
     return () => clearTimeout(timer);
   }, [currentStageKey, restaging]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showCardForm  = !giftCardCoversFull && paymentMethod === 'card' && intentReady && !selectedSavedCardId;
+  // Square renders its fields immediately; Clover and Authorize.net keep the old
+  // two-step flow. That asymmetry is deliberate, not an oversight: Square is the
+  // only processor actually live (Clover's merchant agreement is unsigned,
+  // Authorize.net was dropped), so those charge paths cannot be tested and are
+  // left on the flow that is known to work.
+  const cardFormNeedsIntent = activeCardConfig?.provider !== 'square';
+  // storeOpen is in here because hiding the CTA below (the form owns submission)
+  // would otherwise take the "Currently Closed" message with it, and leave a
+  // closed store quietly collecting card details. Defaults to true, so this
+  // never hides the form while the open/closed check is still in flight.
+  const showCardForm  = !giftCardCoversFull && paymentMethod === 'card' && storeOpen
+    && (!cardFormNeedsIntent || intentReady) && !selectedSavedCardId;
   // Gated on intentReady, same as the card form -- the button can't render
   // until prepareGuest returns a real order_number to charge against.
   const showPayPal    = !giftCardCoversFull && paymentMethod === 'paypal' && intentReady;
   const showGooglePay = !giftCardCoversFull && paymentMethod === 'googlepay' && intentReady;
   const showApplePay  = !giftCardCoversFull && paymentMethod === 'applepay' && intentReady;
   const showPaypalLoading = !giftCardCoversFull && INLINE_PAY_METHODS.has(paymentMethod) && !intentReady && placing;
-  const showCTABtn    = giftCardCoversFull || !INLINE_PAY_METHODS.has(paymentMethod);
+  // A card form on screen owns submission via its own Pay button, so neither the
+  // inline CTA nor the sticky mobile bar should offer a competing one. This also
+  // clears a pre-existing dead button: once the old "Continue to Payment" step
+  // revealed the form, the sticky bar kept showing "Place Order" and clicking it
+  // did nothing at all (handlePlaceOrder falls through when intentReady).
+  const showCTABtn    = giftCardCoversFull
+    || (!INLINE_PAY_METHODS.has(paymentMethod) && !showCardForm);
 
   const ctaLabel = () => {
     if (placing) return t('checkout.pleaseWait');
@@ -2186,6 +2253,7 @@ const Checkout = () => {
                     config={activeCardConfig}
                     amount={total}
                     orderNumber={pendingOrderNum}
+                    onPrepare={preparePaymentIfNeeded}
                     showSaveOption={isLoggedIn}
                     onSuccess={handleAuthNetSuccess}
                     onError={handleCardError}
