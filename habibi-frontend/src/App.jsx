@@ -162,7 +162,6 @@ function Layout() {
           <Route path="/register" element={<Signup />} />
           <Route path="/urgent" element={<Urgent />} />
           <Route path="/payment" element={<Payment />} />
-          <Route path="/staff" element={<Careers />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/articles" element={<Articles />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />

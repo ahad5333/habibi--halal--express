@@ -40,6 +40,9 @@
          these three tags. Previously pointed at the 500x500 favicon, which
          iOS downscaled on every home-screen add. -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
+    <!-- Both: Chrome deprecated the apple- prefixed one, but iOS Safari still
+         reads it, so dropping it would break standalone mode on iPhone. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Habibi" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
