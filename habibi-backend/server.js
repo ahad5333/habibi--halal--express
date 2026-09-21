@@ -11,6 +11,7 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
 const { startScheduledSubscriptions } = require("./src/services/scheduledSubscriptions");
 const { startAcceptEscalation } = require("./src/services/acceptEscalation");
+const { startOrderScreenWatch } = require("./src/services/orderScreenWatch");
 const { scheduleOnce, isDesignatedInstance } = require("./src/utils/clusterCron");
 const { cleanupAbandonedPendingCheckouts } = require("./src/controllers/orderController");
 
@@ -73,6 +74,7 @@ Promise.all([pubClient.connect(), subClient.connect()])
         startScheduledDispatch(io);
         startScheduledSubscriptions(io);
         startAcceptEscalation();
+        startOrderScreenWatch(io);
       }
       scheduleOnce("0 * * * *", cleanupAbandonedPendingCheckouts);
     });
