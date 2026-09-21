@@ -264,6 +264,9 @@ const updateOrderStatus = async (req, res) => {
       if (orderNumber) io.to(`order_${orderNumber}`).emit("order_status_updated", payload);
       // Also emit to the integer-id room for any legacy listeners
       if (String(id) !== orderNumber) io.to(`order_${id}`).emit("order_status_updated", payload);
+      // The order screens: accepting or cancelling here in CPanel should stop
+      // their new-order alarm at once, not on their next poll.
+      io.to("kitchen").emit("order_status_updated", { order_number: orderNumber, status: status.toLowerCase() });
       try {
         const activeOrders = await pool.query(
           `SELECT order_number FROM guest_orders WHERE order_status = ANY($1) ORDER BY placed_at ASC`,

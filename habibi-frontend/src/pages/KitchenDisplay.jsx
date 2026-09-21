@@ -3,6 +3,7 @@ import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, Sh
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
 import OrderAlarm from '../components/OrderAlarm';
+import useKitchenSocket from '../utils/useKitchenSocket';
 import PrinterPanel from '../components/PrinterPanel';
 import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
@@ -69,6 +70,9 @@ export default function KitchenDisplay() {
       setLoading(false);
     }
   }, [endpoint]);
+
+  // Instant refetch on new orders / status changes; the poll below is the fallback.
+  useKitchenSocket({ base: API_BASE, onChange: fetchOrders });
 
   useEffect(() => {
     setLoading(true);

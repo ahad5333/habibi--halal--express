@@ -90,7 +90,7 @@ async function flagForManualArrangement(o, io, note) {
      ON CONFLICT DO NOTHING`,
     [o.id, o.order_number, address, o.customer_name || 'Guest', o.customer_phone || '', note]
   ).catch(e => console.error('[ScheduledDispatch] manual-arrangement insert failed:', e.message));
-  if (io) io.emit('inhouse_dispatch_needed', { order_number: o.order_number, miles, db_id: o.id });
+  if (io) io.to('admins').emit('inhouse_dispatch_needed', { order_number: o.order_number, miles, db_id: o.id });
 }
 
 const nyTime = d => new Date(d).toLocaleString('en-US', {

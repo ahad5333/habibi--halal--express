@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const jwt  = require("jsonwebtoken");
 const { getDriverSecretSalt } = require("../utils/driverSecret");
+const { verifyStaff } = require("../middleware/staffMiddleware");
 
 // Per-socket message rate limiting: max 30 chat messages per minute
 const MSG_WINDOW_MS = 60 * 1000;
@@ -105,6 +106,32 @@ module.exports = (io) => {
         console.log(`[SOCKET] ${userLabel} joined admins room`);
       } else {
         socket.emit("error", { message: "Admin authentication required." });
+      }
+    });
+
+    // ── join_kitchen ─────────────────────────────────
+    // The order screens (/staff and /kitchen) join this room so a new order or
+    // a status change reaches them at once instead of on their next 15 s poll.
+    // Exactly who may read the kitchen queue over REST may join, no one else:
+    //  - /staff: a staff PIN session, checked by the same verifyStaff the REST
+    //    routes use (HMAC with the per-staff session epoch, then role and
+    //    is_active re-read from the database);
+    //  - /kitchen: the admin login, already decoded into socket.data.user --
+    //    role 'admin' only, matching the kitchen routes' admin fallback.
+    // Events here carry only order numbers and statuses, and each one merely
+    // prompts a refetch over REST, where every request is authorised again --
+    // so an account deactivated after joining learns nothing new: its next
+    // fetch is refused and the screen signs it out.
+    socket.on("join_kitchen", async ({ staff_id, token } = {}) => {
+      try {
+        const isAdmin = socket.data.user?.role === "admin";
+        if (!isAdmin && !(await verifyStaff(staff_id, token))) {
+          socket.emit("error", { message: "Staff or admin authentication required." });
+          return;
+        }
+        socket.join("kitchen");
+      } catch (_) {
+        socket.emit("error", { message: "Staff authentication failed." });
       }
     });
 

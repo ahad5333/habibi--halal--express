@@ -3,6 +3,7 @@ import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, Sh
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, ROLE_STATION, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
 import OrderAlarm from '../components/OrderAlarm';
+import useKitchenSocket from '../utils/useKitchenSocket';
 import PrinterPanel from '../components/PrinterPanel';
 import WasteSheet from '../components/WasteSheet';
 import ScheduleSheet from '../components/ScheduleSheet';
@@ -149,6 +150,12 @@ export default function StaffQueue() {
       setLoading(false);
     }
   }, [endpoint, session]);
+
+  // Instant refetch on new orders / status changes; the poll below is the fallback.
+  useKitchenSocket({
+    base: API_BASE, staffId: session?.staff_id, token: session?.token,
+    onChange: fetchOrders, enabled: !!session,
+  });
 
   useEffect(() => {
     if (!session) return;

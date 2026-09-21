@@ -182,7 +182,7 @@ router.patch('/kitchen/orders/:id/status', kitchenAuth, async (req, res) => {
     // consumer (the staff queue view, and the existing merchant app) can
     // benefit from it, same event name already used for order tracking elsewhere.
     const io = req.app.get('io');
-    if (io) io.to('admins').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
+    if (io) io.to('admins').to('kitchen').emit('order_status_updated', { id: Number(req.params.id), order_status: status });
 
     // ── Tell the CUSTOMER ────────────────────────────────────────────────
     // This screen previously notified staff and drivers and said nothing to

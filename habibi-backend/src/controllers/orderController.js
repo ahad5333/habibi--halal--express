@@ -215,7 +215,7 @@ async function dispatchDeliveryOrder({ db_id, order, quoteRef = null, locationId
            customer_name || 'Guest', customer_phone || '',
            `Courier dispatch failed (${miles.toFixed(1)} mi) — needs manual delivery arrangement.`]
         ).catch(e => console.error('[Dispatch] uber-fallback assignment insert failed:', e.message));
-        if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+        if (io) io.to('admins').emit('inhouse_dispatch_needed', { order_number, miles, db_id });
       }
     } else if (provider === 'in_house') {
       // Create an unassigned delivery_assignment so admin can pick a driver
@@ -229,7 +229,7 @@ async function dispatchDeliveryOrder({ db_id, order, quoteRef = null, locationId
          [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
          customer_name || 'Guest', customer_phone || '']
       ).catch(e => console.error('[Dispatch] delivery_assignment insert failed:', e.message));
-      if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+      if (io) io.to('admins').emit('inhouse_dispatch_needed', { order_number, miles, db_id });
     // DoorDash and Roadie kept their autoDispatch* helpers but are no
     // longer routed to: neither has live credentials, and the customer's
     // price now comes from whichever courier actually quoted it. Adding
@@ -1111,7 +1111,7 @@ const createGuestOrder = async (req, res, overrides = {}) => {
 
     // Broadcast new order to authenticated merchant/admin sockets only
     const io = req.app.get('io');
-    if (io) io.to('admins').emit('new_order', { order_number, order_status: 'pending' });
+    if (io) io.to('admins').to('kitchen').emit('new_order', { order_number, order_status: 'pending' });
 
     // Push to merchant tablets (wakes app if backgrounded/screen off)
     fcmService.sendPushToAdmins(

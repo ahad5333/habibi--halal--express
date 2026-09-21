@@ -571,7 +571,7 @@ const updateAssignmentStatus = async (req, res) => {
             order_number: asgn.rows[0].order_number,
             status: orderStatusMirror,
           });
-          io.to('admins').emit('order_status_updated', {
+          io.to('admins').to('kitchen').emit('order_status_updated', {
             order_number: asgn.rows[0].order_number,
             status: orderStatusMirror,
           });
