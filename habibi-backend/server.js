@@ -10,6 +10,7 @@ const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const { startScheduledDispatch } = require("./src/services/scheduledDispatch");
 const { startScheduledSubscriptions } = require("./src/services/scheduledSubscriptions");
+const { startAcceptEscalation } = require("./src/services/acceptEscalation");
 const { scheduleOnce, isDesignatedInstance } = require("./src/utils/clusterCron");
 const { cleanupAbandonedPendingCheckouts } = require("./src/controllers/orderController");
 
@@ -71,6 +72,7 @@ Promise.all([pubClient.connect(), subClient.connect()])
       if (isDesignatedInstance) {
         startScheduledDispatch(io);
         startScheduledSubscriptions(io);
+        startAcceptEscalation();
       }
       scheduleOnce("0 * * * *", cleanupAbandonedPendingCheckouts);
     });

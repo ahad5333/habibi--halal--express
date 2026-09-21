@@ -428,6 +428,9 @@ const createTables = async () => {
     // so staff can match the order against their own Zelle/Cash App activity instead of
     // guessing by name/amount alone before marking payment_status paid.
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100)`);
+    // Set when the owner has been texted that this order is still waiting to be
+    // accepted, so each order escalates at most once -- services/acceptEscalation.js.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS accept_escalated_at TIMESTAMPTZ`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);
