@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalModal.css';
 
 export default function LegalModal({ docId, onClose }) {
-  const doc = DOCS[docId];
+  const doc = useLegalDoc(docId);
 
   /* Lock body scroll while open */
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function LegalModal({ docId, onClose }) {
 
         {/* Scrollable body */}
         <div className="lm-body">
-          <p className="lm-intro">{doc.intro}</p>
+          <p className="lm-intro"><RichText text={doc.intro} /></p>
 
           {/* SMS quick-ref */}
           {docId === 'sms' && (

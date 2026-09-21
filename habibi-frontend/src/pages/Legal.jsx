@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Shield, Clock, MapPin, Mail, Phone } from 'lucide-react';
 import SEO from '../components/SEO';
-import { DOC_LIST, DOCS } from '../data/legalDocs';
+import { DOC_LIST } from '../data/legalDocs';
+import { useLegalDoc, RichText, plainText } from '../utils/legalText';
 import { useSettings } from '../context/SettingsContext';
 import './Legal.css';
 
@@ -29,7 +30,7 @@ export default function Legal() {
   const [params, setParams] = useSearchParams();
   const settings = useSettings();
   const activeId = DOC_LIST.some(d => d.id === params.get('doc')) ? params.get('doc') : 'terms';
-  const doc = DOCS[activeId];
+  const doc = useLegalDoc(activeId);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -41,7 +42,7 @@ export default function Legal() {
     <>
       <SEO
         title={`${doc.label} — Habibi Halal Express Legal Center`}
-        description={doc.intro.substring(0, 155)}
+        description={plainText(doc.intro).substring(0, 155)}
       />
 
       <div className="legal-hub">
@@ -110,7 +111,7 @@ export default function Legal() {
           {/* Document body */}
           <div className="lh-body">
 
-            <p className="lh-intro">{doc.intro}</p>
+            <p className="lh-intro"><RichText text={doc.intro} /></p>
 
             {activeId === 'sms' && (
               <div className="lh-sms-banner">

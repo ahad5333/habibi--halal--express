@@ -2,14 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalPage.css';
 
 // See TermsOfService.jsx's comment -- section content now sources from the
 // shared data/legalDocs.js instead of a page-local hardcoded copy.
-const sections = DOCS.privacy.sections;
 
 export default function PrivacyPolicy() {
+  const doc = useLegalDoc('privacy');
+  const sections = doc.sections;
   const settings = useSettings();
   return (
     <>
@@ -25,14 +26,12 @@ export default function PrivacyPolicy() {
         </picture>
       </div>
       <div className="legal-hero-sub">
-        <p className="legal-subtitle">We respect your privacy and are committed to protecting the information entrusted to us through our websites, apps, loyalty programs, and all related services.</p>
+        <p className="legal-subtitle">{doc.subtitle}</p>
       </div>
 
       <section className="section legal-body">
         <div className="container legal-container">
-          <p className="legal-intro">
-            <strong>Habibi Halal Express, Inc.</strong> respects your privacy and is committed to protecting the information entrusted to us through our websites, mobile applications, wholesale ordering platforms, loyalty programs, gift card programs, SMS services, and related services (collectively, the "Services").
-          </p>
+          <p className="legal-intro"><RichText text={doc.intro} /></p>
 
           <div className="legal-sections">
             {sections.map(s => (
@@ -41,7 +40,7 @@ export default function PrivacyPolicy() {
                   <span className="legal-section-icon">{s.icon}</span>
                   <h2 className="legal-section-title">{s.title}</h2>
                 </div>
-                {s.content && <p className="legal-section-body">{s.content}</p>}
+                {s.content && <p className="legal-section-body" style={{ whiteSpace: 'pre-line' }}>{s.content}</p>}
                 {s.list && (
                   <ul className="legal-list">
                     {s.list.map(item => <li key={item}>{item}</li>)}
@@ -69,7 +68,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <p className="legal-updated">
-            Last updated: June 1, 2026 &nbsp;·&nbsp;
+            Last updated: {doc.updated} &nbsp;·&nbsp;
             <Link to="/terms">Terms of Service</Link> &nbsp;·&nbsp;
             <Link to="/sms-terms">SMS Terms</Link> &nbsp;·&nbsp;
             <Link to="/accessibility">Accessibility</Link> &nbsp;·&nbsp;

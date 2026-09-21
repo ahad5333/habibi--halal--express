@@ -2,22 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalPage.css';
 
-// See TermsOfService.jsx's comment -- section content now sources from the
-// shared data/legalDocs.js instead of a page-local hardcoded copy. One
-// exception: "Feedback & Contact" drops the shared data's static
-// email/phone sentence, since this page already shows that info in its own
-// dynamic, settings-driven contact card just below -- repeating it inline
-// would just be redundant, not a real omission.
-const sections = DOCS.accessibility.sections.map(s =>
-  s.title === 'Feedback & Contact'
-    ? { ...s, content: 'If you experience difficulty accessing any portion of the Services, require assistance, or wish to report an accessibility concern, please contact us. Habibi Halal Express will make reasonable efforts to address accessibility concerns and provide assistance where practicable.' }
-    : s
-);
+// Content comes from the shared data/legalDocs.js via useLegalDoc -- see
+// utils/legalText.jsx. "Feedback & Contact" used to be overridden here with a
+// hardcoded sentence that dropped the contact details, because the shared copy
+// hardcoded a static email/phone that could disagree with CPanel. That copy now
+// fills {email}/{phone} from CPanel, so the override is gone: a hand-kept second
+// version of legal text is the drift this refactor exists to prevent. The
+// contact card below repeats the details, which is redundant but consistent.
 
 const Accessibility = () => {
+  const doc = useLegalDoc('accessibility');
+  const sections = doc.sections;
   const settings = useSettings();
   return (
   <>
@@ -34,15 +32,13 @@ const Accessibility = () => {
       </picture>
     </div>
     <div className="legal-hero-sub">
-      <p className="legal-subtitle">We are committed to making our website and app accessible to everyone, including people with disabilities.</p>
+      <p className="legal-subtitle">{doc.subtitle}</p>
     </div>
 
     <div className="legal-body">
       <div className="legal-container" style={{ padding: '3.5rem 1.5rem' }}>
 
-        <p className="legal-intro">
-          <strong>Habibi Halal Express, Inc.</strong> is committed to providing an accessible and inclusive experience for all customers, including individuals with disabilities. The Company strives to design, develop, and maintain its websites, mobile applications, wholesale platforms, and digital services in a manner that promotes accessibility, usability, and equal access.
-        </p>
+        <p className="legal-intro"><RichText text={doc.intro} /></p>
 
         <div className="legal-sections">
           {sections.map(s => (
@@ -51,7 +47,7 @@ const Accessibility = () => {
                 <span className="legal-section-icon">{s.icon}</span>
                 <h2 className="legal-section-title">{s.title}</h2>
               </div>
-              <p className="legal-section-body">{s.content}</p>
+              <p className="legal-section-body" style={{ whiteSpace: 'pre-line' }}>{s.content}</p>
             </div>
           ))}
         </div>
@@ -83,7 +79,7 @@ const Accessibility = () => {
         </div>
 
         <p className="legal-updated">
-          Last updated: June 1, 2026 &nbsp;·&nbsp;
+          Last updated: {doc.updated} &nbsp;·&nbsp;
           <Link to="/privacy-policy">Privacy Policy</Link> &nbsp;·&nbsp;
           <Link to="/terms">Terms of Service</Link> &nbsp;·&nbsp;
           <Link to="/sms-terms">SMS Terms</Link> &nbsp;·&nbsp;

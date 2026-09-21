@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalPage.css';
 
 // See TermsOfService.jsx's comment -- section content now sources from the
@@ -11,13 +11,14 @@ import './LegalPage.css';
 // the shared data first, so it's now the more complete canonical version).
 // The "Report a Concern" CTA button stays page-specific -- the shared /legal
 // hub and signup/login modal don't need it, only this standalone page.
-const sections = DOCS.health.sections.map(s =>
-  s.title === 'Report a Concern'
-    ? { ...s, cta: { label: 'Contact Us', to: '/contact?type=complaint' } }
-    : s
-);
 
 export default function HealthSafety() {
+  const doc = useLegalDoc('health');
+  const sections = doc.sections.map(s =>
+    s.title === 'Report a Concern'
+      ? { ...s, cta: { label: 'Contact Us', to: '/contact?type=complaint' } }
+      : s
+  );
   return (
     <>
       <SEO
@@ -33,14 +34,12 @@ export default function HealthSafety() {
         </picture>
       </div>
       <div className="legal-hero-sub">
-        <p className="legal-subtitle">Certified Halal. NYC Health A-Rated. Transparent from farm to table.</p>
+        <p className="legal-subtitle">{doc.subtitle}</p>
       </div>
 
       <section className="section legal-body">
         <div className="container legal-container">
-          <p className="legal-intro">
-            At Habibi Halal Express we believe that exceptional food must begin with uncompromising safety. Below is a full account of the standards we hold ourselves to every single day.
-          </p>
+          <p className="legal-intro"><RichText text={doc.intro} /></p>
 
           <div className="legal-sections">
             {sections.map(s => (
@@ -49,7 +48,7 @@ export default function HealthSafety() {
                   <span className="legal-section-icon">{s.icon}</span>
                   <h2 className="legal-section-title">{s.title}</h2>
                 </div>
-                <p className="legal-section-body">{s.content}</p>
+                <p className="legal-section-body" style={{ whiteSpace: 'pre-line' }}>{s.content}</p>
                 {s.cta && (
                   <Link to={s.cta.to} className="btn btn-primary legal-cta-btn">
                     {s.cta.label}
@@ -60,7 +59,7 @@ export default function HealthSafety() {
           </div>
 
           <div className="legal-updated">
-            Last reviewed: {DOCS.health.updated} &nbsp;·&nbsp; <Link to="/contact">Report a concern</Link>
+            Last reviewed: {doc.updated} &nbsp;·&nbsp; <Link to="/contact">Report a concern</Link>
           </div>
         </div>
       </section>

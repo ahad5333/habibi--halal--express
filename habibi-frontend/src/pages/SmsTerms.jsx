@@ -2,17 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalPage.css';
 
 const SmsTerms = () => {
   const settings = useSettings();
 
-  // See TermsOfService.jsx's comment -- section content now sources from the
-  // shared data/legalDocs.js instead of a page-local hardcoded copy. One
-  // exception: "Help" swaps in a live settings-driven contact link (the
-  // shared data file can't reach useSettings()), same info either way.
-  const sections = DOCS.sms.sections.map(s =>
+  // Content comes from the shared data/legalDocs.js via useLegalDoc, which
+  // already fills {email}/{phone} from CPanel. "Help" additionally gets
+  // clickable mailto:/tel: links -- markup the plain-text data can't carry --
+  // built from the same settings, so it can't disagree with the text.
+  const doc = useLegalDoc('sms');
+  const sections = doc.sections.map(s =>
     s.title === 'Help'
       ? {
           ...s,
@@ -41,16 +42,13 @@ const SmsTerms = () => {
         </picture>
       </div>
       <div className="legal-hero-sub">
-        <p className="legal-subtitle">Everything you need to know about our text message program, how it works, how to opt out, and your rights.</p>
+        <p className="legal-subtitle">{doc.subtitle}</p>
       </div>
 
       <div className="legal-body">
         <div className="legal-container" style={{ padding: '3.5rem 1.5rem' }}>
 
-          <p className="legal-intro">
-            By providing your phone number and opting into SMS communications from Habibi Halal Express, you agree to these SMS Terms &amp; Conditions.{' '}
-            <strong>Consent is not a condition of purchase.</strong> Message and data rates may apply. Reply <strong>STOP</strong> to opt out at any time. Reply <strong>HELP</strong> for assistance.
-          </p>
+          <p className="legal-intro"><RichText text={doc.intro} /></p>
 
           <div className="legal-sections">
             {sections.map(s => (
@@ -59,13 +57,13 @@ const SmsTerms = () => {
                   <span className="legal-section-icon">{s.icon}</span>
                   <h2 className="legal-section-title">{s.title}</h2>
                 </div>
-                {s.content && <p className="legal-section-body">{s.content}</p>}
+                {s.content && <p className="legal-section-body" style={{ whiteSpace: 'pre-line' }}>{s.content}</p>}
                 {s.list && (
                   <ul className="legal-list">
                     {s.list.map(item => <li key={item}>{item}</li>)}
                   </ul>
                 )}
-                {s.detail && <p className="legal-section-body">{s.detail}</p>}
+                {s.detail && <p className="legal-section-body" style={{ whiteSpace: 'pre-line' }}>{s.detail}</p>}
               </div>
             ))}
           </div>
@@ -97,7 +95,7 @@ const SmsTerms = () => {
           </div>
 
           <p className="legal-updated">
-            Last updated: June 1, 2026 &nbsp;·&nbsp;
+            Last updated: {doc.updated} &nbsp;·&nbsp;
             <Link to="/privacy-policy">Privacy Policy</Link> &nbsp;·&nbsp;
             <Link to="/terms">Terms of Service</Link> &nbsp;·&nbsp;
             <Link to="/contact">Contact Us</Link>

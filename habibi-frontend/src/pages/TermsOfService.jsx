@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useSettings } from '../context/SettingsContext';
-import { DOCS } from '../data/legalDocs';
+import { useLegalDoc, RichText } from '../utils/legalText';
 import './LegalPage.css';
 
 // Section content now lives in one place -- data/legalDocs.js -- shared with
@@ -11,9 +11,10 @@ import './LegalPage.css';
 // from the shared version over time. The intro paragraph and contact card
 // below stay page-specific (they pull live settings.* values the shared
 // data file can't access), only the legal section text itself is shared.
-const sections = DOCS.terms.sections;
 
 export default function TermsOfService() {
+  const doc = useLegalDoc('terms');
+  const sections = doc.sections;
   const settings = useSettings();
   return (
     <>
@@ -29,14 +30,12 @@ export default function TermsOfService() {
         </picture>
       </div>
       <div className="legal-hero-sub">
-        <p className="legal-subtitle">These Terms govern your access to and use of our websites, mobile apps, ordering platform, delivery, payments, loyalty programs, and all related services.</p>
+        <p className="legal-subtitle">{doc.subtitle}</p>
       </div>
 
       <section className="section legal-body">
         <div className="container legal-container">
-          <p className="legal-intro">
-            These Terms of Service ("Terms") govern your access to and use of the websites, mobile applications, wholesale ordering platforms, products, services, gift card programs, loyalty programs, SMS communications, and related offerings (collectively, the "Services") provided by <strong>Habibi Halal Express, Inc.</strong> By accessing or using any of our Services, you agree to be bound by these Terms. Questions may be directed to <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a> or <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>.
-          </p>
+          <p className="legal-intro"><RichText text={doc.intro} /></p>
 
           <div className="legal-sections">
             {sections.map(s => (
@@ -69,7 +68,7 @@ export default function TermsOfService() {
           </div>
 
           <p className="legal-updated">
-            Last updated: June 1, 2026 &nbsp;·&nbsp;
+            Last updated: {doc.updated} &nbsp;·&nbsp;
             <Link to="/privacy-policy">Privacy Policy</Link> &nbsp;·&nbsp;
             <Link to="/sms-terms">SMS Terms</Link> &nbsp;·&nbsp;
             <Link to="/accessibility">Accessibility</Link> &nbsp;·&nbsp;
