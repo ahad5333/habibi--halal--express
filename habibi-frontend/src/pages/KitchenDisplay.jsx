@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Clock, UtensilsCrossed, RefreshCw, ChevronRight, CheckCircle, Truck, ShoppingBag, Printer } from 'lucide-react';
 import { COLUMN_MAP, BUMP_NEXT, COLUMNS, canStaffBump, bumpLabel, blockedReason } from '../utils/orderFlow';
 import usePageFavicon from '../utils/usePageFavicon';
+import OrderAlarm from '../components/OrderAlarm';
 import PrinterPanel from '../components/PrinterPanel';
 import { printNewOrders, printTicket } from '../utils/kitchenTicket';
 import './KitchenDisplay.css';
@@ -39,45 +40,6 @@ function elapsedLabel(placedAt) {
   return `${diff} min`;
 }
 
-// Regular new-order beep
-function beep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.4);
-  } catch (_) {}
-}
-
-// 3-tone ascending chime for Zelle/CashApp payment-pending orders
-function zelleChime() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const tones = [523, 659, 784]; // C5 → E5 → G5 (major chord ascending)
-    tones.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      const t = ctx.currentTime + i * 0.18;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.45, t + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-      osc.start(t);
-      osc.stop(t + 0.35);
-    });
-  } catch (_) {}
-}
-
 export default function KitchenDisplay() {
   usePageFavicon('/images/icons/tab-kitchen.png');
 
@@ -87,7 +49,6 @@ export default function KitchenDisplay() {
   const [lastSync,  setLastSync]  = useState(null);
   const [tick,      setTick]      = useState(0);
   const [bumping,   setBumping]   = useState({});       // id → true
-  const prevIds = useRef(new Set());
 
   const endpoint = '/api/dine-in/kitchen-all';
 
@@ -97,16 +58,6 @@ export default function KitchenDisplay() {
       if (!res.ok) throw new Error(`Server ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
-      // Detect new orders — play distinct chime for payment-pending
-      const newIds = new Set(list.map(o => o.id));
-      if (prevIds.current.size > 0) {
-        const incoming = list.filter(o => !prevIds.current.has(o.id));
-        const hasZelle = incoming.some(o => o.order_status === 'pending_verification');
-        const hasOther = incoming.some(o => o.order_status !== 'pending_verification');
-        if (hasZelle) zelleChime();
-        else if (hasOther) beep();
-      }
-      prevIds.current = newIds;
       // Only on the device where auto-print was switched on; each order once.
       printNewOrders(list);
       setOrders(list);
@@ -171,6 +122,7 @@ export default function KitchenDisplay() {
 
   return (
     <div className="kd-root">
+      <OrderAlarm orders={orders} />
       {error && <div className="kd-warn-bar">Warning: last refresh failed — {error}</div>}
 
       {/* Header */}
