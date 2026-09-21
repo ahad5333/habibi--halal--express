@@ -1772,6 +1772,12 @@ const createTables = async () => {
     await client.query(`
       INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
     `);
+    // Department mailboxes shown on Contact, Legal and Terms -- CPanel-editable
+    // (they were hardcoded on those pages). DEFAULT backfills the existing row.
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS email_customer_service VARCHAR(100) DEFAULT 'habibi@habibihe.com'`);
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS email_urgent           VARCHAR(100) DEFAULT 'urgent@habibihe.com'`);
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS email_wholesale        VARCHAR(100) DEFAULT 'merchant@habibihe.com'`);
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS email_media            VARCHAR(100) DEFAULT 'media@habibihe.com'`);
 
     await client.query("COMMIT");
     console.log("✅ All tables created/verified");

@@ -222,6 +222,7 @@ const getOfflineHandles = async (req, res) => {
 const SITE_FIELDS = [
   'phone_main','phone_tollfree','phone_fax',
   'email_contact','email_orders',
+  'email_customer_service','email_urgent','email_wholesale','email_media',
   'address_street','address_city','address_state','address_zip',
   'social_instagram','social_facebook','social_twitter','social_tiktok',
 ];
@@ -256,6 +257,11 @@ const updateSiteSettings = async (req, res) => {
   if (!allowed.length) return res.status(400).json({ message: 'No valid fields provided.' });
 
   for (const f of allowed) {
+    // Every email_* value ends up in mailto: links across the site; a typo
+    // would silently break them, so refuse anything that isn't an address.
+    if (f.startsWith('email_') && !/^[^\s@<>"'()]+@[^\s@<>"'()]+\.[^\s@<>"'()]+$/.test(String(req.body[f]))) {
+      return res.status(400).json({ message: `${f} must be a valid email address.` });
+    }
     if (SOCIAL_URL_FIELDS.includes(f) && !isSafeHttpUrl(req.body[f])) {
       return res.status(400).json({ message: `${f} must be a valid http(s) URL.` });
     }

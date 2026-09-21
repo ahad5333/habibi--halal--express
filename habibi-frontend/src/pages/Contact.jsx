@@ -301,8 +301,8 @@ const Contact = () => {
               </div>
               <div className="ct-info-card">
                 <p className="ct-info-badge">URGENT MATTERS</p>
-                <a href="mailto:urgent@habibihe.com" className="ct-info-link">
-                  <Mail size={13} /> urgent@habibihe.com
+                <a href={`mailto:${settings.email_urgent}`} className="ct-info-link">
+                  <Mail size={13} /> {settings.email_urgent}
                 </a>
               </div>
               <div className="ct-info-card">
@@ -364,11 +364,11 @@ const Contact = () => {
                     <p className="ct-company-label"><Mail size={13} /> EMAIL DIRECTORY</p>
                     <div className="ct-email-list">
                       {[
-                        { dept: 'Customer Service',    addr: 'habibi@habibihe.com' },
-                        { dept: 'Urgent Matters',      addr: 'urgent@habibihe.com' },
+                        { dept: 'Customer Service',    addr: settings.email_customer_service },
+                        { dept: 'Urgent Matters',      addr: settings.email_urgent },
                         { dept: 'Legal & Compliance',  addr: 'admin@habibihe.com' },
-                        { dept: 'Wholesale Accounts',  addr: 'merchant@habibihe.com' },
-                        { dept: 'Media Inquiries',     addr: 'media@habibihe.com' },
+                        { dept: 'Wholesale Accounts',  addr: settings.email_wholesale },
+                        { dept: 'Media Inquiries',     addr: settings.email_media },
                       ].map(e => (
                         <div key={e.addr} className="ct-email-row">
                           <span className="ct-email-dept">{e.dept}</span>

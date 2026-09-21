@@ -61,7 +61,7 @@ export default function TermsOfService() {
             <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8 }}>
               <strong style={{ color: '#fff' }}>Habibi Halal Express, Inc.</strong><br />
               {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br />
-              Customer Service: <a href="mailto:habibi@habibihe.com" style={{ color: '#E5B64E' }}>habibi@habibihe.com</a><br />
+              Customer Service: <a href={`mailto:${settings.email_customer_service}`} style={{ color: '#E5B64E' }}>{settings.email_customer_service}</a><br />
               Legal &amp; Compliance: <a href={`mailto:${settings.email_contact}`} style={{ color: '#E5B64E' }}>{settings.email_contact}</a><br />
               Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`} style={{ color: '#E5B64E' }}>{settings.phone_main}</a>
             </p>

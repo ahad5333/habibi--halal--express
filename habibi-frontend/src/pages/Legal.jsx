@@ -76,8 +76,8 @@ export default function Legal() {
 
           <div className="lh-sidebar-footer">
             <p className="lh-footer-label">Questions?</p>
-            <a href="mailto:habibi@habibihe.com" className="lh-footer-link">
-              <Mail size={13} /> habibi@habibihe.com
+            <a href={`mailto:${settings.email_customer_service}`} className="lh-footer-link">
+              <Mail size={13} /> {settings.email_customer_service}
             </a>
             <a href={`mailto:${settings.email_contact}`} className="lh-footer-link">
               <Mail size={13} /> {settings.email_contact}
@@ -140,11 +140,11 @@ export default function Legal() {
               <p className="lh-contact-body">
                 <strong>Habibi Halal Express, Inc.</strong><br />
                 {settings.address_street}, {settings.address_city}, {settings.address_state} {settings.address_zip}<br /><br />
-                Customer Service: <a href="mailto:habibi@habibihe.com">habibi@habibihe.com</a><br />
-                Urgent Matters: <a href="mailto:urgent@habibihe.com">urgent@habibihe.com</a><br />
+                Customer Service: <a href={`mailto:${settings.email_customer_service}`}>{settings.email_customer_service}</a><br />
+                Urgent Matters: <a href={`mailto:${settings.email_urgent}`}>{settings.email_urgent}</a><br />
                 Legal &amp; Compliance: <a href={`mailto:${settings.email_contact}`}>{settings.email_contact}</a><br />
-                Wholesale Accounts: <a href="mailto:merchant@habibihe.com">merchant@habibihe.com</a><br />
-                Media Inquiries: <a href="mailto:media@habibihe.com">media@habibihe.com</a><br /><br />
+                Wholesale Accounts: <a href={`mailto:${settings.email_wholesale}`}>{settings.email_wholesale}</a><br />
+                Media Inquiries: <a href={`mailto:${settings.email_media}`}>{settings.email_media}</a><br /><br />
                 Phone: <a href={`tel:+1${settings.phone_main.replace(/\D/g,'')}`}>{settings.phone_main}</a><br />
                 Fax: {settings.phone_fax}
               </p>
