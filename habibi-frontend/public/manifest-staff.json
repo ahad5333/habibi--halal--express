@@ -1,0 +1,19 @@
+{
+  "id": "/staff",
+  "name": "Habibi Staff - Order Queue",
+  "short_name": "Habibi Staff",
+  "description": "The order queue and new-order alarm for Habibi Halal Express staff.",
+  "start_url": "/staff",
+  "scope": "/staff",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["business", "food"],
+  "lang": "en-US"
+}

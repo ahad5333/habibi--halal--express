@@ -237,6 +237,26 @@ function InternalGuard({ children, requireAdmin = false }) {
   return children;
 }
 
+// Which app "Add to Home Screen" installs from a given page. Every route is
+// served the same index.html, and with it the customer manifest -- so on
+// Android a driver installing from /driver got an icon that opened the menu.
+// Each staff-facing section now points at its own manifest, with its own id
+// (so a device keeps them as separate apps) and its own start_url and scope.
+// iOS ignores manifests and takes the icon name from apple-mobile-web-app-title,
+// so that follows along. Order matters only in that the first match wins.
+const INSTALLABLE_APPS = [
+  { prefix: '/staff',   manifest: '/manifest-staff.json',   title: 'Habibi Staff' },
+  // The driver app's manifest predates this table and DriverLogin/DriverView
+  // also switch to it themselves. Same file on purpose: its identity (no id, so
+  // Chrome keys it on start_url /driver/login) must not change, or drivers who
+  // already installed it would get a second app instead of an update.
+  { prefix: '/driver',  manifest: '/driver-manifest.json',  title: 'Habibi Driver' },
+  { prefix: '/kitchen', manifest: '/manifest-kitchen.json', title: 'Habibi Kitchen' },
+];
+const CUSTOMER_APP = { manifest: '/manifest.json', title: 'Habibi' };
+const appForPath = (p) =>
+  INSTALLABLE_APPS.find(a => p === a.prefix || p.startsWith(a.prefix + '/')) || CUSTOMER_APP;
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -247,6 +267,9 @@ function ScrollToTop() {
     if (robots) {
       robots.setAttribute('content', isNoIndexPath(pathname) ? 'noindex, nofollow' : 'index, follow');
     }
+    const app = appForPath(pathname);
+    document.querySelector('link[rel="manifest"]')?.setAttribute('href', app.manifest);
+    document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', app.title);
   }, [pathname]);
 
   return null;

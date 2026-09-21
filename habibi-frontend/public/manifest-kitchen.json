@@ -1,0 +1,19 @@
+{
+  "id": "/kitchen",
+  "name": "Habibi Kitchen Display",
+  "short_name": "Habibi Kitchen",
+  "description": "The shared kitchen order screen for Habibi Halal Express.",
+  "start_url": "/kitchen",
+  "scope": "/kitchen",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["business", "food"],
+  "lang": "en-US"
+}
