@@ -139,6 +139,120 @@ async function autoDispatchUber(order_id, order, quoteId = null) {
   }
 }
 
+// Books the courier for a delivery order, routed to whoever priced it.
+//
+// Shared by both kinds of delivery order so they cannot drift apart: ASAP orders
+// call it the moment they're placed (createGuestOrder), and scheduled orders are
+// booked through it by services/scheduledDispatch.js shortly before they're due.
+// Moved here verbatim from createGuestOrder; the only changes are that the quote
+// reference, the store and the socket arrive as arguments instead of from the
+// request. A scheduled order passes no quote (quotes expire long before it's
+// due), which takes the same location-based route an expired ASAP quote does.
+async function dispatchDeliveryOrder({ db_id, order, quoteRef = null, locationId = null, io = null }) {
+  const {
+    order_number, customer_name, customer_phone, delivery_method,
+    delivery_address, delivery_city, delivery_zip, delivery_state,
+    delivery_instructions, total,
+  } = order;
+  const dispatchPayload = {
+    order_number, customer_name, customer_phone, delivery_method,
+    delivery_address, delivery_city, delivery_zip, delivery_state,
+    delivery_instructions, total,
+  };
+
+  try {
+    const origin      = RESTAURANT_ADDRESS;
+    const destination = [delivery_address, delivery_city, delivery_state, delivery_zip]
+      .filter(Boolean).join(', ');
+    const dist  = await getDistance(origin, destination);
+    const miles = dist?.miles ?? 7; // default to DoorDash range if Maps unavailable
+
+    // Route to whoever actually priced this order. The customer was
+    // charged either the location's own-driver rate or a courier quote
+    // +20%; sending it to the other one would mean collecting a price we
+    // aren't paying. The persisted quote is the authority — the global
+    // delivery_tiers table it replaces couldn't express "own driver" as
+    // a per-location, off-by-default option at all.
+    const savedQuote = await loadQuote(quoteRef).catch(() => null);
+    let provider = savedQuote?.source === 'self' ? 'in_house'
+                 : savedQuote?.source === 'partner' ? 'uber'
+                 : null;
+    const partnerQuoteId = savedQuote?.quoteId || null;
+
+    if (!provider) {
+      // Quote expired or a non-web client placed the order: decide the
+      // same way the pricing resolver would have.
+      let locRow = null;
+      if (locationId) {
+        const lr = await pool.query(
+          `SELECT self_delivery_enabled, delivery_radius_miles FROM locations WHERE id = $1`,
+          [locationId]
+        );
+        locRow = lr.rows[0] || null;
+      }
+      const radius = parseFloat(locRow?.delivery_radius_miles);
+      provider = (locRow?.self_delivery_enabled && Number.isFinite(radius) && miles <= radius)
+        ? 'in_house' : 'uber';
+    }
+
+    console.log(`[Dispatch] ${order_number}: ${miles} mi → ${provider}${partnerQuoteId ? ' (quoted)' : ''}`);
+
+    if (provider === 'uber') {
+      const sent = await autoDispatchUber(db_id, dispatchPayload, partnerQuoteId);
+      if (!sent) {
+        // The courier we priced against couldn't be handed the order.
+        // Surface it on the dispatch board rather than letting it sit
+        // with no delivery arranged and nobody aware of it.
+        console.warn(`[Dispatch] ${order_number}: Uber dispatch failed — flagging for manual arrangement`);
+        await pool.query(
+          `INSERT INTO delivery_assignments
+             (order_id, order_number, driver_id, driver_name, status,
+              delivery_address, customer_name, customer_phone, delivery_note)
+           VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5,$6)
+           ON CONFLICT DO NOTHING`,
+          [db_id, order_number,
+           [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
+           customer_name || 'Guest', customer_phone || '',
+           `Courier dispatch failed (${miles.toFixed(1)} mi) — needs manual delivery arrangement.`]
+        ).catch(e => console.error('[Dispatch] uber-fallback assignment insert failed:', e.message));
+        if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+      }
+    } else if (provider === 'in_house') {
+      // Create an unassigned delivery_assignment so admin can pick a driver
+      await pool.query(
+        `INSERT INTO delivery_assignments
+           (order_id, order_number, driver_id, driver_name, status,
+            delivery_address, customer_name, customer_phone)
+         VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5)
+         ON CONFLICT DO NOTHING`,
+        [db_id, order_number,
+         [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
+         customer_name || 'Guest', customer_phone || '']
+      ).catch(e => console.error('[Dispatch] delivery_assignment insert failed:', e.message));
+      if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
+    // DoorDash and Roadie kept their autoDispatch* helpers but are no
+    // longer routed to: neither has live credentials, and the customer's
+    // price now comes from whichever courier actually quoted it. Adding
+    // them back means quoting them in deliveryPricing first, so that the
+    // price charged and the courier used stay the same decision.
+    } else {
+      // unknown — just log
+      console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);
+    }
+
+    // Mark as fired so the scheduler skips this order
+    await pool.query(
+      `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
+    ).catch(() => {});
+  } catch (err) {
+    console.error('[Dispatch] Routing error:', err.message);
+    autoDispatchUber(db_id, dispatchPayload); // safe fallback: the only live courier
+    await pool.query(
+      `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
+    ).catch(() => {});
+  }
+}
+
 async function autoDispatchRoadie(order_id, order) {
   if (!roadieConfigured()) return;
   if ((order.delivery_method || '').toLowerCase() !== 'delivery') return;
@@ -917,109 +1031,22 @@ const createGuestOrder = async (req, res, overrides = {}) => {
       ).catch(err => console.warn('[UTM] Store skipped (run migrate-utm.js):', err.message));
     }
 
-    // Auto-dispatch: skip for scheduled orders — the cron job handles those
+    // Auto-dispatch: scheduled orders are skipped here and booked shortly before
+    // they're due by services/scheduledDispatch.js, through the same function.
     const isScheduled = expected_time && expected_time.trim().toUpperCase() !== 'ASAP';
     if ((delivery_method || '').toLowerCase() === 'delivery' && !isScheduled) {
-      const dispatchPayload = {
-        order_number, customer_name, customer_phone, delivery_method,
-        delivery_address, delivery_city, delivery_zip, delivery_state,
-        delivery_instructions, total,
-      };
-      (async () => {
-        try {
-          const origin      = RESTAURANT_ADDRESS;
-          const destination = [delivery_address, delivery_city, delivery_state, delivery_zip]
-            .filter(Boolean).join(', ');
-          const dist  = await getDistance(origin, destination);
-          const miles = dist?.miles ?? 7; // default to DoorDash range if Maps unavailable
-
-          // Route to whoever actually priced this order. The customer was
-          // charged either the location's own-driver rate or a courier quote
-          // +20%; sending it to the other one would mean collecting a price we
-          // aren't paying. The persisted quote is the authority — the global
-          // delivery_tiers table it replaces couldn't express "own driver" as
-          // a per-location, off-by-default option at all.
-          const savedQuote = await loadQuote(delivery_quote_ref).catch(() => null);
-          let provider = savedQuote?.source === 'self' ? 'in_house'
-                       : savedQuote?.source === 'partner' ? 'uber'
-                       : null;
-          const partnerQuoteId = savedQuote?.quoteId || null;
-
-          if (!provider) {
-            // Quote expired or a non-web client placed the order: decide the
-            // same way the pricing resolver would have.
-            let locRow = null;
-            if (resolvedLocationId) {
-              const lr = await pool.query(
-                `SELECT self_delivery_enabled, delivery_radius_miles FROM locations WHERE id = $1`,
-                [resolvedLocationId]
-              );
-              locRow = lr.rows[0] || null;
-            }
-            const radius = parseFloat(locRow?.delivery_radius_miles);
-            provider = (locRow?.self_delivery_enabled && Number.isFinite(radius) && miles <= radius)
-              ? 'in_house' : 'uber';
-          }
-
-          console.log(`[Dispatch] ${order_number}: ${miles} mi → ${provider}${partnerQuoteId ? ' (quoted)' : ''}`);
-
-          if (provider === 'uber') {
-            const sent = await autoDispatchUber(db_id, dispatchPayload, partnerQuoteId);
-            if (!sent) {
-              // The courier we priced against couldn't be handed the order.
-              // Surface it on the dispatch board rather than letting it sit
-              // with no delivery arranged and nobody aware of it.
-              console.warn(`[Dispatch] ${order_number}: Uber dispatch failed — flagging for manual arrangement`);
-              await pool.query(
-                `INSERT INTO delivery_assignments
-                   (order_id, order_number, driver_id, driver_name, status,
-                    delivery_address, customer_name, customer_phone, delivery_note)
-                 VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5,$6)
-                 ON CONFLICT DO NOTHING`,
-                [db_id, order_number,
-                 [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
-                 customer_name || 'Guest', customer_phone || '',
-                 `Courier dispatch failed (${miles.toFixed(1)} mi) — needs manual delivery arrangement.`]
-              ).catch(e => console.error('[Dispatch] uber-fallback assignment insert failed:', e.message));
-              const io = req.app.get('io');
-              if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
-            }
-          } else if (provider === 'in_house') {
-            // Create an unassigned delivery_assignment so admin can pick a driver
-            await pool.query(
-              `INSERT INTO delivery_assignments
-                 (order_id, order_number, driver_id, driver_name, status,
-                  delivery_address, customer_name, customer_phone)
-               VALUES ($1,$2,NULL,'Unassigned','pending',$3,$4,$5)
-               ON CONFLICT DO NOTHING`,
-              [db_id, order_number,
-               [delivery_address, delivery_city, delivery_state, delivery_zip].filter(Boolean).join(', '),
-               customer_name || 'Guest', customer_phone || '']
-            ).catch(e => console.error('[Dispatch] delivery_assignment insert failed:', e.message));
-            const io = req.app.get('io');
-            if (io) io.emit('inhouse_dispatch_needed', { order_number, miles, db_id });
-          // DoorDash and Roadie kept their autoDispatch* helpers but are no
-          // longer routed to: neither has live credentials, and the customer's
-          // price now comes from whichever courier actually quoted it. Adding
-          // them back means quoting them in deliveryPricing first, so that the
-          // price charged and the courier used stay the same decision.
-          } else {
-            // unknown — just log
-            console.log(`[Dispatch] ${order_number}: ${miles} mi → pickup only (no dispatch)`);
-          }
-
-          // Mark as fired so the scheduler skips this order
-          await pool.query(
-            `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
-          ).catch(() => {});
-        } catch (err) {
-          console.error('[Dispatch] Routing error:', err.message);
-          autoDispatchUber(db_id, dispatchPayload); // safe fallback: the only live courier
-          await pool.query(
-            `UPDATE guest_orders SET dispatch_fired = TRUE WHERE id = $1`, [db_id]
-          ).catch(() => {});
-        }
-      })();
+      // Not awaited: the customer's response must not wait on the courier API.
+      dispatchDeliveryOrder({
+        db_id,
+        order: {
+          order_number, customer_name, customer_phone, delivery_method,
+          delivery_address, delivery_city, delivery_zip, delivery_state,
+          delivery_instructions, total,
+        },
+        quoteRef: delivery_quote_ref,
+        locationId: resolvedLocationId,
+        io: req.app.get('io'),
+      });
     }
 
     // Trigger Notifications
@@ -1861,6 +1888,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 module.exports = {
+  dispatchDeliveryOrder,
   createGuestOrder,
   createPendingCheckout,
   finalizePendingCheckout,
