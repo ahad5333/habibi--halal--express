@@ -539,8 +539,8 @@ const updateAssignmentStatus = async (req, res) => {
     const noteSet = note ? `, delivery_note=$2` : '';
     const params = note ? [status, note, id] : [status, id];
     const idPos  = note ? '$3' : '$2';
-    await pool.query(
-      `UPDATE delivery_assignments SET status=$1${extra}${noteSet}, assigned_at=assigned_at WHERE id=${idPos}`,
+    const updated = await pool.query(
+      `UPDATE delivery_assignments SET status=$1${extra}${noteSet}, assigned_at=assigned_at WHERE id=${idPos} RETURNING driver_id`,
       params
     );
 
@@ -580,7 +580,15 @@ const updateAssignmentStatus = async (req, res) => {
     }
 
     const io = req.app.get('io');
-    if (io) io.emit('assignment_status_update', { id: parseInt(id), status });
+    // The dispatch board (admins) and the driver this assignment belongs to --
+    // not every connected socket. This used to go to everyone, including any
+    // customer browsing the site; the driver app's listener only reloads its own
+    // assignment, so no other driver needs it.
+    if (io) {
+      const driverId = updated.rows[0]?.driver_id;
+      const target = driverId ? io.to('admins').to(`driver_${driverId}`) : io.to('admins');
+      target.emit('assignment_status_update', { id: parseInt(id), status });
+    }
 
     // Notify customer when driver starts moving
     if (status === 'en_route' || status === 'picked_up') {

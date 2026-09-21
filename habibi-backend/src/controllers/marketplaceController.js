@@ -103,7 +103,9 @@ const handleUberEatsWebhook = async (req, res) => {
       const norm = normaliseUberOrder(o);
       const { id, locationId } = await upsertMarketplaceOrder(norm, o);
       const io = req.app.get('io');
-      if (io) io.emit('marketplace_order', { platform: 'ubereats', id, location_id: locationId, ...norm });
+      // Admins only: carries the normalised order (customer details). It went to every
+      // connected socket before; MarketplaceOrders.jsx now joins 'admins' to receive it.
+      if (io) io.to('admins').emit('marketplace_order', { platform: 'ubereats', id, location_id: locationId, ...norm });
     }
     res.sendStatus(200);
   } catch (err) {
@@ -123,7 +125,7 @@ const handleGrubHubWebhook = async (req, res) => {
     const norm = normaliseGrubHubOrder(order);
     const { id, locationId } = await upsertMarketplaceOrder(norm, order);
     const io = req.app.get('io');
-    if (io) io.emit('marketplace_order', { platform: 'grubhub', id, location_id: locationId, ...norm });
+    if (io) io.to('admins').emit('marketplace_order', { platform: 'grubhub', id, location_id: locationId, ...norm });
     res.sendStatus(200);
   } catch (err) {
     console.error('GrubHub webhook error:', err.message);
@@ -152,7 +154,7 @@ const handleCaviarWebhook = async (req, res) => {
     };
     const { id, locationId } = await upsertMarketplaceOrder(norm, order);
     const io = req.app.get('io');
-    if (io) io.emit('marketplace_order', { platform: 'caviar', id, location_id: locationId, ...norm });
+    if (io) io.to('admins').emit('marketplace_order', { platform: 'caviar', id, location_id: locationId, ...norm });
     res.sendStatus(200);
   } catch (err) {
     console.error('Caviar webhook error:', err.message);

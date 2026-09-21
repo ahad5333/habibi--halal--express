@@ -323,7 +323,9 @@ const handleWebhook = async (req, res) => {
     );
 
     const io = req.app.get('io');
-    if (io) io.emit('roadie_update', { roadie_id: data.id, event, state, data });
+    // Admins only: this carries the whole webhook payload (delivery details), and
+    // used to go to every connected socket, customers included.
+    if (io) io.to('admins').emit('roadie_update', { roadie_id: data.id, event, state, data });
 
     res.sendStatus(200);
   } catch (err) {

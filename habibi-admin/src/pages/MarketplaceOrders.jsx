@@ -210,6 +210,9 @@ export default function MarketplaceOrders() {
     const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
     const socket = io(SOCKET_URL, { transports: ['websocket'], reconnectionAttempts: 5 });
     socketRef.current = socket;
+    // marketplace_order is sent to the 'admins' room only (it carries customer
+    // details), so join it -- on every (re)connect.
+    socket.on('connect', () => socket.emit('join_admin'));
     socket.on('marketplace_order', (data) => {
       setNewOrderAlert({ platform: data.platform, platform_order_id: data.platform_order_id });
       setOrders(prev => {

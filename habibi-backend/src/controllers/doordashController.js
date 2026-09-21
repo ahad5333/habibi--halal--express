@@ -177,7 +177,9 @@ const handleWebhook = async (req, res) => {
 
     // Emit Socket.IO update to admin
     const io = req.app.get('io');
-    if (io) io.emit('doordash_update', { delivery_id: ddId, event_name, status, data });
+    // Admins only: this carries the whole webhook payload (delivery details), and
+    // used to go to every connected socket, customers included.
+    if (io) io.to('admins').emit('doordash_update', { delivery_id: ddId, event_name, status, data });
 
     res.sendStatus(200);
   } catch (err) {
