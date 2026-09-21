@@ -51,7 +51,12 @@ const CLAIM = `
       FROM guest_orders
      WHERE LOWER(delivery_method) = 'delivery'
        AND dispatch_fired = FALSE
-       AND order_status NOT IN ('cancelled', 'refunded', 'delivered')
+       -- pending_verification = a Zelle payment nobody has confirmed yet. It
+       -- waits here -- not booked, not flagged -- until staff tap Confirm
+       -- Payment; from then on the normal rules apply. (Amgad, 2026-09-21: a
+       -- scheduled order has time to wait for the money. ASAP Zelle orders are
+       -- still dispatched at placement by createGuestOrder.)
+       AND order_status NOT IN ('cancelled', 'refunded', 'delivered', 'pending_verification')
        AND expected_time IS NOT NULL AND expected_time <> ''
        AND UPPER(TRIM(expected_time)) <> 'ASAP'
        AND placed_at >= NOW() - INTERVAL '48 hours'
