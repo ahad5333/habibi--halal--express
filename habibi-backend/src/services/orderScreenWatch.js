@@ -16,29 +16,44 @@ const { isOpenNow } = require('../utils/businessHours');
 // counted: its pages join 'admins', and most of them don't ring for orders.
 //
 // "Open" = at least one active location that is accepting orders and whose hours
-// positively say open now. Checkout also treats unparseable hours as open, but
-// that is too weak a reason to text someone -- it could fire at 3 a.m.
+// positively say open now. Checkout also treats unreadable hours as open, but
+// that is too weak a reason to text someone.
 //
-// At most one text per open period: after one, nothing more until a screen
-// connects again or the restaurant closes (so a split lunch/dinner day can send
-// at most two). State lives in this process only -- this runs on the designated
-// PM2 instance -- so after a restart it has to observe the full grace period
-// again before texting, which errs toward silence.
+// All times are New York time. The stores are listed as open 24 hours, so this
+// warning is limited on its own terms (2026-09-22, after it texted the owner at
+// 2:54 and 3:26 a.m.):
+//  - never between QUIET_FROM and QUIET_UNTIL -- the owner is asleep, and an
+//    order that actually arrives then and sits unaccepted still texts him
+//    (acceptEscalation.js), which is the alert that matters at night;
+//  - at most once per New York day, recorded in system_settings, so a restart or
+//    a deploy can't re-send it (the first version kept this in memory, and every
+//    restart re-armed it 15 minutes later).
 //
-// Ships as a DRY RUN: it logs the text it would send until ORDER_SCREEN_WATCH=on
-// is set in the backend .env. Until staff actually keep a screen open, turning
-// it on means the owner is texted once each open period.
+// Only sends when ORDER_SCREEN_WATCH=on in the backend .env; otherwise it logs
+// what it would have sent, once a day.
 
-const GRACE_MIN = 15;
+const GRACE_MIN   = 15;
+const QUIET_FROM  = 22;   // 10 p.m. New York
+const QUIET_UNTIL = 8;    //  8 a.m. New York
 
 let unwatchedSince = null;   // first check that found no screen while open
-let alerted = false;         // already texted for this gap
+let dryRunLoggedOn = null;   // New York date of the last dry-run log line
 
 async function anyLocationOpenNow() {
   const { rows } = await pool.query(
     `SELECT accepting_orders, working_days_hours FROM locations WHERE is_active = true`
   );
   return rows.some(l => l.accepting_orders !== false && isOpenNow(l.working_days_hours) === true);
+}
+
+// Wall-clock date and hour in New York, via Intl -- never the Date object's own
+// getters, which run in the server's timezone (UTC).
+function newYorkNow(now) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: 'numeric', hourCycle: 'h23',
+  }).formatToParts(new Date(now)).map(x => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) % 24 };
 }
 
 const MESSAGE =
@@ -48,26 +63,35 @@ const MESSAGE =
 // `now` is injectable for tests. Returns what it did, for logging and tests.
 async function checkWatchers(io, now = Date.now()) {
   const screens = (await io.in('kitchen').fetchSockets()).length;
-  if (screens > 0) { unwatchedSince = null; alerted = false; return 'watched'; }
+  if (screens > 0) { unwatchedSince = null; return 'watched'; }
 
-  if (!(await anyLocationOpenNow())) {
-    // Closed: nothing to watch. Resetting here is what lets the next open
-    // period send its own single text.
-    unwatchedSince = null; alerted = false;
-    return 'closed';
-  }
+  if (!(await anyLocationOpenNow())) { unwatchedSince = null; return 'closed'; }
   if (unwatchedSince === null) { unwatchedSince = now; return 'grace-started'; }
-  if (alerted) return 'already-alerted';
   if (now - unwatchedSince < GRACE_MIN * 60000) return 'in-grace';
 
-  alerted = true;
+  const ny = newYorkNow(now);
+  if (ny.hour >= QUIET_FROM || ny.hour < QUIET_UNTIL) return 'quiet-hours';
+
   if (process.env.ORDER_SCREEN_WATCH !== 'on') {
-    console.log(`[SCREEN WATCH] dry run (ORDER_SCREEN_WATCH is not "on") -- would text: ${MESSAGE}`);
+    if (dryRunLoggedOn !== ny.date) {
+      dryRunLoggedOn = ny.date;
+      console.log(`[SCREEN WATCH] dry run (ORDER_SCREEN_WATCH is not "on") -- would text: ${MESSAGE}`);
+    }
     return 'dry-run';
   }
+
+  // Claim today in the database before sending: one text per New York day, across
+  // restarts, deploys and both workers.
+  const claim = await pool.query(
+    `UPDATE system_settings SET screen_watch_alerted_on = $1::date
+      WHERE id = 1 AND screen_watch_alerted_on IS DISTINCT FROM $1::date RETURNING 1`,
+    [ny.date]
+  );
+  if (!claim.rowCount) return 'already-alerted';
+
   const phone = await getAlertPhone();
   if (!phone) {
-    console.error('[SCREEN WATCH] ADMIN_CPANEL_PHONE is not configured -- owner NOT told that no order screen is open');
+    console.error('[SCREEN WATCH] no owner alert phone is set -- owner NOT told that no order screen is open');
     return 'no-phone';
   }
   const result = await sendSMS(phone, MESSAGE);
@@ -83,7 +107,7 @@ function startOrderScreenWatch(io) {
   });
 }
 
-// For tests: forget the per-process state.
-function _reset() { unwatchedSince = null; alerted = false; }
+// For tests: forget the per-process state (the daily record lives in the database).
+function _reset() { unwatchedSince = null; dryRunLoggedOn = null; }
 
-module.exports = { startOrderScreenWatch, checkWatchers, GRACE_MIN, _reset };
+module.exports = { startOrderScreenWatch, checkWatchers, GRACE_MIN, _reset, newYorkNow };

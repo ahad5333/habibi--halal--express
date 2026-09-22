@@ -1420,6 +1420,11 @@ const createTables = async () => {
     // public endpoint, and never SELECT * from system_settings where the result
     // can reach a customer. Seeded once from the server's ADMIN_CPANEL_PHONE.
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS owner_alert_phone VARCHAR(20)`);
+    // The New York date the "no order screen open" text last went out -- one per
+    // day, across restarts (services/orderScreenWatch.js). Defaulted to the day it
+    // is added so the switch to this rule doesn't send an extra text on a day the
+    // owner has already had three (2026-09-22).
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS screen_watch_alerted_on DATE DEFAULT CURRENT_DATE`);
     if (process.env.ADMIN_CPANEL_PHONE) {
       await client.query(
         `UPDATE system_settings SET owner_alert_phone = $1 WHERE id = 1 AND owner_alert_phone IS NULL`,
