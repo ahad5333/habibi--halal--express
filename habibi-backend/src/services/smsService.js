@@ -79,7 +79,23 @@ const sendBackInStockAlert = async (to, itemName) => {
   return await sendSMS(to, body);
 };
 
+// What kind of line a number is, from Twilio Lookup (line type intelligence).
+// The owner alert number must be a mobile: the restaurant's public number is a
+// VoIP line, Twilio accepted every alert sent to it, and none was ever delivered
+// (error 30006). "Not a landline" is not enough -- that line would have passed.
+// Returns { valid, type } or { error }.
+const lookupLineType = async (phone) => {
+  if (!client) return { error: 'SMS provider is not configured' };
+  try {
+    const r = await client.lookups.v2.phoneNumbers(toE164(phone)).fetch({ fields: 'line_type_intelligence' });
+    return { valid: !!r.valid, type: r.lineTypeIntelligence?.type || null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
+
 module.exports = {
+  lookupLineType,
   sendSMS,
   sendOrderUpdate,
   sendUrgentSOS,

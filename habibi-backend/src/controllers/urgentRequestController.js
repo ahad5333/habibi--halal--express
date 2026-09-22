@@ -1,4 +1,5 @@
 const safeError = require('../utils/safeError');
+const { getAlertPhone } = require('../utils/alertPhone');
 const pool = require("../config/db");
 
 const { sendUrgentSOS } = require("../services/smsService");
@@ -17,7 +18,7 @@ const createUrgentRequest = async (req, res) => {
     // (medical emergency, food safety), so a misconfigured/missing admin
     // phone must never fail silently. If this ever logs, urgent alerts are
     // being sent nowhere despite customers seeing "Alert Dispatched".
-    const adminPhone = process.env.ADMIN_CPANEL_PHONE;
+    const adminPhone = await getAlertPhone();
     if (!adminPhone) {
       console.error('[URGENT ALERT] ADMIN_CPANEL_PHONE is not configured — urgent SOS SMS was NOT sent for request:', { name, phone, reason });
     } else {

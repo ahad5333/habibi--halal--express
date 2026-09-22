@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const { getAlertPhone } = require('../utils/alertPhone');
 const pool = require('../config/db');
 const { sendSMS } = require('./smsService');
 const { isOpenNow } = require('../utils/businessHours');
@@ -64,7 +65,7 @@ async function checkWatchers(io, now = Date.now()) {
     console.log(`[SCREEN WATCH] dry run (ORDER_SCREEN_WATCH is not "on") -- would text: ${MESSAGE}`);
     return 'dry-run';
   }
-  const phone = process.env.ADMIN_CPANEL_PHONE;
+  const phone = await getAlertPhone();
   if (!phone) {
     console.error('[SCREEN WATCH] ADMIN_CPANEL_PHONE is not configured -- owner NOT told that no order screen is open');
     return 'no-phone';

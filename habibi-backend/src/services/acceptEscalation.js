@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const { getAlertPhone } = require('../utils/alertPhone');
 const pool = require('../config/db');
 const { sendSMS } = require('./smsService');
 
@@ -83,7 +84,7 @@ async function checkUnaccepted() {
   const { rows } = await pool.query(CLAIM_DUE);
   if (!rows.length) return;
 
-  const phone = process.env.ADMIN_CPANEL_PHONE;
+  const phone = await getAlertPhone();
   if (!phone) {
     console.error(`[ACCEPT ESCALATION] ADMIN_CPANEL_PHONE is not configured -- ${rows.length} unaccepted order(s) NOT texted: ${rows.map(r => r.order_number).join(', ')}`);
     return;

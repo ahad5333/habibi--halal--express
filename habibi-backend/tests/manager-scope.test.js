@@ -34,6 +34,7 @@ const MUST_DENY = [
   ['GET','/customers'], ['DELETE','/customers/4'], ['POST','/customers/bulk-delete'],
   ['GET','/coupons'], ['POST','/coupons'], ['GET','/gift-cards'], ['GET','/loyalty/stats'],
   ['GET','/referrals'], ['GET','/settings'], ['POST','/settings'],
+  ['GET','/settings/alert-phone'], ['PATCH','/settings/alert-phone'],
   ['GET','/audit-log'], ['GET','/integrations'], ['GET','/platform-credentials'],
   ['POST','/locations'], ['PUT','/locations/1'], ['PATCH','/locations/1'], ['DELETE','/locations/1'],
   ['GET','/authnet/accounts'], ['POST','/authnet/accounts'],

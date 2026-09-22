@@ -98,6 +98,105 @@ function BusinessInfoSection() {
   );
 }
 
+// Where the website texts the owner: urgent/SOS reports, orders nobody has
+// accepted, and "no order screen open". Private -- never shown on the site, and
+// stored apart from the public Business Information above. The backend only
+// accepts a number Twilio confirms is a mobile: the restaurant's public line is
+// a VoIP line, and every alert ever sent to it was undelivered.
+const formatUS = (p) => {
+  const d = String(p || '').replace(/\D/g, '').slice(-10);
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : (p || '');
+};
+
+function AlertPhoneSection() {
+  const [current, setCurrent] = useState(null);   // { phone, source }
+  const [phone, setPhone]     = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+  const [result, setResult]   = useState('');
+
+  useEffect(() => {
+    adminAPI.getAlertPhone()
+      .then(d => { setCurrent(d); setPhone(formatUS(d.phone)); })
+      .catch(() => setError('Could not load the alert phone.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(''); setSaving(true);
+    try {
+      const d = await adminAPI.setAlertPhone(phone);
+      setCurrent({ phone: d.phone, source: d.source });
+      setPhone(formatUS(d.phone));
+      setResult(d.confirmation_sms === 'sent'
+        ? `Saved. A confirmation text was sent to ${formatUS(d.phone)} -- check that it arrived.`
+        : `Saved, but the confirmation text to ${formatUS(d.phone)} could not be sent. Check the number.`);
+    } catch (err) {
+      setError(err.message || 'Could not save the alert phone.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const note = !current ? null
+    : current.source === 'none'   ? 'No alert phone is set, so urgent alerts are going nowhere.'
+    : current.source === 'server' ? 'Currently using the number set on the server. Saving here takes over.'
+    : 'Set here in CPanel.';
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-hdr">
+        <p className="settings-section-title">Owner Alert Phone</p>
+        <p className="settings-section-sub">Where the website texts you about urgent/SOS reports, orders nobody has accepted, and when no order screen is open. Private -- never shown on the website. Must be a mobile number.</p>
+      </div>
+      <div className="card" style={{padding:'1.25rem'}}>
+        {loading ? (
+          <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
+        ) : (
+          <form onSubmit={handleSave}>
+            {error && (
+              <div role="alert" style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#b91c1c',marginBottom:'0.75rem'}}>
+                ⚠ {error}
+              </div>
+            )}
+            {result && (
+              <div role="status" style={{background:'rgba(34,197,94,0.12)',border:'1px solid rgba(34,197,94,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#166534',marginBottom:'0.75rem'}}>
+                ✓ {result}
+              </div>
+            )}
+            <div className="field" style={{maxWidth:320}}>
+              <label htmlFor="alert-phone" style={{fontSize:'0.78rem'}}>Mobile number</label>
+              <input
+                id="alert-phone"
+                type="tel"
+                className="input"
+                autoComplete="tel"
+                value={phone}
+                placeholder="(347) 555-0123"
+                onChange={e => setPhone(e.target.value)}
+              />
+            </div>
+            {note && (
+              <p style={{fontSize:'0.75rem',opacity:0.75,margin:'0.5rem 0 0',maxWidth:560}}>
+                {note} Changing it texts both the new number and the previous one.
+              </p>
+            )}
+            <div style={{marginTop:'1.25rem'}}>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={saving || !phone.trim()} style={{gap:6}}>
+                {saving
+                  ? <span className="spinner" style={{width:12,height:12}} />
+                  : <><Save size={13} /> Save Alert Phone</>}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function IntegrationsSection() {
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -325,6 +424,7 @@ export default function Settings() {
 
       {/* Business Information */}
       <BusinessInfoSection />
+      <AlertPhoneSection />
 
       {/* Security — Change Password */}
       <section className="settings-section">

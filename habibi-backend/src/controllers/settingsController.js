@@ -1,6 +1,8 @@
 const safeError = require('../utils/safeError');
 const pool = require("../config/db");
 const { logAudit } = require('./auditController');
+const { sendSMS, toE164, lookupLineType } = require('../services/smsService');
+const { getAlertPhone, clearAlertPhoneCache } = require('../utils/alertPhone');
 const { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { normalizeZelleHandle, displayZelleHandle, zelleHandleFromConfig } = require('../utils/zelleHandle');
 
@@ -281,7 +283,70 @@ const updateSiteSettings = async (req, res) => {
   }
 };
 
+// ── Owner alert phone (admin only) ──────────────────────────────────
+// Who is texted for urgent/SOS reports, unaccepted orders and "no order screen
+// open". Private -- see utils/alertPhone.js. Must be a mobile (checked with
+// Twilio), and every change texts both the new number and the previous one, so a
+// redirected emergency alert can't go unnoticed.
+const LINE_LABEL = {
+  landline: 'a landline', fixedVoip: 'an internet (VoIP) line', nonFixedVoip: 'an internet (VoIP) line',
+  tollFree: 'a toll-free number', pager: 'a pager', voicemail: 'a voicemail line',
+  personal: 'a personal-number service', premium: 'a premium-rate number', sharedCost: 'a shared-cost number',
+  uan: 'a business line', unknown: 'an unknown line type',
+};
+const maskPhone = p => (p ? '(***) ***-' + String(p).slice(-4) : 'none');
+
+const getAlertPhoneSetting = async (req, res) => {
+  try {
+    const r = await pool.query('SELECT owner_alert_phone FROM system_settings WHERE id = 1');
+    const saved = r.rows[0]?.owner_alert_phone || null;
+    const server = process.env.ADMIN_CPANEL_PHONE || null;
+    res.json({ phone: saved || server, source: saved ? 'cpanel' : server ? 'server' : 'none' });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load the alert phone.' });
+  }
+};
+
+const updateAlertPhoneSetting = async (req, res) => {
+  const raw = String(req.body?.phone ?? '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (!(digits.length === 10 || (digits.length === 11 && digits.startsWith('1')))) {
+    return res.status(400).json({ message: 'Enter a 10-digit US mobile number.' });
+  }
+  const phone = toE164(raw);
+  const lookup = await lookupLineType(phone);
+  if (lookup.error) {
+    return res.status(502).json({ message: `Could not check that number with the SMS provider (${lookup.error}). Nothing was changed.` });
+  }
+  if (!lookup.valid) return res.status(400).json({ message: 'That is not a valid phone number. Nothing was changed.' });
+  if (lookup.type !== 'mobile') {
+    return res.status(400).json({
+      message: `That number is ${LINE_LABEL[lookup.type] || 'not a mobile'}, which can't reliably receive texts. Alerts need a mobile number. Nothing was changed.`,
+      line_type: lookup.type,
+    });
+  }
+  try {
+    const prev = await getAlertPhone();
+    await pool.query('UPDATE system_settings SET owner_alert_phone = $1 WHERE id = 1', [phone]);
+    clearAlertPhoneCache();
+    logAudit(pool, req.user?.id, req.user?.name, 'update_alert_phone', 'setting', 'owner_alert_phone',
+      { to: maskPhone(phone), from: maskPhone(prev), line_type: lookup.type }, req.ip);
+    const who = req.user?.name || 'an admin';
+    const confirm = await sendSMS(phone,
+      'Habibi: this phone is now set in CPanel to receive the website alerts (urgent/SOS, orders not accepted, no order screen open). No action needed.');
+    if (prev && prev !== phone) {
+      sendSMS(prev, `Habibi: website alerts were moved from this phone to ${maskPhone(phone)} by ${who} in CPanel. If that wasn't expected, check CPanel Settings.`)
+        .catch(() => {});
+    }
+    res.json({ phone, source: 'cpanel', line_type: lookup.type, confirmation_sms: confirm?.success ? 'sent' : 'failed' });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not save the alert phone.' });
+  }
+};
+
 module.exports = {
+  getAlertPhoneSetting,
+  updateAlertPhoneSetting,
   getPaymentSettings,
   getAdminPaymentSettings,
   updatePaymentSetting,

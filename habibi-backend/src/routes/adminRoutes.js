@@ -91,6 +91,13 @@ router.get("/panel-users",      admin, listPanelUsers);
 router.post("/panel-users",     admin, grantPanelAccess);
 router.patch("/panel-users/:id", admin, updatePanelUser);
 
+// ── Owner alert phone (admin only) ───────────────────────────────
+// Who receives SOS / unaccepted-order / no-screen alerts. Private, and
+// `admin` re-mounted on the route like panel-users above.
+const { getAlertPhoneSetting, updateAlertPhoneSetting } = require("../controllers/settingsController");
+router.get("/settings/alert-phone",   admin, getAlertPhoneSetting);
+router.patch("/settings/alert-phone", admin, updateAlertPhoneSetting);
+
 // Analytics & Stats
 router.get("/stats", getDashboardStats);
 const { getToday } = require("../controllers/dashboardController");

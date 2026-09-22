@@ -1415,6 +1415,17 @@ const createTables = async () => {
       );
     `);
     await client.query(`INSERT INTO system_settings (id, tax_rate, service_fee_rate) VALUES (1, NULL, NULL) ON CONFLICT (id) DO NOTHING`);
+    // The owner's alert number (SOS, unaccepted orders, no order screen open),
+    // set in CPanel Settings. PRIVATE -- a personal mobile: never expose it on a
+    // public endpoint, and never SELECT * from system_settings where the result
+    // can reach a customer. Seeded once from the server's ADMIN_CPANEL_PHONE.
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS owner_alert_phone VARCHAR(20)`);
+    if (process.env.ADMIN_CPANEL_PHONE) {
+      await client.query(
+        `UPDATE system_settings SET owner_alert_phone = $1 WHERE id = 1 AND owner_alert_phone IS NULL`,
+        [process.env.ADMIN_CPANEL_PHONE]
+      );
+    }
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS free_delivery_threshold NUMERIC(8,2)`);
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS driver_daily_goal INTEGER DEFAULT 10`);
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS gift_card_min_amount NUMERIC(8,2) DEFAULT 10`);
