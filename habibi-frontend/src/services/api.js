@@ -323,6 +323,9 @@ export const userAPI = {
   /** GET /api/users/me/orders */
   getOrders: () => request('/api/users/me/orders'),
 
+  /** GET /api/users/me/usual — the items this customer orders most */
+  getUsual: () => request('/api/users/me/usual'),
+
   /** GET /api/users/me/loyalty */
   getLoyalty: () => request('/api/users/me/loyalty'),
 

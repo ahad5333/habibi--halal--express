@@ -365,6 +365,100 @@ const registerDeviceToken = async (req, res) => {
 };
 
 // ─── GET /api/users/me/loyalty ───────────────────────────────────────────────
+// "Your Usual" -- the items this customer orders most, for one-tap reordering.
+//
+// Deliberately a count, not a learned model: with a handful of orders per
+// customer, a recency-weighted count is as accurate as anything trained and can
+// be explained on the page ("ordered 5 times, last on Sep 12"). The ranking is
+// the only piece that would change if a model ever becomes worth it.
+//
+// Scoped by user_id only, exactly like getMyOrders above -- never by email or
+// phone, so people sharing a phone number can't see each other's orders.
+//
+// Names and prices come from the CURRENT menu, never from the old order. The
+// page opens the item's own dialog with these choices pre-selected, so it is
+// re-priced there; copying an old price could undercharge. Items that have been
+// removed or turned off are dropped.
+const USUAL_LIMIT      = 4;
+const USUAL_HALF_LIFE_WEEKS = 8;   // an order 8 weeks old counts half as much
+const USUAL_LOOKBACK   = 50;       // orders
+
+const getMyUsual = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT items, placed_at
+         FROM guest_orders
+        WHERE user_id = $1
+          AND order_status NOT IN ('cancelled', 'refunded')
+        ORDER BY placed_at DESC
+        LIMIT ${USUAL_LOOKBACK}`,
+      [req.user.id]
+    );
+
+    // menu_item_id -> { score, orders, last, variants }
+    const tally = new Map();
+    for (const row of rows) {
+      let items = [];
+      try { items = typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || []); } catch (_) { continue; }
+      const weeksAgo = (Date.now() - new Date(row.placed_at).getTime()) / (7 * 86400000);
+      const weight   = Math.pow(0.5, weeksAgo / USUAL_HALF_LIFE_WEEKS);
+      const counted  = new Set();   // the same item twice in one order is still one order
+      for (const it of Array.isArray(items) ? items : []) {
+        const id = Number(it?.menu_item_id ?? it?.menuItemId ?? it?.id);
+        if (!Number.isInteger(id) || id <= 0) continue;
+        const e = tally.get(id) || { score: 0, orders: 0, last: row.placed_at, variants: new Map() };
+        if (!counted.has(id)) { e.score += weight; e.orders += 1; counted.add(id); }
+        if (new Date(row.placed_at) > new Date(e.last)) e.last = row.placed_at;
+        // How they usually have it: the most common combination they picked.
+        const variant = JSON.stringify({
+          c: it.selectedChoices || {}, a: it.selectedAddons || {}, n: it.note || '',
+        });
+        e.variants.set(variant, (e.variants.get(variant) || 0) + 1);
+        tally.set(id, e);
+      }
+    }
+    if (tally.size === 0) return res.json([]);
+
+    const ids  = [...tally.keys()];
+    const menu = await pool.query(
+      `SELECT id, name, price, image_url FROM menu_items WHERE id = ANY($1::int[]) AND is_available = TRUE`,
+      [ids]
+    );
+    const byId = new Map(menu.rows.map(m => [Number(m.id), m]));
+
+    const usual = ids
+      .filter(id => byId.has(id))
+      .sort((a, b) =>
+        tally.get(b).score - tally.get(a).score ||
+        new Date(tally.get(b).last) - new Date(tally.get(a).last))
+      .slice(0, USUAL_LIMIT)
+      .map(id => {
+        const e = tally.get(id);
+        const m = byId.get(id);
+        const [top] = [...e.variants.entries()].sort((x, y) => y[1] - x[1]);
+        let usual_choices = {}, usual_addons = {}, usual_note = '';
+        try {
+          const v = JSON.parse(top[0]);
+          usual_choices = v.c || {}; usual_addons = v.a || {}; usual_note = v.n || '';
+        } catch (_) { /* keep the plain item */ }
+        return {
+          menu_item_id: m.id,
+          name: m.name,
+          price: Number(m.price),
+          image_url: m.image_url,
+          times_ordered: e.orders,
+          last_ordered_at: e.last,
+          usual_choices, usual_addons, usual_note,
+        };
+      });
+
+    res.json(usual);
+  } catch (err) {
+    console.error('[MyUsual] failed:', err.message);
+    res.status(500).json({ message: 'Could not load your usual orders.' });
+  }
+};
+
 const getLoyalty = async (req, res) => {
   try {
     const userRes = await pool.query(
@@ -492,7 +586,7 @@ const cancelMyOrder = async (req, res) => {
 
 module.exports = {
   getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
-  getMyOrders, getLoyalty, cancelMyOrder,
+  getMyOrders, getMyUsual, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, updateAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,

@@ -1,0 +1,103 @@
+/* "Your usual" — one-tap reorder row on the home page. Brand colours: near-black
+   ground, gold #E5B64E, cream text. */
+
+.yu-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 0.5rem;
+}
+.yu-head { margin-bottom: 1rem; }
+.yu-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  color: #f9f0dc;
+  letter-spacing: 0.01em;
+}
+.yu-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.yu-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.yu-item { display: flex; }
+
+.yu-card {
+  /* A column so the name and the "usually ..." line get the card's full width:
+     side by side with the button, a 280px card truncated them to "Chi...". */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  width: 100%;
+  height: 100%;                /* equal-height cards across the row */
+  min-height: 84px;            /* comfortable tap target */
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(229, 182, 78, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #131313 0%, #1a1209 100%);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.yu-card:hover { border-color: #E5B64E; transform: translateY(-2px); }
+.yu-card:focus-visible { outline: 3px solid #E5B64E; outline-offset: 3px; }
+
+.yu-top { display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1 1 auto; }
+
+.yu-img {
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #0d0d0d;
+}
+.yu-img--empty { border: 1px dashed rgba(229, 182, 78, 0.35); }
+
+.yu-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1 1 auto; }
+.yu-name {
+  font-weight: 700;
+  color: #f9f0dc;
+  line-height: 1.25;
+}
+.yu-note {
+  font-size: 0.8rem;
+  color: #E5B64E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yu-meta { font-size: 0.75rem; color: rgba(255, 255, 255, 0.55); }
+
+.yu-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  align-self: stretch;
+  margin-top: auto;            /* buttons line up even when a name wraps */
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(229, 182, 78, 0.14);
+  color: #E5B64E;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .yu-card { min-height: 76px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .yu-card, .yu-card:hover { transition: none; transform: none; }
+}

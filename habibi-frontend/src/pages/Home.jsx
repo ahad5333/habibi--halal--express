@@ -4,6 +4,7 @@ import { Star, ChevronRight, ChevronLeft, Sparkles, Shield, Eye, ShoppingCart } 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SEO from '../components/SEO';
+import YourUsual from '../components/YourUsual';
 import { useBusinessSchema } from '../utils/businessSchema';
 import { menuAPI, locationsAPI } from '../services/api';
 import StoreMapImage from '../components/StoreMapImage';
@@ -341,6 +342,9 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════
           BUILD YOUR OWN — CTA STRIP (Redesigned)
       ═══════════════════════════════════════════════════════ */}
+      {/* Signed-in customers with history only; renders nothing otherwise. */}
+      <YourUsual />
+
       <section className="byo-strip">
         <div className="byo-strip-bg-overlay" aria-hidden="true" />
         <div className="byo-strip-glow" aria-hidden="true" />

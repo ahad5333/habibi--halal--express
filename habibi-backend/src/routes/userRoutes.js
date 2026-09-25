@@ -5,7 +5,7 @@ const uploadAvatarMw = require("../middleware/uploadAvatarMiddleware");
 const { handleValidation, body } = require('../middleware/validate');
 const {
   getProfile, updateProfile, uploadAvatar, updateNotificationPrefs, changePassword, deleteAccount,
-  getMyOrders, getLoyalty, cancelMyOrder,
+  getMyOrders, getMyUsual, getLoyalty, cancelMyOrder,
   getAddresses, addAddress, updateAddress, setDefaultAddress, deleteAddress,
   createUser, getUsers,
   registerDeviceToken,
@@ -61,6 +61,7 @@ router.put("/me/notification-prefs",
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 router.get("/me/orders",  getMyOrders);
+router.get("/me/usual",   getMyUsual);   // "Your Usual" one-tap reorder
 router.patch("/me/orders/:orderNumber/cancel", cancelMyOrder);
 router.get("/me/loyalty", getLoyalty);
 
