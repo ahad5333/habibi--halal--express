@@ -93,18 +93,21 @@
          nothing to see.
 
          Two versions, chosen by JS below before first paint:
-         - QUICK (ring + badge + bar): every load after the first one in this
-           browser tab, and always when prefers-reduced-motion is set. This is
-           the whole screen on its own for a repeat visitor -- it plays for at
-           least MIN_VISIBLE and lifts, same behaviour as before.
-         - DROP (this session's first load only): real Habibi food photos fall
-           and pile up while a gold counter runs 0-100%, the burger lands last
-           as the hero, then a gold panel wipes up to reveal the page. Modelled
-           on a request to build something like agrumeafarm.it's fruit-drop
-           loader, using real food cutouts already in /images -- not drawn
-           shapes -- per Ahad's "not animated or cartoon pieces" (2026-09-27).
-           Its own timing carries it; MIN_VISIBLE/FAILSAFE below still apply as
-           the outer bound so app-readiness is never ignored. -->
+         - DROP (every real page load): real Habibi food photos fall and pile
+           up while a gold counter runs 0-100%, the burger lands last as the
+           hero, then a gold panel wipes up to reveal the page. Modelled on a
+           request to build something like agrumeafarm.it's fruit-drop loader,
+           using real food cutouts already in /images -- not drawn shapes --
+           per Ahad's "not animated or cartoon pieces" (2026-09-27). It first
+           shipped once-per-tab (a repeat load got the quick loader below) --
+           changed to every load per Ahad: "every hard load we need that
+           falling food items". A client-side route change inside the app
+           never re-runs this script (index.html isn't re-fetched), so it only
+           ever plays on an actual full page load, never on in-app navigation.
+           Its own timing carries it; FAILSAFE below still applies as the
+           outer bound so app-readiness is never ignored.
+         - QUICK (ring + badge + bar): only when prefers-reduced-motion is
+           set -- plays for at least MIN_VISIBLE and lifts. -->
     <link rel="preload" as="image" href="/images/logos/logo-badge.webp" fetchpriority="high" />
     <style>
       #boot {
@@ -201,15 +204,17 @@
           setTimeout(function () { boot.remove(); }, 420);
         }
 
+        // Plays on every real page load, not just the first one per tab --
+        // Ahad: "for only one time the effect happened like every hard load
+        // we need that falling food items" (2026-09-27). Only reduced-motion
+        // still gets the plain quick loader; a client-side route change
+        // inside the app never re-runs this script at all (index.html isn't
+        // re-fetched), so this only ever fires on an actual full page load.
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var SEEN_KEY = 'habibi_drop_seen';
-        var seen = true;
-        try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (_) { /* private mode: fall through to quick */ }
 
-        if (reduce || seen) {
+        if (reduce) {
           runQuick();
         } else {
-          try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (_) {}
           runDrop();
         }
 
