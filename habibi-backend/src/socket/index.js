@@ -175,7 +175,13 @@ module.exports = (io) => {
       const isJwtAdmin   = user?.role === "admin";
       // HMAC token validation (drivers open via SMS link, no JWT)
       let isHmacValid = false;
-      if (driver_id && hmac_token) {
+      // Only a string can be a token. `expected` is always a string, so the
+      // old `===` rejected every non-string outright; without this guard,
+      // String([token]) would stringify a one-element array back to the token
+      // and be accepted. Harmless in itself -- you would have to know the real
+      // token to use it -- but it is a difference, and auth code should have
+      // none that nobody decided on.
+      if (driver_id && typeof hmac_token === "string") {
         try {
           const crypto = require("crypto");
           const salt   = getDriverSecretSalt();
