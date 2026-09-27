@@ -89,36 +89,41 @@
     </script>
     <!-- Boot screen. Written into the HTML itself so it paints before the app
          bundle has even downloaded -- that download IS the wait it covers.
-         It plays for at least MIN_VISIBLE below and then lifts, or waits
-         longer if the app is still booting. It first shipped lifting the
-         instant the app was ready, with no minimum -- which measured 373-622ms
-         on screen, too quick to register as anything but a flicker. The ground
-         is the same #0a0a0a the app paints, so the handover has nothing to
-         see. -->
+         The ground is the same #0a0a0a the app paints, so the handover has
+         nothing to see.
+
+         Two versions, chosen by JS below before first paint:
+         - QUICK (ring + badge + bar): every load after the first one in this
+           browser tab, and always when prefers-reduced-motion is set. This is
+           the whole screen on its own for a repeat visitor -- it plays for at
+           least MIN_VISIBLE and lifts, same behaviour as before.
+         - DROP (this session's first load only): real Habibi food photos fall
+           and pile up while a gold counter runs 0-100%, the burger lands last
+           as the hero, then a gold panel wipes up to reveal the page. Modelled
+           on a request to build something like agrumeafarm.it's fruit-drop
+           loader, using real food cutouts already in /images -- not drawn
+           shapes -- per Ahad's "not animated or cartoon pieces" (2026-09-27).
+           Its own timing carries it; MIN_VISIBLE/FAILSAFE below still apply as
+           the outer bound so app-readiness is never ignored. -->
     <link rel="preload" as="image" href="/images/logos/logo-badge.webp" fetchpriority="high" />
     <style>
       #boot {
         position: fixed; inset: 0; z-index: 2147483000;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 26px; background: #0a0a0a;
+        background: #0a0a0a; overflow: hidden;
         opacity: 0; animation: boot-in .35s ease both;
       }
       #boot.boot-out { animation: boot-out .38s ease forwards; }
-      .boot-mark {
-        position: relative; width: 132px; height: 132px;
-        display: flex; align-items: center; justify-content: center;
-      }
-      /* Warm glow so the badge doesn't float on flat black. */
-      .boot-mark::before {
-        content: ""; position: absolute; width: 230px; height: 230px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(229, 182, 78, .17), transparent 65%);
-      }
+      @keyframes boot-in   { to { opacity: 1 } }
+      @keyframes boot-out  { to { opacity: 0; visibility: hidden } }
+
+      /* -- quick version -- */
+      .boot-quick { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+      .boot-mark { position: relative; width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; }
+      .boot-mark::before { content: ""; position: absolute; width: 230px; height: 230px; border-radius: 50%; background: radial-gradient(circle, rgba(229, 182, 78, .17), transparent 65%); }
       .boot-ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: boot-spin 1.15s linear infinite; }
       .boot-logo { position: relative; width: 96px; height: auto; animation: boot-pulse 1.9s ease-in-out infinite; }
       .boot-bar { width: 140px; height: 2px; border-radius: 2px; background: rgba(229, 182, 78, .18); overflow: hidden; }
       .boot-bar span { display: block; width: 38%; height: 100%; border-radius: 2px; background: #E5B64E; animation: boot-sweep 1.35s ease-in-out infinite; }
-      @keyframes boot-in   { to { opacity: 1 } }
-      @keyframes boot-out  { to { opacity: 0; visibility: hidden } }
       @keyframes boot-spin { to { transform: rotate(360deg) } }
       @keyframes boot-pulse{ 0%, 100% { transform: scale(1) } 50% { transform: scale(1.05) } }
       @keyframes boot-sweep{ from { transform: translateX(-110%) } to { transform: translateX(265%) } }
@@ -129,6 +134,31 @@
       @media (max-width: 480px) {
         .boot-mark { width: 112px; height: 112px }
         .boot-logo { width: 80px }
+      }
+
+      /* -- drop version -- */
+      .boot-drop { position: absolute; inset: 0; }
+      .drop-stage { position: absolute; inset: 0; overflow: hidden; }
+      .drop-counter {
+        position: absolute; inset: 0; z-index: 0;
+        display: flex; align-items: center; justify-content: center;
+        padding-bottom: 6%;
+        font-family: "Bebas Neue", Impact, sans-serif;
+        font-size: clamp(72px, 22vw, 240px);
+        color: #E5B64E; font-variant-numeric: tabular-nums;
+      }
+      .drop-piece {
+        position: absolute; z-index: 1; left: 0; top: 0;
+        will-change: transform;
+        filter: drop-shadow(0 6px 10px rgba(0,0,0,.45));
+      }
+      .drop-piece.hero { z-index: 2; }
+      .drop-piece img { display: block; width: 100%; height: auto; }
+      .boot-wipe {
+        position: absolute; inset: 0; z-index: 3;
+        background: #E5B64E;
+        transform: translateY(101%);
+        transition: transform .55s cubic-bezier(.65,0,.35,1);
       }
     </style>
   </head>
@@ -142,17 +172,7 @@
         <p>Please enable JavaScript to use this site, or <a href="tel:+19290000000">call us</a> to place an order.</p>
       </div>
     </noscript>
-    <div id="boot" role="status" aria-label="Loading Habibi Halal Express">
-      <div class="boot-mark">
-        <svg class="boot-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <circle cx="60" cy="60" r="56" fill="none" stroke="#241d13" stroke-width="3" />
-          <circle cx="60" cy="60" r="56" fill="none" stroke="#E5B64E" stroke-width="3"
-                  stroke-linecap="round" stroke-dasharray="72 280" />
-        </svg>
-        <img class="boot-logo" src="/images/logos/logo-badge.webp" alt="" onerror="this.remove()" />
-      </div>
-      <div class="boot-bar"><span></span></div>
-    </div>
+    <div id="boot" role="status" aria-label="Loading Habibi Halal Express"></div>
     <script>
       (function () {
         var boot = document.getElementById('boot');
@@ -160,28 +180,219 @@
         // Staff opening their own queue get their app, not a brand intro.
         if (/^\/(driver|staff|kitchen)(\/|$)/.test(location.pathname)) { boot.remove(); return; }
 
-        var SHOW_AT = 0, MIN_VISIBLE = 1500, FAILSAFE = 8000;
+        var FAILSAFE = 8000;
         var t0 = Date.now(), done = false;
+        var appReady = false;
+        var onAppReady = null; // set by whichever version is showing
 
-        function hide() {
+        window.__habibiAppReady = function () {
           if (done) return;
-          done = true;
-          // Let it finish its run rather than cutting off mid-animation. On a
-          // slow load the app is not ready until well after this anyway, and
-          // then the wait below is zero.
-          var seen = Date.now() - t0 - SHOW_AT;
-          var wait = seen > 0 && seen < MIN_VISIBLE ? MIN_VISIBLE - seen : 0;
-          setTimeout(function () {
-            boot.className = 'boot-out';
-            setTimeout(function () { boot.remove(); }, 420);
-          }, wait);
-        }
-
-        // App.jsx calls this when the first page actually renders.
-        window.__habibiAppReady = hide;
+          appReady = true;
+          if (onAppReady) onAppReady();
+        };
         // If the bundle never runs at all, uncover the page anyway rather than
         // leaving a spinner over a site nobody can reach.
-        setTimeout(hide, FAILSAFE);
+        setTimeout(function () { if (!done) removeBoot(); }, FAILSAFE);
+
+        function removeBoot() {
+          if (done) return;
+          done = true;
+          boot.className = 'boot-out';
+          setTimeout(function () { boot.remove(); }, 420);
+        }
+
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var SEEN_KEY = 'habibi_drop_seen';
+        var seen = true;
+        try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (_) { /* private mode: fall through to quick */ }
+
+        if (reduce || seen) {
+          runQuick();
+        } else {
+          try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (_) {}
+          runDrop();
+        }
+
+        // -- quick: ring + badge + bar, at least MIN_VISIBLE on screen --
+        function runQuick() {
+          boot.innerHTML =
+            '<div class="boot-quick">' +
+              '<div class="boot-mark">' +
+                '<svg class="boot-ring" viewBox="0 0 120 120" aria-hidden="true">' +
+                  '<circle cx="60" cy="60" r="56" fill="none" stroke="#241d13" stroke-width="3" />' +
+                  '<circle cx="60" cy="60" r="56" fill="none" stroke="#E5B64E" stroke-width="3" stroke-linecap="round" stroke-dasharray="72 280" />' +
+                '</svg>' +
+                '<img class="boot-logo" src="/images/logos/logo-badge.webp" alt="" onerror="this.remove()" />' +
+              '</div>' +
+              '<div class="boot-bar"><span></span></div>' +
+            '</div>';
+
+          var SHOW_AT = 0, MIN_VISIBLE = 1500;
+          onAppReady = function () {
+            var elapsed = Date.now() - t0 - SHOW_AT;
+            var wait = elapsed > 0 && elapsed < MIN_VISIBLE ? MIN_VISIBLE - elapsed : 0;
+            setTimeout(removeBoot, wait);
+          };
+        }
+
+        // -- drop: real food falls and piles up, counter runs, burger lands
+        // last, gold wipe reveals the page --
+        function runDrop() {
+          boot.innerHTML =
+            '<div class="boot-drop">' +
+              '<div class="drop-stage" id="drop-stage"><div class="drop-counter" id="drop-counter">0%</div></div>' +
+              '<div class="boot-wipe" id="boot-wipe"></div>' +
+            '</div>';
+
+          var stage = document.getElementById('drop-stage');
+          var counterEl = document.getElementById('drop-counter');
+          var wipe = document.getElementById('boot-wipe');
+
+          // [file, home% (left edge target as % of stage width), size px, delay ms]
+          var PIECES = [
+            ['platter',        4, 190, 60],
+            ['chicken-burger',56, 175, 150],
+            ['gyro',          26, 195, 240],
+            ['steak',         70, 165, 330],
+            ['rice-bowl',     42, 175, 420],
+            ['kabab',         14, 175, 510],
+            ['chicken-crispy',82, 165, 600],
+            ['falafel',       58, 155, 690],
+            ['hummus',        30, 155, 780],
+            ['soda',          88, 150, 870],
+            ['shrimp',        68, 120, 960],
+            ['tomato',         6, 130, 1050],
+            ['onion',         46, 115, 1140],
+            ['pepper',        18, 130, 1230]
+          ];
+          var HERO = ['burger', 34, 320, 1750, 'hero'];
+
+          var rect = stage.getBoundingClientRect();
+          var W = rect.width, H = rect.height;
+          var FLOOR = H * 0.86;
+          var GRAVITY = 2600; // px/s^2
+          var live = [];
+          var landedCount = 0;
+          var totalPieces = PIECES.length + 1;
+
+          function spawn(def) {
+            var name = def[0], homePct = def[1], size = def[2], hero = def[4] === 'hero';
+            var el = document.createElement('div');
+            el.className = 'drop-piece' + (hero ? ' hero' : '');
+            el.style.width = size + 'px';
+            var img = document.createElement('img');
+            img.src = '/images/drop/' + name + '.webp';
+            img.alt = '';
+            img.onerror = function () { el.remove(); };
+            el.appendChild(img);
+            stage.appendChild(el);
+
+            var x = (homePct / 100) * W + (Math.random() * 16 - 8);
+            var p = {
+              el: el, size: size, r: size * 0.40,
+              x: x, y: -size, vx: (Math.random() * 60 - 30), vy: 0,
+              rot: (Math.random() * 30 - 15), vrot: (Math.random() * 40 - 20),
+              landed: false, restVy: 0
+            };
+            live.push(p);
+          }
+
+          PIECES.forEach(function (def) { setTimeout(function () { spawn(def); }, def[3]); });
+          var heroTimer = setTimeout(function () { spawn(HERO); }, HERO[3]);
+
+          // Counter: eased time-based climb, decoupled from physics so it
+          // reads smoothly regardless of how the pile happens to settle.
+          var COUNT_DUR = 2300;
+          var countStart = Date.now();
+          var countTimer = setInterval(function () {
+            var t = Math.min(1, (Date.now() - countStart) / COUNT_DUR);
+            var eased = 1 - Math.pow(1 - t, 3);
+            counterEl.textContent = Math.round(eased * 100) + '%';
+            if (t >= 1) clearInterval(countTimer);
+          }, 60);
+
+          var lastT = Date.now();
+          var rafId;
+          function tick() {
+            var now = Date.now();
+            var dt = Math.min(0.05, (now - lastT) / 1000);
+            lastT = now;
+
+            for (var i = 0; i < live.length; i++) {
+              var p = live[i];
+              if (p.landed) continue;
+              p.vy += GRAVITY * dt;
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+              p.rot += p.vrot * dt;
+              p.vx *= 0.99;
+
+              if (p.x - p.r < 0) { p.x = p.r; p.vx *= -0.4; }
+              if (p.x + p.r > W) { p.x = W - p.r; p.vx *= -0.4; }
+
+              var floorHere = FLOOR;
+              if (p.y + p.r > floorHere) {
+                p.y = floorHere - p.r;
+                p.vy *= -0.22;
+                p.vrot *= 0.5;
+                if (Math.abs(p.vy) < 40) { p.vy = 0; }
+              }
+            }
+
+            // Pairwise settling: lets later pieces rest on earlier ones
+            // instead of stacking straight through them.
+            for (var a = 0; a < live.length; a++) {
+              for (var b = a + 1; b < live.length; b++) {
+                var pa = live[a], pb = live[b];
+                var dx = pb.x - pa.x, dy = pb.y - pa.y;
+                var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+                var minDist = (pa.r + pb.r) * 0.86;
+                if (dist < minDist) {
+                  var overlap = (minDist - dist) / 2;
+                  var nx = dx / dist, ny = dy / dist;
+                  pa.x -= nx * overlap; pa.y -= ny * overlap;
+                  pb.x += nx * overlap; pb.y += ny * overlap;
+                  if (pb.vy > 0 && ny < -0.3) pb.vy *= 0.5;
+                  if (pa.vy > 0 && ny > 0.3) pa.vy *= 0.5;
+                }
+              }
+            }
+
+            for (var j = 0; j < live.length; j++) {
+              var q = live[j];
+              q.el.style.transform =
+                'translate3d(' + (q.x - q.size / 2) + 'px,' + (q.y - q.size / 2) + 'px,0) rotate(' + q.rot + 'deg)';
+            }
+
+            rafId = requestAnimationFrame(tick);
+          }
+          rafId = requestAnimationFrame(tick);
+
+          // The drop has its own natural length; app-readiness is checked
+          // against it rather than the other way round, so a fast API/bundle
+          // never cuts the show short and a slow one never runs the risk of
+          // the pile looking finished while nothing is actually ready.
+          var SHOW_DONE_AT = HERO[3] + 750; // hero lands, brief pause
+          onAppReady = function () { /* handled by the timers below */ };
+
+          setTimeout(function () {
+            wipe.style.transform = 'translateY(0%)';
+            setTimeout(function () {
+              cancelAnimationFrame(rafId);
+              clearInterval(countTimer);
+              proceedWhenReady();
+            }, 560);
+          }, SHOW_DONE_AT);
+
+          function proceedWhenReady() {
+            if (appReady) { finishWipe(); return; }
+            onAppReady = finishWipe;
+          }
+          function finishWipe() {
+            wipe.style.transform = 'translateY(-101%)';
+            setTimeout(removeBoot, 560);
+          }
+        }
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>
