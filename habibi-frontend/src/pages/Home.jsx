@@ -683,6 +683,65 @@ const Home = () => {
       )}
 
       {/* ═══════════════════════════════════════════════════════
+          PRESENTATION BANNER
+          A visual break right after the reviews (Ahad, 2026-09-27 -- moved
+          here from just above Locations). Static eyebrow + heading, a
+          subtitle that fades/rises into view on scroll, a button -- beside a
+          photo. Modelled on a section Ahad pointed to, but measured rather
+          than assumed: on that site the heading and button never animate at
+          all (constant opacity/transform through the whole scroll); only the
+          description line underneath the heading does, easing from opacity
+          0 / translateY(10px) to 1 / 0 as it crosses into the lower
+          viewport. FadeInOnScroll above reproduces that one mechanic; every
+          word here is Habibi's own copy.
+          The image is a placeholder: an AI-generated platter (confirmed
+          original -- compared pixel-by-pixel against the reference site's
+          own photo, nowhere close) at its native 1024x572. Capped at that
+          width rather than run edge-to-edge so it never upscales past its
+          real resolution and blurs -- swap presentationBannerImg for a real
+          Habibi photo whenever one's ready; nothing else here needs to change.
+      ═══════════════════════════════════════════════════════ */}
+      <section className="section presentation-banner-section">
+        <div className="container presentation-banner-container">
+          <div className="presentation-banner-image-col">
+            <ParallaxFrame className="presentation-banner-frame">
+              <img
+                src={presentationBannerImg}
+                alt=""
+                className="presentation-banner-img"
+                loading="lazy"
+                decoding="async"
+                width="1024"
+                height="572"
+              />
+            </ParallaxFrame>
+          </div>
+          <FadeInOnScroll as="div" className="presentation-banner-content-col">
+            <p className="section-eyebrow text-gold pb-reveal pb-reveal-1">{t('home.presentationBanner.eyebrow')}</p>
+            <h2 className="heading-2 pb-reveal pb-reveal-2">
+              {t('home.presentationBanner.title')}
+              <span className="presentation-banner-underline" aria-hidden="true" />
+            </h2>
+            <p className="presentation-banner-lead mt-3 pb-reveal pb-reveal-3">
+              {t('home.presentationBanner.lead')}
+            </p>
+            {/* The entrance animation lives on this wrapper, not the <Link>
+                itself -- .btn-primary:hover (index.css) already sets its own
+                transform for the hover lift, and the sitewide button's hover
+                feedback must keep working here exactly as it does everywhere
+                else. Putting pb-reveal's transform on the button directly
+                fought that rule via CSS specificity. */}
+            <div className="pb-reveal pb-reveal-4 mt-4">
+              <Link to="/menu" className="btn btn-primary btn-lg presentation-banner-cta">
+                <span>{t('home.presentationBanner.cta')}</span>
+                <ChevronRight size={18} className="presentation-banner-cta-arrow" />
+              </Link>
+            </div>
+          </FadeInOnScroll>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
           BEYOND THE PLATE
       ═══════════════════════════════════════════════════════ */}
       <section className="section beyond-section">
@@ -847,64 +906,6 @@ const Home = () => {
               <p className="rb-pull-quote-author">NY Foodie Magazine</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          PRESENTATION BANNER
-          A visual break before Locations: static eyebrow + heading, a
-          subtitle that fades/rises into view on scroll, a button -- beside a
-          photo. Modelled on a section Ahad pointed to (2026-09-27), but
-          measured rather than assumed: on that site the heading and button
-          never animate at all (constant opacity/transform through the whole
-          scroll); only the description line underneath the heading does,
-          easing from opacity 0 / translateY(10px) to 1 / 0 as it crosses
-          into the lower viewport. FadeInOnScroll above reproduces that one
-          mechanic; every word here is Habibi's own copy.
-          The image is a placeholder: an AI-generated platter (confirmed
-          original -- compared pixel-by-pixel against the reference site's
-          own photo, nowhere close) at its native 1024x572. Capped at that
-          width rather than run edge-to-edge so it never upscales past its
-          real resolution and blurs -- swap presentationBannerImg for a real
-          Habibi photo whenever one's ready; nothing else here needs to change.
-      ═══════════════════════════════════════════════════════ */}
-      <section className="section presentation-banner-section">
-        <div className="container presentation-banner-container">
-          <div className="presentation-banner-image-col">
-            <ParallaxFrame className="presentation-banner-frame">
-              <img
-                src={presentationBannerImg}
-                alt=""
-                className="presentation-banner-img"
-                loading="lazy"
-                decoding="async"
-                width="1024"
-                height="572"
-              />
-            </ParallaxFrame>
-          </div>
-          <FadeInOnScroll as="div" className="presentation-banner-content-col">
-            <p className="section-eyebrow text-gold pb-reveal pb-reveal-1">{t('home.presentationBanner.eyebrow')}</p>
-            <h2 className="heading-2 pb-reveal pb-reveal-2">
-              {t('home.presentationBanner.title')}
-              <span className="presentation-banner-underline" aria-hidden="true" />
-            </h2>
-            <p className="presentation-banner-lead mt-3 pb-reveal pb-reveal-3">
-              {t('home.presentationBanner.lead')}
-            </p>
-            {/* The entrance animation lives on this wrapper, not the <Link>
-                itself -- .btn-primary:hover (index.css) already sets its own
-                transform for the hover lift, and the sitewide button's hover
-                feedback must keep working here exactly as it does everywhere
-                else. Putting pb-reveal's transform on the button directly
-                fought that rule via CSS specificity. */}
-            <div className="pb-reveal pb-reveal-4 mt-4">
-              <Link to="/menu" className="btn btn-primary btn-lg presentation-banner-cta">
-                <span>{t('home.presentationBanner.cta')}</span>
-                <ChevronRight size={18} className="presentation-banner-cta-arrow" />
-              </Link>
-            </div>
-          </FadeInOnScroll>
         </div>
       </section>
 
