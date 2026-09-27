@@ -385,6 +385,13 @@
             setTimeout(function () {
               cancelAnimationFrame(rafId);
               clearInterval(countTimer);
+              // The gold panel only COVERS the pile -- the pile itself is
+              // still sitting there behind it. Hide it now, while gold is
+              // fully opaque, so that when the panel later slides away to
+              // reveal the page it doesn't uncover the same food a second
+              // time first. Reported by Ahad: "food is falling good ... then
+              // again fruit image is showing" (2026-09-27).
+              stage.style.visibility = 'hidden';
               proceedWhenReady();
             }, 560);
           }, SHOW_DONE_AT);
