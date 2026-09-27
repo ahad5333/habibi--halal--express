@@ -2486,6 +2486,14 @@
   display: block;
   width: 100%;
   height: auto;
+  /* Matches the width/height HTML attributes on the <img> -- together they
+     reserve the real box before the file has loaded. Without this, the
+     element has zero intrinsic height, and on some viewport/scroll
+     combinations the browser's own lazy-load visibility check ends up
+     measuring that collapsed box and never decides the image is close
+     enough to start fetching -- found 2026-09-27: currentSrc stayed empty
+     (never even requested) at 768px and 390px widths, confirmed live. */
+  aspect-ratio: 1024 / 572;
 }
 
 /* ── Locations ────────────────────────────────────────────── */

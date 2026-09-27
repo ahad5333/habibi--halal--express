@@ -806,6 +806,8 @@ const Home = () => {
             className="presentation-banner-img"
             loading="lazy"
             decoding="async"
+            width="1024"
+            height="572"
           />
         </div>
       </section>
