@@ -1,0 +1,3 @@
+[submodule "habibi-mobile"]
+	path = habibi-mobile
+	url = https://github.com/ahad5333/habibi-mobile.git
