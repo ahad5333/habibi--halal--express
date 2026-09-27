@@ -32,6 +32,37 @@
   padding: 0;
 }
 
+/* Scrollbar: a slim gold thread on the site's own dark ground, everywhere a
+   scrollbar can appear (page, dropdowns, modals) -- Ahad, 2026-09-28.
+   Firefox only supports the two-color scrollbar-color/-width pair (no
+   radius, no hover state); WebKit (Chrome/Edge/Safari) gets the fuller
+   version below. The thumb's border matches the track color and uses
+   background-clip so the gold reads as a slim inset bar rather than a
+   full-width block -- a standard trick for this look. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gold) var(--color-bg);
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-gold);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-hover);
+}
+::-webkit-scrollbar-corner {
+  background: var(--color-bg);
+}
+
 html {
   overflow-x: hidden;
   /* `overflow-x: hidden` alone doesn't stop iOS Safari's elastic rubber-band
