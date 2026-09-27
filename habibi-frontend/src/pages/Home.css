@@ -1915,6 +1915,10 @@
     grid-template-columns: 1fr;
     gap: 3rem;
   }
+  .presentation-banner-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
   .story-image-col {
     order: -1;
   }
@@ -2465,16 +2469,38 @@
 }
 
 /* ── Presentation banner ──────────────────────────────────────
-   A single photo as a visual break before Locations. Capped at the source
-   image's own native width (see the JSX comment above this section) so it
-   never upscales past its real resolution -- not run edge-to-edge like the
-   full-bleed bands this was modelled on, a deliberate trade until a
-   higher-resolution photo replaces the placeholder. */
+   Text beside a photo, same grid shape as .story-container above. Capped at
+   the source image's own native width (see the JSX comment above this
+   section) so it never upscales past its real resolution -- a deliberate
+   trade until a higher-resolution photo replaces the placeholder. */
 .presentation-banner-section {
   background-color: #0a0a0a;
-  padding: 4rem 1.5rem;
-  display: flex;
-  justify-content: center;
+}
+.presentation-banner-container {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 4rem;
+  align-items: center;
+}
+.presentation-banner-lead {
+  color: var(--color-text-muted);
+  max-width: 46ch;
+}
+/* Matches the measured curve on the reference site: opacity 0->1 and
+   translateY(10px)->0 as the element crosses roughly 30% into view (see
+   FadeInOnScroll in Home.jsx). Only this element animates -- the heading and
+   button above/below it stay put, same as what was measured. */
+.fade-in-on-scroll {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.fade-in-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-on-scroll { transition: none; transform: none; opacity: 1; }
 }
 .presentation-banner-frame {
   width: 100%;

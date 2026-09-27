@@ -146,6 +146,31 @@ function StatCard({ icon, value, suffix, labelKey, animate }) {
   );
 }
 
+// Fades an element up into place the first time it's ~30% into view, then
+// leaves it alone -- same ref+IntersectionObserver-disconnect-once shape as
+// StatsRow just below. Used on the presentation banner's subtitle line: on
+// the site Ahad pointed to, the heading and button sit static while just the
+// description line underneath rises in (opacity 0->1, ~10px->0) as it scrolls
+// into the lower half of the viewport -- measured directly, not guessed.
+function FadeInOnScroll({ as: Tag = 'div', className = '', children, ...rest }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <Tag ref={ref} className={`${className} fade-in-on-scroll${visible ? ' is-visible' : ''}`} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
 function StatsRow({ storeCount = 0 }) {
   const ref = useRef(null);
   const [fired, setFired] = useState(false);
@@ -789,26 +814,47 @@ const Home = () => {
 
       {/* ═══════════════════════════════════════════════════════
           PRESENTATION BANNER
-          A single full-width photo as a visual break before Locations, no
-          heading or copy -- the same role a plain photo band plays on sites
-          like savor.it (Ahad, 2026-09-27). The image is a placeholder: an
-          AI-generated platter (confirmed original, not a copy of any
-          reference site's photo) at its native 1024x572. Capped at that
-          width rather than run edge-to-edge, so it never upscales past its
+          A visual break before Locations: static eyebrow + heading, a
+          subtitle that fades/rises into view on scroll, a button -- beside a
+          photo. Modelled on a section Ahad pointed to (2026-09-27), but
+          measured rather than assumed: on that site the heading and button
+          never animate at all (constant opacity/transform through the whole
+          scroll); only the description line underneath the heading does,
+          easing from opacity 0 / translateY(10px) to 1 / 0 as it crosses
+          into the lower viewport. FadeInOnScroll above reproduces that one
+          mechanic; every word here is Habibi's own copy.
+          The image is a placeholder: an AI-generated platter (confirmed
+          original -- compared pixel-by-pixel against the reference site's
+          own photo, nowhere close) at its native 1024x572. Capped at that
+          width rather than run edge-to-edge so it never upscales past its
           real resolution and blurs -- swap presentationBannerImg for a real
           Habibi photo whenever one's ready; nothing else here needs to change.
       ═══════════════════════════════════════════════════════ */}
-      <section className="presentation-banner-section">
-        <div className="presentation-banner-frame">
-          <img
-            src={presentationBannerImg}
-            alt=""
-            className="presentation-banner-img"
-            loading="lazy"
-            decoding="async"
-            width="1024"
-            height="572"
-          />
+      <section className="section presentation-banner-section">
+        <div className="container presentation-banner-container">
+          <div className="presentation-banner-content-col">
+            <p className="section-eyebrow text-gold">{t('home.presentationBanner.eyebrow')}</p>
+            <h2 className="heading-2">{t('home.presentationBanner.title')}</h2>
+            <FadeInOnScroll as="p" className="presentation-banner-lead mt-3">
+              {t('home.presentationBanner.lead')}
+            </FadeInOnScroll>
+            <Link to="/menu" className="btn btn-primary btn-lg mt-4" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              {t('home.presentationBanner.cta')}
+            </Link>
+          </div>
+          <div className="presentation-banner-image-col">
+            <div className="presentation-banner-frame">
+              <img
+                src={presentationBannerImg}
+                alt=""
+                className="presentation-banner-img"
+                loading="lazy"
+                decoding="async"
+                width="1024"
+                height="572"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
