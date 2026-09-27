@@ -89,17 +89,19 @@
     </script>
     <!-- Boot screen. Written into the HTML itself so it paints before the app
          bundle has even downloaded -- that download IS the wait it covers.
-         It has no set duration: it lifts the moment the first page renders.
-         It also only fades IN after 250ms, so a fast or cached load never
-         flashes it, and the ground is the same #0a0a0a the app paints, so the
-         handover has nothing to see. -->
+         It plays for at least MIN_VISIBLE below and then lifts, or waits
+         longer if the app is still booting. It first shipped lifting the
+         instant the app was ready, with no minimum -- which measured 373-622ms
+         on screen, too quick to register as anything but a flicker. The ground
+         is the same #0a0a0a the app paints, so the handover has nothing to
+         see. -->
     <link rel="preload" as="image" href="/images/logos/logo-badge.webp" fetchpriority="high" />
     <style>
       #boot {
         position: fixed; inset: 0; z-index: 2147483000;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 26px; background: #0a0a0a;
-        opacity: 0; animation: boot-in .4s ease .25s both;
+        opacity: 0; animation: boot-in .35s ease both;
       }
       #boot.boot-out { animation: boot-out .38s ease forwards; }
       .boot-mark {
@@ -158,14 +160,15 @@
         // Staff opening their own queue get their app, not a brand intro.
         if (/^\/(driver|staff|kitchen)(\/|$)/.test(location.pathname)) { boot.remove(); return; }
 
-        var SHOW_AT = 250, MIN_VISIBLE = 500, FAILSAFE = 8000;
+        var SHOW_AT = 0, MIN_VISIBLE = 1500, FAILSAFE = 8000;
         var t0 = Date.now(), done = false;
 
         function hide() {
           if (done) return;
           done = true;
-          // If it never became visible, go instantly. If it did, let it finish
-          // being seen rather than strobing off a few frames in.
+          // Let it finish its run rather than cutting off mid-animation. On a
+          // slow load the app is not ready until well after this anyway, and
+          // then the wait below is zero.
           var seen = Date.now() - t0 - SHOW_AT;
           var wait = seen > 0 && seen < MIN_VISIBLE ? MIN_VISIBLE - seen : 0;
           setTimeout(function () {
