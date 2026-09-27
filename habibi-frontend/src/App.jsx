@@ -94,6 +94,16 @@ function isNoIndexPath(pathname) {
   return false;
 }
 
+// Tells the boot screen in index.html that there is finally something to look
+// at. It sits INSIDE the Suspense boundary on purpose: React will not commit it
+// until the route's own chunk has resolved, so the loader lifts on the first
+// real page paint rather than on a timer. Idempotent -- later navigations that
+// re-suspend call it again and it does nothing.
+function BootReady() {
+  useEffect(() => { window.__habibiAppReady?.(); }, []);
+  return null;
+}
+
 function Layout() {
   const location = useLocation();
   const { user } = useAuth();
@@ -203,6 +213,7 @@ function Layout() {
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <BootReady />
         </Suspense>
         </ErrorBoundary>
       </main>

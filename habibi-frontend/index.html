@@ -49,7 +49,15 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
+    <!-- Loaded async, not render-blocking. As a plain stylesheet this held up
+         the FIRST PAINT of the whole document until Google answered -- on a
+         slow phone the boot screen below could not appear for over a second,
+         which is precisely the gap it exists to cover. The font already ships
+         with display=swap, so headings render in the fallback and swap when it
+         lands, exactly as before; only the blocking is gone. -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+          onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" /></noscript>
     <title>Habibi Halal Express | Authentic Mediterranean Street Food</title>
 
     <!-- JSON-LD fallback for crawlers that don't run JavaScript: only details
@@ -79,6 +87,48 @@
       }
     }
     </script>
+    <!-- Boot screen. Written into the HTML itself so it paints before the app
+         bundle has even downloaded -- that download IS the wait it covers.
+         It has no set duration: it lifts the moment the first page renders.
+         It also only fades IN after 250ms, so a fast or cached load never
+         flashes it, and the ground is the same #0a0a0a the app paints, so the
+         handover has nothing to see. -->
+    <link rel="preload" as="image" href="/images/logos/logo-badge.webp" fetchpriority="high" />
+    <style>
+      #boot {
+        position: fixed; inset: 0; z-index: 2147483000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 26px; background: #0a0a0a;
+        opacity: 0; animation: boot-in .4s ease .25s both;
+      }
+      #boot.boot-out { animation: boot-out .38s ease forwards; }
+      .boot-mark {
+        position: relative; width: 132px; height: 132px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      /* Warm glow so the badge doesn't float on flat black. */
+      .boot-mark::before {
+        content: ""; position: absolute; width: 230px; height: 230px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(229, 182, 78, .17), transparent 65%);
+      }
+      .boot-ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: boot-spin 1.15s linear infinite; }
+      .boot-logo { position: relative; width: 96px; height: auto; animation: boot-pulse 1.9s ease-in-out infinite; }
+      .boot-bar { width: 140px; height: 2px; border-radius: 2px; background: rgba(229, 182, 78, .18); overflow: hidden; }
+      .boot-bar span { display: block; width: 38%; height: 100%; border-radius: 2px; background: #E5B64E; animation: boot-sweep 1.35s ease-in-out infinite; }
+      @keyframes boot-in   { to { opacity: 1 } }
+      @keyframes boot-out  { to { opacity: 0; visibility: hidden } }
+      @keyframes boot-spin { to { transform: rotate(360deg) } }
+      @keyframes boot-pulse{ 0%, 100% { transform: scale(1) } 50% { transform: scale(1.05) } }
+      @keyframes boot-sweep{ from { transform: translateX(-110%) } to { transform: translateX(265%) } }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-ring, .boot-logo, .boot-bar span { animation: none }
+        .boot-bar span { width: 100%; opacity: .45 }
+      }
+      @media (max-width: 480px) {
+        .boot-mark { width: 112px; height: 112px }
+        .boot-logo { width: 80px }
+      }
+    </style>
   </head>
   <body>
     <!-- Meta Pixel noscript fallback -->
@@ -90,6 +140,47 @@
         <p>Please enable JavaScript to use this site, or <a href="tel:+19290000000">call us</a> to place an order.</p>
       </div>
     </noscript>
+    <div id="boot" role="status" aria-label="Loading Habibi Halal Express">
+      <div class="boot-mark">
+        <svg class="boot-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="56" fill="none" stroke="#241d13" stroke-width="3" />
+          <circle cx="60" cy="60" r="56" fill="none" stroke="#E5B64E" stroke-width="3"
+                  stroke-linecap="round" stroke-dasharray="72 280" />
+        </svg>
+        <img class="boot-logo" src="/images/logos/logo-badge.webp" alt="" onerror="this.remove()" />
+      </div>
+      <div class="boot-bar"><span></span></div>
+    </div>
+    <script>
+      (function () {
+        var boot = document.getElementById('boot');
+        if (!boot) return;
+        // Staff opening their own queue get their app, not a brand intro.
+        if (/^\/(driver|staff|kitchen)(\/|$)/.test(location.pathname)) { boot.remove(); return; }
+
+        var SHOW_AT = 250, MIN_VISIBLE = 500, FAILSAFE = 8000;
+        var t0 = Date.now(), done = false;
+
+        function hide() {
+          if (done) return;
+          done = true;
+          // If it never became visible, go instantly. If it did, let it finish
+          // being seen rather than strobing off a few frames in.
+          var seen = Date.now() - t0 - SHOW_AT;
+          var wait = seen > 0 && seen < MIN_VISIBLE ? MIN_VISIBLE - seen : 0;
+          setTimeout(function () {
+            boot.className = 'boot-out';
+            setTimeout(function () { boot.remove(); }, 420);
+          }, wait);
+        }
+
+        // App.jsx calls this when the first page actually renders.
+        window.__habibiAppReady = hide;
+        // If the bundle never runs at all, uncover the page anyway rather than
+        // leaving a spinner over a site nobody can reach.
+        setTimeout(hide, FAILSAFE);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
