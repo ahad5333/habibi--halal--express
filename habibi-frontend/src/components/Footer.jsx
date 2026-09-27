@@ -4,6 +4,7 @@ import { Globe, Share2, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { contactAPI } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
+import RollLink from './RollLink';
 import './Footer.css';
 
 const Footer = () => {
@@ -104,29 +105,29 @@ const Footer = () => {
         <div className="footer-links">
           <div className="footer-column">
             <h4>{t('footer.columns.discover')}</h4>
-            <Link to="/menu">{t('footer.links.ourMenu')}</Link>
-            <Link to="/locations">{t('footer.links.locations')}</Link>
-            <Link to="/offers">{t('footer.links.specialOffers')}</Link>
-            <Link to="/group-order">{t('footer.links.groupOrder')}</Link>
-            <Link to="/delivery-coverage">{t('footer.links.deliveryCoverage')}</Link>
-            <Link to="/checkout">{t('footer.links.orderOnline')}</Link>
-            <Link to="/gift-cards">{t('footer.links.giftCards')}</Link>
-            <Link to="/wholesale">{t('footer.links.wholesale')}</Link>
+            <RollLink to="/menu">{t('footer.links.ourMenu')}</RollLink>
+            <RollLink to="/locations">{t('footer.links.locations')}</RollLink>
+            <RollLink to="/offers">{t('footer.links.specialOffers')}</RollLink>
+            <RollLink to="/group-order">{t('footer.links.groupOrder')}</RollLink>
+            <RollLink to="/delivery-coverage">{t('footer.links.deliveryCoverage')}</RollLink>
+            <RollLink to="/checkout">{t('footer.links.orderOnline')}</RollLink>
+            <RollLink to="/gift-cards">{t('footer.links.giftCards')}</RollLink>
+            <RollLink to="/wholesale">{t('footer.links.wholesale')}</RollLink>
           </div>
           <div className="footer-column">
             <h4>{t('footer.columns.company')}</h4>
-            <Link to="/about">{t('footer.links.ourStory')}</Link>
-            <Link to="/careers">{t('footer.links.careers')}</Link>
-            <Link to="/contact?type=media">{t('footer.links.pressKit')}</Link>
+            <RollLink to="/about">{t('footer.links.ourStory')}</RollLink>
+            <RollLink to="/careers">{t('footer.links.careers')}</RollLink>
+            <RollLink to="/contact?type=media">{t('footer.links.pressKit')}</RollLink>
           </div>
           <div className="footer-column">
             <h4>{t('footer.columns.legal')}</h4>
-            <Link to="/contact">{t('footer.links.contactUs')}</Link>
-            <Link to="/health-safety">{t('footer.links.ourStandards')}</Link>
-            <Link to="/privacy-policy">{t('footer.links.privacyPolicy')}</Link>
-            <Link to="/terms">{t('footer.links.termsOfService')}</Link>
-            <Link to="/sms-terms">{t('footer.links.smsTerms')}</Link>
-            <Link to="/accessibility">{t('footer.links.accessibility')}</Link>
+            <RollLink to="/contact">{t('footer.links.contactUs')}</RollLink>
+            <RollLink to="/health-safety">{t('footer.links.ourStandards')}</RollLink>
+            <RollLink to="/privacy-policy">{t('footer.links.privacyPolicy')}</RollLink>
+            <RollLink to="/terms">{t('footer.links.termsOfService')}</RollLink>
+            <RollLink to="/sms-terms">{t('footer.links.smsTerms')}</RollLink>
+            <RollLink to="/accessibility">{t('footer.links.accessibility')}</RollLink>
           </div>
           <div className="footer-newsletter">
             <h4>{t('footer.columns.newsletter')}</h4>

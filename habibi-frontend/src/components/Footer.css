@@ -281,8 +281,56 @@
   font-size: 0.875rem;
 }
 
-.footer-column a:hover {
-  color: #ffd700;
+/* Roll-up hover: a clipped one-line window holding two stacked copies of the
+   link's text, the second parked one line-height below the first. Hovering
+   (or keyboard-focusing) slides every letter up by that same one line-height,
+   so the first copy's letters exit the top edge while the second copy's
+   letters -- already gold -- rise in from the bottom to take their place.
+   See RollLink.jsx for why (an effect Ahad pointed to, rebuilt from scratch
+   with Habibi's own labels/color/timing, 2026-09-27). */
+.roll-link {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.875rem;
+  text-decoration: none;
+  display: inline-block;
+}
+.roll-link-sr {
+  /* Visually hidden, not display:none -- screen readers and crawlers still
+     see the real label; the DOM below it is decorative (aria-hidden). */
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
+.roll-link-window {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.4;
+  vertical-align: top;
+}
+.roll-link-row {
+  display: flex;
+}
+/* Only the --in copy leaves the flow. --out stays a normal in-flow block, so
+   it's what actually gives .roll-link-window its width and height (an
+   absolutely-positioned box never sizes an auto-sized ancestor -- with both
+   copies taken out of flow the window collapsed to zero width and
+   overflow:hidden clipped every letter, which is exactly what happened here
+   the first time this was written). */
+.roll-link-row--out { position: relative; color: inherit; }
+.roll-link-row--in  { position: absolute; left: 0; top: 100%; color: #ffd700; }
+.roll-link-row span {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.roll-link:hover .roll-link-row span,
+.roll-link:focus-visible .roll-link-row span {
+  transform: translateY(-100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .roll-link-row span { transition: none; }
+  .roll-link:hover .roll-link-row span,
+  .roll-link:focus-visible .roll-link-row span { transform: none; }
+  .roll-link:hover, .roll-link:focus-visible { color: #ffd700; }
 }
 
 .social-icons {
