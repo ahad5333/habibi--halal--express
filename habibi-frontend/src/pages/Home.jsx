@@ -171,6 +171,44 @@ function FadeInOnScroll({ as: Tag = 'div', className = '', children, ...rest }) 
   );
 }
 
+// Nudges an image opposite to scroll direction while its section is near the
+// viewport, giving it a little depth against the static text beside it.
+// Listener attaches only while intersecting (IntersectionObserver gates a
+// scroll listener that would otherwise run for the whole page's lifetime),
+// and is skipped entirely under prefers-reduced-motion.
+function ParallaxFrame({ className = '', children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = null;
+    const update = () => {
+      raf = null;
+      const r = el.getBoundingClientRect();
+      const mid = r.top + r.height / 2 - window.innerHeight / 2;
+      // Clamp so the shift stays small and never reveals the frame's edge.
+      const shift = Math.max(-18, Math.min(18, mid * -0.04));
+      el.style.setProperty('--parallax-y', `${shift.toFixed(1)}px`);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    let listening = false;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !listening) {
+        listening = true;
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+      } else if (!e.isIntersecting && listening) {
+        listening = false;
+        window.removeEventListener('scroll', onScroll);
+      }
+    }, { threshold: 0 });
+    io.observe(el);
+    return () => { io.disconnect(); window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  return <div ref={ref} className={className}>{children}</div>;
+}
+
 function StatsRow({ storeCount = 0 }) {
   const ref = useRef(null);
   const [fired, setFired] = useState(false);
@@ -832,18 +870,30 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="section presentation-banner-section">
         <div className="container presentation-banner-container">
-          <div className="presentation-banner-content-col">
-            <p className="section-eyebrow text-gold">{t('home.presentationBanner.eyebrow')}</p>
-            <h2 className="heading-2">{t('home.presentationBanner.title')}</h2>
-            <FadeInOnScroll as="p" className="presentation-banner-lead mt-3">
+          <FadeInOnScroll as="div" className="presentation-banner-content-col">
+            <p className="section-eyebrow text-gold pb-reveal pb-reveal-1">{t('home.presentationBanner.eyebrow')}</p>
+            <h2 className="heading-2 pb-reveal pb-reveal-2">
+              {t('home.presentationBanner.title')}
+              <span className="presentation-banner-underline" aria-hidden="true" />
+            </h2>
+            <p className="presentation-banner-lead mt-3 pb-reveal pb-reveal-3">
               {t('home.presentationBanner.lead')}
-            </FadeInOnScroll>
-            <Link to="/menu" className="btn btn-primary btn-lg mt-4" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              {t('home.presentationBanner.cta')}
-            </Link>
-          </div>
+            </p>
+            {/* The entrance animation lives on this wrapper, not the <Link>
+                itself -- .btn-primary:hover (index.css) already sets its own
+                transform for the hover lift, and the sitewide button's hover
+                feedback must keep working here exactly as it does everywhere
+                else. Putting pb-reveal's transform on the button directly
+                fought that rule via CSS specificity. */}
+            <div className="pb-reveal pb-reveal-4 mt-4">
+              <Link to="/menu" className="btn btn-primary btn-lg presentation-banner-cta">
+                <span>{t('home.presentationBanner.cta')}</span>
+                <ChevronRight size={18} className="presentation-banner-cta-arrow" />
+              </Link>
+            </div>
+          </FadeInOnScroll>
           <div className="presentation-banner-image-col">
-            <div className="presentation-banner-frame">
+            <ParallaxFrame className="presentation-banner-frame">
               <img
                 src={presentationBannerImg}
                 alt=""
@@ -853,7 +903,7 @@ const Home = () => {
                 width="1024"
                 height="572"
               />
-            </div>
+            </ParallaxFrame>
           </div>
         </div>
       </section>

@@ -2486,22 +2486,67 @@
   color: var(--color-text-muted);
   max-width: 46ch;
 }
-/* Matches the measured curve on the reference site: opacity 0->1 and
-   translateY(10px)->0 as the element crosses roughly 30% into view (see
-   FadeInOnScroll in Home.jsx). Only this element animates -- the heading and
-   button above/below it stay put, same as what was measured. */
-.fade-in-on-scroll {
+
+/* `.fade-in-on-scroll` (from FadeInOnScroll in Home.jsx) is just the marker
+   that flips to `.is-visible` once the wrapper is ~30% in view -- it carries
+   no look of its own. The actual reveal is per-child below, each element its
+   own delay, so the block cascades in top to bottom instead of appearing all
+   at once. Ahad: "add animation to this section add more creative css"
+   (2026-09-27) -- this replaced the single fading subtitle with a fuller
+   treatment: staggered entrance, a gold underline that draws in under the
+   heading, and a button that reacts on hover. */
+.pb-reveal {
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateY(16px);
+  transition: opacity 0.6s cubic-bezier(0.16, 0.84, 0.44, 1),
+              transform 0.6s cubic-bezier(0.16, 0.84, 0.44, 1);
 }
-.fade-in-on-scroll.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+.presentation-banner-content-col.is-visible .pb-reveal-1 { opacity: 1; transform: none; transition-delay: 0s; }
+.presentation-banner-content-col.is-visible .pb-reveal-2 { opacity: 1; transform: none; transition-delay: 0.12s; }
+.presentation-banner-content-col.is-visible .pb-reveal-3 { opacity: 1; transform: none; transition-delay: 0.26s; }
+.presentation-banner-content-col.is-visible .pb-reveal-4 { opacity: 1; transform: none; transition-delay: 0.4s; }
+
+/* A short gold rule under the heading, drawn in (width 0 -> full) once the
+   heading itself has finished rising -- its own transition-delay is set
+   later than pb-reveal-2's so it starts only after the heading settles. */
+.presentation-banner-underline {
+  display: block;
+  width: 0;
+  height: 3px;
+  margin-top: 0.6rem;
+  background: var(--color-primary);
+  transition: width 0.7s cubic-bezier(0.16, 0.84, 0.44, 1);
+  transition-delay: 0.3s;
 }
+.presentation-banner-content-col.is-visible .presentation-banner-underline {
+  width: 72px;
+}
+
+/* Button: .btn-primary:hover (index.css) already darkens the fill and lifts
+   it -- that's sitewide and stays untouched here. The one new touch is the
+   arrow sliding right, on its own element so it can't collide with the
+   entrance transform on the wrapper (see the JSX comment above this). */
+.presentation-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  overflow: hidden;
+}
+.presentation-banner-cta-arrow {
+  transition: transform 0.25s ease;
+}
+.presentation-banner-cta:hover .presentation-banner-cta-arrow,
+.presentation-banner-cta:focus-visible .presentation-banner-cta-arrow {
+  transform: translateX(4px);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fade-in-on-scroll { transition: none; transform: none; opacity: 1; }
+  .pb-reveal { transition: none; opacity: 1; transform: none; }
+  .presentation-banner-underline { transition: none; width: 72px; }
+  .presentation-banner-cta-arrow { transition: none; }
 }
+
 .presentation-banner-frame {
   width: 100%;
   max-width: 1024px;
@@ -2512,6 +2557,12 @@
   display: block;
   width: 100%;
   height: auto;
+  /* --parallax-y is written by ParallaxFrame in Home.jsx while this section
+     is near the viewport; the frame's own overflow:hidden clips the small
+     shift so the image's edge never shows. Defaults to 0 so the image sits
+     at rest before JS runs (or if it never does, e.g. reduced motion). */
+  transform: translateY(var(--parallax-y, 0px));
+  will-change: transform;
   /* Matches the width/height HTML attributes on the <img> -- together they
      reserve the real box before the file has loaded. Without this, the
      element has zero intrinsic height, and on some viewport/scroll
