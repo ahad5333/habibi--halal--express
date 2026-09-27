@@ -103,9 +103,24 @@ const TEASER_CHIPS = [
   { key: 'teaserChipMeal',  text: 'Feed 4 under $50' },
 ];
 
+// Reflects Habibi's own local time, not the visitor's device clock. A phone
+// can be set to any timezone (or just be wrong), and this greeting is about
+// what time it actually is at the restaurant, not at that phone -- the same
+// reasoning YourUsual.jsx already uses for order dates. Found 2026-09-27:
+// testing from a browser set to India Standard Time showed the late-night
+// "Still here" variant while it was 2:30pm in New York.
+const nyHour = () => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23',
+    }).formatToParts(new Date());
+    return Number(parts.find(p => p.type === 'hour')?.value);
+  } catch { return new Date().getHours(); } // very old browser: device clock is better than nothing
+};
+
 // Keeps the bubble from reading identically on every visit.
 const teaserHiKey = () => {
-  const h = new Date().getHours();
+  const h = nyHour();
   if (h < 11) return 'assistant.teaserHiMorning';
   if (h < 17) return 'assistant.teaserHiAfternoon';
   if (h < 22) return 'assistant.teaserHiEvening';
