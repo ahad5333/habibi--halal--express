@@ -180,7 +180,15 @@ module.exports = (io) => {
           const crypto = require("crypto");
           const salt   = getDriverSecretSalt();
           const expected = crypto.createHmac("sha256", salt).update(String(driver_id)).digest("hex");
-          isHmacValid = hmac_token === expected;
+          // Constant-time compare, matching staffMiddleware.verifyStaff and the
+          // REST driver check in dispatchRoutes. This was `===`, which returns
+          // as soon as two characters differ, so how long it takes to reject a
+          // token tells you how much of the prefix was right -- and unlike the
+          // REST path, a socket lets an attacker retry on one open connection.
+          // Compare byte lengths, not string lengths: a token with multi-byte
+          // characters could match in .length and still make timingSafeEqual throw.
+          const given = Buffer.from(String(hmac_token)), want = Buffer.from(expected);
+          isHmacValid = given.length === want.length && crypto.timingSafeEqual(given, want);
         } catch (_) {}
       }
       if (!isJwtDriver && !isJwtAdmin && !isHmacValid) {
