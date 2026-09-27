@@ -59,7 +59,7 @@ if pg_dump -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "$DB_USER" \
     rm -f "$OUT"
     exit 1
   fi
-  if ! zcat "$OUT" | tail -5 | grep -q "PostgreSQL database dump complete"; then
+  if ! zcat "$OUT" | tail -20 | grep -q "PostgreSQL database dump complete"; then
     log "FAIL: $OUT is truncated (no completion marker) - removing"
     rm -f "$OUT"
     exit 1
