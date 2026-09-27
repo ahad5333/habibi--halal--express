@@ -870,6 +870,19 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="section presentation-banner-section">
         <div className="container presentation-banner-container">
+          <div className="presentation-banner-image-col">
+            <ParallaxFrame className="presentation-banner-frame">
+              <img
+                src={presentationBannerImg}
+                alt=""
+                className="presentation-banner-img"
+                loading="lazy"
+                decoding="async"
+                width="1024"
+                height="572"
+              />
+            </ParallaxFrame>
+          </div>
           <FadeInOnScroll as="div" className="presentation-banner-content-col">
             <p className="section-eyebrow text-gold pb-reveal pb-reveal-1">{t('home.presentationBanner.eyebrow')}</p>
             <h2 className="heading-2 pb-reveal pb-reveal-2">
@@ -892,19 +905,6 @@ const Home = () => {
               </Link>
             </div>
           </FadeInOnScroll>
-          <div className="presentation-banner-image-col">
-            <ParallaxFrame className="presentation-banner-frame">
-              <img
-                src={presentationBannerImg}
-                alt=""
-                className="presentation-banner-img"
-                loading="lazy"
-                decoding="async"
-                width="1024"
-                height="572"
-              />
-            </ParallaxFrame>
-          </div>
         </div>
       </section>
 
