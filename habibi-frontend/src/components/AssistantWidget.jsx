@@ -15,14 +15,19 @@ const ASSISTANT_AVATAR = '/images/assistant/habibi-assistant-face.webp';
 
 // Greeting bubble beside the launcher, so a visitor knows the button is an AI
 // assistant they can order through. Shown once per visit (browser session), a
-// few seconds after the page settles, on every visit until the person has
-// opened the chat once -- after that they know it's there. Closing the bubble
-// only hides it for the current visit. Storage can throw (private mode,
-// blocked site data) -- then it simply shows.
+// few seconds after the page settles -- on EVERY visit, not just until the
+// person first opens the chat. It used to stop for good the first time
+// anyone opened the chat (a localStorage flag), which meant a single tap --
+// even just tapping the greeting bubble itself, since the whole thing is one
+// button -- silently turned it off forever. Ahad: "for the first time ai
+// asistant pop hi i am haibibi is showing later when we come back next time
+// that message is not showing" -- that was this flag, working as designed
+// but not as expected. Changed 2026-09-27 to a plain per-session gate.
+// Closing the bubble only hides it for the current visit either way. Storage
+// can throw (private mode, blocked site data) -- then it simply shows.
 const TEASER_DELAY_MS = 3000;
 const TEASER_VISIBLE_MS = 20000;
 const TEASER_SEEN_KEY = 'habibi_asw_teaser_seen'; // sessionStorage: shown this visit
-const ASSISTANT_USED_KEY = 'habibi_asw_used';     // localStorage: has opened the chat
 
 // Keeps the conversation when the widget is remounted: a reload, or leaving the
 // pages it appears on (checkout, account) and coming back. Between Home, Menu,
@@ -57,12 +62,8 @@ const saveChat = (messages, lastItems) => {
 
 const teaserAllowed = () => {
   try {
-    if (sessionStorage.getItem(TEASER_SEEN_KEY)) return false;
-    return !localStorage.getItem(ASSISTANT_USED_KEY);
+    return !sessionStorage.getItem(TEASER_SEEN_KEY);
   } catch { return true; }
-};
-const markAssistantUsed = () => {
-  try { localStorage.setItem(ASSISTANT_USED_KEY, '1'); } catch { /* ignore */ }
 };
 
 // Browser speech-to-text: Chrome, Edge, Safari (iPhone too). Firefox has none,
@@ -290,7 +291,6 @@ export default function AssistantWidget() {
 
   const openChat = () => {
     setTeaser(false);
-    markAssistantUsed();
     setOpen(true);
   };
 
