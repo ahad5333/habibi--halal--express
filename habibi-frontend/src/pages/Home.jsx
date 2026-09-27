@@ -16,6 +16,9 @@ const toWebp = url => url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g
 const HOME_STORE_LIMIT = 6;
 // A CPanel store photo; photos bundled with the site also ship as .webp.
 const storeImg = url => (url && url.startsWith('/images/') ? toWebp(url) : url);
+// Placeholder for the presentation banner above Locations -- see that
+// section's comment for why it's capped at native size instead of full-bleed.
+const presentationBannerImg = '/images/banners/platter-presentation.webp';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const FEAST_VIDEOS = [
@@ -781,6 +784,29 @@ const Home = () => {
               <p className="rb-pull-quote-author">NY Foodie Magazine</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          PRESENTATION BANNER
+          A single full-width photo as a visual break before Locations, no
+          heading or copy -- the same role a plain photo band plays on sites
+          like savor.it (Ahad, 2026-09-27). The image is a placeholder: an
+          AI-generated platter (confirmed original, not a copy of any
+          reference site's photo) at its native 1024x572. Capped at that
+          width rather than run edge-to-edge, so it never upscales past its
+          real resolution and blurs -- swap presentationBannerImg for a real
+          Habibi photo whenever one's ready; nothing else here needs to change.
+      ═══════════════════════════════════════════════════════ */}
+      <section className="presentation-banner-section">
+        <div className="presentation-banner-frame">
+          <img
+            src={presentationBannerImg}
+            alt=""
+            className="presentation-banner-img"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </section>
 

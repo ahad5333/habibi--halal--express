@@ -2464,6 +2464,30 @@
   }
 }
 
+/* ── Presentation banner ──────────────────────────────────────
+   A single photo as a visual break before Locations. Capped at the source
+   image's own native width (see the JSX comment above this section) so it
+   never upscales past its real resolution -- not run edge-to-edge like the
+   full-bleed bands this was modelled on, a deliberate trade until a
+   higher-resolution photo replaces the placeholder. */
+.presentation-banner-section {
+  background-color: #0a0a0a;
+  padding: 4rem 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+.presentation-banner-frame {
+  width: 100%;
+  max-width: 1024px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.presentation-banner-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* ── Locations ────────────────────────────────────────────── */
 .locations-section {
   background-color: var(--color-surface);
