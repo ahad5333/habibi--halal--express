@@ -5,8 +5,9 @@ import './Staff.css';
 
 const ROLES = ['kitchen', 'delivery', 'manager', 'cashier', 'server'];
 // These 4 roles now get their own PIN login to the staff order-queue view
-// (/staff on the customer site) -- separate from delivery's driver app,
-// same underlying PIN mechanism (see staffAuthController.js).
+// (/staff/queue on the customer site -- NOT bare /staff, which is the public
+// careers page) -- separate from delivery's driver app, same underlying PIN
+// mechanism (see staffAuthController.js).
 const STAFF_QUEUE_ROLES = ['kitchen', 'manager', 'cashier', 'server'];
 const ROLE_COLOR = {
   kitchen:  'badge-warning',

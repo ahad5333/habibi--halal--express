@@ -68,7 +68,7 @@ const NotFound            = lazy(() => import('./pages/NotFound'));
 import { initGA, initPixel, trackPageView } from './utils/analytics';
 import { captureUtm } from './utils/utm';
 
-const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin', '/staff', '/staff/login', '/staff/set-pin'];
+const FULLSCREEN_ROUTES = ['/login', '/signup', '/register', '/forgot-password', '/reset-password', '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver/login', '/driver/set-pin', '/staff/queue', '/staff/login', '/staff/set-pin'];
 
 // Pages the ordering assistant floats on. See the mount below for why this is
 // an allow-list and why checkout/account are not in it.
@@ -86,7 +86,7 @@ const NOINDEX_PATHS = new Set([
   '/partner/login', '/partner', '/verify-email', '/kitchen', '/driver',
   '/checkout', '/payment', '/account', '/order-confirmation',
   '/order-tracking', '/reorder', '/admin/broadcasts',
-  '/staff', '/staff/login', '/staff/set-pin',
+  '/staff/queue', '/staff/login', '/staff/set-pin',
 ]);
 function isNoIndexPath(pathname) {
   if (NOINDEX_PATHS.has(pathname)) return true;
@@ -160,6 +160,15 @@ function Layout() {
           <Route path="/reorder" element={<Reorder />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
+          {/* Same page as /careers -- the navbar's public "Staff" dropdown
+              deep-links here with anchors (#management, #kitchen, #serving,
+              #delivery, #stock) while its own "Hiring" item uses /careers
+              directly. Two paths, one component, both pre-existing. This sat
+              in the OUTER (Layout-bypassing) Routes block for a while after a
+              route collision was fixed 2026-09-27 -- moved back in here,
+              because that block has no Navbar/Footer, and a first attempt at
+              the fix rendered this page with both missing. */}
+          <Route path="/staff" element={<Careers />} />
           <Route path="/careers/departments/:id" element={<DepartmentDetail />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/wholesale" element={<Wholesale />} />
@@ -256,7 +265,12 @@ function InternalGuard({ children, requireAdmin = false }) {
 // iOS ignores manifests and takes the icon name from apple-mobile-web-app-title,
 // so that follows along. Order matters only in that the first match wins.
 const INSTALLABLE_APPS = [
-  { prefix: '/staff',   manifest: '/manifest-staff.json',   title: 'Habibi Staff' },
+  // bareMatch: false -- unlike /driver and /kitchen, bare /staff is not part
+  // of this app: it's the public careers page (see the route comment above).
+  // Only the staff-facing sub-paths (login, set-pin, the queue itself) get
+  // this manifest; matching bare /staff too would offer the STAFF install
+  // prompt to a customer reading about jobs. Found and fixed 2026-09-27.
+  { prefix: '/staff',   manifest: '/manifest-staff.json',   title: 'Habibi Staff', bareMatch: false },
   // The driver app's manifest predates this table and DriverLogin/DriverView
   // also switch to it themselves. Same file on purpose: its identity (no id, so
   // Chrome keys it on start_url /driver/login) must not change, or drivers who
@@ -266,7 +280,7 @@ const INSTALLABLE_APPS = [
 ];
 const CUSTOMER_APP = { manifest: '/manifest.json', title: 'Habibi' };
 const appForPath = (p) =>
-  INSTALLABLE_APPS.find(a => p === a.prefix || p.startsWith(a.prefix + '/')) || CUSTOMER_APP;
+  INSTALLABLE_APPS.find(a => (a.bareMatch !== false && p === a.prefix) || p.startsWith(a.prefix + '/')) || CUSTOMER_APP;
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -298,7 +312,15 @@ function App() {
           <Route path="/kitchen" element={<InternalGuard requireAdmin><KitchenDisplay /></InternalGuard>} />
           <Route path="/staff/login"    element={<StaffLogin />} />
           <Route path="/staff/set-pin"  element={<StaffSetPin />} />
-          <Route path="/staff"          element={<StaffQueue />} />
+          {/* The internal kitchen/counter queue. NOT at bare /staff -- the
+              navbar's public "Staff" dropdown already owned that path (it
+              renders <Careers />, matched inside Layout's own inner Routes,
+              same as /careers) before this feature existed. Putting the
+              queue there too silently broke that public link: every visitor
+              clicking Staff in the navbar landed on this login screen
+              instead. Found and fixed 2026-09-27 -- keep this nested so the
+              two can never collide again. */}
+          <Route path="/staff/queue"    element={<StaffQueue />} />
           <Route path="*" element={<Layout />} />
         </Routes>
       </Suspense>

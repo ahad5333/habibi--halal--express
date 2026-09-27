@@ -71,7 +71,8 @@ export default function StaffLogin() {
         role: data.role || '',
       }));
       try { localStorage.setItem(PHONE_KEY, activePhone); } catch (_) {}
-      navigate('/staff');
+      // Not bare /staff -- that's the public careers page. See App.jsx.
+      navigate('/staff/queue');
     } catch (err) {
       setError(err.message);
       setPin('');
