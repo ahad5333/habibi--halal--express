@@ -36,6 +36,14 @@ echo "▶ Building..."
 cd "$(dirname "$0")"
 npm run build
 
+# Makes the main CSS bundle non-render-blocking (see the script itself for
+# why: it's why the boot loading screen couldn't paint until this 188KB file
+# had downloaded). Rewrites dist/index.html only, after the build -- the
+# build's own output is untouched. Fails the deploy rather than uploading a
+# guess if Vite's HTML output ever changes shape.
+echo "▶ Deferring the main stylesheet..."
+node scripts/defer-main-css.cjs
+
 echo "▶ Uploading new assets to staging folder..."
 ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_new"
 scp -r "${LOCAL_DIST}/assets" "${REMOTE}:${REMOTE_DIR}/assets_new"

@@ -26,5 +26,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Image-processing dev scripts (not part of the app)
-*.cjs
+# Image-processing dev scripts (not part of the app). Anchored to this
+# directory only (leading slash, no recursive wildcard) so it catches the
+# throwaway scripts sitting at this level without also hiding real tooling
+# one directory down, e.g. scripts/ -- found 2026-09-28 when this blanket
+# *.cjs silently blocked scripts/defer-main-css.cjs from ever being added.
+/*.cjs
