@@ -1915,10 +1915,6 @@
     grid-template-columns: 1fr;
     gap: 3rem;
   }
-  .presentation-banner-container {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
   .story-image-col {
     order: -1;
   }
@@ -2574,6 +2570,22 @@
      enough to start fetching -- found 2026-09-27: currentSrc stayed empty
      (never even requested) at 768px and 390px widths, confirmed live. */
   aspect-ratio: 1024 / 572;
+}
+
+/* Placed after the base .presentation-banner-container rule above (not in
+   the earlier shared @media block with .story-container) so it actually
+   wins the cascade: two rules of equal specificity resolve by source order,
+   not by whether one sits inside a media query, so a same-specificity
+   override declared earlier in the file loses to a later unconditional
+   rule even when its media query matches. Found 2026-09-29: the banner
+   stayed squeezed into a 1.15fr/0.85fr two-column grid on phones (~147px
+   per column) because the base rule at the top of this section was later
+   in the file than the old override. */
+@media (max-width: 900px) {
+  .presentation-banner-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
 }
 
 /* ── Locations ────────────────────────────────────────────── */
