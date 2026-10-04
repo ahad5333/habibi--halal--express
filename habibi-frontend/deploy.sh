@@ -110,17 +110,25 @@ fi
 # index.html, so any newly-added image silently 404'd in production despite
 # building fine locally (found via /images/collab/*.svg). Too large to
 # scp -r wholesale on every deploy, and rsync isn't available on this
-# machine (only on the server) -- so diff local vs. remote file *paths*
-# and upload only what's new. Path-only (not content-hash) is a deliberate
-# fit for this project's convention of giving changed images new filenames
-# (e.g. "-v2", "-fixed") rather than overwriting existing ones in place.
-echo "▶ Syncing new images..."
+# machine (only on the server) -- so compare local vs. remote and upload
+# only what's new or changed. It compares path + md5, not path alone: the
+# path-only version silently never shipped an image replaced under the same
+# filename, so production kept the old picture. Hashing ~1000 files costs
+# about 10s on each side. Only uploads, never deletes from the server.
+echo "▶ Syncing new and changed images..."
 LOCAL_IMG_LIST=$(mktemp)
 REMOTE_IMG_LIST=$(mktemp)
-find "${LOCAL_DIST}/images" -type f 2>/dev/null | sed "s|^${LOCAL_DIST}/||" | sort > "$LOCAL_IMG_LIST"
-ssh "$REMOTE" "find '${REMOTE_DIR}/images' -type f 2>/dev/null | sed 's|^${REMOTE_DIR}/||'" | sort > "$REMOTE_IMG_LIST"
-NEW_IMAGES=$(comm -23 "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST")
+# md5sum prints "hash  path"; turn that into "path<TAB>hash" so both lists
+# sort by path and a line differs whenever the content does.
+(cd "${LOCAL_DIST}" && find images -type f -exec md5sum {} + 2>/dev/null) \
+  | sed 's/^\([0-9a-f]*\) [ *]\(.*\)$/\2\t\1/' | sort > "$LOCAL_IMG_LIST"
+ssh "$REMOTE" "cd '${REMOTE_DIR}' && find images -type f -exec md5sum {} + 2>/dev/null" \
+  | sed 's/^\([0-9a-f]*\) [ *]\(.*\)$/\2\t\1/' | sort > "$REMOTE_IMG_LIST"
+NEW_IMAGES=$(comm -23 "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST" | cut -f1)
+CHANGED_COUNT=$(comm -23 "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST" | cut -f1 \
+  | grep -cxFf <(cut -f1 "$REMOTE_IMG_LIST") || true)
 if [ -n "$NEW_IMAGES" ]; then
+  echo "  $(echo "$NEW_IMAGES" | wc -l | tr -d ' ') to upload (${CHANGED_COUNT} of them replace a different version already on the server)"
   # `ssh`/`scp` inside this loop must have stdin redirected from /dev/null --
   # ssh reads its own stdin by default, and without this it silently steals
   # bytes from the very pipe `read -r rel` is consuming, causing lines (i.e.
@@ -151,13 +159,13 @@ if [ -n "$NEW_IMAGES" ]; then
       echo "  ⚠ FAILED to upload: $rel"
     fi
   done <<< "$NEW_IMAGES"
-  echo "  uploaded $UPLOAD_OK new image(s)"
+  echo "  uploaded $UPLOAD_OK image(s)"
   if [ "$UPLOAD_FAILED" -gt 0 ]; then
     echo "  ⚠ $UPLOAD_FAILED image(s) failed -- re-run deploy.sh to retry, or upload manually"
     FAILURES=$((FAILURES + 1))
   fi
 else
-  echo "  no new images"
+  echo "  all images already up to date"
 fi
 rm -f "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST"
 
