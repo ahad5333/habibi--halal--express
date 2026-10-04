@@ -25,6 +25,22 @@ if [ "$1" = "--dry-run" ]; then
   echo "▶ DRY RUN -- will pull and check, but not reload"
 fi
 
+# The server deploys what is on GitHub, not what is on this machine. Stop if
+# backend edits are uncommitted or unpushed -- otherwise the deploy "succeeds"
+# while shipping none of them.
+source "$(dirname "$0")/../ops/deploy-guards.sh"
+guard_clean_tree habibi-backend
+echo "▶ Checking local commits are pushed..."
+git -C "$GUARD_REPO_ROOT" fetch -q origin main
+UNPUSHED=$(git -C "$GUARD_REPO_ROOT" log --oneline origin/main..HEAD -- habibi-backend)
+if [ -n "$UNPUSHED" ]; then
+  echo "  !! these backend commits are not on GitHub, so the server can't pull them:"
+  echo "$UNPUSHED" | sed 's/^/     /'
+  echo "     git push, then re-run."
+  exit 1
+fi
+echo "  up to date with GitHub"
+
 # bash -s with a quoted heredoc: the remote block is sent over stdin verbatim,
 # so nothing here is subject to two rounds of shell quoting.
 ssh "$REMOTE" bash -s -- "$DRY" <<'REMOTE_SCRIPT'
@@ -91,6 +107,21 @@ pm2 jlist | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
   }
   if(bad){console.log("  !! "+bad+" instance(s) not online -- check: pm2 logs");process.exit(1);}
 })'
+
+# Through nginx, the way customers reach it (localhost:5001 answers with an
+# HTTPS redirect, which looks like a failure but isn't). A worker can take
+# ~20s to answer after a cold start, so retry before calling it down.
+HS=$(grep '^HEALTH_SECRET=' habibi-backend/.env | cut -d= -f2- | tr -d '"')
+for i in $(seq 1 10); do
+  H=$(curl -s --max-time 10 -H "x-monitor-secret: $HS" https://habibihe.com/health || true)
+  if echo "$H" | grep -q '"status":"ok"' && echo "$H" | grep -q '"db":"connected"'; then
+    echo "  health: ok, database connected"
+    exit 0
+  fi
+  sleep 4
+done
+echo "  !! /health did not report ok + db connected within 40s: ${H:0:200}"
+exit 1
 REMOTE_SCRIPT
 
 echo

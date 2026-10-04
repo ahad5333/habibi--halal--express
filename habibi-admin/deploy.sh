@@ -17,6 +17,10 @@ REMOTE_ADMIN="/var/www/habibi/habibi-admin"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
+# Shared guards (see ops/deploy-guards.sh): each was a manual checklist line.
+source ../ops/deploy-guards.sh
+guard_clean_tree habibi-admin
+
 # Vite bakes VITE_* vars into the bundle at build time, and the only copy of the
 # production values lives on the server (there is no .env.production in the
 # repo -- it is gitignored). Building here without it would silently fall back
@@ -49,9 +53,12 @@ fi
 echo "▶ Checking CSS for cancelled @media overrides..."
 node scripts/check-dead-media.cjs
 
+guard_vite_secrets .
+
 echo "▶ Building locally..."
 npm run build
 [ -f dist/index.html ] || { echo "  !! build produced no dist/index.html -- stopping"; exit 1; }
+guard_dist_secrets dist
 
 echo "▶ Uploading to a staging folder (live dist untouched)..."
 ssh "$REMOTE" "rm -rf '${REMOTE_ADMIN}/dist_new'" < /dev/null

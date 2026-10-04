@@ -1,0 +1,4 @@
+# Shell scripts run on the Linux server: keep LF on checkout even on Windows
+# (core.autocrlf=true here). A CRLF script fails on its first line under bash --
+# this nearly broke the nightly backup.
+*.sh text eol=lf

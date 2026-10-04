@@ -38,6 +38,11 @@ ASSET_RETENTION_DAYS=14
 
 cd "$(dirname "$0")"
 
+# Shared guards (see ops/deploy-guards.sh): each was a manual checklist line.
+source ../ops/deploy-guards.sh
+guard_clean_tree habibi-frontend
+guard_vite_secrets .
+
 # Catches a phone/desktop layout rule that a later rule silently cancels --
 # it builds fine and only shows up as a broken layout on one screen size.
 echo "▶ Checking CSS for cancelled @media overrides..."
@@ -53,6 +58,8 @@ npm run build
 # guess if Vite's HTML output ever changes shape.
 echo "▶ Deferring the main stylesheet..."
 node scripts/defer-main-css.cjs
+
+guard_dist_secrets "${LOCAL_DIST}"
 
 echo "▶ Uploading new assets to staging folder..."
 ssh "$REMOTE" "rm -rf ${REMOTE_DIR}/assets_new"
@@ -209,6 +216,8 @@ if [ "$MISSING" -eq 0 ]; then
 else
   FAILURES=$((FAILURES + 1))
 fi
+
+smoke_site "$SITE_URL" "$LOCAL_DIST" || FAILURES=$((FAILURES + 1))
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "✗ Deploy NOT verified: $FAILURES problem(s) above. Re-run deploy.sh."
