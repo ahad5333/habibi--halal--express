@@ -44,6 +44,11 @@ if ! grep -q '^VITE_API_URL=.\+' "$ENV_FILE"; then
   exit 1
 fi
 
+# Same check as the website deploy: a phone/desktop rule cancelled by a
+# later rule builds fine and only shows up as a broken layout.
+echo "▶ Checking CSS for cancelled @media overrides..."
+node scripts/check-dead-media.cjs
+
 echo "▶ Building locally..."
 npm run build
 [ -f dist/index.html ] || { echo "  !! build produced no dist/index.html -- stopping"; exit 1; }

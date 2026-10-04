@@ -161,6 +161,11 @@ input, select, textarea { font-family: var(--font-sans); }
 /* ── Divider ── */
 .divider { border: none; border-top: 1px solid var(--color-border); }
 
+/* ── Page header ── (must stay above the @media block that overrides it) */
+.page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.875rem; }
+.page-title { font-family: var(--font-serif); font-size: 1.4rem; color: var(--color-text-main); font-weight: 700; }
+.page-sub { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.2rem; }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .page-hdr {
@@ -201,7 +206,3 @@ input, select, textarea { font-family: var(--font-sans); }
 .spinner { width: 20px; height: 20px; border: 2px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Page header ── */
-.page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.875rem; }
-.page-title { font-family: var(--font-serif); font-size: 1.4rem; color: var(--color-text-main); font-weight: 700; }
-.page-sub { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.2rem; }
