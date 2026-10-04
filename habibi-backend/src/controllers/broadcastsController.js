@@ -187,9 +187,8 @@ async function executeBroadcast(broadcast) {
         if (subscribers.length > 0) {
           const emailSubject = (email_template?.subject || '').trim() || title;
           const resEmail = await emailService.sendNewsletter(subscribers, emailSubject, message, email_template);
-          if (resEmail.success) {
-            emailSentCount = resEmail.sent_count || subscribers.length;
-          }
+          emailSentCount = resEmail.sent_count || 0;
+          if (!resEmail.success) console.error(`[Broadcast Controller] Email campaign sent 0/${subscribers.length}: ${resEmail.error || 'unknown error'}`);
         }
       } catch (err) {
         console.error('[Broadcast Controller] Email campaign failed:', err.message);

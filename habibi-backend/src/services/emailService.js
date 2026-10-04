@@ -298,7 +298,14 @@ const sendNewsletter = async (subscribers, subject, body, template = {}) => {
     }
   }
   console.log(`[Email Service] Campaign finished. Sent to ${successCount}/${subscribers.length} recipients.`);
-  return { success: true, sent_count: successCount };
+  // success means at least one email actually went out -- a campaign where
+  // every send failed (e.g. SendGrid out of credits) used to report success.
+  return {
+    success: successCount > 0,
+    sent_count: successCount,
+    failed_count: subscribers.length - successCount,
+    ...(successCount === 0 ? { error: 'Every newsletter send failed -- see server logs' } : {}),
+  };
 };
 
 const syncNewsletterContact = async (email) => {

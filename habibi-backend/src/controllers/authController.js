@@ -233,7 +233,11 @@ const loginUser = async (req, res) => {
         `UPDATE users SET admin_otp_hash=$1, admin_otp_expires=$2, admin_otp_attempts=0 WHERE id=$3`,
         [otpHash, otpExpires, user.id]
       );
+      // ZeptoMail is the sender that actually works; this used to look only at
+      // SendGrid/SMTP, so dropping the (out-of-credit) SendGrid key would have
+      // blocked every admin login.
       const smtpConfigured = !!(
+        process.env.ZEPTOMAIL_TOKEN ||
         process.env.SENDGRID_API_KEY ||
         (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
       );
@@ -245,7 +249,7 @@ const loginUser = async (req, res) => {
       } else {
         if (process.env.NODE_ENV === 'production') {
           // Never log OTPs in production — misconfigured email is a fatal condition
-          console.error('[ADMIN MFA] FATAL: Email not configured in production. Admin login blocked until SENDGRID_API_KEY or SMTP vars are set.');
+          console.error('[ADMIN MFA] FATAL: Email not configured in production. Admin login blocked until ZEPTOMAIL_TOKEN, SENDGRID_API_KEY or SMTP vars are set.');
           return res.status(503).json({ message: 'Admin login is temporarily unavailable. Contact the system administrator.' });
         }
         console.warn(`[ADMIN MFA] Email not configured. OTP for ${user.email}: ${otp} (expires in 10 min)`);
