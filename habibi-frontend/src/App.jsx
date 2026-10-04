@@ -4,15 +4,19 @@ import { useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import AssistantWidget from './components/AssistantWidget';
 
 // Critical path — eagerly loaded (the landing page and the menu)
 import Home from './pages/Home';
-import Menu from './pages/Menu';
 
 // Checkout, confirmation and sign-in load on the first visit to those pages.
 // Bundled eagerly they made every other page download the whole checkout
 // (the main file was 738 KB) before showing anything.
+// Menu and the assistant were in the main bundle (~52 KB of the 507 KB every
+// first visit downloads before anything renders). Menu is preloaded once the
+// browser is idle (see preloadMenu below), so opening it still feels instant.
+const loadMenu = () => import('./pages/Menu');
+const Menu              = lazy(loadMenu);
+const AssistantWidget   = lazy(() => import('./components/AssistantWidget'));
 const Login             = lazy(() => import('./pages/Login'));
 const Signup            = lazy(() => import('./pages/Signup'));
 const Checkout          = lazy(() => import('./pages/Checkout'));
@@ -116,6 +120,19 @@ function Layout() {
     initGA(gaId);
     initPixel(pixelId);
     captureUtm();
+  }, []);
+
+  useEffect(() => {
+    // Fetch the Menu chunk while the visitor is still on the first page, so
+    // the most-opened page never waits on a download. A rejected import is
+    // harmless here: the real navigation retries it.
+    const preloadMenu = () => { loadMenu().catch(() => {}); };
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(preloadMenu, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(preloadMenu, 2500);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -238,7 +255,9 @@ function Layout() {
           has to be completed.
           Deliberately an allow-list: a page added later gets no assistant until
           someone decides it should have one. */}
-      {showsAssistant(location.pathname) && <AssistantWidget />}
+      {showsAssistant(location.pathname) && (
+        <Suspense fallback={null}><AssistantWidget /></Suspense>
+      )}
     </>
   );
 }
