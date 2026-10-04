@@ -6,7 +6,7 @@ import {
   Clock, Shield, Star, Lock, AlertTriangle, RefreshCw,
   Package, Printer, Eye, RotateCcw, Gift, Bell, Heart, Camera, Share2,
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { userAPI, savedPaymentsAPI, notificationsAPI, favoritesAPI, reviewsAPI, referralAPI, settingsAPI, subscriptionsAPI } from '../services/api';

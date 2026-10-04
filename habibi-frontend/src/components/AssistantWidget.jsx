@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { X, Send, Mic, Square, Phone, Mail } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { assistantAPI, cateringAPI } from '../services/api';

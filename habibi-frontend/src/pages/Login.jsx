@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { useAuth } from '../context/AuthContext';
 import LegalModal from '../components/LegalModal';
 import './Login.css';

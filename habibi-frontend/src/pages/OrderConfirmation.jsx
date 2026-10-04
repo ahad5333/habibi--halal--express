@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Clock, MapPin, ChevronRight, ShoppingBag, Star } from 'lucide-react';
 import { io } from 'socket.io-client';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { trackPurchase } from '../utils/analytics';
 import './OrderConfirmation.css';
 

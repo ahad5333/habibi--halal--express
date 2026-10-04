@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Copy, Check } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { paymentsAPI } from '../services/api';
 import './OfflinePayModal.css';
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, X, ChevronDown, Navigation } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import './StorePicker.css';
 
 // A photo bundled with the site also ships as .webp; CPanel uploads are used as-is.

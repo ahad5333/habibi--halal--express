@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Phone, Lock, Eye, EyeOff, Check } from 'lucide-react';
 import LegalModal from '../components/LegalModal';

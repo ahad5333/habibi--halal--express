@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Phone, MessageSquare, Star, Clock, MapPin, ChevronRight, ShoppingBag, Search, RefreshCw, ClipboardList, CheckCircle2, ChefHat, Scooter, PartyPopper, Car, Package, User, XCircle, Send, Share2, Check, Bell, BellRing } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { ordersAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './OrderTracking.css';

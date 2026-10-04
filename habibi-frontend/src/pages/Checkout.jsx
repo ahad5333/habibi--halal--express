@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Trash2, MapPin, CreditCard, ShoppingBag, Tag, Plus, Minus, X, ChevronLeft, ChevronRight, Clock, ChevronDown, Pencil } from 'lucide-react';
-import { Trans, useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from '../i18n';
 import MenuItemModal from '../components/MenuItemModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';

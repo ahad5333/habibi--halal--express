@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Minus, Plus, Heart, Star, Flame, Share2, Check } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { menuAPI, favoritesAPI, waitlistAPI, locationsAPI } from '../services/api';
 import { getGrantedDevicePoint } from '../utils/devicePoint';
 import { useCart } from '../context/CartContext';

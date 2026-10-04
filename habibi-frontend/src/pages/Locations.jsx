@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Navigation, Star, ChevronDown, Wifi } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../i18n';
 import { locationsAPI } from '../services/api';
 import SEO from '../components/SEO';
 import { locationAnchor, useBusinessSchema } from '../utils/businessSchema';
