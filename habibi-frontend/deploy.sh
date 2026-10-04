@@ -36,8 +36,14 @@ FAILURES=0
 # Step 1 is the one that actually protects you; 2 and 3 stop it spreading further.
 ASSET_RETENTION_DAYS=14
 
-echo "▶ Building..."
 cd "$(dirname "$0")"
+
+# Catches a phone/desktop layout rule that a later rule silently cancels --
+# it builds fine and only shows up as a broken layout on one screen size.
+echo "▶ Checking CSS for cancelled @media overrides..."
+node scripts/check-dead-media.cjs
+
+echo "▶ Building..."
 npm run build
 
 # Makes the main CSS bundle non-render-blocking (see the script itself for

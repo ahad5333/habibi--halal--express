@@ -2207,7 +2207,7 @@
   .dv-broadcast-title { font-size: 1.25rem; }
   .dv-chat-panel { max-width: 540px; margin: 0 auto; border-radius: 20px 20px 0 0; }
   .dv-summary-sheet   { max-width: 540px; margin: 0 auto; border-radius: 20px 20px 0 0; }
-  .dv-history-drawer  { max-width: 540px; margin: 0 auto; border-radius: 20px 20px 0 0; }
+  .dv-history-drawer  { max-width: 540px; margin: 0 auto; }
   .dv-steps           { justify-content: center; padding: 1rem 1.5rem; }
   .dv-step-circle     { width: 32px; height: 32px; font-size: 0.95rem; }
   .dv-step-lbl        { font-size: 0.7rem; }

@@ -5,11 +5,6 @@
   background: var(--color-bg, #0a0a0a);
 }
 
-@media (max-width: 768px) {
-  .pln-shell { grid-template-columns: 1fr; }
-  .pln-left { display: none; }
-}
-
 /* ── Left Panel ────────────────────────── */
 .pln-left {
   background: linear-gradient(160deg, #0d1f47 0%, #0a0a0a 100%);
@@ -20,6 +15,14 @@
   gap: 1.5rem;
   position: relative;
   overflow: hidden;
+}
+
+/* Must come after .pln-left above: equal specificity resolves by source
+   order, so when this sat at the top of the file the base `display: flex`
+   won and phones got the 516px brand panel above the login form. */
+@media (max-width: 768px) {
+  .pln-shell { grid-template-columns: 1fr; }
+  .pln-left { display: none; }
 }
 
 .pln-left::before {

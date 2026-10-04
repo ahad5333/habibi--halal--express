@@ -1712,8 +1712,6 @@
     80%  { opacity: 0.95; }
     100% { transform: translateY(-100px) scale(0.2); opacity: 0;    }
   }
-  /* Fire base glow: don't extend beyond image edges */
-  .item-fx-fire::before { left: 0; right: 0; }
 }
 
 @media (max-width: 768px) {
@@ -1887,6 +1885,12 @@
   border-radius: 50% 50% 0 0;
   pointer-events: none;
   z-index: 1;
+}
+
+/* Phones: keep the glow inside the photo's edges. Placed after the base
+   rule above on purpose; inside the earlier 900px block the base -10% won. */
+@media (max-width: 900px) {
+  .item-fx-fire::before { left: 0; right: 0; }
 }
 
 /* Flame particles - taller and wider to leap out of the image wrapper */
