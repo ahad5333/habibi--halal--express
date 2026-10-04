@@ -7,6 +7,10 @@ set -e
 REMOTE="habibi-server"
 REMOTE_DIR="/var/www/habibi/habibi-frontend/dist"
 LOCAL_DIST="$(dirname "$0")/dist"
+SITE_URL="https://habibihe.com"
+# Steps that report a failure and carry on (so one bad file doesn't abandon
+# the rest) bump this; the script exits non-zero at the end if it's set.
+FAILURES=0
 # How long an old build's asset files stick around after being superseded.
 # Vite's content-hashed filenames mean a file's name only changes when its
 # content does, so old and new files never collide -- this used to delete
@@ -74,9 +78,15 @@ scp "${LOCAL_DIST}/index.html" "${REMOTE}:${REMOTE_DIR}/index.html"
 echo "▶ Uploading root files (manifest, service workers, icons)..."
 ROOT_FILES=$(find "${LOCAL_DIST}" -maxdepth 1 -type f ! -name 'index.html' 2>/dev/null)
 if [ -n "$ROOT_FILES" ]; then
+  # An `scp ... && echo` chain is exempt from `set -e`: a failed upload here
+  # used to fall through silently and the deploy still ended in success.
   # shellcheck disable=SC2086
-  scp $ROOT_FILES "${REMOTE}:${REMOTE_DIR}/" && \
+  if scp $ROOT_FILES "${REMOTE}:${REMOTE_DIR}/"; then
     echo "  uploaded: $(echo "$ROOT_FILES" | wc -l | tr -d ' ') file(s)"
+  else
+    echo "  ⚠ FAILED to upload root files"
+    FAILURES=$((FAILURES + 1))
+  fi
 else
   echo "  none"
 fi
@@ -86,9 +96,13 @@ fi
 # is missing nginx answers that path with index.html and verification fails.
 if [ -d "${LOCAL_DIST}/.well-known" ]; then
   echo "▶ Uploading .well-known/..."
-  ssh "$REMOTE" "mkdir -p '${REMOTE_DIR}/.well-known'" < /dev/null && \
-    scp "${LOCAL_DIST}"/.well-known/* "${REMOTE}:${REMOTE_DIR}/.well-known/" && \
+  if ssh "$REMOTE" "mkdir -p '${REMOTE_DIR}/.well-known'" < /dev/null && \
+     scp "${LOCAL_DIST}"/.well-known/* "${REMOTE}:${REMOTE_DIR}/.well-known/"; then
     echo "  uploaded: $(find "${LOCAL_DIST}/.well-known" -maxdepth 1 -type f | wc -l | tr -d ' ') file(s)"
+  else
+    echo "  ⚠ FAILED to upload .well-known/ (Apple Pay domain verification depends on it)"
+    FAILURES=$((FAILURES + 1))
+  fi
 fi
 
 # public/images/ (391MB, ~1000 files) is a direct copy into dist/images/ but
@@ -140,10 +154,50 @@ if [ -n "$NEW_IMAGES" ]; then
   echo "  uploaded $UPLOAD_OK new image(s)"
   if [ "$UPLOAD_FAILED" -gt 0 ]; then
     echo "  ⚠ $UPLOAD_FAILED image(s) failed -- re-run deploy.sh to retry, or upload manually"
+    FAILURES=$((FAILURES + 1))
   fi
 else
   echo "  no new images"
 fi
 rm -f "$LOCAL_IMG_LIST" "$REMOTE_IMG_LIST"
 
-echo "✓ Deploy complete"
+# Check the live site itself rather than trusting the uploads above. This
+# script has printed success while the live site was still serving the
+# previous build (2026-09-08, twice: "Connection reset by peer" mid-upload),
+# and the next browser test then chased a bug that was really an undeployed
+# fix. The live homepage must be byte-identical to the one just built, and
+# every JS/CSS file it references must answer 200.
+echo "▶ Verifying the live site..."
+LOCAL_HASH=$(sha256sum "${LOCAL_DIST}/index.html" | cut -d' ' -f1)
+LIVE_HASH=""
+for attempt in 1 2 3; do
+  LIVE_HASH=$(curl -fsS --max-time 20 "${SITE_URL}/?deploycheck=$(date +%s)" 2>/dev/null | sha256sum | cut -d' ' -f1)
+  [ "$LIVE_HASH" = "$LOCAL_HASH" ] && break
+  sleep 3
+done
+if [ "$LIVE_HASH" = "$LOCAL_HASH" ]; then
+  echo "  index.html matches the build"
+else
+  echo "  ⚠ live index.html does NOT match the build -- the site is still serving something else"
+  FAILURES=$((FAILURES + 1))
+fi
+
+MISSING=0
+for asset in $(grep -o '/assets/[A-Za-z0-9._-]*\.\(js\|css\)' "${LOCAL_DIST}/index.html" | sort -u); do
+  CODE=$(curl -s -o /dev/null --max-time 20 -w '%{http_code}' "${SITE_URL}${asset}")
+  if [ "$CODE" != "200" ]; then
+    echo "  ⚠ ${asset} answered ${CODE}"
+    MISSING=$((MISSING + 1))
+  fi
+done
+if [ "$MISSING" -eq 0 ]; then
+  echo "  every file the homepage loads answers 200"
+else
+  FAILURES=$((FAILURES + 1))
+fi
+
+if [ "$FAILURES" -gt 0 ]; then
+  echo "✗ Deploy NOT verified: $FAILURES problem(s) above. Re-run deploy.sh."
+  exit 1
+fi
+echo "✓ Deploy complete and verified live"
