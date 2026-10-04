@@ -1287,7 +1287,7 @@ const codDeliveryFailed = async (req, res) => {
 };
 
 /* ── Driver PIN authentication ──────────────────────────────────── */
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const driverLogin = async (req, res) => {
   try {

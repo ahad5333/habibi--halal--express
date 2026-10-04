@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const safeError = require('../utils/safeError');
 const pool = require('../config/db');
 const { sendSMS, toE164 } = require('../services/smsService');
