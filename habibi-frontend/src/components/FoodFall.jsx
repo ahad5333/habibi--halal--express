@@ -34,8 +34,8 @@ function shuffle(a) {
   return a;
 }
 
-function makePieces(W, H, count, clusterY) {
-  const size = Math.round(Math.max(44, Math.min(84, W / 11)));
+function makePieces(W, H, count, clusterY, maxSize) {
+  const size = Math.round(Math.max(28, Math.min(84, W / (W < 520 ? 6.5 : 11), maxSize)));
   const names = shuffle([...FOODS]).slice(0, count);
   const cols = Math.ceil(Math.sqrt(count * 1.3));
   const gap = size * 0.82;
@@ -115,7 +115,16 @@ function runDrop(stage, count, clusterY) {
   });
   const seen = visibleBottom - stage.getBoundingClientRect().top - 6;
   const floor = seen > H * 0.45 ? Math.min(H - 2, seen) : H - 2;
-  const ps = makePieces(W, H, count, clusterY);
+  // The pile (about two rows deep) must fit between the message/button and
+  // the floor, or it hides the button -- seen live on a 390px phone, where
+  // the floor is pulled up to the category bar. Shrink the pieces to fit.
+  let contentBottom = 0;
+  const top = stage.getBoundingClientRect().top;
+  for (const el of stage.parentElement.children) {
+    if (el !== stage) contentBottom = Math.max(contentBottom, el.getBoundingClientRect().bottom - top);
+  }
+  const maxSize = (floor - contentBottom - 8) / 1.6;
+  const ps = makePieces(W, H, maxSize < 40 ? Math.min(count, 8) : count, clusterY, maxSize);
   const els = ps.map(p => {
     const el = document.createElement('img');
     el.src = `/images/drop/${p.name}.webp`;
