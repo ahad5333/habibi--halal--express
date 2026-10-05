@@ -30,7 +30,7 @@ export default function HealthSafety() {
       <div className="legal-hero">
         <picture>
           <source srcSet="/images/titles/our-standards-title.webp" type="image/webp" />
-          <img src="/images/titles/our-standards-title.jpg" alt="Our Standards — Habibi Halal Express" className="legal-hero-img" />
+          <h1 className="legal-hero-h1"><img src="/images/titles/our-standards-title.jpg" alt="Our Standards — Habibi Halal Express" className="legal-hero-img" /></h1>
         </picture>
       </div>
       <div className="legal-hero-sub">

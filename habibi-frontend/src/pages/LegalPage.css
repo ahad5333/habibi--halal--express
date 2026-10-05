@@ -180,3 +180,7 @@
   .legal-hero { padding: 4rem 1rem 2.5rem; }
   .legal-title { font-size: 2rem; }
 }
+
+/* The page's title is the hero image; the h1 around it carries the heading
+   for screen readers and search engines without changing the layout. */
+.legal-hero-h1 { display: contents; }

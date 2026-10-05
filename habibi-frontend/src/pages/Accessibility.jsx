@@ -28,7 +28,7 @@ const Accessibility = () => {
     <div className="legal-hero">
       <picture>
         <source srcSet="/images/titles/accessibility-title.webp" type="image/webp" />
-        <img src="/images/titles/accessibility-title.jpg" alt="Accessibility Statement — Habibi Halal Express" className="legal-hero-img" />
+        <h1 className="legal-hero-h1"><img src="/images/titles/accessibility-title.jpg" alt="Accessibility Statement — Habibi Halal Express" className="legal-hero-img" /></h1>
       </picture>
     </div>
     <div className="legal-hero-sub">

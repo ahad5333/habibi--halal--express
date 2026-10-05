@@ -38,7 +38,7 @@ const SmsTerms = () => {
       <div className="legal-hero">
         <picture>
           <source srcSet="/images/titles/sms-terms-title.webp" type="image/webp" />
-          <img src="/images/titles/sms-terms-title.jpg" alt="SMS Terms and Conditions — Habibi Halal Express" className="legal-hero-img" />
+          <h1 className="legal-hero-h1"><img src="/images/titles/sms-terms-title.jpg" alt="SMS Terms and Conditions — Habibi Halal Express" className="legal-hero-img" /></h1>
         </picture>
       </div>
       <div className="legal-hero-sub">

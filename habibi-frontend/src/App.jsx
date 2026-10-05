@@ -1,3 +1,4 @@
+import SEO from './components/SEO';
 import React, { useEffect, lazy, Suspense } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
@@ -173,8 +174,8 @@ function Layout() {
           <Route path="/menu/item/:slug" element={<MenuItemRedirect />} />
           <Route path="/menu/:cat?" element={<Menu />} />
           <Route path="/locations" element={<Locations />} />
-          <Route path="/order-tracking" element={<OrderTracking />} />
-          <Route path="/reorder" element={<Reorder />} />
+          <Route path="/order-tracking" element={<Page title="Track Your Order" h1 description="Enter your order number to see live status updates for your Habibi Halal Express order."><OrderTracking /></Page>} />
+          <Route path="/reorder" element={<Page title="Reorder" noindex h1><Reorder /></Page>} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           {/* Same page as /careers -- the navbar's public "Staff" dropdown
@@ -189,27 +190,27 @@ function Layout() {
           <Route path="/careers/departments/:id" element={<DepartmentDetail />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/wholesale" element={<Wholesale />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/login" element={<Page title="Log In" noindex h1><Login /></Page>} />
+          <Route path="/checkout" element={<Page title="Checkout" noindex h1><Checkout /></Page>} />
 
           {/* Additional routes */}
           <Route path="/order" element={<Menu />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/register" element={<Signup />} />
+          <Route path="/signup" element={<Page title="Create an Account" h1 description="Create a Habibi Halal Express account for faster checkout, order history and rewards."><Signup /></Page>} />
+          <Route path="/register" element={<Page title="Create an Account" h1 description="Create a Habibi Halal Express account for faster checkout, order history and rewards."><Signup /></Page>} />
           <Route path="/urgent" element={<Urgent />} />
-          <Route path="/payment" element={<Payment />} />
+          <Route path="/payment" element={<Page title="Quick Pay" description="Pay an outstanding order balance, catering deposit or wholesale invoice online, no account required."><Payment /></Page>} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/articles" element={<Articles />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/order-confirmation" element={<OrderConfirmation />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/account" element={<Page title="My Account" noindex><Account /></Page>} />
+          <Route path="/order-confirmation" element={<Page title="Order Confirmation" noindex><OrderConfirmation /></Page>} />
+          <Route path="/forgot-password" element={<Page title="Forgot Password" noindex><ForgotPassword /></Page>} />
+          <Route path="/reset-password" element={<Page title="Reset Password" noindex><ResetPassword /></Page>} />
           <Route path="/partner/login" element={<PartnerLogin />} />
           <Route path="/partner" element={<PartnerPortal />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-email" element={<Page title="Verify Email" noindex h1><VerifyEmail /></Page>} />
           <Route path="/catering" element={<Catering />} />
-          <Route path="/gift-cards" element={<BuyGiftCard />} />
+          <Route path="/gift-cards" element={<Page title="Gift Cards" description="Buy a Habibi Halal Express digital gift card, delivered instantly by email and redeemable on any order."><BuyGiftCard /></Page>} />
           <Route path="/admin/broadcasts" element={<InternalGuard requireAdmin><Broadcasts /></InternalGuard>} />
 
           {/* Legal hub */}
@@ -222,7 +223,7 @@ function Layout() {
           <Route path="/accessibility"  element={<Accessibility />} />
           <Route path="/reviews"           element={<Reviews />} />
           <Route path="/reviews/new"       element={<Reviews />} />
-          <Route path="/unsubscribe"       element={<Unsubscribe />} />
+          <Route path="/unsubscribe"       element={<Page title="Unsubscribe" noindex><Unsubscribe /></Page>} />
           <Route path="/delivery-coverage" element={<DeliveryCoverage />} />
           <Route path="/where-we-deliver"  element={<DeliveryCoverage />} />
 
@@ -237,7 +238,7 @@ function Layout() {
           <Route path="/our-journey"               element={<OurJourney />} />
 
           {/* 404 */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Page title="Page Not Found" noindex><NotFound /></Page>} />
         </Routes>
         <BootReady />
         </Suspense>
@@ -317,6 +318,19 @@ function ScrollToTop() {
   }, [pathname]);
 
   return null;
+}
+
+
+// Title (and, where the page has none, a hidden main heading) for pages that
+// do not set their own <SEO>. Private pages are noindex.
+function Page({ title, description, noindex = false, h1 = false, children }) {
+  return (
+    <>
+      <SEO title={title} description={description} noindex={noindex} />
+      {h1 && <h1 className="sr-only">{title}</h1>}
+      {children}
+    </>
+  );
 }
 
 function App() {

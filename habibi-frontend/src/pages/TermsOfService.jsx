@@ -26,7 +26,7 @@ export default function TermsOfService() {
       <div className="legal-hero">
         <picture>
           <source srcSet="/images/titles/terms-title.webp" type="image/webp" />
-          <img src="/images/titles/terms-title.jpg" alt="Terms of Service — Habibi Halal Express" className="legal-hero-img" />
+          <h1 className="legal-hero-h1"><img src="/images/titles/terms-title.jpg" alt="Terms of Service — Habibi Halal Express" className="legal-hero-img" /></h1>
         </picture>
       </div>
       <div className="legal-hero-sub">
