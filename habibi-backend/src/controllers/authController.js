@@ -5,7 +5,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../services/emailService");
 const { sendAdminOTP } = require('../services/emailService');
-const { sendSMS } = require('../services/smsService');
+const { sendSMS, smsConfigured } = require('../services/smsService');
+const { getAlertPhone } = require('../utils/alertPhone');
 // Every role that can sign in to the CPanel must pass email MFA -- including
 // 'manager', which is not in adminMiddleware's ALLOWED_ROLES on purpose. Keying
 // the MFA gate off that narrower set would have let managers in on a password
@@ -245,7 +246,33 @@ const loginUser = async (req, res) => {
       // (useful when admin@habibihe.com has no mailbox yet)
       const otpRecipient = process.env.ADMIN_MFA_EMAIL || user.email;
       if (smtpConfigured) {
-        sendAdminOTP(otpRecipient, otp).catch(err => console.error('Admin OTP email failed:', err.message));
+        // Wait for the email (it used to be fire-and-forget, so a ZeptoMail
+        // outage still answered "code sent" and locked every admin out of
+        // CPanel). If it fails, text the code to the owner's alert phone --
+        // Twilio is a separate provider, so both failing at once is unlikely.
+        // The owner's phone, not the user's: it is the one CPanel number we
+        // know is a verified mobile, and the owner seeing that someone is
+        // logging in is a feature during an outage.
+        const emailed = await Promise.race([
+          sendAdminOTP(otpRecipient, otp).catch(err => ({ success: false, error: err.message })),
+          new Promise(resolve => setTimeout(() => resolve({ success: false, error: 'timed out after 12s' }), 12000)),
+        ]);
+        if (!emailed?.success) {
+          console.error(`[ADMIN MFA] code email to ${otpRecipient} failed (${emailed?.error}) -- trying SMS to the owner alert phone`);
+          const phone = await getAlertPhone();
+          const texted = !smsConfigured()
+            ? { success: false, error: 'SMS is not configured (would only log the code)' }
+            : phone
+            ? await sendSMS(phone, `Habibi CPanel login code for ${user.email}: ${otp}. Expires in 10 min. Not you? Change the password now.`).catch(err => ({ success: false, error: err.message }))
+            : { success: false, error: 'no owner alert phone set' };
+          if (!texted?.success) {
+            console.error(`[ADMIN MFA] SMS fallback also failed: ${texted?.error}`);
+            return res.status(503).json({ message: 'Could not send your login code by email or text. Please try again in a few minutes.' });
+          }
+          console.log(`[ADMIN MFA] code for ${user.email} sent by SMS fallback`);
+          const last4 = String(phone).replace(/\D/g, '').slice(-4);
+          return res.json({ mfa_required: true, email: user.email, sent_to: `the owner's phone (ending ${last4}) by text, because email is down` });
+        }
       } else {
         if (process.env.NODE_ENV === 'production') {
           // Never log OTPs in production — misconfigured email is a fatal condition

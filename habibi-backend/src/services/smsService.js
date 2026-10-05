@@ -94,7 +94,12 @@ const lookupLineType = async (phone) => {
   }
 };
 
+// True only when texts really go out. Without credentials sendSMS "succeeds"
+// by printing the message to the log, which must never happen for a secret.
+const smsConfigured = () => !!client;
+
 module.exports = {
+  smsConfigured,
   lookupLineType,
   sendSMS,
   sendOrderUpdate,
