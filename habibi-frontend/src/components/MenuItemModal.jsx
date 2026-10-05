@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Minus, Plus, Heart, Star, Flame, Share2, Check } from 'lucide-react';
 import { useTranslation } from '../i18n';
-import { menuAPI, favoritesAPI, waitlistAPI, locationsAPI } from '../services/api';
+import { menuAPI, favoritesAPI, waitlistAPI, locationsAPI, reviewsAPI } from '../services/api';
 import { getGrantedDevicePoint } from '../utils/devicePoint';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -136,6 +136,21 @@ export default function MenuItemModal({
   // store (the store is the one with everything in the cart, then the nearest).
   // Not for Group Order, a sold-out item, or editing a line already in the cart.
   const [storeNote, setStoreNote] = useState(null); // { kind: 'change', store } | { kind: 'none' }
+
+  // The real approved-review rating, same figure the Menu page shows. This
+  // used to be fixed text ("4.8 · 170+ ratings") while there were 0 approved
+  // reviews; with none, the row is hidden (2026-10-05).
+  const [ratingStats, setRatingStats] = useState(null);
+  useEffect(() => {
+    reviewsAPI.getApproved({ limit: 1 })
+      .then(data => {
+        const st = data?.stats;
+        if (st && parseInt(st.total) > 0) {
+          setRatingStats({ avg: parseFloat(st.avg_rating), count: parseInt(st.total) });
+        }
+      })
+      .catch(() => {});
+  }, []);
   const cartStoreKey = JSON.stringify(cartItems.map(i => [
     i.id ?? i.menu_id,
     Object.keys(i.customCfg?.extras || {}),
@@ -732,12 +747,16 @@ export default function MenuItemModal({
                   <span className="mim-price">${basePrice.toFixed(2)}</span>
                 </div>
                 {displayDesc && <p className="mim-desc">{displayDesc}</p>}
-                <div className="mim-stars-row">
-                  {[1,2,3,4,5].map(s => (
-                    <Star key={s} size={12} fill="#F97316" stroke="#F97316" />
-                  ))}
-                  <span className="mim-rating-label">4.8 · 170+ ratings</span>
-                </div>
+                {ratingStats && (
+                  <div className="mim-stars-row">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={12} fill={s <= Math.round(ratingStats.avg) ? '#F97316' : 'none'} stroke="#F97316" />
+                    ))}
+                    <span className="mim-rating-label">
+                      {ratingStats.avg.toFixed(1)} · {ratingStats.count >= 100 ? `${ratingStats.count}+` : ratingStats.count} rating{ratingStats.count === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
