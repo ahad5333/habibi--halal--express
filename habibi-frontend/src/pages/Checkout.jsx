@@ -22,6 +22,7 @@ import SquareApplePayButton, { useSquareApplePayAvailable } from '../components/
 import StorePicker from '../components/StorePicker';
 import OfflinePayModal from '../components/OfflinePayModal';
 import IngCanvas, { DEFAULT_PROTEIN_OPTS, DEFAULT_SAUCE_OPTS } from '../components/IngCanvas';
+import FoodFall from '../components/FoodFall';
 import './Checkout.css';
 
 const TIP_OPTIONS = ['None', '5%', '10%', '15%', '20%', 'Custom'];
@@ -1390,7 +1391,8 @@ const Checkout = () => {
                 <span className="text-muted text-sm">{t('checkout.itemsCount', { count: items.length })}</span>
               </div>
               {items.length === 0 ? (
-                <div className="empty-cart">
+                <div className="empty-cart has-food-fall">
+                  <FoodFall />
                   <ShoppingBag size={40} className="text-muted mb-4" />
                   <p className="text-muted">{t('checkout.cartEmpty')}</p>
                   <Link to="/menu" className="btn btn-outline mt-4">{t('checkout.browseMenu')}</Link>

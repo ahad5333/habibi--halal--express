@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import BuildYourOwn from '../components/BuildYourOwn';
 import MenuItemModal from '../components/MenuItemModal';
 import SEO from '../components/SEO';
+import FoodFall from '../components/FoodFall';
 import './Menu.css';
 
 // Arabic name/description are optional per-item admin fields (see
@@ -1295,7 +1296,8 @@ const Menu = () => {
             })
           )
         ) : filtered.length === 0 && activeCategory !== 'byo' ? (
-          <div className="menu-empty">
+          <div className="menu-empty has-food-fall">
+            <FoodFall />
             <p>{search ? t('menu.noItemsFoundFor', { search }) : t('menu.noItemsFoundInCategory')}</p>
             <button className="menu-empty-reset" onClick={() => { setSearch(''); handleCatClick('all'); }}>
               {t('menu.showAllItems')}

@@ -201,6 +201,10 @@
           if (done) return;
           done = true;
           boot.className = 'boot-out';
+          // Lets page effects that would otherwise play unseen behind this
+          // screen wait for it (FoodFall's empty-state drop).
+          window.__habibiBootDone = true;
+          try { window.dispatchEvent(new Event('habibi:boot-done')); } catch (e) {}
           setTimeout(function () { boot.remove(); }, 420);
         }
 

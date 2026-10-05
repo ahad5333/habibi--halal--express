@@ -1,0 +1,45 @@
+/* Fills its (position: relative) parent; the pile lands on the parent's bottom
+   edge. Pieces sit in front of the message, like the Mobbin original, but never
+   take clicks, so the button under a piece still works. */
+.food-fall {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.food-fall-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: auto;
+  will-change: transform;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Reduced motion: the pile is computed off-screen and only fades in. */
+.food-fall.is-settled .food-fall-piece {
+  animation: food-fall-fade 0.4s ease-out both;
+}
+@keyframes food-fall-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Any empty state hosting the drop: room for the message up top and a pile
+   below it. The message keeps its own layer just under the pieces. */
+.has-food-fall {
+  position: relative;
+  min-height: 380px;
+  isolation: isolate;
+}
+.has-food-fall > :not(.food-fall) {
+  position: relative;
+  z-index: 2;
+}
+@media (max-width: 640px) {
+  .has-food-fall { min-height: 340px; }
+}
