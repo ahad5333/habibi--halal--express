@@ -42,4 +42,8 @@
 }
 @media (max-width: 640px) {
   .has-food-fall { min-height: 340px; }
+  /* The menu's empty state sits low on a phone, with the category bar
+     pinned under it; its 5rem top padding left no room for the pile below
+     the button, so the pieces had to shrink. Lift the message instead. */
+  .menu-empty.has-food-fall { padding-top: 1.25rem; }
 }
