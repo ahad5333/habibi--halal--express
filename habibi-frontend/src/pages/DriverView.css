@@ -272,7 +272,7 @@
      slot -- centered position lands on the empty street stretch between
      the scooter and the grill smoke, hiding the scooter entirely. Shifted
      left so the scooter (the actual subject) stays in frame. */
-  background-image: url('/images/hero/driver_hero_scooter.png');
+  background-image: url('/images/hero/driver_hero_scooter.webp');
   background-size: cover;
   background-position: 15% center;
   transform: scale(1.04);

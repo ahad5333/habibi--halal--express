@@ -41,18 +41,18 @@ const categoryDisplayName = (rawCategory, t) => {
 
 const CATEGORY_IMAGES = {
   breakfast: '/images/menu/breakfast-banner.webp',
-  platter:   '/images/menu/platter-banner.png',
-  sandwich:  '/images/menu/sandwich-banner.png',
-  burgers:   '/images/menu/burgers-banner.png',
-  tacos:     '/images/menu/tacos-banner.png',
+  platter:   '/images/menu/platter-banner.webp',
+  sandwich:  '/images/menu/sandwich-banner.webp',
+  burgers:   '/images/menu/burgers-banner.webp',
+  tacos:     '/images/menu/tacos-banner.webp',
   specials:  '/images/menu/specials-banner.webp',
-  extras:    '/images/menu/extras-banner.png',
-  drinks:    '/images/menu/drinks-banner.png',
-  family:    '/images/menu/family-banner.png',
-  byo:       '/images/menu/byo-banner.png',
+  extras:    '/images/menu/extras-banner.webp',
+  drinks:    '/images/menu/drinks-banner.webp',
+  family:    '/images/menu/family-banner.webp',
+  byo:       '/images/menu/byo-banner.webp',
 };
 
-const MENU_ICON = '/images/menu/habibi-menu-icon.png';
+const MENU_ICON = '/images/menu/habibi-menu-icon.webp';
 
 /* Map a raw DB category string to a banner image */
 function MenuSkeleton() {
@@ -101,7 +101,7 @@ const CAT_ORDER = [
 // fully admin-managed (add/remove/edit) via Menu Builder > Build Your Own
 // Ingredients, same as the main /customize builder.
 const DEFAULT_BOWL_BASE_OPTIONS = [
-  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice.jpg' },
+  { id: 'rice',   label: 'Rice',   image: '/images/byo/ing/rice-sm.webp' },
   { id: 'hummus', label: 'Hummus', image: '/images/byo/ing/hummus.webp' },
   { id: 'salad',  label: 'Salad',  image: '/images/byo/ing/lettuce.webp' },
 ];

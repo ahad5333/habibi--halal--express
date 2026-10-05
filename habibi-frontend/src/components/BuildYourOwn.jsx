@@ -79,7 +79,7 @@ const INGREDIENT_DB = {
   },
 
   chicken: {
-    img: '/images/byo/ing/chicken.png',
+    img: '/images/byo/ing/chicken-sm.webp',
     layer: 4, tile: true, blend: 'multiply',
     /* Chicken is a PORTION item — duplicate copies rather than
        scaling up one piece (scaling up = unnaturally large chunks).
@@ -95,7 +95,7 @@ const INGREDIENT_DB = {
   },
 
   'lamb-gyro': {
-    img: '/images/byo/ing/lamb-gyro.png',
+    img: '/images/byo/ing/lamb-gyro-sm.webp',
     layer: 4, tile: true, blend: 'multiply',
     /* Thin-sliced gyro meat — tiles nicely with slight overlap */
     family: {
@@ -109,7 +109,7 @@ const INGREDIENT_DB = {
   },
 
   falafel: {
-    img: '/images/byo/ing/falafel.png',
+    img: '/images/byo/ing/falafel-sm.webp',
     layer: 5, tile: true, blend: 'multiply',
     /* Falafel balls — always duplicated in a row, never scaled alone */
     family: {
@@ -127,7 +127,7 @@ const INGREDIENT_DB = {
   /* ── TOPPINGS ─────────────────────────────────────────────── */
 
   lettuce: {
-    img: '/images/byo/ing/lettuce.jpg',
+    img: '/images/byo/ing/lettuce-sm.webp',
     layer: 3, tile: false, blend: 'multiply',
     /* Lettuce is the BASE LAYER — it goes UNDER the protein.
        It should peek out from the sides and bottom slightly. */
@@ -142,7 +142,7 @@ const INGREDIENT_DB = {
   },
 
   tomatoes: {
-    img: '/images/byo/ing/tomato.jpg',
+    img: '/images/byo/ing/tomato-sm.webp',
     layer: 6, tile: true, blend: 'multiply',
     /* Tomato slices — tiled in a row, slightly above center */
     family: {
@@ -156,7 +156,7 @@ const INGREDIENT_DB = {
   },
 
   onions: {
-    img: '/images/byo/ing/onion.jpg',
+    img: '/images/byo/ing/onion-sm.webp',
     layer: 7, tile: true, blend: 'multiply',
     /* Onion rings/slices — small, many scattered pieces */
     family: {
@@ -184,7 +184,7 @@ const INGREDIENT_DB = {
   },
 
   peppers: {
-    img: '/images/byo/ing/pepper.jpg',
+    img: '/images/byo/ing/pepper-sm.webp',
     layer: 7, tile: true, blend: 'multiply',
     /* Hot pepper rings — angled and scattered, above most toppings */
     family: {
@@ -198,7 +198,7 @@ const INGREDIENT_DB = {
   },
 
   hummus: {
-    img: '/images/byo/ing/hummus.png',
+    img: '/images/byo/ing/hummus-sm.webp',
     layer: 2, tile: false, blend: 'multiply',
     /* Hummus is a SPREAD — lowest layer, fills the bread surface.
        Must be below lettuce, protein, everything. */
@@ -215,7 +215,7 @@ const INGREDIENT_DB = {
   /* ── SAUCES (always topmost layer) ─────────────────────────── */
 
   white: {
-    img: '/images/byo/ing/sauce-white.png',
+    img: '/images/byo/ing/sauce-white-sm.webp',
     layer: 9, tile: false, blend: 'multiply',
     /* White sauce — full drizzle across the whole sandwich */
     family: {
@@ -229,7 +229,7 @@ const INGREDIENT_DB = {
   },
 
   hot: {
-    img: '/images/byo/ing/sauce-hot.png',
+    img: '/images/byo/ing/sauce-hot.webp',
     layer: 9, tile: false, blend: 'multiply',
     family: {
       hero:       { x: 50, y: 51, scale: 0.82, rot: 0, count: 1 },
@@ -243,7 +243,7 @@ const INGREDIENT_DB = {
 
   /* 'both' sauce is rendered as white (left) + hot (right offset) */
   both: {
-    img: '/images/byo/ing/sauce-white.png',
+    img: '/images/byo/ing/sauce-white-sm.webp',
     layer: 9, tile: false, blend: 'multiply',
     family: {
       hero:       { x: 38, y: 51, scale: 0.44, rot: -4, count: 1 },
@@ -256,7 +256,7 @@ const INGREDIENT_DB = {
   },
 
   'both-hot': {
-    img: '/images/byo/ing/sauce-hot.png',
+    img: '/images/byo/ing/sauce-hot.webp',
     layer: 9, tile: false, blend: 'multiply',
     family: {
       hero:       { x: 62, y: 51, scale: 0.44, rot: 4, count: 1 },
@@ -293,7 +293,7 @@ const ING_MEDALLION_DB = {
     }
   },
   'lamb-gyro': {
-    src: '/images/byo/ing/lamb-gyro.png', layer: 4, shape: 'rect', ar: '3/2',
+    src: '/images/byo/ing/lamb-gyro-sm.webp', layer: 4, shape: 'rect', ar: '3/2',
     pos: {
       hero:       [{ x:33, y:53, w:16, rot:-8 }, { x:55, y:52, w:16, rot:6 }],
       standard:   [{ x:47, y:52, w:22, rot:-4 }],
@@ -315,7 +315,7 @@ const ING_MEDALLION_DB = {
     }
   },
   falafel: {
-    src: '/images/byo/ing/falafel.png', layer: 5, shape: 'circle',
+    src: '/images/byo/ing/falafel-sm.webp', layer: 5, shape: 'circle',
     pos: {
       hero:       [{ x:30, y:52, w:9 }, { x:44, y:51, w:9 }, { x:58, y:52, w:9 }],
       standard:   [{ x:40, y:52, w:11 }, { x:56, y:52, w:11 }],
@@ -327,7 +327,7 @@ const ING_MEDALLION_DB = {
   },
   /* Toppings */
   lettuce: {
-    src: '/images/byo/ing/lettuce.jpg', layer: 3, shape: 'wide', ar: '6/2',
+    src: '/images/byo/ing/lettuce-sm.webp', layer: 3, shape: 'wide', ar: '6/2',
     pos: {
       hero:       [{ x:50, y:58, w:54 }],
       standard:   [{ x:49, y:57, w:36 }],
@@ -338,7 +338,7 @@ const ING_MEDALLION_DB = {
     }
   },
   tomatoes: {
-    src: '/images/byo/ing/tomato.jpg', layer: 6, shape: 'circle',
+    src: '/images/byo/ing/tomato-sm.webp', layer: 6, shape: 'circle',
     pos: {
       hero:       [{ x:27, y:49, w:8 }, { x:44, y:49, w:8 }, { x:62, y:49, w:8 }],
       standard:   [{ x:41, y:49, w:10 }, { x:57, y:50, w:10 }],
@@ -349,7 +349,7 @@ const ING_MEDALLION_DB = {
     }
   },
   onions: {
-    src: '/images/byo/ing/onion.jpg', layer: 7, shape: 'circle',
+    src: '/images/byo/ing/onion-sm.webp', layer: 7, shape: 'circle',
     pos: {
       hero:       [{ x:33, y:47, w:7 }, { x:47, y:47, w:7 }, { x:61, y:47, w:7 }],
       standard:   [{ x:42, y:47, w:9 }, { x:56, y:47, w:9 }],
@@ -371,7 +371,7 @@ const ING_MEDALLION_DB = {
     }
   },
   peppers: {
-    src: '/images/byo/ing/pepper.jpg', layer: 7, shape: 'circle',
+    src: '/images/byo/ing/pepper-sm.webp', layer: 7, shape: 'circle',
     pos: {
       hero:       [{ x:30, y:47, w:7, rot:-20 }, { x:47, y:46, w:7, rot:15 }, { x:63, y:47, w:7, rot:-10 }],
       standard:   [{ x:41, y:46, w:9, rot:-15 }, { x:56, y:46, w:9, rot:10 }],
@@ -382,7 +382,7 @@ const ING_MEDALLION_DB = {
     }
   },
   hummus: {
-    src: '/images/byo/ing/hummus.png', layer: 2, shape: 'wide', ar: '5/1',
+    src: '/images/byo/ing/hummus-sm.webp', layer: 2, shape: 'wide', ar: '5/1',
     pos: {
       hero:       [{ x:50, y:62, w:50 }],
       standard:   [{ x:49, y:61, w:32 }],
@@ -394,7 +394,7 @@ const ING_MEDALLION_DB = {
   },
   /* Sauces — use actual drizzle images with multiply blend */
   white: {
-    src: '/images/byo/ing/sauce-white.png', layer: 9, shape: 'sauce',
+    src: '/images/byo/ing/sauce-white-sm.webp', layer: 9, shape: 'sauce',
     pos: {
       hero:       [{ x:50, y:51, w:54 }],
       standard:   [{ x:49, y:51, w:36 }],
@@ -405,7 +405,7 @@ const ING_MEDALLION_DB = {
     }
   },
   hot: {
-    src: '/images/byo/ing/sauce-hot.png', layer: 9, shape: 'sauce',
+    src: '/images/byo/ing/sauce-hot.webp', layer: 9, shape: 'sauce',
     pos: {
       hero:       [{ x:50, y:51, w:54 }],
       standard:   [{ x:49, y:51, w:36 }],
@@ -416,7 +416,7 @@ const ING_MEDALLION_DB = {
     }
   },
   both: {
-    src: '/images/byo/ing/sauce-white.png', layer: 9, shape: 'sauce',
+    src: '/images/byo/ing/sauce-white-sm.webp', layer: 9, shape: 'sauce',
     pos: {
       hero:       [{ x:37, y:51, w:27 }],
       standard:   [{ x:39, y:51, w:18 }],
@@ -427,7 +427,7 @@ const ING_MEDALLION_DB = {
     }
   },
   'both-hot': {
-    src: '/images/byo/ing/sauce-hot.png', layer: 9, shape: 'sauce',
+    src: '/images/byo/ing/sauce-hot.webp', layer: 9, shape: 'sauce',
     pos: {
       hero:       [{ x:63, y:51, w:27 }],
       standard:   [{ x:59, y:51, w:18 }],
@@ -621,25 +621,25 @@ const ADD_ON_STEPS = [
 ───────────────────────────────────────────────────────────────── */
 const BYO_ING_META = {
   chicken:     { label: 'Chicken',     img: '/images/byo/ing/chicken.jpg' },
-  'lamb-gyro': { label: 'Lamb Gyro',   img: '/images/byo/ing/lamb-gyro.png' },
-  mixed:       { label: 'Mixed',       img: '/images/byo/ing/mix.jpg' },
-  bacon:       { label: 'Halal Bacon', img: '/images/byo/ing/bacon.jpg' },
+  'lamb-gyro': { label: 'Lamb Gyro',   img: '/images/byo/ing/lamb-gyro-sm.webp' },
+  mixed:       { label: 'Mixed',       img: '/images/byo/ing/mix-sm.webp' },
+  bacon:       { label: 'Halal Bacon', img: '/images/byo/ing/bacon-sm.webp' },
   tuna:        { label: 'Tuna',        img: '/images/byo/ing/tuna.jpg' },
   shrimp:      { label: 'Shrimp',      img: '/images/byo/ing/shrimp.jpg' },
-  turkey:      { label: 'Turkey',      img: '/images/byo/ing/turkey.jpg' },
-  falafel:     { label: 'Falafel',     img: '/images/byo/ing/falafel.png' },
+  turkey:      { label: 'Turkey',      img: '/images/byo/ing/turkey-sm.webp' },
+  falafel:     { label: 'Falafel',     img: '/images/byo/ing/falafel-sm.webp' },
   hotdog:      { label: 'Hot Dog',     img: '/images/byo/ing/hotdog.jpg' },
-  cheese:      { label: 'Cheese',      img: '/images/byo/ing/american-cheese.jpg' },
-  lettuce:     { label: 'Lettuce',     img: '/images/byo/ing/lettuce.jpg' },
-  tomatoes:    { label: 'Tomatoes',    img: '/images/byo/ing/tomato.jpg' },
-  onions:      { label: 'Onions',      img: '/images/byo/ing/onion.jpg' },
+  cheese:      { label: 'Cheese',      img: '/images/byo/ing/american-cheese-sm.webp' },
+  lettuce:     { label: 'Lettuce',     img: '/images/byo/ing/lettuce-sm.webp' },
+  tomatoes:    { label: 'Tomatoes',    img: '/images/byo/ing/tomato-sm.webp' },
+  onions:      { label: 'Onions',      img: '/images/byo/ing/onion-sm.webp' },
   pickles:     { label: 'Pickles',     img: '/images/byo/ing/pickle.jpg' },
-  peppers:     { label: 'Hot Peppers', img: '/images/byo/ing/pepper.jpg' },
+  peppers:     { label: 'Hot Peppers', img: '/images/byo/ing/pepper-sm.webp' },
   hummus:      { label: 'Hummus',      img: '/images/byo/ing/hummus.jpg' },
-  white:       { label: 'White Sauce', img: '/images/byo/ing/sauce-white.png' },
-  hot:         { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.png' },
-  both:        { label: 'White Sauce', img: '/images/byo/ing/sauce-white.png' },
-  'both-hot':  { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.png' },
+  white:       { label: 'White Sauce', img: '/images/byo/ing/sauce-white-sm.webp' },
+  hot:         { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.webp' },
+  both:        { label: 'White Sauce', img: '/images/byo/ing/sauce-white-sm.webp' },
+  'both-hot':  { label: 'Hot Sauce',   img: '/images/byo/ing/sauce-hot.webp' },
 };
 
 /* ─────────────────────────────────────────────────────────────────

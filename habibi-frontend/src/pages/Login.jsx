@@ -159,7 +159,7 @@ const Login = () => {
       {/* Header */}
       <div className="login-header">
         <Link to="/" className="login-logo">
-          <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="login-logo-img" />
+          <img src="/images/logos/logo-sm.webp" alt="Habibi Halal Express" className="login-logo-img" />
           <div className="login-logo-text">
             <span className="login-brand-name">HABIBI HALAL EXPRESS</span>
             <span className="login-brand-sub">Authentic · Fresh · Halal</span>

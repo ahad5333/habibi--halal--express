@@ -2580,7 +2580,7 @@ const Checkout = () => {
                     </div>
                     <div className="trust-badge-sep" />
                     <div className="trust-badge">
-                      <img src="/images/logos/grade-a-badge.png" alt="Grade A" className="trust-badge-img" />
+                      <img src="/images/logos/grade-a-badge.webp" alt="Grade A" className="trust-badge-img" />
                       <div className="trust-badge-text">
                         <span className="trust-badge-label">{t('checkout.gradeA')}</span>
                         <span className="trust-badge-sub">{t('checkout.nycHealthDept')}</span>

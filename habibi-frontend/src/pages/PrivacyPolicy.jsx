@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
       <div className="legal-hero">
         <picture>
           <source srcSet="/images/titles/privacy-title.webp" type="image/webp" />
-          <h1 className="legal-hero-h1"><img src="/images/titles/privacy-title.jpg" alt="Privacy Policy — Habibi Halal Express" className="legal-hero-img" /></h1>
+          <h1 className="legal-hero-h1"><img src="/images/titles/privacy-title.webp" alt="Privacy Policy — Habibi Halal Express" className="legal-hero-img" /></h1>
         </picture>
       </div>
       <div className="legal-hero-sub">

@@ -87,15 +87,15 @@ const Footer = () => {
               <span className="footer-badge-card-label">{t('footer.badges.halalCertified')}</span>
             </div>
             <div className="footer-badge-card">
-              <img loading="lazy" decoding="async" src="/images/logos/grade-a-badge.png" alt={t('footer.badges.gradeA')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/grade-a-badge.webp" alt={t('footer.badges.gradeA')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.gradeA')}</span>
             </div>
             <div className="footer-badge-card">
-              <img loading="lazy" decoding="async" src="/images/logos/delivery-badge.png" alt={t('footer.badges.fastDelivery')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/delivery-badge.webp" alt={t('footer.badges.fastDelivery')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.fastDelivery')}</span>
             </div>
             <div className="footer-badge-card">
-              <img loading="lazy" decoding="async" src="/images/logos/pickup-badge.png" alt={t('footer.badges.onlinePickup')} className="footer-badge-card-img footer-badge-card-img--circle" />
+              <img loading="lazy" decoding="async" src="/images/logos/pickup-badge.webp" alt={t('footer.badges.onlinePickup')} className="footer-badge-card-img footer-badge-card-img--circle" />
               <span className="footer-badge-card-label">{t('footer.badges.onlinePickup')}</span>
             </div>
           </div>

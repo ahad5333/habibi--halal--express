@@ -32,42 +32,42 @@ const EDITORIAL_REVIEWS = [
   {
     stars: 5,
     text: "The best beef bowls in New York. Hands down. The mint teas are a plus. A staple in my weekly. A true authentic experience.",
-    logo: "/images/reviews/logo_1.png",
+    logo: "/images/reviews/logo_1.webp",
     name: "NY Foodie Mag",
     type: "Editorial Review"
   },
   {
     stars: 5,
     text: "Incredible service and even better food. The atmosphere is sophisticated and welcoming... come here at least once a week!",
-    logo: "/images/reviews/logo_2.png",
+    logo: "/images/reviews/logo_2.webp",
     name: "Local Eats Guide",
     type: "Featured Spot"
   },
   {
     stars: 5,
     text: "Finally a halal place that serves as much style and attention to details. An absolute sensory experience.",
-    logo: "/images/reviews/logo_3.png",
+    logo: "/images/reviews/logo_3.webp",
     name: "Culinary Times",
     type: "Critics Choice"
   },
   {
     stars: 5,
     text: "Quick delivery, perfectly packaged, and the flavors remain as vibrant as dining in. Top tier service!",
-    logo: "/images/reviews/logo_4.png",
+    logo: "/images/reviews/logo_4.webp",
     name: "Express App",
     type: "Top Rated"
   },
   {
     stars: 5,
     text: "A masterclass in modern Mediterranean cuisine. The fresh ingredients and bold spices make every dish unforgettable.",
-    logo: "/images/reviews/logo_5.png",
+    logo: "/images/reviews/logo_5.webp",
     name: "The Daily Courier",
     type: "Weekly Feature"
   },
   {
     stars: 5,
     text: "Obsessed with their personalized bowls! You can literally taste the quality and love put into the prep.",
-    logo: "/images/reviews/logo_6.png",
+    logo: "/images/reviews/logo_6.webp",
     name: "Chef's Blog",
     type: "Food Critic"
   }
@@ -332,7 +332,7 @@ const Home = () => {
 
           {/* ── Giant logo watermark behind hero content ── */}
           <div className="hero-logo-watermark" aria-hidden="true">
-            <img src="/images/logos/logo-badge.png" alt="" />
+            <img src="/images/logos/logo-badge-sm.webp" alt="" />
           </div>
 
           <div className="container hero-content">

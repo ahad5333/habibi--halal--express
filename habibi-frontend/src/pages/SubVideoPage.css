@@ -17,15 +17,15 @@
 }
 
 .svp-hero--kitchen {
-  background-image: url('/images/food/kitchen-hero.png');
+  background-image: url('/images/food/kitchen-hero.webp');
   background-color: #1a0a00;
 }
 .svp-hero--stories {
-  background-image: url('/images/food/stories-hero.png');
+  background-image: url('/images/food/stories-hero.webp');
   background-color: #0a0a1a;
 }
 .svp-hero--journey {
-  background-image: url('/images/food/journey-hero.png');
+  background-image: url('/images/food/journey-hero.webp');
   background-color: #0a1a0a;
 }
 

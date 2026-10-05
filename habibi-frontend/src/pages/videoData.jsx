@@ -55,7 +55,7 @@ export const VideoCard = ({ video, large = false }) => {
   const embedSrc = `https://www.youtube.com/embed/${video.id}?autoplay=1&mute=1&rel=0`;
   const igUrl    = `https://www.instagram.com/reel/${video.id}/`;
   const thumbnail = isIG
-    ? '/images/food/background.png'
+    ? '/images/food/background.webp'
     : `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`;
 
   const handleClick = () => {
@@ -76,7 +76,7 @@ export const VideoCard = ({ video, large = false }) => {
           />
         ) : (
           <>
-            <img src={thumbnail} alt={video.title} onError={e => { e.target.src = '/images/food/kitchen.jpg'; }} />
+            <img src={thumbnail} alt={video.title} onError={e => { e.target.src = '/images/food/kitchen.webp'; }} />
             <div className="vid-overlay">
               <button className="vid-play-btn" aria-label={isIG ? 'View on Instagram' : 'Play video'}>
                 {isIG ? <IGIcon size={large ? 28 : 20} /> : <Play size={large ? 32 : 22} fill="currentColor" />}

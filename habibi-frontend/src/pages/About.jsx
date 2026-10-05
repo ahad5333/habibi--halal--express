@@ -22,7 +22,7 @@ const aboutSchema = {
 const WHY_US = [
   {
     type: 'bg',
-    bgImg: '/images/food/kitchen.jpg',
+    bgImg: '/images/food/kitchen.webp',
     icon: <SprayCan size={20} />,
     title: 'Uncompromising Hygiene',
     desc: 'Our sanctuary of flavor maintains the highest standards of cleanliness. Sanitized workstations, meticulously groomed professionals, your safety is our silent promise.',
@@ -36,14 +36,14 @@ const WHY_US = [
   },
   {
     type: 'img-bottom',
-    bottomImg: '/images/food/shesh-kebab.jpg',
+    bottomImg: '/images/food/shesh-kebab.webp',
     icon: <UtensilsCrossed size={20} />,
     title: 'Artisanal Taste',
     desc: 'Chef-curated menus that balance generational recipes with modern gastronomic techniques. Every spice is measured, every sear is intentional.',
   },
   {
     type: 'bg',
-    bgImg: '/images/food/food-ref-13.jpg',
+    bgImg: '/images/food/food-ref-13.webp',
     icon: <ConciergeBell size={20} />,
     title: 'Professional Hospitality',
     desc: 'Service is an art form. Our team is trained not just to serve, but to anticipate your needs with the quiet grace of a five-star concierge.',
@@ -51,10 +51,10 @@ const WHY_US = [
 ];
 
 const STAFF_ROLES = [
-  { label: 'Management', img: '/images/staff/management.png' },
+  { label: 'Management', img: '/images/staff/management.webp' },
   { label: 'Kitchen', img: '/images/staff/kitchen.jpg' },
-  { label: 'Serving', img: '/images/staff/serving.png' },
-  { label: 'Delivery', img: '/images/staff/delivery.png' },
+  { label: 'Serving', img: '/images/staff/serving.webp' },
+  { label: 'Delivery', img: '/images/staff/delivery.webp' },
 ];
 
 // Matches Navbar.jsx's social links exactly (same handle, same 4 platforms)
@@ -298,7 +298,7 @@ const About = () => (
     <section className="about-cta">
       <div className="about-cta-overlay" />
       <div className="about-cta-content">
-        <img src="/images/logos/logo.png" alt="Habibi Halal Express" className="about-cta-logo" />
+        <img src="/images/logos/logo-sm.webp" alt="Habibi Halal Express" className="about-cta-logo" />
         <h2 className="about-cta-title">Ready to taste the excellence?</h2>
         <p className="about-cta-sub">Order online or visit one of our several locations in New York City today.</p>
         <div className="about-cta-btns">

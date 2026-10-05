@@ -59,7 +59,7 @@
 .ct-hero {
   position: relative;
   min-height: 420px;
-  background: url('/images/food/kitchen.jpg') center center/cover no-repeat;
+  background: url('/images/food/kitchen.webp') center center/cover no-repeat;
   display: flex;
   align-items: center;
   padding-top: 70px;

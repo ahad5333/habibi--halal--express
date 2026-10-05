@@ -43,7 +43,7 @@ const EXTERNAL_LINKS = [
     category: 'Behind the Scenes',
     dateLabel: 'Ongoing',
     readTimeLabel: 'Video + Story',
-    image: '/images/food/kitchen-hero.png',
+    image: '/images/food/kitchen-hero.webp',
     excerpt: `Real food. Real people. No shortcuts. Come inside our kitchen and see exactly how we craft every dish — from the first cut to the final plate.`,
   },
   {
@@ -54,7 +54,7 @@ const EXTERNAL_LINKS = [
     category: 'Community',
     dateLabel: 'Ongoing',
     readTimeLabel: 'Stories',
-    image: '/images/food/stories-hero.png',
+    image: '/images/food/stories-hero.webp',
     excerpt: `Hear from the real people who make Habibi Halal Express what it is. Thousands of orders, one community, and stories that keep us going every single day.`,
   },
   {
@@ -65,7 +65,7 @@ const EXTERNAL_LINKS = [
     category: 'Our Story',
     dateLabel: 'Est. 2018',
     readTimeLabel: '7 min read',
-    image: '/images/food/journey-hero.png',
+    image: '/images/food/journey-hero.webp',
     excerpt: `From a single window in Bedford Park to locations across the Bronx — this is how Habibi Halal Express came to be, and where we're headed next.`,
   },
 ];
