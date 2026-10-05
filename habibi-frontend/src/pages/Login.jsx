@@ -345,8 +345,8 @@ const Login = () => {
 
       {/* Footer */}
       <div className="login-footer">
-        <span>{t('auth.footerTagline')}</span>
-        <div className="flex gap-6">
+        <span>{t('auth.footerTagline', { year: new Date().getFullYear() })}</span>
+        <div className="login-footer-links">
           <Link to="/health-safety">{t('auth.ourStandardsFooter')}</Link>
           <Link to="/privacy-policy">{t('auth.privacyPolicyFooter')}</Link>
           <Link to="/terms">{t('auth.termsOfServiceFooter')}</Link>

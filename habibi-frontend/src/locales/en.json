@@ -296,7 +296,7 @@
     "ourStandardsFooter": "OUR STANDARDS",
     "privacyPolicyFooter": "PRIVACY POLICY",
     "termsOfServiceFooter": "TERMS OF SERVICE",
-    "footerTagline": "© 2024 Habibi Halal Express. Artisanal Halal Dining.",
+    "footerTagline": "© {{year}} Habibi Halal Express. Artisanal Halal Dining.",
     "errSocialNotConfigured": "Social login is not configured yet. Please use email & password.",
     "errSocialLoginFailed": "Social login failed.",
     "errProviderLoginFailed": "{{provider}} login failed. Please try again.",
