@@ -2398,7 +2398,7 @@ const Checkout = () => {
                         <div className="coupon-input-wrap">
                           <Tag size={13} className="coupon-icon" />
                           <input
-                            type="text" className="coupon-input" placeholder={t('checkout.enterGiftCardCode')}
+                            type="text" className="coupon-input" placeholder={t('checkout.enterGiftCardCode')} aria-label={t('checkout.enterGiftCardCode')}
                             value={giftCardCode}
                             onChange={e => { setGiftCardCode(e.target.value.toUpperCase()); setGiftCardApplied(false); setGiftCardBalance(0); setGiftCardMsg(''); setGiftCardErr(''); }}
                             disabled={giftCardApplied}
