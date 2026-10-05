@@ -35,7 +35,7 @@ function shuffle(a) {
 }
 
 function makePieces(W, H, count, clusterY, maxSize) {
-  const size = Math.round(Math.max(28, Math.min(84, W / (W < 520 ? 6.5 : 11), maxSize)));
+  const size = Math.round(Math.max(32, Math.min(100, W / (W < 520 ? 5.4 : 9.2), maxSize)));
   const names = shuffle([...FOODS]).slice(0, count);
   const cols = Math.ceil(Math.sqrt(count * 1.3));
   const gap = size * 0.82;
