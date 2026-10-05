@@ -179,7 +179,7 @@ export default function Catering() {
             <div className="cat-row">
               <div className="cat-field">
                 <label className="cat-label">Event Date</label>
-                <input
+                <input aria-label="Event date"
                   type="date"
                   className="cat-input"
                   value={form.event_date}
@@ -189,7 +189,7 @@ export default function Catering() {
               </div>
               <div className="cat-field">
                 <label className="cat-label">Preferred Time</label>
-                <input
+                <input aria-label="Preferred Time"
                   type="time"
                   className="cat-input"
                   value={form.event_time}
@@ -200,14 +200,14 @@ export default function Catering() {
 
             <label className="cat-label">Guest Count: <strong>{form.guest_count}</strong></label>
             <div className="cat-guest-row">
-              <input
+              <input aria-label="Guest count"
                 type="range"
                 min={10} max={1000} step={5}
                 value={form.guest_count}
                 onChange={e => set('guest_count', parseInt(e.target.value))}
                 className="cat-slider"
               />
-              <input
+              <input aria-label="Guest count"
                 type="number"
                 className="cat-input cat-guest-num"
                 min={10} max={1000}
@@ -236,7 +236,7 @@ export default function Catering() {
                 <label className="cat-label">
                   {form.service_type === 'on-site' ? 'Venue Address' : 'Delivery Address'} *
                 </label>
-                <input
+                <input aria-label="Event address"
                   type="text"
                   className="cat-input"
                   placeholder="Street address, city, state, ZIP"
@@ -257,20 +257,20 @@ export default function Catering() {
             <div className="cat-row">
               <div className="cat-field">
                 <label className="cat-label">Full Name *</label>
-                <input type="text" className="cat-input" placeholder="Your name" value={form.name} onChange={e => set('name', e.target.value)} />
+                <input aria-label="Full Name" type="text" className="cat-input" placeholder="Your name" value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
               <div className="cat-field">
                 <label className="cat-label">Phone</label>
-                <input type="tel" className="cat-input" placeholder="(718) 555-0100" value={form.phone} onChange={e => set('phone', e.target.value)} />
+                <input aria-label="Phone" type="tel" className="cat-input" placeholder="(718) 555-0100" value={form.phone} onChange={e => set('phone', e.target.value)} />
               </div>
             </div>
             <div className="cat-field">
               <label className="cat-label">Email Address *</label>
-              <input type="email" className="cat-input" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
+              <input aria-label="Email Address" type="email" className="cat-input" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} />
             </div>
             <div className="cat-field">
               <label className="cat-label">Describe the Meal for Each Guest</label>
-              <textarea
+              <textarea aria-label="Describe the Meal for Each Guest"
                 className="cat-input cat-textarea"
                 placeholder="e.g. Grilled chicken platter with rice and salad for each guest, vegetarian option for 5 guests, no nuts..."
                 rows={4}
@@ -280,7 +280,7 @@ export default function Catering() {
             </div>
             <div className="cat-field">
               <label className="cat-label">Additional Notes <span style={{fontWeight:400,color:'rgba(255,255,255,0.4)',fontSize:'0.78rem'}}>(optional)</span></label>
-              <textarea
+              <textarea aria-label="Additional notes"
                 className="cat-input cat-textarea"
                 placeholder="Dietary restrictions, setup instructions, parking info..."
                 rows={3}

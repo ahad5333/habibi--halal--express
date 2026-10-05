@@ -791,7 +791,7 @@ const Menu = () => {
       <div className="menu-search-bar" ref={searchRef}>
         <div className="menu-search-inner">
           <Search size={16} className="search-icon" />
-          <input
+          <input aria-label="Search the menu"
             type="text"
             placeholder={t('menu.searchPlaceholder')}
             value={search}

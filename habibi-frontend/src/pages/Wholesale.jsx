@@ -161,28 +161,28 @@ const Wholesale = () => {
                     <div className="form-row two-col">
                       <div className="form-group">
                         <label className="form-label">Business Name</label>
-                        <input type="text" className="form-input" placeholder="e.g. Gourmet Markets LLC" value={bizName} onChange={e => setBizName(e.target.value)} />
+                        <input aria-label="Business Name" type="text" className="form-input" placeholder="e.g. Gourmet Markets LLC" value={bizName} onChange={e => setBizName(e.target.value)} />
                       </div>
                       <div className="form-group">
                         <label className="form-label">Representative Name</label>
-                        <input type="text" className="form-input" placeholder="John Doe" value={repName} onChange={e => setRepName(e.target.value)} />
+                        <input aria-label="Representative Name" type="text" className="form-input" placeholder="John Doe" value={repName} onChange={e => setRepName(e.target.value)} />
                       </div>
                     </div>
 
                     <div className="form-row two-col">
                       <div className="form-group">
                         <label className="form-label">Email</label>
-                        <input type="email" className="form-input" placeholder="you@business.com" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input aria-label="Email" type="email" className="form-input" placeholder="you@business.com" value={email} onChange={e => setEmail(e.target.value)} />
                       </div>
                       <div className="form-group">
                         <label className="form-label">Phone</label>
-                        <input type="tel" className="form-input" placeholder="(555) 555-5555" value={phone} onChange={e => setPhone(e.target.value)} />
+                        <input aria-label="Phone" type="tel" className="form-input" placeholder="(555) 555-5555" value={phone} onChange={e => setPhone(e.target.value)} />
                       </div>
                     </div>
 
                     <div className="form-group">
                       <label className="form-label">Business Address</label>
-                      <input type="text" className="form-input" placeholder="Street address, Suite, City, State, ZIP" value={bizAddress} onChange={e => setBizAddress(e.target.value)} />
+                      <input aria-label="Business Address" type="text" className="form-input" placeholder="Street address, Suite, City, State, ZIP" value={bizAddress} onChange={e => setBizAddress(e.target.value)} />
                     </div>
 
                     <div className="form-group">
@@ -206,7 +206,7 @@ const Wholesale = () => {
                   <div className="form-step">
                     <div className="form-group">
                       <label className="form-label">Type of Business</label>
-                      <select className="form-input form-select" value={bizType} onChange={e => setBizType(e.target.value)}>
+                      <select aria-label="Type of business" className="form-input form-select" value={bizType} onChange={e => setBizType(e.target.value)}>
                         <option>Restaurant / Café</option>
                         <option>Retail / Grocery</option>
                         <option>Event Catering</option>
@@ -216,13 +216,13 @@ const Wholesale = () => {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Estimated Weekly Volume (Meals)</label>
-                      <input type="number" className="form-input" placeholder="e.g. 500" value={volume} onChange={e => setVolume(e.target.value)} />
+                      <input aria-label="Estimated Weekly Volume (Meals)" type="number" className="form-input" placeholder="e.g. 500" value={volume} onChange={e => setVolume(e.target.value)} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Operating Hours</label>
                       <div className="form-row two-col">
-                        <input type="time" className="form-input" defaultValue="09:00" />
-                        <input type="time" className="form-input" defaultValue="22:00" />
+                        <input aria-label="Opening time" type="time" className="form-input" defaultValue="09:00" />
+                        <input aria-label="Closing time" type="time" className="form-input" defaultValue="22:00" />
                       </div>
                     </div>
                     <div className="flex gap-4">
@@ -236,7 +236,7 @@ const Wholesale = () => {
                   <form className="form-step" onSubmit={handleSubmit}>
                     <div className="form-group">
                       <label className="form-label">Preferred Delivery Frequency</label>
-                      <select className="form-input form-select" value={frequency} onChange={e => setFrequency(e.target.value)}>
+                      <select aria-label="Preferred delivery frequency" className="form-input form-select" value={frequency} onChange={e => setFrequency(e.target.value)}>
                         <option>Daily</option>
                         <option>3x per week</option>
                         <option>Weekly</option>
@@ -244,11 +244,11 @@ const Wholesale = () => {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Delivery Address</label>
-                      <input type="text" className="form-input" placeholder="If different from business address" value={deliveryAddr} onChange={e => setDeliveryAddr(e.target.value)} />
+                      <input aria-label="Delivery Address" type="text" className="form-input" placeholder="If different from business address" value={deliveryAddr} onChange={e => setDeliveryAddr(e.target.value)} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Special Logistics Requirements</label>
-                      <textarea className="form-input form-textarea" placeholder="Temperature control, loading dock access, etc." rows={4} value={logisticsNotes} onChange={e => setLogisticsNotes(e.target.value)} />
+                      <textarea aria-label="Special Logistics Requirements" className="form-input form-textarea" placeholder="Temperature control, loading dock access, etc." rows={4} value={logisticsNotes} onChange={e => setLogisticsNotes(e.target.value)} />
                     </div>
                     {error && <div className="wholesale-error">⚠ {error}</div>}
                     <div className="flex gap-4">

@@ -200,7 +200,7 @@ const Login = () => {
 
               <div className="form-group mt-8">
                 <label className="form-label">{t('auth.emailOrPhone')}</label>
-                <input
+                <input aria-label={t('auth.emailOrPhone')}
                   type="text"
                   className="form-input"
                   placeholder="you@example.com or (718) 555-0100"
@@ -216,7 +216,7 @@ const Login = () => {
                   <label className="form-label">{t('auth.password')}</label>
                   <Link to="/forgot-password" className="text-primary text-xs hover-underline">{t('auth.forgotPasswordShort')}</Link>
                 </div>
-                <input
+                <input aria-label={t('auth.password')}
                   type="password"
                   className="form-input"
                   placeholder="••••••••"
@@ -254,7 +254,7 @@ const Login = () => {
 
               <div className="form-group mt-8">
                 <label className="form-label">{t('auth.fullName')}</label>
-                <input
+                <input aria-label={t('auth.fullName')}
                   type="text"
                   className="form-input"
                   placeholder={t('auth.yourName')}
@@ -266,7 +266,7 @@ const Login = () => {
 
               <div className="form-group mt-4">
                 <label className="form-label">{t('auth.emailOrPhone')}</label>
-                <input
+                <input aria-label={t('auth.emailOrPhone')}
                   type="text"
                   className="form-input"
                   placeholder="email@example.com or (718) 555-0100"
@@ -279,7 +279,7 @@ const Login = () => {
 
               <div className="form-group mt-4">
                 <label className="form-label">{t('auth.password')}</label>
-                <input
+                <input aria-label={t('auth.password')}
                   type="password"
                   className="form-input"
                   placeholder={t('auth.min8Chars')}

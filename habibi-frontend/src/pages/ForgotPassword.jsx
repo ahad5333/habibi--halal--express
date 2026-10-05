@@ -109,7 +109,7 @@ export default function ForgotPassword() {
                   <label>{t('auth.emailAddress')}</label>
                   <div className="fp-input-wrap">
                     <Mail size={15} className="fp-input-icon" />
-                    <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
+                    <input aria-label="Email address" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
                   </div>
                 </div>
                 <button type="submit" className="fp-btn-primary" disabled={loading}>
@@ -138,7 +138,7 @@ export default function ForgotPassword() {
                   <label>{t('auth.phoneNumber')}</label>
                   <div className="fp-input-wrap">
                     <Phone size={15} className="fp-input-icon" />
-                    <input type="tel" placeholder="+1 (718) 555-0000" value={phone} onChange={e => setPhone(e.target.value)} required autoFocus />
+                    <input aria-label="Phone number" type="tel" placeholder="+1 (718) 555-0000" value={phone} onChange={e => setPhone(e.target.value)} required autoFocus />
                   </div>
                 </div>
                 <button type="submit" className="fp-btn-primary" disabled={loading}>
@@ -154,7 +154,7 @@ export default function ForgotPassword() {
               <form onSubmit={handleVerifyCode} className="fp-form">
                 <div className="fp-field">
                   <label>{t('auth.fiveDigitCode')}</label>
-                  <input
+                  <input aria-label={t('auth.fiveDigitCode')}
                     className="fp-code-input"
                     type="text"
                     inputMode="numeric"

@@ -89,14 +89,14 @@ function GroupLanding({ prefillCode }) {
           <div className="go-card-icon">🔗</div>
           <h2>Join a Group Order</h2>
           <p>Got a 6-character code from a friend? Enter it below to add your items.</p>
-          <input
+          <input aria-label="Group order code"
             className="go-input go-code-input"
             placeholder="Code (e.g. A3F9C2)"
             value={joinCode}
             onChange={e => setJoinCode(e.target.value.toUpperCase())}
             maxLength={6}
           />
-          <input
+          <input aria-label="Your name"
             className="go-input"
             placeholder="Your name"
             value={guestName}
@@ -168,7 +168,7 @@ function ItemPicker({ myItems, onUpdate, syncing }) {
   return (
     <div className="go-picker">
       <div className="go-picker-top">
-        <input
+        <input aria-label="Search the menu"
           className="go-input go-search"
           placeholder="Search menu…"
           value={search}

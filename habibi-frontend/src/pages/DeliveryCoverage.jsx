@@ -219,7 +219,7 @@ export default function DeliveryCoverage() {
             <h2 className="dc-checker-title"><Search size={18} /> Check Your Address</h2>
             <p className="dc-checker-sub">Enter your address for a definitive answer — more accurate than the neighborhood list below.</p>
             <div className="dc-checker-row">
-              <input
+              <input aria-label="Delivery address"
                 type="text"
                 className="dc-checker-input"
                 placeholder="e.g. 2 E Kingsbridge Rd, Bronx, NY"

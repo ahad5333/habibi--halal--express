@@ -155,7 +155,7 @@ const Signup = () => {
           </p>
           <p style={{ color: '#fff', fontWeight: 700, marginBottom: '1.5rem' }}>{phoneOtpPending.phone}</p>
           <form onSubmit={handleOtpSubmit}>
-            <input
+            <input aria-label="Verification code"
               type="text"
               inputMode="numeric"
               maxLength={6}
@@ -305,7 +305,7 @@ const Signup = () => {
             <div className="form-row two-col">
               <div className="form-group">
                 <label className="form-label">{t('auth.firstName')} <span className="req">*</span></label>
-                <input
+                <input aria-label={t('auth.firstName')}
                   className="form-input"
                   placeholder="Ahmad"
                   value={firstName}
@@ -315,7 +315,7 @@ const Signup = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">{t('auth.lastName')} <span className="req">*</span></label>
-                <input
+                <input aria-label={t('auth.lastName')}
                   className="form-input"
                   placeholder="Al-Rashid"
                   value={lastName}
@@ -331,7 +331,7 @@ const Signup = () => {
                 <label className="form-label">{t('auth.phoneNumberLabel')} <span className="req">*</span></label>
                 <div className="input-icon-wrap">
                   <Phone size={15} className="input-icon" />
-                  <input
+                  <input aria-label={t('auth.phoneNumberLabel')}
                     type="tel"
                     className="form-input with-icon"
                     placeholder="+1 (718) 555-0100"
@@ -349,7 +349,7 @@ const Signup = () => {
                 <label className="form-label">{t('auth.emailAddress')} <span className="req">*</span></label>
                 <div className="input-icon-wrap">
                   <Mail size={15} className="input-icon" />
-                  <input
+                  <input aria-label={t('auth.emailAddress')}
                     type="email"
                     className="form-input with-icon"
                     placeholder="ahmad@example.com"
@@ -367,7 +367,7 @@ const Signup = () => {
                 <label className="form-label">{t('auth.phoneNumberLabel')} <span className="opt">{t('auth.optionalForOrderUpdates')}</span></label>
                 <div className="input-icon-wrap">
                   <Phone size={15} className="input-icon" />
-                  <input
+                  <input aria-label={t('auth.phoneNumberLabel')}
                     type="tel"
                     className="form-input with-icon"
                     placeholder="+1 (718) 555-0100"
@@ -384,7 +384,7 @@ const Signup = () => {
               <label className="form-label">{t('auth.password')} <span className="req">*</span></label>
               <div className="input-icon-wrap">
                 <Lock size={15} className="input-icon" />
-                <input
+                <input aria-label={t('auth.password')}
                   type={showPass ? 'text' : 'password'}
                   className="form-input with-icon with-eye"
                   placeholder={t('auth.min8CharsWithNumberFull')}
@@ -392,7 +392,7 @@ const Signup = () => {
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="new-password"
                 />
-                <button type="button" className="eye-btn" onClick={() => setShowPass(v => !v)}>
+                <button type="button" className="eye-btn" aria-label={showPass ? "Hide password" : "Show password"} onClick={() => setShowPass(v => !v)}>
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
@@ -411,7 +411,7 @@ const Signup = () => {
               <label className="form-label">{t('auth.confirmPasswordLabel')} <span className="req">*</span></label>
               <div className="input-icon-wrap">
                 <Lock size={15} className="input-icon" />
-                <input
+                <input aria-label={t('auth.confirmPasswordLabel')}
                   type={showConfirm ? 'text' : 'password'}
                   className="form-input with-icon with-eye"
                   placeholder={t('auth.repeatYourPassword')}
@@ -419,7 +419,7 @@ const Signup = () => {
                   onChange={e => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
                 />
-                <button type="button" className="eye-btn" onClick={() => setShowConfirm(v => !v)}>
+                <button type="button" className="eye-btn" aria-label={showConfirm ? "Hide password" : "Show password"} onClick={() => setShowConfirm(v => !v)}>
                   {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>

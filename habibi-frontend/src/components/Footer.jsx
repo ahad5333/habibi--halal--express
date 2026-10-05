@@ -139,11 +139,12 @@ const Footer = () => {
                 <input
                   type="email"
                   placeholder={t('footer.newsletterPlaceholder')}
+                  aria-label={t('footer.newsletterPlaceholder')}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
                 />
-                <button type="submit" className="btn-subscribe" disabled={subStatus === 'loading'}>
+                <button type="submit" className="btn-subscribe" disabled={subStatus === 'loading'} aria-label="Subscribe">
                   {subStatus === 'loading' ? '...' : '➔'}
                 </button>
               </form>

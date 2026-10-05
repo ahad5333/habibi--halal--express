@@ -218,22 +218,22 @@ const Urgent = () => {
                   <div className="urg-row two-col">
                     <div className="urg-group">
                       <label>YOUR NAME <span className="req">*</span></label>
-                      <input className="urg-input" placeholder="Full name" value={name} onChange={e => setName(e.target.value)} required />
+                      <input aria-label="YOUR NAME" className="urg-input" placeholder="Full name" value={name} onChange={e => setName(e.target.value)} required />
                     </div>
                     <div className="urg-group">
                       <label>PHONE NUMBER <span className="req">*</span></label>
-                      <input type="tel" className="urg-input" placeholder="+1 (718) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} required />
+                      <input aria-label="PHONE NUMBER" type="tel" className="urg-input" placeholder="+1 (718) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} required />
                     </div>
                   </div>
 
                   <div className="urg-group">
                     <label>ORDER NUMBER <span className="urg-optional">(if applicable)</span></label>
-                    <input className="urg-input" placeholder="HAB-XXXX-X" value={orderNum} onChange={e => setOrderNum(e.target.value)} />
+                    <input aria-label="Order number" className="urg-input" placeholder="HAB-XXXX-X" value={orderNum} onChange={e => setOrderNum(e.target.value)} />
                   </div>
 
                   <div className="urg-group">
                     <label>DESCRIBE THE ISSUE <span className="req">*</span></label>
-                    <textarea
+                    <textarea aria-label="DESCRIBE THE ISSUE"
                       className="urg-input urg-textarea"
                       rows={6}
                       placeholder={type.placeholder}

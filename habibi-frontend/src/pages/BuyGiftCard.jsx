@@ -155,7 +155,7 @@ const BuyGiftCard = () => {
                       {usingCustom && (
                         <div className="pay-amount-wrap">
                           <DollarSign size={14} className="pay-amount-icon" />
-                          <input
+                          <input aria-label="Custom amount"
                             type="number" min="1" step="0.01"
                             className="pay-input pay-amount-input"
                             placeholder="0.00"
@@ -169,20 +169,20 @@ const BuyGiftCard = () => {
                     <div className="pay-row two-col">
                       <div className="pay-group">
                         <label>YOUR NAME <span className="req">*</span></label>
-                        <input className="pay-input" placeholder="Full name" value={purchaserName} onChange={e => setPurchaserName(e.target.value)} required />
+                        <input aria-label="Your name" className="pay-input" placeholder="Full name" value={purchaserName} onChange={e => setPurchaserName(e.target.value)} required />
                       </div>
                       <div className="pay-group">
                         <label>YOUR EMAIL <span className="req">*</span></label>
                         <div className="pay-amount-wrap">
                           <Mail size={14} className="pay-amount-icon" />
-                          <input type="email" className="pay-input pay-amount-input" placeholder="you@example.com" value={purchaserEmail} onChange={e => setPurchaserEmail(e.target.value)} required />
+                          <input aria-label="Your email" type="email" className="pay-input pay-amount-input" placeholder="you@example.com" value={purchaserEmail} onChange={e => setPurchaserEmail(e.target.value)} required />
                         </div>
                       </div>
                     </div>
 
                     <div className="pay-group">
                       <label>GIFT MESSAGE (optional)</label>
-                      <input className="pay-input" placeholder="Enjoy a meal on us!" value={message} onChange={e => setMessage(e.target.value.slice(0, 300))} />
+                      <input aria-label="Gift message" className="pay-input" placeholder="Enjoy a meal on us!" value={message} onChange={e => setMessage(e.target.value.slice(0, 300))} />
                     </div>
 
                     <div className="pay-actions">

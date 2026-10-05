@@ -367,7 +367,7 @@ const Payment = () => {
                 <div className="pay-group">
                   <label>ORDER / INVOICE REFERENCE</label>
                   <div className="pay-search-row">
-                    <input
+                    <input aria-label="Order or invoice reference"
                       className="pay-input"
                       placeholder="e.g. HAB-1042-A or INV-2025-001"
                       value={orderRef}
@@ -407,11 +407,11 @@ const Payment = () => {
                     <div className="pay-row two-col">
                       <div className="pay-group">
                         <label>YOUR NAME <span className="req">*</span></label>
-                        <input className="pay-input" placeholder="Full name" value={customerName} onChange={e => setCustomerName(e.target.value)} required />
+                        <input aria-label="Full name" className="pay-input" placeholder="Full name" value={customerName} onChange={e => setCustomerName(e.target.value)} required />
                       </div>
                       <div className="pay-group">
                         <label>PHONE (optional)</label>
-                        <input type="tel" className="pay-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                        <input aria-label="PHONE (optional)" type="tel" className="pay-input" placeholder="(718) 555-0100" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                       </div>
                     </div>
 
@@ -421,7 +421,7 @@ const Payment = () => {
                         <label>AMOUNT <span className="req">*</span></label>
                         <div className="pay-amount-wrap">
                           <DollarSign size={14} className="pay-amount-icon" />
-                          <input
+                          <input aria-label="Amount"
                             type="number" min="0.01" step="0.01"
                             className="pay-input pay-amount-input"
                             placeholder="0.00"
@@ -445,7 +445,7 @@ const Payment = () => {
                       </div>
                       <div className="pay-group">
                         <label>REASON</label>
-                        <select className="pay-input pay-select" value={payReason} onChange={e => setPayReason(e.target.value)}>
+                        <select aria-label="Reason for payment" className="pay-input pay-select" value={payReason} onChange={e => setPayReason(e.target.value)}>
                           <option value="">Select reason...</option>
                           {PAYMENT_REASONS.map(r => <option key={r}>{r}</option>)}
                         </select>
@@ -454,7 +454,7 @@ const Payment = () => {
 
                     <div className="pay-group">
                       <label>NOTE (optional)</label>
-                      <input className="pay-input" placeholder="Any additional details..." value={payNote} onChange={e => setPayNote(e.target.value)} />
+                      <input aria-label="NOTE (optional)" className="pay-input" placeholder="Any additional details..." value={payNote} onChange={e => setPayNote(e.target.value)} />
                     </div>
 
                     <p className="pay-hint">
