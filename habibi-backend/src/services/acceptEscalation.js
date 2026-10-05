@@ -97,12 +97,58 @@ async function checkUnaccepted() {
   }
 }
 
+// Optional second text (CPanel Settings, OFF by default): if an order is STILL
+// not accepted N minutes after the first text, text once more. Claimed the same
+// way as the first, so it goes out at most once per order. Orders past TOO_OLD
+// are left alone like the first text does.
+const CLAIM_REMINDER = `
+  UPDATE guest_orders
+     SET accept_reminded_at = NOW()
+   WHERE order_status IN ('pending', 'pending_verification')
+     AND accept_escalated_at IS NOT NULL
+     AND accept_reminded_at IS NULL
+     AND accept_escalated_at <= NOW() - make_interval(mins => $1::int)
+     AND placed_at >= NOW() - INTERVAL '48 hours'
+     AND accept_escalated_at >= NOW() - INTERVAL '${TOO_OLD}'
+  RETURNING order_number, total, delivery_method, order_status, placed_at, NULL::timestamptz AS due_at`;
+
+async function reminderMinutes() {
+  const { rows } = await pool.query('SELECT accept_reminder_min FROM system_settings WHERE id = 1');
+  const n = parseInt(rows[0]?.accept_reminder_min, 10);
+  return n > 0 ? n : null;
+}
+
+function buildReminder(orders, minutes) {
+  const head = orders.length === 1
+    ? `Habibi REMINDER: an order is STILL not accepted (${minutes}+ min after the first text)`
+    : `Habibi REMINDER: ${orders.length} orders are STILL not accepted (${minutes}+ min after the first text)`;
+  const shown = orders.slice(0, 3).map(describe).join('; ');
+  const more  = orders.length > 3 ? ` +${orders.length - 3} more` : '';
+  return `${head}: ${shown}${more}. The customer is waiting -- accept it, or call them.`;
+}
+
+async function checkReminders() {
+  const minutes = await reminderMinutes();
+  if (!minutes) return;
+  const { rows } = await pool.query(CLAIM_REMINDER, [minutes]);
+  if (!rows.length) return;
+  const phone = await getAlertPhone();
+  if (!phone) {
+    console.error(`[ACCEPT ESCALATION] no alert phone -- reminder NOT sent for ${rows.map(r => r.order_number).join(', ')}`);
+    return;
+  }
+  const result = await sendSMS(phone, buildReminder(rows, minutes));
+  if (!result?.success) console.error(`[ACCEPT ESCALATION] reminder SMS failed for ${rows.map(r => r.order_number).join(', ')}: ${result?.error}`);
+  else console.log(`[ACCEPT ESCALATION] owner reminded about ${rows.length} still-unaccepted order(s)`);
+}
+
 // Called only on the designated PM2 instance (see server.js), same as the
 // other per-minute jobs.
 function startAcceptEscalation() {
   cron.schedule('* * * * *', () => {
     checkUnaccepted().catch(err => console.error('[ACCEPT ESCALATION] check failed:', err.message));
+    checkReminders().catch(err => console.error('[ACCEPT ESCALATION] reminder check failed:', err.message));
   });
 }
 
-module.exports = { startAcceptEscalation, checkUnaccepted, buildMessage, CLAIM_DUE };
+module.exports = { startAcceptEscalation, checkUnaccepted, checkReminders, buildMessage, buildReminder, CLAIM_DUE, CLAIM_REMINDER };

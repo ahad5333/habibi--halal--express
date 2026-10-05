@@ -431,6 +431,8 @@ const createTables = async () => {
     // Set when the owner has been texted that this order is still waiting to be
     // accepted, so each order escalates at most once -- services/acceptEscalation.js.
     await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS accept_escalated_at TIMESTAMPTZ`);
+    // Set when the second ("still not accepted") text went out -- at most one.
+    await client.query(`ALTER TABLE guest_orders ADD COLUMN IF NOT EXISTS accept_reminded_at TIMESTAMPTZ`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_username VARCHAR(100)`);
     await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS tablet_password_hash VARCHAR(255)`);
@@ -1425,6 +1427,13 @@ const createTables = async () => {
     // is added so the switch to this rule doesn't send an extra text on a day the
     // owner has already had three (2026-09-22).
     await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS screen_watch_alerted_on DATE DEFAULT CURRENT_DATE`);
+    // Unaccepted-order safety switches, set in CPanel Settings, both OFF until
+    // the owner chooses (2026-10-06): refuse ASAP checkouts while no order
+    // screen is open, and a second text N minutes after the first unaccepted-
+    // order text (NULL = no second text). services/orderScreenWatch.js +
+    // services/acceptEscalation.js.
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS block_orders_without_screen BOOLEAN DEFAULT false`);
+    await client.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS accept_reminder_min INTEGER`);
     if (process.env.ADMIN_CPANEL_PHONE) {
       await client.query(
         `UPDATE system_settings SET owner_alert_phone = $1 WHERE id = 1 AND owner_alert_phone IS NULL`,

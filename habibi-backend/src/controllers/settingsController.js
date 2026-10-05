@@ -3,6 +3,7 @@ const pool = require("../config/db");
 const { logAudit } = require('./auditController');
 const { sendSMS, toE164, lookupLineType } = require('../services/smsService');
 const { getAlertPhone, clearAlertPhoneCache } = require('../utils/alertPhone');
+const { clearScreenBlockCache } = require('../services/orderScreenWatch');
 const { getTaxRate, getServiceFeeRate, getFreeDeliveryThreshold } = require('../utils/systemSettings');
 const { normalizeZelleHandle, displayZelleHandle, zelleHandleFromConfig } = require('../utils/zelleHandle');
 
@@ -344,7 +345,50 @@ const updateAlertPhoneSetting = async (req, res) => {
   }
 };
 
+// Unaccepted-order safety switches (2026-10-06), both OFF until the owner picks.
+const REMINDER_CHOICES = [5, 10, 15, 20, 30];
+
+const getOrderSafetySetting = async (req, res) => {
+  try {
+    const r = await pool.query('SELECT block_orders_without_screen, accept_reminder_min FROM system_settings WHERE id = 1');
+    const row = r.rows[0] || {};
+    res.json({
+      block_orders_without_screen: row.block_orders_without_screen === true,
+      accept_reminder_min: row.accept_reminder_min || null,
+      reminder_choices: REMINDER_CHOICES,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load the order safety settings.' });
+  }
+};
+
+const updateOrderSafetySetting = async (req, res) => {
+  const block = req.body?.block_orders_without_screen;
+  const rawMin = req.body?.accept_reminder_min;
+  if (typeof block !== 'boolean') return res.status(400).json({ message: 'block_orders_without_screen must be true or false.' });
+  const minutes = rawMin === null || rawMin === '' || rawMin === undefined ? null : parseInt(rawMin, 10);
+  if (minutes !== null && !REMINDER_CHOICES.includes(minutes)) {
+    return res.status(400).json({ message: `Reminder must be off or one of ${REMINDER_CHOICES.join(', ')} minutes.` });
+  }
+  try {
+    const prev = (await pool.query('SELECT block_orders_without_screen, accept_reminder_min FROM system_settings WHERE id = 1')).rows[0] || {};
+    await pool.query(
+      'UPDATE system_settings SET block_orders_without_screen = $1, accept_reminder_min = $2 WHERE id = 1',
+      [block, minutes]
+    );
+    clearScreenBlockCache();
+    logAudit(pool, req.user?.id, req.user?.name, 'update_order_safety', 'setting', 'order_safety',
+      { from: { block: prev.block_orders_without_screen === true, reminder_min: prev.accept_reminder_min || null },
+        to: { block, reminder_min: minutes } }, req.ip);
+    res.json({ block_orders_without_screen: block, accept_reminder_min: minutes, reminder_choices: REMINDER_CHOICES });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not save the order safety settings.' });
+  }
+};
+
 module.exports = {
+  getOrderSafetySetting,
+  updateOrderSafetySetting,
   getAlertPhoneSetting,
   updateAlertPhoneSetting,
   getPaymentSettings,

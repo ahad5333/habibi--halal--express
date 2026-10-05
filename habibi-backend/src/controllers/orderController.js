@@ -13,6 +13,7 @@ const {
 } = require("../utils/uberDirect");
 const { validateClientDeliveryFee, loadQuote, markQuoteConsumed } = require("../utils/deliveryPricing");
 const { locationProblem } = require("../utils/servingLocation");
+const { screenProblem } = require("../services/orderScreenWatch");
 const { applyOrderStatusEffects } = require("../services/orderStatusEffects");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
 const { computeCustomItemPrice } = require("../utils/byoPricing");
@@ -453,7 +454,8 @@ const createGuestOrder = async (req, res, overrides = {}) => {
     // Not re-checked when finalizing a paid checkout -- prepare checked it, and
     // by then the customer's money has already moved.
     if (resolvedLocationId && !overrides.order_number && (delivery_method || '').toLowerCase() !== 'dine_in') {
-      const problem = await locationProblem(resolvedLocationId, items);
+      const problem = await locationProblem(resolvedLocationId, items)
+        || await screenProblem(req.app.get('io'), { scheduled: !!req.body.scheduled_date });
       if (problem) return res.status(400).json({ message: problem });
     }
 
@@ -1242,7 +1244,8 @@ const createPendingCheckout = async (req, res) => {
 
     // Same store check as createGuestOrder, before the customer pays.
     if (resolvedLocationId && (delivery_method || '').toLowerCase() !== 'dine_in') {
-      const problem = await locationProblem(resolvedLocationId, items);
+      const problem = await locationProblem(resolvedLocationId, items)
+        || await screenProblem(req.app.get('io'), { scheduled: !!req.body.scheduled_date });
       if (problem) return res.status(400).json({ message: problem });
     }
 

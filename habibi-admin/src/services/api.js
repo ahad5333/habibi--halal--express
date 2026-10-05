@@ -165,6 +165,8 @@ export const adminAPI = {
   // Owner alert phone -- private, admin-only (not part of the public site settings).
   getAlertPhone:          () => req('/api/admin/settings/alert-phone'),
   setAlertPhone:          (phone) => req('/api/admin/settings/alert-phone', { method: 'PATCH', body: JSON.stringify({ phone }) }),
+  getOrderSafety:         () => req('/api/admin/settings/order-safety'),
+  setOrderSafety:         (body) => req('/api/admin/settings/order-safety', { method: 'PATCH', body: JSON.stringify(body) }),
 
   payments:    () => req('/api/admin/payments'),
   refundOrder: (orderNumber, reason) => req(`/api/admin/payments/${orderNumber}/refund`, { method: 'POST', body: JSON.stringify({ reason: reason || '' }) }),

@@ -108,6 +108,93 @@ const formatUS = (p) => {
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : (p || '');
 };
 
+// Unaccepted-order safety (2026-10-06): both switches OFF until the owner picks.
+function OrderSafetySection() {
+  const [block, setBlock]       = useState(false);
+  const [reminder, setReminder] = useState('');
+  const [choices, setChoices]   = useState([5, 10, 15, 20, 30]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState('');
+  const [result, setResult]     = useState('');
+
+  useEffect(() => {
+    adminAPI.getOrderSafety()
+      .then(d => {
+        setBlock(!!d.block_orders_without_screen);
+        setReminder(d.accept_reminder_min ? String(d.accept_reminder_min) : '');
+        if (Array.isArray(d.reminder_choices)) setChoices(d.reminder_choices);
+      })
+      .catch(() => setError('Could not load the order safety settings.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(''); setSaving(true);
+    try {
+      const d = await adminAPI.setOrderSafety({ block_orders_without_screen: block, accept_reminder_min: reminder ? Number(reminder) : null });
+      setBlock(!!d.block_orders_without_screen);
+      setReminder(d.accept_reminder_min ? String(d.accept_reminder_min) : '');
+      setResult('Saved.');
+    } catch (err) {
+      setError(err.message || 'Could not save the order safety settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-hdr">
+        <p className="settings-section-title">Orders Nobody Accepts</p>
+        <p className="settings-section-sub">You already get one text when an order waits 3 minutes without being accepted. These add more protection. Both are off until you switch them on.</p>
+      </div>
+      <div className="card" style={{padding:'1.25rem'}}>
+        {loading ? (
+          <div className="empty" style={{minHeight:80}}><div className="spinner" /></div>
+        ) : (
+          <form onSubmit={handleSave}>
+            {error && (
+              <div role="alert" style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#b91c1c',marginBottom:'0.75rem'}}>
+                ⚠ {error}
+              </div>
+            )}
+            {result && (
+              <div role="status" style={{background:'rgba(34,197,94,0.12)',border:'1px solid rgba(34,197,94,0.35)',borderRadius:6,padding:'0.45rem 0.75rem',fontSize:'0.8rem',color:'#166534',marginBottom:'0.75rem'}}>
+                ✓ {result}
+              </div>
+            )}
+            <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',maxWidth:620}}>
+              <input type="checkbox" checked={block} onChange={e => setBlock(e.target.checked)} style={{marginTop:3}} />
+              <span>
+                <strong style={{fontSize:'0.85rem'}}>Stop "order now" checkouts when no order screen is open</strong>
+                <span style={{display:'block',fontSize:'0.75rem',opacity:0.75,marginTop:2}}>
+                  Customers see "we can't take orders for right now -- try again in a few minutes, schedule for later, or call the store" before paying. Scheduled orders still go through. Keep /staff or /kitchen open on the counter tablet, or no one can order for now.
+                </span>
+              </span>
+            </label>
+            <div className="field" style={{maxWidth:320,marginTop:'1rem'}}>
+              <label htmlFor="accept-reminder" style={{fontSize:'0.78rem'}}>Second text if still not accepted</label>
+              <select id="accept-reminder" className="input" value={reminder} onChange={e => setReminder(e.target.value)}>
+                <option value="">Off -- one text only</option>
+                {choices.map(m => <option key={m} value={m}>{m} minutes after the first text</option>)}
+              </select>
+            </div>
+            <div style={{marginTop:'1.25rem'}}>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={saving} style={{gap:6}}>
+                {saving
+                  ? <span className="spinner" style={{width:12,height:12}} />
+                  : <><Save size={13} /> Save</>}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function AlertPhoneSection() {
   const [current, setCurrent] = useState(null);   // { phone, source }
   const [phone, setPhone]     = useState('');
@@ -425,6 +512,7 @@ export default function Settings() {
       {/* Business Information */}
       <BusinessInfoSection />
       <AlertPhoneSection />
+      <OrderSafetySection />
 
       {/* Security — Change Password */}
       <section className="settings-section">

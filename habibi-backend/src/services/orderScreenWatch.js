@@ -101,6 +101,36 @@ async function checkWatchers(io, now = Date.now()) {
 }
 
 // Called only on the designated PM2 instance (see server.js).
+// Optional checkout guard (CPanel Settings, OFF by default): while switched on,
+// an ASAP order is refused before payment when no order screen is open, because
+// nobody would hear it ring. Scheduled orders still go through -- there is time
+// for someone to open a screen. Fails open: if the setting or the socket count
+// can't be read, the order is allowed, so a fault here can never stop sales.
+const SCREEN_BLOCK_MESSAGE =
+  'We can’t take online orders for right now at the moment. Please try again in a few minutes, schedule your order for later, or call the store.';
+let blockSetting = { value: false, at: 0 };
+
+async function blockWithoutScreenOn() {
+  if (Date.now() - blockSetting.at < 30000) return blockSetting.value;
+  const { rows } = await pool.query('SELECT block_orders_without_screen FROM system_settings WHERE id = 1');
+  blockSetting = { value: rows[0]?.block_orders_without_screen === true, at: Date.now() };
+  return blockSetting.value;
+}
+
+async function screenProblem(io, { scheduled = false } = {}) {
+  if (scheduled || !io) return null;
+  try {
+    if (!(await blockWithoutScreenOn())) return null;
+    const screens = (await io.in('kitchen').fetchSockets()).length;
+    return screens > 0 ? null : SCREEN_BLOCK_MESSAGE;
+  } catch (err) {
+    console.error('[SCREEN WATCH] checkout guard skipped:', err.message);
+    return null;
+  }
+}
+
+function clearScreenBlockCache() { blockSetting = { value: false, at: 0 }; }
+
 function startOrderScreenWatch(io) {
   cron.schedule('* * * * *', () => {
     checkWatchers(io).catch(err => console.error('[SCREEN WATCH] check failed:', err.message));
@@ -110,4 +140,4 @@ function startOrderScreenWatch(io) {
 // For tests: forget the per-process state (the daily record lives in the database).
 function _reset() { unwatchedSince = null; dryRunLoggedOn = null; }
 
-module.exports = { startOrderScreenWatch, checkWatchers, GRACE_MIN, _reset, newYorkNow };
+module.exports = { startOrderScreenWatch, checkWatchers, GRACE_MIN, _reset, newYorkNow, screenProblem, clearScreenBlockCache, SCREEN_BLOCK_MESSAGE };

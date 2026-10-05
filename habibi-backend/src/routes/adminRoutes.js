@@ -97,6 +97,11 @@ router.patch("/panel-users/:id", admin, updatePanelUser);
 const { getAlertPhoneSetting, updateAlertPhoneSetting } = require("../controllers/settingsController");
 router.get("/settings/alert-phone",   admin, getAlertPhoneSetting);
 router.patch("/settings/alert-phone", admin, updateAlertPhoneSetting);
+// Unaccepted-order safety switches (refuse ASAP orders with no screen open;
+// second reminder text). Same admin-only rule as the alert phone.
+const { getOrderSafetySetting, updateOrderSafetySetting } = require("../controllers/settingsController");
+router.get("/settings/order-safety",   admin, getOrderSafetySetting);
+router.patch("/settings/order-safety", admin, updateOrderSafetySetting);
 
 // Analytics & Stats
 router.get("/stats", getDashboardStats);
