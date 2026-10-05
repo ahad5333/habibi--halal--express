@@ -175,8 +175,10 @@ const Footer = () => {
             </svg>
             <span className="footer-badge-card-label">{t('footer.badges.sslSecured')}</span>
           </div>
+          {/* Card payments run through Square (Authorize.Net was dropped
+              2026-08-29); this badge showed the old processor until 2026-10-05. */}
           <div className="footer-badge-card footer-badge-card--authnet">
-            <img loading="lazy" decoding="async" src="/images/partners/authorize-net.png" alt="Authorize.Net" className="footer-badge-partner-img" />
+            <img loading="lazy" decoding="async" src="/images/partners/square.svg" alt="Square" className="footer-badge-partner-img" />
             <span className="footer-badge-card-label">{t('footer.badges.securePayments')}</span>
           </div>
           <div className="footer-badge-card footer-badge-card--paypal">

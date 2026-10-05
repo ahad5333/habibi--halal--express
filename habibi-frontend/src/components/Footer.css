@@ -201,12 +201,12 @@
 }
 
 .footer-badge-card--authnet {
-  border-color: rgba(0, 112, 187, 0.3);
+  border-color: rgba(255, 255, 255, 0.25);
   min-width: 74px;
 }
 .footer-badge-card--authnet:hover {
-  background: rgba(0, 112, 187, 0.08);
-  border-color: rgba(0, 112, 187, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 .footer-badge-authnet-logo {
   font-size: 9px;
