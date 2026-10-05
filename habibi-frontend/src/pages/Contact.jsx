@@ -254,7 +254,7 @@ const Contact = () => {
           <p className="ct-hero-desc">Whether it's a compliment, a complaint, a partnership opportunity, or a media inquiry, our team is available 24 hours a day.</p>
           <div className="ct-hero-pills">
             <span className="ct-pill"><Phone size={12} /> 24 / 7 Support</span>
-            <span className="ct-pill"><MapPin size={12} /> Several Locations in NYC</span>
+            <span className="ct-pill"><MapPin size={12} /> {storeTitles.length > 0 ? `${storeTitles.length} Locations in New York` : 'Locations across New York'}</span>
           </div>
         </div>
       </div>

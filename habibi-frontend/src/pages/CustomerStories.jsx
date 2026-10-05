@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ArrowRight, Star, Quote } from 'lucide-react';
 import SEO from '../components/SEO';
+import { locationsAPI } from '../services/api';
 import { VIDEOS, VideoCard } from './videoData';
 import './Videos.css';
 import './SubVideoPage.css';
@@ -51,10 +52,16 @@ const STATS = [
   { number: '6+', label: 'Years Serving the Bronx' },
   { number: '50K+', label: 'Orders Delivered' },
   { number: '4.9★', label: 'Average Rating' },
-  { number: '3', label: 'Bronx Locations' },
 ];
 
 export default function CustomerStories() {
+  // Store count comes from CPanel (same shared request as the navbar), never typed in.
+  const [storeCount, setStoreCount] = useState(0);
+  useEffect(() => {
+    locationsAPI.getAll().then(d => setStoreCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
+  }, []);
+  const stats = storeCount > 0 ? [...STATS, { number: String(storeCount), label: 'Locations' }] : STATS;
+
   return (
     <div className="videos-page svp-page">
       <SEO
@@ -85,7 +92,7 @@ export default function CustomerStories() {
       <section className="svp-section svp-section--alt">
         <div className="container">
           <div className="svp-stats-row">
-            {STATS.map((s, i) => (
+            {stats.map((s, i) => (
               <div key={i} className="svp-stat">
                 <span className="svp-stat-number">{s.number}</span>
                 <span className="svp-stat-label">{s.label}</span>
