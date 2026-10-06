@@ -94,7 +94,7 @@ router.get("/track/:orderNumber", optionalAuth, async (req, res) => {
                 sub_total, tax, service_fee,
                 delivery_fee, tip, discount, total,
                 order_status, payment_status, items, placed_at, updated_at, expected_time,
-                table_number, estimated_minutes, payment_method,
+                table_number, estimated_minutes, payment_method, location_id,
                 EXTRACT(EPOCH FROM (NOW() - placed_at)) AS seconds_since_placed
            FROM guest_orders
           WHERE order_number = $1`,
