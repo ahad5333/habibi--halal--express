@@ -199,6 +199,28 @@ router.get("/track/:orderNumber", optionalAuth, async (req, res) => {
 /* ── Customer self-service cancellation (ownership-verified) ── */
 router.post("/:orderNumber/cancel", optionalAuth, cancelOrder);
 
+// "How did you find out about us?" -- one answer per order, fixed list only,
+// recent orders only (so old order numbers can't be used to stuff the totals).
+const { FOUND_US_SOURCES } = require('../utils/foundUs');
+router.post("/:orderNumber/found-us", async (req, res) => {
+  const source = String(req.body?.source || '');
+  if (!FOUND_US_SOURCES[source]) return res.status(400).json({ message: 'Please pick one of the options.' });
+  try {
+    const o = await pool.query(
+      `SELECT 1 FROM guest_orders WHERE order_number = $1 AND placed_at >= NOW() - INTERVAL '3 days'`,
+      [String(req.params.orderNumber || '').slice(0, 40)]
+    );
+    if (!o.rowCount) return res.status(404).json({ message: 'Order not found.' });
+    await pool.query(
+      `INSERT INTO order_attribution (order_number, source) VALUES ($1, $2) ON CONFLICT (order_number) DO NOTHING`,
+      [req.params.orderNumber, source]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
+
 /* ── Guest push registration for one order ──────────────────────────────────
    Lets someone ordering WITHOUT an account be notified as their order moves.
    Tokens are bound to a single order and carry no personal data; the push body

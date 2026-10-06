@@ -40,6 +40,39 @@ router.post("/", protect, admin, createMenu);
 // Public: fetch choice groups + addon groups for a menu item
 // Item-specific addons (e.g. "More Meat") come first, then global groups
 // unless the item has exclude_global_addons = true
+// "Popular with your order" (app cart): dishes most often in the same real
+// orders as the given ones, last 90 days, at least 3 shared orders, never the
+// given dishes themselves, only dishes still on sale. Counts only.
+router.get("/frequently-with", async (req, res) => {
+  const ids = String(req.query.ids || '').split(',').map(n => parseInt(n, 10)).filter(n => n > 0).slice(0, 30);
+  if (!ids.length) return res.json({ menu_ids: [] });
+  try {
+    const { rows } = await pool.query(
+      `WITH lines AS (
+         SELECT g.order_number, NULLIF(COALESCE(it->>'menu_item_id', it->>'id'), '') AS mid
+           FROM guest_orders g
+           CROSS JOIN LATERAL jsonb_array_elements(
+             CASE WHEN jsonb_typeof(g.items) = 'array' THEN g.items ELSE '[]'::jsonb END) it
+          WHERE g.placed_at >= NOW() - INTERVAL '90 days'
+            AND g.order_status NOT IN ('cancelled', 'refunded', 'rejected', 'pending_payment')
+       ), hits AS (
+         SELECT DISTINCT order_number FROM lines WHERE mid = ANY($1::text[])
+       )
+       SELECT l.mid::int AS menu_id, COUNT(DISTINCT l.order_number)::int AS n
+         FROM lines l JOIN hits h ON h.order_number = l.order_number
+         JOIN menus m ON m.id::text = l.mid
+        WHERE l.mid ~ '^[0-9]+$' AND NOT (l.mid = ANY($1::text[]))
+          AND COALESCE(m.is_available, true) AND COALESCE(m.is_active, true)
+        GROUP BY l.mid HAVING COUNT(DISTINCT l.order_number) >= 3
+        ORDER BY n DESC LIMIT 6`,
+      [ids.map(String)]
+    );
+    res.json({ menu_ids: rows.map(r => r.menu_id) });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+});
+
 // "Popular" options for one dish, from real orders only (app dish popup).
 // Per choice group, the most-picked option of the last 90 days -- shown only
 // when it was picked at least POPULAR_MIN times AND more than any other option

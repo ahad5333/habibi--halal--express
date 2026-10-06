@@ -458,6 +458,26 @@ router.get("/reports/tax",          getTaxReport);
 router.get("/reports/orders",       getOrderReport);
 router.get("/reports/coupon-usage", getCouponUsageReport);
 router.get("/reports/trending",     getTrendingItems);
+// How customers found us: answer totals for orders placed in the range.
+router.get("/reports/found-us", async (req, res) => {
+  const { FOUND_US_SOURCES } = require('../utils/foundUs');
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(req.query.start || '') ? req.query.start : null;
+  const end   = /^\d{4}-\d{2}-\d{2}$/.test(req.query.end || '')   ? req.query.end   : null;
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.source, COUNT(*)::int AS n
+         FROM order_attribution a
+         JOIN guest_orders g ON g.order_number = a.order_number
+        WHERE ($1::date IS NULL OR g.placed_at >= $1::date)
+          AND ($2::date IS NULL OR g.placed_at <  $2::date + 1)
+        GROUP BY a.source ORDER BY n DESC`,
+      [start, end]
+    );
+    res.json({ rows: rows.map(r => ({ ...r, label: FOUND_US_SOURCES[r.source] || r.source })), total: rows.reduce((t, r) => t + r.n, 0) });
+  } catch (err) {
+    res.status(500).json(safeError(err));
+  }
+});
 router.get("/reports/peak-hours",   getPeakHours);
 router.get("/reports/prep-forecast",getPrepForecast);
 router.get("/reports/menu-profitability", getMenuProfitability);

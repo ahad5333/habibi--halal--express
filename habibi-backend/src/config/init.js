@@ -863,6 +863,14 @@ const createTables = async () => {
     // weekly (7), but next_charge_date + interval_days naturally preserves
     // whatever weekday/time the subscription started on, and nothing here
     // is hardcoded to "weekly" specifically.
+    // One-tap "How did you find out about us?" answer per order (utils/foundUs.js).
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS order_attribution (
+        order_number VARCHAR(40) PRIMARY KEY,
+        source       VARCHAR(40) NOT NULL,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS subscriptions (
         id                 SERIAL PRIMARY KEY,
