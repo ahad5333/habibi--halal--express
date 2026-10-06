@@ -38,6 +38,10 @@ const STATUS_STEP = {
   pending: 1,
   accepted: 2, confirmed: 2,
   preparing: 3, cooking: 3,
+  // Kitchen done. The server has this status but the page did not, so a ready
+  // order fell back to step 1 ("Order Received"). Shown as the cooking step,
+  // with its own wording below (ready to collect / waiting for the driver).
+  ready: 3,
   out_for_delivery: 4, on_the_way: 4, 'in-transit': 4, in_transit: 4,
   nearby: 5,
   delivered: 6, completed: 6,
@@ -648,8 +652,13 @@ export default function OrderTracking() {
   const isDelivered = currentStep >= 6;
   // Redacted numbers (e.g. "***-***-1234") are shown for display only — not dialable/textable
   const hasCallablePhone = !!driverInfo?.phone && !driverInfo.phone.includes('*');
-  const status = STATUS_INFO[currentStep] || STATUS_INFO[1];
   const isDeliveryOrder = order && order.delivery_method !== 'pickup';
+  const baseStatus = STATUS_INFO[currentStep] || STATUS_INFO[1];
+  const status = orderStatus === 'ready'
+    ? { ...baseStatus, ...(isDeliveryOrder
+        ? { title: 'Your Order is Ready', sub: 'Packed and waiting for your driver to pick it up.' }
+        : { title: 'Ready for Pickup', sub: 'Your order is ready. Head to the counter and give your order number.' }) }
+    : baseStatus;
   const isCancelled = orderStatus === 'cancelled';
 
   // Push notifications for THIS order. Offered here rather than at signup
