@@ -181,7 +181,7 @@
         var boot = document.getElementById('boot');
         if (!boot) return;
         // Staff opening their own queue get their app, not a brand intro.
-        if (/^\/(driver|staff|kitchen)(\/|$)/.test(location.pathname)) { boot.remove(); return; }
+        if (/^\/(driver|staff|kitchen|app-signin)(\/|$)/.test(location.pathname)) { boot.remove(); return; }
 
         var FAILSAFE = 8000;
         var t0 = Date.now(), done = false;

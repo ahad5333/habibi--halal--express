@@ -18,6 +18,7 @@ import Home from './pages/Home';
 const loadMenu = () => import('./pages/Menu');
 const Menu              = lazy(loadMenu);
 const AssistantWidget   = lazy(() => import('./components/AssistantWidget'));
+const AppSignIn = lazy(() => import('./pages/AppSignIn'));
 const Login             = lazy(() => import('./pages/Login'));
 const Signup            = lazy(() => import('./pages/Signup'));
 const Checkout          = lazy(() => import('./pages/Checkout'));
@@ -339,6 +340,8 @@ function App() {
       <ScrollToTop />
       <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0a0a' }} />}>
         <Routes>
+          {/* Google / Apple sign-in for the mobile app: full screen, no site header/footer. */}
+          <Route path="/app-signin"      element={<Page title="Sign In" noindex><AppSignIn /></Page>} />
           <Route path="/driver"          element={<DriverView />} />
           <Route path="/driver/login"    element={<DriverLogin />} />
           <Route path="/driver/set-pin"  element={<DriverSetPin />} />
