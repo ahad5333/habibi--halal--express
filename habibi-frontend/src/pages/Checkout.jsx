@@ -888,6 +888,8 @@ const Checkout = () => {
         selectedChoices: i.selectedChoices || {},
         selectedAddons:  i.selectedAddons  || {},
         customCfg:       i.customCfg || undefined,
+        // BYO Bowl: the server prices it from these four CPanel option ids.
+        bowlConfig:      i.bowlConfig || undefined,
       };
     }),
     ...(getStoredUtm() || {}),

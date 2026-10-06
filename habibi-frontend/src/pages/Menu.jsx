@@ -591,6 +591,10 @@ const Menu = () => {
   const selectedSauce   = bowlSauceOptions.find(o => o.id === bowlSauce);
   const isPlatterBase   = selectedBase?.type === 'platter';
   const bowlReady = !!bowlBase && !!bowlProtein && !!bowlTopping && !!bowlSauce;
+  // Bowl price = the four CPanel option prices added up (the server prices it
+  // the same way); it was a fixed $12.99 the server rejected.
+  const bowlPrice = [selectedBase, selectedProtein, selectedTopping, selectedSauce]
+    .reduce((t, o) => t + (parseFloat(o?.price) || 0), 0);
 
   const handleAddComposedBowl = () => {
     if (!bowlReady) return;
@@ -604,7 +608,7 @@ const Menu = () => {
     ].filter(Boolean);
     const bowlConfig = { baseId: bowlBase, proteinId: bowlProtein, toppingId: bowlTopping, sauceId: bowlSauce };
     if (editingBowlCartKey) removeItem(editingBowlCartKey);
-    addItem({ ...BYO_ITEM, name, note, qty: 1, bowlLayers, bowlConfig });
+    addItem({ ...BYO_ITEM, price: bowlPrice.toFixed(2), name, note, qty: 1, bowlLayers, bowlConfig });
     setBowlBase(''); setBowlProtein(''); setBowlTopping(''); setBowlSauce('');
     setEditingBowlCartKey(null);
   };
@@ -1174,7 +1178,7 @@ const Menu = () => {
                     onClick={bowlReady ? handleAddComposedBowl : undefined}
                     disabled={!bowlReady}
                   >
-                    {bowlReady ? (editingBowlCartKey ? t('menu.updateBowl', { price: BYO_ITEM.price }) : t('menu.addBowlToCart', { price: BYO_ITEM.price })) : t('menu.selectOptionsToBuild')}
+                    {bowlReady ? (editingBowlCartKey ? t('menu.updateBowl', { price: bowlPrice.toFixed(2) }) : t('menu.addBowlToCart', { price: bowlPrice.toFixed(2) })) : t('menu.selectOptionsToBuild')}
                   </button>
                   {bowlReady && <p className="bowl-hint">{t('menu.bowlReady')}</p>}
                 </div>
