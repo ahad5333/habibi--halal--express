@@ -16,7 +16,7 @@ const { locationProblem } = require("../utils/servingLocation");
 const { screenProblem } = require("../services/orderScreenWatch");
 const { applyOrderStatusEffects } = require("../services/orderStatusEffects");
 const { getFreeDeliveryThreshold } = require("../utils/systemSettings");
-const { computeCustomItemPrice } = require("../utils/byoPricing");
+const { computeCustomItemPrice, computeBowlPrice } = require("../utils/byoPricing");
 const { computeCouponDiscount } = require("./couponController");
 const { computeGiftCardRedemption } = require("./giftCardController");
 const { getUserTier } = require("../utils/loyaltyTiers");
@@ -416,7 +416,9 @@ const createGuestOrder = async (req, res, overrides = {}) => {
     //    `customCfg` (the raw ingredient selections) against `byo_ingredients` and, for
     //    any extras/drinks bundled onto them, the same `menus` price lookup as everything
     //    else — see the BYO price-recompute block inside the transaction.
-    const isCustomItem = item => typeof item.id === 'string' && item.id.startsWith('custom-');
+    // custom-*: the /customize builder (customCfg). byo-menu: the BYO Bowl card
+    // (bowlConfig). Both are priced below from CPanel ingredient prices.
+    const isCustomItem = item => typeof item.id === 'string' && (item.id.startsWith('custom-') || item.id === 'byo-menu');
     for (const item of items) {
       if (isCustomItem(item)) continue;
       const menuId = parseInt(item.id || item.menu_id, 10);
@@ -682,12 +684,12 @@ const createGuestOrder = async (req, res, overrides = {}) => {
         const customItems = items.filter(isCustomItem);
         if (customItems.length > 0) {
           const ingRows = await client.query(
-            `SELECT option_key, category, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
+            `SELECT option_key, category, label, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
           );
           const mapFor = (cat) => new Map(
             ingRows.rows
               .filter(r => r.category === cat)
-              .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type }])
+              .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type, label: r.label }])
           );
           const ingredientMaps = {
             baseMap:    mapFor('base'),
@@ -696,19 +698,30 @@ const createGuestOrder = async (req, res, overrides = {}) => {
             proteinMap: mapFor('protein'),
             sauceMap:   mapFor('sauce'),
           };
+          const bowlMaps = { base: mapFor('bowl_base'), protein: mapFor('bowl_protein'), topping: mapFor('bowl_topping'), sauce: mapFor('bowl_sauce') };
           const menuPriceMap = new Map(priceRows.rows.map(r => [r.id, parseFloat(r.price)]));
 
           for (const item of customItems) {
-            if (!item.customCfg) {
+            const isBowl = item.id === 'byo-menu';
+            if (isBowl ? !item.bowlConfig : !item.customCfg) {
               await client.query('ROLLBACK');
               return res.status(400).json({ message: 'Custom item is missing its configuration. Please refresh and try again.' });
             }
             let expectedUnit;
             try {
-              expectedUnit = computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
+              expectedUnit = isBowl
+                ? computeBowlPrice(item.bowlConfig, bowlMaps)
+                : computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
             } catch (_) {
               await client.query('ROLLBACK');
               return res.status(400).json({ message: 'One or more custom ingredients are no longer available. Please refresh your cart.' });
+            }
+            // The bowl's name and note on the ticket come from CPanel, not the
+            // phone, so a cheap bowl can't be labelled as something else.
+            if (isBowl) {
+              const L = (map, key) => map.get(key)?.label || key;
+              item.name = `BYO Bowl: ${L(bowlMaps.protein, item.bowlConfig.proteinId)} over ${L(bowlMaps.base, item.bowlConfig.baseId)}`;
+              item.note = `Toppings: ${L(bowlMaps.topping, item.bowlConfig.toppingId)} | Sauce: ${L(bowlMaps.sauce, item.bowlConfig.sauceId)}`;
             }
             const clientUnit = parseFloat(item.price || item.unit_price || 0);
             if (clientUnit < expectedUnit - 0.05) {
@@ -1217,7 +1230,9 @@ const createPendingCheckout = async (req, res) => {
       return res.status(400).json({ message: 'Order total does not add up. Please refresh and retry.' });
     }
 
-    const isCustomItem = item => typeof item.id === 'string' && item.id.startsWith('custom-');
+    // custom-*: the /customize builder (customCfg). byo-menu: the BYO Bowl card
+    // (bowlConfig). Both are priced below from CPanel ingredient prices.
+    const isCustomItem = item => typeof item.id === 'string' && (item.id.startsWith('custom-') || item.id === 'byo-menu');
     for (const item of items) {
       if (isCustomItem(item)) continue;
       const menuId = parseInt(item.id || item.menu_id, 10);
@@ -1468,12 +1483,12 @@ const createPendingCheckout = async (req, res) => {
     const customItems = items.filter(isCustomItem);
     if (customItems.length > 0) {
       const ingRows = await pool.query(
-        `SELECT option_key, category, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
+        `SELECT option_key, category, label, price, qty_type FROM byo_ingredients WHERE is_active = TRUE`
       );
       const mapFor = (cat) => new Map(
         ingRows.rows
           .filter(r => r.category === cat)
-          .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type }])
+          .map(r => [r.option_key, { price: parseFloat(r.price), qty_type: r.qty_type, label: r.label }])
       );
       const ingredientMaps = {
         baseMap:    mapFor('base'),
@@ -1482,17 +1497,28 @@ const createPendingCheckout = async (req, res) => {
         proteinMap: mapFor('protein'),
         sauceMap:   mapFor('sauce'),
       };
+      const bowlMaps = { base: mapFor('bowl_base'), protein: mapFor('bowl_protein'), topping: mapFor('bowl_topping'), sauce: mapFor('bowl_sauce') };
       const menuPriceMap = new Map(priceRows.rows.map(r => [r.id, parseFloat(r.price)]));
 
       for (const item of customItems) {
-        if (!item.customCfg) {
+        const isBowl = item.id === 'byo-menu';
+        if (isBowl ? !item.bowlConfig : !item.customCfg) {
           return res.status(400).json({ message: 'Custom item is missing its configuration. Please refresh and try again.' });
         }
         let expectedUnit;
         try {
-          expectedUnit = computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
+          expectedUnit = isBowl
+            ? computeBowlPrice(item.bowlConfig, bowlMaps)
+            : computeCustomItemPrice(item.customCfg, ingredientMaps, menuPriceMap);
         } catch (_) {
           return res.status(400).json({ message: 'One or more custom ingredients are no longer available. Please refresh your cart.' });
+        }
+        // The bowl's name and note on the ticket come from CPanel, not the
+        // phone, so a cheap bowl can't be labelled as something else.
+        if (isBowl) {
+          const L = (map, key) => map.get(key)?.label || key;
+          item.name = `BYO Bowl: ${L(bowlMaps.protein, item.bowlConfig.proteinId)} over ${L(bowlMaps.base, item.bowlConfig.baseId)}`;
+          item.note = `Toppings: ${L(bowlMaps.topping, item.bowlConfig.toppingId)} | Sauce: ${L(bowlMaps.sauce, item.bowlConfig.sauceId)}`;
         }
         const clientUnit = parseFloat(item.price || item.unit_price || 0);
         if (clientUnit < expectedUnit - 0.05) {

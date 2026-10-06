@@ -94,7 +94,26 @@ function computeCustomItemPrice(cfg, ingredientMaps, menuPriceMap) {
   return Math.max(0, t);
 }
 
+/**
+ * Build Your Own Bowl (the Menu's BYO card, website + app): one base, one
+ * protein, one topping, one sauce, each from its CPanel "bowl_*" list. The
+ * price is the sum of the four option prices (Ahad, 2026-10-06) -- before
+ * this the website showed a fixed $12.99 and the server rejected the line.
+ * Throws 'unavailable_ingredient' for a missing / switched-off option.
+ */
+function computeBowlPrice(bowlConfig, bowlMaps) {
+  const cfg = bowlConfig || {};
+  const pick = (map, key) => {
+    const opt = typeof key === 'string' && map.get(key);
+    if (!opt) throw new Error('unavailable_ingredient');
+    return opt.price;
+  };
+  return +(pick(bowlMaps.base, cfg.baseId) + pick(bowlMaps.protein, cfg.proteinId)
+    + pick(bowlMaps.topping, cfg.toppingId) + pick(bowlMaps.sauce, cfg.sauceId)).toFixed(2);
+}
+
 module.exports = {
+  computeBowlPrice,
   computeCustomItemPrice,
   getBaseMultipliers,
   calcProteinPrice,
