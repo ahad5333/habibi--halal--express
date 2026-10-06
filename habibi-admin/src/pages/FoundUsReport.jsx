@@ -20,7 +20,7 @@ export default function FoundUsReport({ start, end, reloadKey }) {
     <div>
       <div className="rpt-section-hdr"><span>How Customers Found Us</span></div>
       <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.75rem' }}>
-        Asked once after each order in the app (optional). {total ? `${total} answer${total === 1 ? '' : 's'} in this range.` : ''}
+        Asked once after each order on the website and in the app (optional). {total ? `${total} answer${total === 1 ? '' : 's'} in this range.` : ''}
       </p>
       {err && <p className="text-error">{err}</p>}
       <div className="table-wrap">

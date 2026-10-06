@@ -78,6 +78,16 @@ const fallbackImg = (id, idx = 0) => `/images/menu/${((id ?? idx) % 70) + 1}.jpg
 const toWebp = url =>
   url && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, '.webp') : url;
 
+// "If this item is sold out" -- carried in the dish note, same wording as the
+// app, so kitchen tickets, the staff screen and CPanel show it unchanged.
+const IF_OUT = { remove: 'If sold out: remove it', call: 'If sold out: call me' };
+const splitNote = (raw) => {
+  let text = raw || ''; let ifOut = 'remove';
+  for (const k of Object.keys(IF_OUT)) if (text.includes(IF_OUT[k])) { ifOut = k; text = text.replace(IF_OUT[k], ''); }
+  return { text: text.replace(/^\s*·\s*|\s*·\s*$/g, '').trim(), ifOut };
+};
+const joinNote = (text, ifOut) => [String(text || '').trim(), IF_OUT[ifOut]].filter(Boolean).join(' · ');
+
 export default function MenuItemModal({
   itemId,
   soldOut = false,
@@ -113,7 +123,10 @@ export default function MenuItemModal({
 
   const [choiceSel, setChoiceSel] = useState(initialChoiceSel || {});
   const [addonSel,  setAddonSel]  = useState(initialAddonSel  || {});
-  const [note,      setNote]      = useState(initialNote || '');
+  const [note,      setNote]      = useState(() => splitNote(initialNote).text);
+  const [ifOut,     setIfOut]     = useState(() => splitNote(initialNote).ifOut);
+  // Real-order "Popular" options (server counts; empty until there are enough orders).
+  const [popularIds, setPopularIds] = useState(() => new Set());
   const [qty,       setQty]       = useState(initialQty  || 1);
   const [isFav,     setIsFav]     = useState(false);
   const [added,     setAdded]     = useState(false);
@@ -190,7 +203,12 @@ export default function MenuItemModal({
     setChoiceSel(initialChoiceSel || {});
     setAddonSel(initialAddonSel   || {});
     setUniversalSel(initialUniversalSel || {});
-    setNote(initialNote || '');
+    { const sp = splitNote(initialNote); setNote(sp.text); setIfOut(sp.ifOut); }
+    setPopularIds(new Set());
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/menus/${itemId}/popular-options`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setPopularIds(new Set((d?.option_ids || []).map(String))))
+      .catch(() => {});
     setQty(initialQty   || 1);
     setAdded(false);
     setQuotaSel({}); setMoreTacosSel({}); setQuotaError('');
@@ -473,7 +491,7 @@ export default function MenuItemModal({
         addons:        [...quotaAddons, ...moreTacosAddons],
         img:           item.image || item.image_url || categoryFallback(item),
         tag:           item.category || 'Item',
-        note:          note.trim(),
+        note:          joinNote(note, ifOut),
         qty:           1,
         selectedChoices: {},
         selectedAddons:  {},
@@ -640,7 +658,7 @@ export default function MenuItemModal({
       addons:        [...addonsList, ...sauceAddons],
       img:           item.image || item.image_url || categoryFallback(item),
       tag:           item.category || 'Item',
-      note:          note.trim(),
+      note:          joinNote(note, ifOut),
       choiceLabels,
       qty,
       selectedChoices:  choiceSel,
@@ -925,6 +943,23 @@ export default function MenuItemModal({
                   </div>
                 </div>
 
+                {/* ── If this item is sold out ── */}
+                <div className="mim-section">
+                  <div className="mim-section-hd">
+                    <span className="mim-section-title">If this item is sold out</span>
+                    <span className="mim-badge mim-badge--opt">{t('menuModal.optional')}</span>
+                  </div>
+                  <div className="mim-options-list" role="radiogroup" aria-label="If this item is sold out">
+                    {[['remove', 'Remove it from my order'], ['call', 'Call me']].map(([k, label]) => (
+                      <div key={k} className={`mim-opt-row${ifOut === k ? ' sel' : ''}`} onClick={() => setIfOut(k)}
+                        role="radio" aria-checked={ifOut === k} tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setIfOut(k)}>
+                        <div className={`mim-radio${ifOut === k ? ' on' : ''}`} />
+                        <span className="mim-opt-name">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* ── Special Instructions ── */}
                 <div className="mim-section">
                   <div className="mim-section-hd">
@@ -984,6 +1019,7 @@ export default function MenuItemModal({
                           >
                             <div className={`mim-radio${sel ? ' on' : ''}`} />
                             <span className="mim-opt-name">{opt.title}</span>
+                            {popularIds.has(String(opt.id)) && <span className="mim-popular">🔥 Popular</span>}
                             <span className="mim-opt-price">
                               {extra > 0 ? `+$${extra.toFixed(2)}` : ''}
                             </span>
@@ -1094,6 +1130,23 @@ export default function MenuItemModal({
                     </div>
                   </div>
                 ))}
+
+                {/* ── If this item is sold out ── */}
+                <div className="mim-section">
+                  <div className="mim-section-hd">
+                    <span className="mim-section-title">If this item is sold out</span>
+                    <span className="mim-badge mim-badge--opt">{t('menuModal.optional')}</span>
+                  </div>
+                  <div className="mim-options-list" role="radiogroup" aria-label="If this item is sold out">
+                    {[['remove', 'Remove it from my order'], ['call', 'Call me']].map(([k, label]) => (
+                      <div key={k} className={`mim-opt-row${ifOut === k ? ' sel' : ''}`} onClick={() => setIfOut(k)}
+                        role="radio" aria-checked={ifOut === k} tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setIfOut(k)}>
+                        <div className={`mim-radio${ifOut === k ? ' on' : ''}`} />
+                        <span className="mim-opt-name">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* ── Special Instructions ── */}
                 <div className="mim-section">

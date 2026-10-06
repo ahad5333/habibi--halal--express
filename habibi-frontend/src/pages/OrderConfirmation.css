@@ -463,3 +463,14 @@
   .orc-card { padding: 1.25rem 0.875rem; }
   .orc-title { font-size: 1.3rem; }
 }
+
+/* How did you find out about us? */
+.orc-foundus { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1rem 1.1rem; }
+.orc-foundus-done { text-align: center; font-weight: 600; color: #92400e; }
+.orc-foundus-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.7rem; }
+.orc-foundus-title { margin: 0; font-weight: 600; color: #111827; font-size: 0.98rem; }
+.orc-foundus-skip { background: none; border: none; color: #9ca3af; font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem; }
+.orc-foundus-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.orc-foundus-chip { border: 1px solid #d1d5db; background: #f9fafb; color: #374151; border-radius: 999px; padding: 0.4rem 0.8rem; font-size: 0.82rem; cursor: pointer; }
+.orc-foundus-chip:hover { border-color: #F97316; }
+.orc-foundus-chip.on { background: #F97316; border-color: #F97316; color: #fff; }

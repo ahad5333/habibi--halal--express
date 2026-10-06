@@ -2202,3 +2202,13 @@
   font-size: 0.8rem;
   color: #E5B64E;
 }
+
+/* ── Popular with your order ───────────────────────────── */
+.pwo-sub { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin: -0.5rem 0 0.9rem; }
+.pwo-track { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
+.pwo-card { flex: 0 0 128px; display: flex; flex-direction: column; gap: 0.3rem; text-align: left; background: none; border: none; padding: 0; color: inherit; cursor: pointer; }
+.pwo-img { position: relative; display: block; width: 128px; height: 100px; border-radius: 12px; overflow: hidden; background: #1d1d1d; }
+.pwo-img img { width: 100%; height: 100%; object-fit: cover; }
+.pwo-add { position: absolute; right: 6px; bottom: 6px; width: 28px; height: 28px; border-radius: 50%; background: #F97316; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.pwo-name { font-size: 0.82rem; font-weight: 600; color: #fff; line-height: 1.25; }
+.pwo-price { font-size: 0.82rem; font-weight: 700; color: #E5B64E; }

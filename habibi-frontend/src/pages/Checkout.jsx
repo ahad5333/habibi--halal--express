@@ -154,6 +154,11 @@ const Checkout = () => {
   const [selectedSavedCardId, setSelectedSavedCardId] = useState(null); // null = pay with a new card
   const [makeRecurring, setMakeRecurring] = useState(false); // "Make this a weekly order" (Habibi Weekly)
   const [upsellItems, setUpsellItems]           = useState([]);
+  // "Popular with your order": dishes real customers ordered together with the
+  // cart's dishes (server counts, nothing until there is enough data).
+  const [allMenu, setAllMenu]                   = useState([]);
+  const [togetherIds, setTogetherIds]           = useState([]);
+  const [suggestId, setSuggestId]               = useState(null);
   const upsellRef                               = useRef(null);
   const [loyaltyPoints, setLoyaltyPoints]       = useState(0);
   const [useRewards, setUseRewards]             = useState(false);
@@ -417,6 +422,16 @@ const Checkout = () => {
   // deliberately still excludes Bergers/Breakfast/Sandwich/Family Tray,
   // since those read as competing full meals rather than a "complete your
   // meal" add-on (Tacos included since they're more snack-sized).
+  const cartIdsKey = [...new Set(items.map(i => parseInt(i.id, 10)).filter(n => n > 0))].sort((a, b) => a - b).join(',');
+  useEffect(() => {
+    if (!cartIdsKey) { setTogetherIds([]); return; }
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/menus/frequently-with?ids=${cartIdsKey}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setTogetherIds(Array.isArray(d?.menu_ids) ? d.menu_ids : []))
+      .catch(() => setTogetherIds([]));
+  }, [cartIdsKey]);
+  const together = togetherIds.map(id => allMenu.find(m => Number(m.id) === Number(id))).filter(Boolean);
+
   useEffect(() => {
     menuAPI.getAll()
       .then(data => {
@@ -451,6 +466,7 @@ const Checkout = () => {
         }).slice(0, 30);
 
         setUpsellItems(merged);
+        setAllMenu(all);
       })
       .catch(() => {});
   }, []);
@@ -1539,6 +1555,27 @@ const Checkout = () => {
                 </div>
               )}
             </div>
+
+            {/* Popular with your order */}
+            {together.length > 0 && items.length > 0 && (
+              <div className="checkout-section pwo-section">
+                <h2 className="checkout-section-title">Popular with your order</h2>
+                <p className="pwo-sub">Other customers also ordered these</p>
+                <div className="pwo-track">
+                  {together.map(m => (
+                    <button key={m.id} type="button" className="pwo-card" onClick={() => setSuggestId(m.id)}
+                      aria-label={`${m.name}, $${parseFloat(m.price || 0).toFixed(2)}`}>
+                      <span className="pwo-img">
+                        {(m.image || m.image_url) && <img src={m.image || m.image_url} alt="" loading="lazy" />}
+                        <span className="pwo-add">+</span>
+                      </span>
+                      <span className="pwo-name">{m.name}</span>
+                      <span className="pwo-price">${parseFloat(m.price || 0).toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Upsell — "Complete Your Meal" */}
             {upsellItems.length > 0 && items.length > 0 && (
@@ -2666,6 +2703,9 @@ const Checkout = () => {
     </div>
 
     {/* Re-edit modal — opens when user clicks the pencil icon on a cart item */}
+    {suggestId && (
+      <MenuItemModal itemId={suggestId} onClose={() => setSuggestId(null)} onSelectItem={id => setSuggestId(id)} />
+    )}
     {editingItem && (
       <MenuItemModal
         itemId={editingItem.item.id}

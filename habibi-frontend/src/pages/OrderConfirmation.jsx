@@ -110,6 +110,47 @@ function ReviewWidget({ orderNum }) {
   );
 }
 
+// "How did you find out about us?" -- one optional tap, saved once per order
+// (POST /api/orders/:num/found-us); CPanel Reports > How Customers Found Us.
+// Same list as the server (habibi-backend utils/foundUs.js) and the app.
+const FOUND_US = [
+  ['friends_family', 'Friends or family'], ['google', 'Google search or Maps'], ['instagram', 'Instagram'],
+  ['tiktok', 'TikTok'], ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['saw_store', 'Walked by a store'],
+  ['flyer', 'Flyer, sign or packaging'], ['delivery_app', 'Uber Eats, DoorDash or Grubhub'], ['other', 'Other'],
+];
+function FoundUs({ orderNum }) {
+  const key = `habibi_found_us_${orderNum}`;
+  const [state, setState] = useState(() => { try { return localStorage.getItem(key) ? 'hidden' : 'ask'; } catch { return 'ask'; } });
+  const [picked, setPicked] = useState('');
+  const answer = async (source) => {
+    setPicked(source); setState('saving');
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderNum)}/found-us`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source }),
+      });
+      if (!res.ok) throw new Error();
+      try { localStorage.setItem(key, source); } catch {}
+      setState('done');
+    } catch { setState('ask'); setPicked(''); }
+  };
+  const skip = () => { try { localStorage.setItem(key, 'skipped'); } catch {} setState('hidden'); };
+  if (state === 'hidden') return null;
+  if (state === 'done') return <div className="orc-foundus orc-foundus-done">💛 Thanks for telling us!</div>;
+  return (
+    <div className="orc-foundus">
+      <div className="orc-foundus-head">
+        <p className="orc-foundus-title">How did you find out about us?</p>
+        <button type="button" className="orc-foundus-skip" onClick={skip} aria-label="Skip this question">✕</button>
+      </div>
+      <div className="orc-foundus-chips">
+        {FOUND_US.map(([id, label]) => (
+          <button key={id} type="button" className={`orc-foundus-chip${picked === id ? ' on' : ''}`} disabled={state === 'saving'} onClick={() => answer(id)}>{label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const STEP_IDS = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
 const STEP_ICONS = { confirmed: '✓', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '🎉' };
 
@@ -227,6 +268,8 @@ export default function OrderConfirmation() {
             </div>
           )}
         </div>
+
+        <FoundUs orderNum={orderNum} />
 
         {/* Status tracker */}
         <div className="orc-tracker">
