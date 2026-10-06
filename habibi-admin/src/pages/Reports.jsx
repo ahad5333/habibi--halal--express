@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { BarChart2, Download, RefreshCw, DollarSign, ShoppingBag, Tag, MapPin, XCircle, TrendingUp, Users } from 'lucide-react';
 import { adminAPI } from '../services/api';
 import MenuProfitability from './MenuProfitability';
+import FoundUsReport from './FoundUsReport';
 import './Reports.css';
 import { fmtDate, fmtDateShort, fmtTime, fmtDateTime } from '../utils/date.js';
 
@@ -135,6 +136,7 @@ export default function Reports() {
     { id: 'coupons',    label: 'Coupon Usage' },
     { id: 'trends',     label: 'Trends & Forecast' },
     { id: 'profit',     label: 'Menu Profitability' },
+    { id: 'found_us',   label: 'How Customers Found Us' },
   ];
 
   return (
@@ -392,6 +394,10 @@ export default function Reports() {
 
             {tab === 'profit' && (
               <MenuProfitability start={ranRange.start} end={ranRange.end} reloadKey={runCount} />
+            )}
+
+            {tab === 'found_us' && (
+              <FoundUsReport start={ranRange.start} end={ranRange.end} reloadKey={runCount} />
             )}
 
             {tab === 'trends' && (
