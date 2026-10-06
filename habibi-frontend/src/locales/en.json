@@ -539,7 +539,7 @@
     "status": "Status",
     "points": "Points",
     "date": "Date",
-    "shareReferralText": "Use my code {{code}} at Habibi Halal Express and we both earn rewards! Sign up at {{origin}} and enter it in your account under \"Refer a Friend.\"",
+    "shareReferralText": "Try Habibi Halal Express! Use my code {{code}} when you sign up at {{origin}} (Account → Refer a Friend).",
     "myAccount": "MY ACCOUNT",
     "welcomeBack": "Welcome back,",
     "heroSub": "Manage your profile, track orders, and update your preferences."
