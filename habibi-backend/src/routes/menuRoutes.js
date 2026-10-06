@@ -40,6 +40,48 @@ router.post("/", protect, admin, createMenu);
 // Public: fetch choice groups + addon groups for a menu item
 // Item-specific addons (e.g. "More Meat") come first, then global groups
 // unless the item has exclude_global_addons = true
+// "Popular" options for one dish, from real orders only (app dish popup).
+// Per choice group, the most-picked option of the last 90 days -- shown only
+// when it was picked at least POPULAR_MIN times AND more than any other option
+// in its group, so a handful of orders never crowns a winner. Public: counts
+// only, nothing about who ordered. Cached per dish for 10 minutes.
+const POPULAR_MIN = 5;
+const popularCache = new Map();
+router.get("/:id/popular-options", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!(id > 0)) return res.status(400).json({ message: "Invalid menu id." });
+  const hit = popularCache.get(id);
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return res.json(hit.body);
+  try {
+    const { rows } = await pool.query(
+      `SELECT ch.key AS group_id, ch.value AS option_id, COUNT(*)::int AS n
+         FROM guest_orders g
+         CROSS JOIN LATERAL jsonb_array_elements(
+           CASE WHEN jsonb_typeof(g.items) = 'array' THEN g.items ELSE '[]'::jsonb END) it
+         CROSS JOIN LATERAL jsonb_each_text(
+           CASE WHEN jsonb_typeof(it->'selectedChoices') = 'object' THEN it->'selectedChoices' ELSE '{}'::jsonb END) ch
+        WHERE g.placed_at >= NOW() - INTERVAL '90 days'
+          AND g.order_status NOT IN ('cancelled', 'refunded', 'rejected', 'pending_payment')
+          AND COALESCE(it->>'menu_item_id', it->>'id') = $1::text
+        GROUP BY 1, 2`,
+      [String(id)]
+    );
+    const byGroup = {};
+    for (const r of rows) (byGroup[r.group_id] = byGroup[r.group_id] || []).push(r);
+    const popular = [];
+    for (const list of Object.values(byGroup)) {
+      list.sort((a, b) => b.n - a.n);
+      const [top, next] = list;
+      if (top.n >= POPULAR_MIN && (!next || top.n > next.n)) popular.push(String(top.option_id));
+    }
+    const body = { option_ids: popular };
+    popularCache.set(id, { at: Date.now(), body });
+    res.json(body);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+});
+
 router.get("/:id/modifiers", async (req, res) => {
   try {
     const param = req.params.id;
