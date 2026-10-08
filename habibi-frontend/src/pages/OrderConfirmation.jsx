@@ -84,7 +84,7 @@ function ReviewWidget({ orderNum }) {
             onClick={() => setRating(n)}
             aria-label={t('orderConfirmation.starLabel', { n })}
           >
-            <Star size={24} fill={n <= (hover || rating) ? '#E5B64E' : 'none'} color="#E5B64E" />
+            <Star size={24} fill={n <= (hover || rating) ? '#F97316' : 'none'} color="#F97316" />
           </button>
         ))}
       </div>
