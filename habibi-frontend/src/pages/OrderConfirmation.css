@@ -333,7 +333,7 @@
   align-items: center;
   gap: 1rem;
   background: rgba(249,115,22,0.1);
-  border: 1px solid #fde68a;
+  border: 1px solid rgba(249,115,22,0.3);
   border-radius: 14px;
   padding: 1rem 1.25rem;
 }
@@ -471,6 +471,6 @@
 .orc-foundus-title { margin: 0; font-weight: 600; color: #f0ede8; font-size: 0.98rem; }
 .orc-foundus-skip { background: none; border: none; color: #8a8a8a; font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem; }
 .orc-foundus-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-.orc-foundus-chip { border: 1px solid rgba(255,255,255,0.18); background: #f9fafb; color: #d6d3cd; border-radius: 999px; padding: 0.4rem 0.8rem; font-size: 0.82rem; cursor: pointer; }
+.orc-foundus-chip { border: 1px solid rgba(255,255,255,0.18); background: #1a1a1a; color: #d6d3cd; border-radius: 999px; padding: 0.4rem 0.8rem; font-size: 0.82rem; cursor: pointer; }
 .orc-foundus-chip:hover { border-color: #F97316; }
 .orc-foundus-chip.on { background: #F97316; border-color: #F97316; color: #fff; }
