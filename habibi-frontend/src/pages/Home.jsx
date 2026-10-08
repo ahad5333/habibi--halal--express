@@ -18,7 +18,7 @@ const HOME_STORE_LIMIT = 6;
 const storeImg = url => (url && url.startsWith('/images/') ? toWebp(url) : url);
 // Placeholder for the presentation banner above Locations -- see that
 // section's comment for why it's capped at native size instead of full-bleed.
-const presentationBannerImg = '/images/banners/platter-presentation.webp';
+const presentationBannerImg = '/images/banners/platter-presentation-v2.webp';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const FEAST_VIDEOS = [
