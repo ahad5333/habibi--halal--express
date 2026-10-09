@@ -523,6 +523,15 @@ const getLoyalty = async (req, res) => {
         ? Math.min(100, Math.round(((lifetimePts - tier.min_points) / (nextTier.min_points - tier.min_points)) * 100))
         : 100,
       history,
+      // The whole ladder + earn rate, for the app's Rewards screen ("how it
+      // works"). Same CPanel table the tier above comes from.
+      earn_rate: earnRate,
+      tiers: tiers.map(t => ({
+        name: t.name, min_points: t.min_points, color: t.color,
+        earn_multiplier: parseFloat(t.earn_multiplier) || 1,
+        discount_pct: parseFloat(t.discount_pct) || 0,
+        free_delivery_threshold: t.free_delivery_threshold == null ? null : parseFloat(t.free_delivery_threshold),
+      })),
     });
   } catch (err) {
     res.status(500).json(safeError(err));
