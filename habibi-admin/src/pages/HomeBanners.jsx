@@ -24,6 +24,7 @@ const LINKS = [
 const EMPTY = { style: 'card', title: '', subtitle: '', cta_label: '', bg_color: '#FDECC8', link_type: 'none', link_value: '', starts_at: '', ends_at: '', sort_order: 0, is_active: true };
 // Panel colours that work with the brand and stay readable.
 const COLORS = ['#FDECC8', '#FFE1CC', '#E3F1E6', '#E6EEF8', '#F97316', '#173326', '#2A1A0E', '#111111'];
+const isOrangeish = hex => { const n = parseInt(hex.slice(1), 16); return Math.abs(((n >> 16) & 255) - 249) + Math.abs(((n >> 8) & 255) - 115) + Math.abs((n & 255) - 22) < 120; };
 const isLight = hex => { const n = parseInt(hex.slice(1), 16); return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150; };
 
 // What the card looks like in the app (same layout as PromoCarousel.tsx).
@@ -35,7 +36,7 @@ function CardPreview({ form, preview }) {
       <div className="hb-pv-panel">
         <div className="hb-pv-head" style={{ color: light ? '#111' : '#fff' }}>{form.title || 'Headline'}</div>
         {form.subtitle && <div className="hb-pv-sub" style={{ color: light ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.78)' }}>{form.subtitle}</div>}
-        {form.cta_label && form.link_type !== 'none' && <span className="hb-pv-cta">{form.cta_label}</span>}
+        {form.cta_label && form.link_type !== 'none' && <span className="hb-pv-cta" style={isOrangeish(form.bg_color || '#1c1c1c') ? { background: '#fff', color: '#F97316' } : undefined}>{form.cta_label}</span>}
       </div>
       <div className="hb-pv-photo">{preview ? <img src={preview} alt="" /> : <span>Photo</span>}</div>
     </div>
