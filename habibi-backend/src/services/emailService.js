@@ -145,6 +145,9 @@ const logSimulatedEmail = (to, subject, html) => {
 };
 
 const sendMailHelper = async (to, subject, html) => {
+  // Phone-only accounts carry a placeholder address and deleted ones an
+  // anonymised one; neither has a mailbox, and bounces hurt the sender score.
+  if (/@habibi\.(internal|removed)$/i.test(String(to || '').trim())) return { skipped: true };
   // ZeptoMail first when configured: it's the account that can actually send.
   // Falls through to SendGrid on failure rather than dropping the message, so
   // a ZeptoMail outage degrades instead of losing the email outright.

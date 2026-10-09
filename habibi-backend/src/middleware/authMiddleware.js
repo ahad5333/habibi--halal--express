@@ -45,16 +45,22 @@ const protect = async (req, res, next) => {
       if (_revokedJTIs.has(decoded.jti)) {
         return res.status(401).json({ message: 'Session expired. Please log in again.' });
       }
-      // L2 check (DB) — catches revocations that happened before this process started
+      // L2 check (DB) — catches revocations that happened before this process started,
+      // and deleted (deactivated) accounts: app sessions last 30 days, so a
+      // deleted account must stop working on every phone at once.
       try {
         const pool = require('../config/db');
-        const { rowCount } = await pool.query(
-          'SELECT 1 FROM revoked_tokens WHERE jti = $1 AND expires_at > NOW()',
-          [decoded.jti]
+        const { rows } = await pool.query(
+          `SELECT EXISTS (SELECT 1 FROM revoked_tokens WHERE jti = $1 AND expires_at > NOW()) AS revoked,
+                  (SELECT is_active FROM users WHERE id = $2) AS active`,
+          [decoded.jti, decoded.id]
         );
-        if (rowCount > 0) {
+        if (rows[0]?.revoked) {
           _revokedJTIs.set(decoded.jti, decoded.exp); // warm L1 cache
           return res.status(401).json({ message: 'Session expired. Please log in again.' });
+        }
+        if (rows[0]?.active === false) {
+          return res.status(401).json({ message: 'This account is no longer active.' });
         }
       } catch (_) { /* DB unavailable — fail open for availability */ }
     }

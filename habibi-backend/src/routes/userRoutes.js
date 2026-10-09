@@ -38,11 +38,9 @@ router.put ("/me/password",
   changePassword
 );
 
-router.delete("/me",
-  body('password').notEmpty().withMessage('Password confirmation is required.'),
-  handleValidation,
-  deleteAccount
-);
+// Confirmed in the controller: password, a texted code (phone accounts) or a
+// fresh Google/Apple sign-in -- those customers have no password.
+router.delete("/me", deleteAccount);
 
 router.post("/me/device-token",
   body('token').notEmpty().withMessage('Device token is required.'),

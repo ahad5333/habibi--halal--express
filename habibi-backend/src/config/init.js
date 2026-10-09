@@ -75,6 +75,36 @@ const createTables = async () => {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_revoked_tokens_exp ON revoked_tokens(expires_at)`);
 
+    // ── Phone sign-in (app) ───────────────────────────────────────
+    // phone_verified: the number on the account was proven by a texted code.
+    // Phone sign-in only ever matches verified numbers -- a profile number is
+    // typed by hand and could be a typo or someone else's.
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE`);
+    // FALSE for accounts made by phone or Google/Apple sign-in: their stored hash
+    // is random, so the app hides "Change password" and confirms deletion another way.
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_set BOOLEAN DEFAULT TRUE`);
+    // Phone-signup accounts already proved their number when they were verified.
+    await client.query(`UPDATE users SET phone_verified = TRUE
+      WHERE phone_verified = FALSE AND email_verified = TRUE AND email LIKE 'phone\\_%@habibi.internal'`);
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_verified_phone10
+        ON users (right(regexp_replace(phone_number, '[^0-9]', '', 'g'), 10))
+        WHERE phone_verified = TRUE AND phone_number IS NOT NULL AND phone_number <> ''
+    `).catch(e => console.error('[init] verified-phone unique index not created:', e.message));
+    // Pending codes live here, keyed by the 10-digit number -- no account row is
+    // created until the code is right (unverified rows get purged after 7 days).
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS phone_login_codes (
+        phone        VARCHAR(10) PRIMARY KEY,
+        code_hash    TEXT,
+        expires_at   TIMESTAMPTZ,
+        attempts     INTEGER NOT NULL DEFAULT 0,
+        last_sent_at TIMESTAMPTZ,
+        sent_day     DATE,
+        sent_count   INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
     // ── Customers (profile extension of users) ────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS customers (

@@ -12,6 +12,7 @@ const { getAlertPhone } = require('../utils/alertPhone');
 // the MFA gate off that narrower set would have let managers in on a password
 // alone.
 const { PANEL_ROLES: PRIVILEGED_ROLES } = require('../middleware/managerMiddleware');
+const { APP_SESSION } = require('./phoneAuthController');
 
 function setAuthCookie(res, token, maxAgeMs) {
   const isProd = process.env.NODE_ENV === 'production';
@@ -21,6 +22,13 @@ function setAuthCookie(res, token, maxAgeMs) {
     sameSite: isProd ? 'strict' : 'lax',
     maxAge: maxAgeMs,
   });
+}
+
+// The customer app keeps people signed in for 30 days (Uber Eats / DoorDash
+// do the same); it says so with `app: true`. Customers only -- every other
+// role keeps its short session.
+function appSessionFor(req, user) {
+  return req.body?.app === true && user.role === 'customer' ? APP_SESSION : null;
 }
 
 const registerUser = async (req, res) => {
@@ -294,7 +302,7 @@ const loginUser = async (req, res) => {
         jti: crypto.randomUUID(),
       },
       process.env.JWT_SECRET,
-      { expiresIn: user.role === 'admin' ? '24h' : '1d' }
+      { expiresIn: user.role === 'admin' ? '24h' : appSessionFor(req, user) || '1d' }
     );
 
     // Fetch partner application info if applicable
@@ -552,7 +560,7 @@ const resetPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
     await pool.query(
-      "UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2",
+      "UPDATE users SET password_hash = $1, password_set = TRUE, reset_token = NULL, reset_token_expires = NULL WHERE id = $2",
       [hashedPassword, result.rows[0].id]
     );
 
@@ -808,8 +816,8 @@ const socialAuth = async (req, res) => {
       // New user — insert with a random un-guessable password hash (they won't use password login)
       const dummyHash = await bcrypt.hash(crypto.randomUUID(), 12);
       user = (await pool.query(
-        `INSERT INTO users (name, email, password_hash, email_verified, provider, provider_id)
-         VALUES ($1, $2, $3, TRUE, $4, $5)
+        `INSERT INTO users (name, email, password_hash, email_verified, provider, provider_id, password_set)
+         VALUES ($1, $2, $3, TRUE, $4, $5, FALSE)
          RETURNING id, name, email, role, is_partner, partner_id, date_of_birth, birthday_rewarded_year`,
         [displayName, cleanEmail, dummyHash, provider, uid]
       )).rows[0];
@@ -833,7 +841,7 @@ const socialAuth = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: appSessionFor(req, user) || '7d' }
     );
 
     setAuthCookie(res, token, 7 * 24 * 60 * 60 * 1000);

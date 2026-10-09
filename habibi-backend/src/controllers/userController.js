@@ -5,13 +5,16 @@ const crypto = require("crypto");
 const { revokeToken } = require('../middleware/authMiddleware');
 const { getTiers, resolveTier } = require('../utils/loyaltyTiers');
 const { getFreeDeliveryThreshold } = require('../utils/systemSettings');
+const { phone10, useCode } = require('./phoneAuthController');
 
 
 // ─── GET /api/users/me ───────────────────────────────────────────────────────
 const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs, receive_sms_updates, created_at FROM users WHERE id=$1",
+      `SELECT id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs, receive_sms_updates, created_at,
+              phone_verified, password_set, (provider IS NOT NULL) AS social
+         FROM users WHERE id=$1`,
       [req.user.id]
     );
     if (!result.rows[0]) return res.status(404).json({ message: "User not found." });
@@ -54,18 +57,27 @@ const updateProfile = async (req, res) => {
       if (avatar_url.length > 500) return res.status(400).json({ message: 'Avatar URL is too long.' });
     }
 
+    // A number proven by a texted code is how that customer signs in; editing
+    // it here (unconfirmed) would lock them out of phone sign-in.
+    const cur = (await pool.query('SELECT phone_number, phone_verified FROM users WHERE id=$1', [req.user.id])).rows[0];
+    if (cur?.phone_verified && phone10(phone_number) !== phone10(cur.phone_number)) {
+      return res.status(400).json({ message: 'Your phone number is how you sign in, so it can’t be changed here. Contact us to change it.' });
+    }
+
     const dietaryValue = dietary_prefs !== undefined ? JSON.stringify(dietary_prefs) : null;
     const result = await pool.query(
       `UPDATE users
           SET name=$1,
               phone_number=$2,
+              phone_verified=$7,
               avatar_url=COALESCE($3, avatar_url),
               date_of_birth=COALESCE($5::date, date_of_birth),
               dietary_prefs=COALESCE($6::jsonb, dietary_prefs),
               updated_at=NOW()
         WHERE id=$4
         RETURNING id, name, email, phone_number, role, loyalty_points, avatar_url, date_of_birth, dietary_prefs`,
-      [name?.trim() || null, phone_number || null, avatar_url || null, req.user.id, date_of_birth || null, dietaryValue]
+      [name?.trim() || null, phone_number || null, avatar_url || null, req.user.id, date_of_birth || null, dietaryValue,
+       !!cur?.phone_verified]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -152,12 +164,31 @@ const changePassword = async (req, res) => {
 // ─── DELETE /api/users/me ────────────────────────────────────────────────────
 const deleteAccount = async (req, res) => {
   try {
-    const { password } = req.body;
-    const userResult = await pool.query("SELECT password_hash FROM users WHERE id=$1", [req.user.id]);
-    if (!userResult.rows[0]) return res.status(404).json({ message: "User not found." });
+    const { password, phone_code } = req.body;
+    const userResult = await pool.query(
+      `SELECT password_hash, phone_number, phone_verified, provider FROM users WHERE id=$1`, [req.user.id]);
+    const u = userResult.rows[0];
+    if (!u) return res.status(404).json({ message: "User not found." });
 
-    const match = await bcrypt.compare(password || "", userResult.rows[0].password_hash);
-    if (!match) return res.status(400).json({ message: "Incorrect password." });
+    // Confirm it's really them. Phone and Google/Apple customers have no
+    // password, so they confirm with a texted code or a fresh sign-in
+    // (Apple requires in-app deletion for every account).
+    let confirmed = false;
+    if (password) confirmed = await bcrypt.compare(String(password), u.password_hash);
+    else if (phone_code && u.phone_verified && phone10(u.phone_number)) {
+      const check = await useCode(phone10(u.phone_number), String(phone_code));
+      if (!check.ok) return res.status(400).json({ message: check.message });
+      confirmed = true;
+    } else if (u.provider && req.user.iat && Date.now() / 1000 - req.user.iat < 10 * 60) {
+      confirmed = true;
+    }
+    if (!confirmed) {
+      return res.status(400).json({
+        message: password ? "Incorrect password."
+          : u.provider ? "For your security, sign out and sign in again, then delete your account within 10 minutes."
+          : "Confirm with your password.",
+      });
+    }
 
     // GDPR: anonymize and deactivate rather than hard-delete to preserve order records
     await pool.query(

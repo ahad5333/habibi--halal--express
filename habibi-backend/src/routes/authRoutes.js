@@ -71,6 +71,7 @@ const {
   verifySmsRecoveryCode,
   socialAuth,
 } = require("../controllers/authController");
+const { startPhoneLogin, verifyPhoneLogin, completePhoneSignup } = require('../controllers/phoneAuthController');
 const protect = require('../middleware/authMiddleware');
 const { revokeToken } = require('../middleware/authMiddleware');
 
@@ -131,6 +132,19 @@ router.post("/verify-phone-otp", smsVerifyLimiter, body('phone').trim().notEmpty
 // SMS 5-digit recovery code
 router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
 router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
+
+// Phone sign-in (customer app) — text a code, then sign in or create the account.
+// Per-number limits live in the controller; these cap one network.
+const phoneStartLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 50 : 5,
+  message: { message: 'Too many code requests. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.post('/phone/start',    phoneStartLimiter, startPhoneLogin);
+router.post('/phone/verify',   smsVerifyLimiter,  verifyPhoneLogin);
+router.post('/phone/complete', authLimiter,       completePhoneSignup);
 
 // Social login — Google & Apple via Firebase ID token
 router.post('/social', body('id_token').notEmpty().withMessage('ID token required.'), handleValidation, socialAuth);
