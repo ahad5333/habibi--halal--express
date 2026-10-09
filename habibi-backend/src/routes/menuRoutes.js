@@ -73,6 +73,40 @@ router.get("/frequently-with", async (req, res) => {
   }
 });
 
+// "Popular Picks" (app Home + Menu): dishes in the most real orders of the
+// last 90 days. A dish counts only once it is in at least 3 orders, and only
+// dishes still on sale; the app keeps its old rule until 4 dishes qualify, so
+// a handful of (test) orders never decides the list. Counts only, nothing
+// about who ordered. Cached for 10 minutes.
+let popularListCache = null;
+router.get("/popular", async (req, res) => {
+  if (popularListCache && Date.now() - popularListCache.at < 10 * 60 * 1000) return res.json(popularListCache.body);
+  try {
+    const { rows } = await pool.query(
+      `WITH lines AS (
+         SELECT g.order_number, NULLIF(COALESCE(it->>'menu_item_id', it->>'id'), '') AS mid
+           FROM guest_orders g
+           CROSS JOIN LATERAL jsonb_array_elements(
+             CASE WHEN jsonb_typeof(g.items) = 'array' THEN g.items ELSE '[]'::jsonb END) it
+          WHERE g.placed_at >= NOW() - INTERVAL '90 days'
+            AND g.order_status NOT IN ('cancelled', 'refunded', 'rejected', 'pending_payment')
+       )
+       SELECT l.mid::int AS menu_id, COUNT(DISTINCT l.order_number)::int AS n
+         FROM lines l JOIN menus m ON m.id::text = l.mid
+        WHERE l.mid ~ '^[0-9]+$'
+          AND COALESCE(m.is_available, true) AND COALESCE(m.is_active, true)
+        GROUP BY l.mid HAVING COUNT(DISTINCT l.order_number) >= 3
+        ORDER BY n DESC, l.mid::int
+        LIMIT 10`
+    );
+    const body = { menu_ids: rows.map(r => r.menu_id) };
+    popularListCache = { at: Date.now(), body };
+    res.json(body);
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+});
+
 // "Popular" options for one dish, from real orders only (app dish popup).
 // Per choice group, the most-picked option of the last 90 days -- shown only
 // when it was picked at least POPULAR_MIN times AND more than any other option
