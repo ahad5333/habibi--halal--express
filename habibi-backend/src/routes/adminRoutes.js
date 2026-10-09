@@ -163,6 +163,14 @@ router.post("/byo-ingredients", uploadByoImages, createByoIngredient);
 router.patch("/byo-ingredients/:id", uploadByoImages, updateByoIngredient);
 router.delete("/byo-ingredients/:id", deleteByoIngredient);
 
+// Home banners (app Home poster carousel) -- admin only; managers are denied
+// by managerScope's default-deny (not in MANAGER_ALLOWED).
+const { getAdminBanners, createBanner, updateBanner, deleteBanner } = require("../controllers/bannersController");
+router.get("/banners", getAdminBanners);
+router.post("/banners", upload.single("image"), createBanner);
+router.patch("/banners/:id", upload.single("image"), updateBanner);
+router.delete("/banners/:id", deleteBanner);
+
 // Modifiers (shared choice groups & addon groups)
 router.get("/modifiers",         getModifiers);
 router.post("/modifiers",        createModifier);

@@ -2304,6 +2304,25 @@ const seedDefaults = async () => {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_card_processor_accounts_provider ON card_processor_accounts(provider)`);
 
+  // ── Home banners (app Home poster carousel, CPanel > Home Banners) ─────
+  // See bannersController.js. starts_at / ends_at NULL = no limit.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS home_banners (
+      id          SERIAL PRIMARY KEY,
+      title       VARCHAR(120) NOT NULL,
+      image_url   TEXT NOT NULL,
+      link_type   VARCHAR(20) NOT NULL DEFAULT 'none'
+                    CHECK (link_type IN ('none', 'offer', 'category', 'item', 'url')),
+      link_value  VARCHAR(255),
+      starts_at   TIMESTAMPTZ,
+      ends_at     TIMESTAMPTZ,
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);
   if (adminCheck.rows.length === 0) {

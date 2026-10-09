@@ -101,6 +101,12 @@ export const adminAPI = {
   },
   deleteByoIngredient: (id) => req(`/api/admin/byo-ingredients/${id}`, { method: 'DELETE' }),
 
+  // Home banners (app Home poster carousel)
+  getBanners: () => req('/api/admin/banners'),
+  createBanner: (fd) => upload('/api/admin/banners', fd),
+  updateBanner: (id, fd) => uploadPatch(`/api/admin/banners/${id}`, fd),
+  deleteBanner: (id) => req(`/api/admin/banners/${id}`, { method: 'DELETE' }),
+
   // Modifiers (shared choice/addon groups)
   getModifiers:    ()           => req('/api/admin/modifiers'),
   createModifier:  (body)       => req('/api/admin/modifiers',     { method: 'POST',  body: JSON.stringify(body) }),

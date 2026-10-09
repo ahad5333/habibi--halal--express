@@ -8,7 +8,7 @@ import {
   MessageSquare, Gift, BookOpen, DollarSign,
   AlertTriangle, Store, Handshake, Link2, KeyRound, Route,
   Bookmark, Share2, Users2, Layers, LayoutGrid, RefreshCw, Bot, Trash2, CalendarClock,
-  Search, ChevronDown, Map as MapIcon, Eye, EyeOff, RotateCcw, ShieldCheck,
+  Search, ChevronDown, Map as MapIcon, Eye, EyeOff, RotateCcw, ShieldCheck, GalleryHorizontal,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { canOpen, isManager, ROLE_LABEL } from '../utils/roles';
@@ -86,6 +86,7 @@ const GROUPS = [
     icon: <Tag size={13} />,
     items: [
       { to: '/coupons',    icon: <Tag size={17} />,      label: 'Coupons & Offers', kw: 'discount promo code freeship deal' },
+      { to: '/banners',    icon: <GalleryHorizontal size={17} />, label: 'Home Banners', kw: 'app posters carousel slider sale promo banner' },
       { to: '/loyalty',    icon: <Gift size={17} />,     label: 'Loyalty Program',  kw: 'points tiers rewards platinum' },
       { to: '/broadcasts', icon: <Bell size={17} />,     label: 'Broadcasts',       kw: 'sms email blast newsletter announce' },
       { to: '/articles',   icon: <BookOpen size={17} />, label: 'Articles',         kw: 'blog news posts' },
