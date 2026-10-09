@@ -4,7 +4,10 @@ import { useTranslation } from '../i18n';
 import { paymentsAPI } from '../services/api';
 import './OfflinePayModal.css';
 
-export default function OfflinePayModal({ method, amount, orderNumber, onConfirm, onClose }) {
+// The note is the customer's name + last 4 phone digits. It used to be a
+// made-up HAB-<time> number, but the server always numbers the order itself
+// (HBB-...), so the note matched no order.
+export default function OfflinePayModal({ method, amount, memo, onConfirm, onClose }) {
   const { t } = useTranslation();
   const [info, setInfo] = useState({ zelle: {}, cashapp: {} });
   const [copied, setCopied] = useState('');
@@ -134,10 +137,10 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
 
             <p className="opm-memo-label">{t('offlinePay.includeInMemo')}</p>
             <div className="opm-handle-row opm-memo">
-              <span className="opm-handle">{orderNumber}</span>
+              <span className="opm-handle">{memo}</span>
               <button
                 className="opm-copy-btn"
-                onClick={() => copy(orderNumber, 'memo')}
+                onClick={() => copy(memo, 'memo')}
                 title={t('offlinePay.copyOrderNumber')}
                 aria-label={t('offlinePay.copyOrderNumber')}
               >
@@ -149,7 +152,7 @@ export default function OfflinePayModal({ method, amount, orderNumber, onConfirm
               <p className="opm-steps-title">{t('offlinePay.howItWorks')}</p>
               <ol className="opm-steps-list">
                 <li>{t('offlinePay.step1', { amount: `$${parseFloat(amount).toFixed(2)}`, method: isZelle ? zelleMethodWord : t('offlinePay.cashTag') })}</li>
-                <li>{t('offlinePay.step2Prefix')} <strong>{orderNumber}</strong> {t('offlinePay.step2Suffix')}</li>
+                <li>{t('offlinePay.step2Prefix')} <strong>{memo}</strong> {t('offlinePay.step2Suffix')}</li>
                 <li>{t('offlinePay.step3', { method: isZelle ? t('offlinePay.zelle') : t('offlinePay.cashApp') })}</li>
                 <li>{t('offlinePay.step4')}</li>
               </ol>

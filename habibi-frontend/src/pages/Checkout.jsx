@@ -2672,7 +2672,7 @@ const Checkout = () => {
         <OfflinePayModal
           method={paymentMethod}
           amount={total}
-          orderNumber={pendingOrderNum}
+          memo={[receiverName.trim(), customerPhone.replace(/\D/g, '').slice(-4)].filter(Boolean).join(' ') || 'Your name'}
           onConfirm={handleOfflineConfirm}
           onClose={() => setShowOfflineModal(false)}
         />
