@@ -666,12 +666,14 @@ export default function MenuItemModal({
       selectedUniversal: universalSel,
     });
 
+    // Extras are picked per dish: 2 wraps with "Add a Drink" = 2 drinks, which is
+    // what the button total (unitPrice * qty) already showed.
     // Universal Make it a Meal! / Add a Drink → separate cart entries (tagged with parentCartKey)
-    mealDrinkCartItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
+    mealDrinkCartItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
     // Universal More Meat → separate cart entries, same treatment as Meal/Drink
-    moreMeatCartItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
+    moreMeatCartItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
     // DB global group Make it a Meal!(9002) / Add a Drink(9003) → separate cart entries
-    addonMealItems.forEach(mi => emit({ ...mi, parentCartKey: parentKey }));
+    addonMealItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
 
     if (onAddOverride) onAddOverride(itemsToEmit);
     setAdded(true);
