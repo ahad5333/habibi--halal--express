@@ -32,12 +32,34 @@
 .hb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .hb-hint { font-size: 0.75rem; color: var(--color-text-muted); margin: 0.35rem 0 0; line-height: 1.45; }
 
-.hb-drop { border: 2px dashed var(--color-border); border-radius: 12px; aspect-ratio: 1200 / 520; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; overflow: hidden; color: var(--color-text-muted); font-size: 0.85rem; transition: border-color 0.2s; }
+.hb-drop { border: 2px dashed var(--color-border); border-radius: 12px; aspect-ratio: 1200 / 520; max-height: 180px; max-width: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; overflow: hidden; color: var(--color-text-muted); font-size: 0.85rem; transition: border-color 0.2s; }
 .hb-drop:hover { border-color: var(--color-primary); }
 .hb-drop img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .hb-toggle { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.95rem; border-radius: 99px; border: 1px solid var(--color-border); background: var(--color-surface-2); color: var(--color-text-muted); cursor: pointer; }
 .hb-toggle.on { background: var(--color-primary-dim); border-color: var(--color-primary); color: var(--color-primary); }
+
+/* Design picker */
+.hb-seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; }
+.hb-seg button { padding: 0.5rem 0.9rem; font-size: 0.82rem; font-weight: 700; background: transparent; color: var(--color-text-muted); border: 0; cursor: pointer; }
+.hb-seg button.on { background: var(--color-primary-dim); color: var(--color-primary); }
+
+/* App preview (same proportions as the app card: height = 46% of width) */
+.hb-pv { width: 100%; max-width: 360px; aspect-ratio: 1 / 0.46; border-radius: 16px; overflow: hidden; display: flex; background: #1c1c1c; }
+.hb-pv--img img, .hb-pv-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hb-pv--img span, .hb-pv-photo span { margin: auto; font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+.hb-pv--img { align-items: center; justify-content: center; }
+.hb-pv-panel { flex: 1; padding: 14px; display: flex; flex-direction: column; justify-content: center; gap: 5px; min-width: 0; }
+.hb-pv-head { font-weight: 800; font-size: 16px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hb-pv-sub { font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hb-pv-cta { align-self: flex-start; margin-top: 4px; padding: 6px 13px; border-radius: 18px; background: #F97316; color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.hb-pv-photo { width: 42%; display: flex; background: rgba(0,0,0,0.15); }
+
+/* Colour swatches */
+.hb-colors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.hb-color { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); cursor: pointer; padding: 0; }
+.hb-color.on { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-dim); }
+.hb-colors input[type=color] { width: 30px; height: 30px; border: 0; padding: 0; background: none; cursor: pointer; }
 
 @media (max-width: 640px) {
   .hb-page { padding: 1rem; }

@@ -2322,6 +2322,12 @@ const seedDefaults = async () => {
       updated_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // DoorDash-style "card" banners: coloured text panel + food photo, drawn by
+  // the app (sharp text, no poster design needed). 'image' = a finished poster.
+  await pool.query(`ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS style VARCHAR(10) NOT NULL DEFAULT 'image'`);
+  await pool.query(`ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS subtitle VARCHAR(160)`);
+  await pool.query(`ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS cta_label VARCHAR(30)`);
+  await pool.query(`ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS bg_color VARCHAR(7)`);
 
   // Seed default admin user — password MUST be supplied via SEED_ADMIN_PASSWORD env var
   const adminCheck = await pool.query("SELECT id FROM users WHERE email = $1", ['admin@habibihe.com']);

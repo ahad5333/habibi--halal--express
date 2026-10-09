@@ -1,4 +1,6 @@
 // Home Banners -- the poster carousel at the top of the app's Home screen.
+// Two designs: a DoorDash-style card the app draws (coloured panel with
+// headline, text and button + a food photo) or a finished poster image.
 // Upload a poster, choose what tapping it opens, optionally give it a start
 // and end time (New York time) so a sale's posters go up and come down on
 // their own. Backend: bannersController.js (admin only).
@@ -19,7 +21,26 @@ const LINKS = [
   { v: 'item', label: 'A menu item' },
   { v: 'url', label: 'A web link' },
 ];
-const EMPTY = { title: '', link_type: 'none', link_value: '', starts_at: '', ends_at: '', sort_order: 0, is_active: true };
+const EMPTY = { style: 'card', title: '', subtitle: '', cta_label: '', bg_color: '#FDECC8', link_type: 'none', link_value: '', starts_at: '', ends_at: '', sort_order: 0, is_active: true };
+// Panel colours that work with the brand and stay readable.
+const COLORS = ['#FDECC8', '#FFE1CC', '#E3F1E6', '#E6EEF8', '#F97316', '#173326', '#2A1A0E', '#111111'];
+const isLight = hex => { const n = parseInt(hex.slice(1), 16); return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150; };
+
+// What the card looks like in the app (same layout as PromoCarousel.tsx).
+function CardPreview({ form, preview }) {
+  const light = isLight(form.bg_color || '#1c1c1c');
+  if (form.style !== 'card') return <div className="hb-pv hb-pv--img">{preview ? <img src={preview} alt="" /> : <span>Poster preview</span>}</div>;
+  return (
+    <div className="hb-pv" style={{ background: form.bg_color || '#1c1c1c' }}>
+      <div className="hb-pv-panel">
+        <div className="hb-pv-head" style={{ color: light ? '#111' : '#fff' }}>{form.title || 'Headline'}</div>
+        {form.subtitle && <div className="hb-pv-sub" style={{ color: light ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.78)' }}>{form.subtitle}</div>}
+        {form.cta_label && form.link_type !== 'none' && <span className="hb-pv-cta">{form.cta_label}</span>}
+      </div>
+      <div className="hb-pv-photo">{preview ? <img src={preview} alt="" /> : <span>Photo</span>}</div>
+    </div>
+  );
+}
 
 const nyNice = s => (s ? new Date(`${s}:00`).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 
@@ -59,7 +80,7 @@ export default function HomeBanners() {
   const openNew = () => { setEditing(null); setForm(EMPTY); setFile(null); setPreview(''); setError(''); setModal(true); };
   const openEdit = b => {
     setEditing(b);
-    setForm({ title: b.title, link_type: b.link_type, link_value: b.link_value || '', starts_at: b.starts_at || '', ends_at: b.ends_at || '', sort_order: b.sort_order || 0, is_active: b.is_active });
+    setForm({ style: b.style || 'image', subtitle: b.subtitle || '', cta_label: b.cta_label || '', bg_color: b.bg_color || '#FDECC8', title: b.title, link_type: b.link_type, link_value: b.link_value || '', starts_at: b.starts_at || '', ends_at: b.ends_at || '', sort_order: b.sort_order || 0, is_active: b.is_active });
     setFile(null); setPreview(img(b.image_url)); setError(''); setModal(true);
   };
   const close = () => { setModal(false); setEditing(null); };
@@ -67,7 +88,7 @@ export default function HomeBanners() {
 
   const save = async () => {
     if (!form.title.trim()) return setError('Give the banner a name');
-    if (!editing && !file) return setError('Upload a poster image');
+    if (!editing && !file) return setError(form.style === 'card' ? 'Upload a food photo' : 'Upload a poster image');
     if (form.link_type !== 'none' && !String(form.link_value).trim()) return setError('Choose what the banner opens');
     setSaving(true); setError('');
     try {
@@ -145,21 +166,58 @@ export default function HomeBanners() {
               {error && <div className="hb-error">{error}</div>}
 
               <div className="field">
-                <label className="label">Poster *</label>
+                <label className="label">Design</label>
+                <div className="hb-seg">
+                  <button type="button" className={form.style === 'card' ? 'on' : ''} onClick={() => set('style', 'card')}>Text + photo card</button>
+                  <button type="button" className={form.style === 'image' ? 'on' : ''} onClick={() => set('style', 'image')}>Finished poster image</button>
+                </div>
+                <p className="hb-hint">{form.style === 'card' ? 'Like DoorDash: you type the words, the app draws them sharp next to a food photo. Nothing to design.' : 'A ready-made poster with the words already on it.'}</p>
+              </div>
+
+              <div className="field">
+                <label className="label">Preview in the app</label>
+                <CardPreview form={form} preview={preview} />
+              </div>
+
+              <div className="field">
+                <label className="label">{form.style === 'card' ? 'Food photo *' : 'Poster *'}</label>
                 <div className="hb-drop" onClick={() => fileRef.current?.click()}>
                   {preview ? <img src={preview} alt="Poster preview" /> : (
-                    <><Upload size={24} style={{ opacity: 0.4 }} /><span>Click to upload the poster</span></>
+                    <><Upload size={24} style={{ opacity: 0.4 }} /><span>Click to upload the {form.style === 'card' ? 'food photo' : 'poster'}</span></>
                   )}
                 </div>
-                <p className="hb-hint">Wide poster, about 1200 × 520 px (JPG, PNG or WebP, up to 5 MB). Keep words big and short. The phone shows it with rounded corners, and the edges can be cropped slightly.</p>
+                <p className="hb-hint">{form.style === 'card'
+                  ? 'A food photo; it fills the right side of the card (about 600 × 600 px is plenty). JPG, PNG or WebP, up to 5 MB.'
+                  : 'Wide poster, about 1200 × 520 px (JPG, PNG or WebP, up to 5 MB). Keep words big and short. The phone shows it with rounded corners, and the edges can be cropped slightly.'}</p>
                 <input type="file" ref={fileRef} accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={pick} />
               </div>
 
               <div className="field">
-                <label className="label">Name *</label>
-                <input className="input" maxLength={120} placeholder="e.g. Free delivery weekend" value={form.title} onChange={e => set('title', e.target.value)} />
-                <p className="hb-hint">For you, and read aloud to blind customers by their phone. Describe what the poster says.</p>
+                <label className="label">{form.style === 'card' ? 'Headline *' : 'Name *'}</label>
+                <input className="input" maxLength={form.style === 'card' ? 60 : 120} placeholder="e.g. Free delivery on $30+" value={form.title} onChange={e => set('title', e.target.value)} />
+                <p className="hb-hint">{form.style === 'card' ? 'Big bold line, two lines at most in the app.' : 'For you, and read aloud to blind customers by their phone. Describe what the poster says.'}</p>
               </div>
+
+              {form.style === 'card' && (<>
+                <div className="field">
+                  <label className="label">Text</label>
+                  <input className="input" maxLength={160} placeholder="e.g. Use code FREESHIP at checkout." value={form.subtitle} onChange={e => set('subtitle', e.target.value)} />
+                </div>
+                <div className="hb-grid">
+                  <div className="field">
+                    <label className="label">Button</label>
+                    <input className="input" maxLength={30} placeholder="e.g. Order now" value={form.cta_label} onChange={e => set('cta_label', e.target.value)} />
+                    <p className="hb-hint">Hidden when the banner opens nothing.</p>
+                  </div>
+                  <div className="field">
+                    <label className="label">Background colour</label>
+                    <div className="hb-colors">
+                      {COLORS.map(c => <button key={c} type="button" title={c} className={`hb-color${form.bg_color === c ? ' on' : ''}`} style={{ background: c }} onClick={() => set('bg_color', c)} />)}
+                      <input type="color" value={form.bg_color || '#FDECC8'} onChange={e => set('bg_color', e.target.value)} title="Any colour" />
+                    </div>
+                  </div>
+                </div>
+              </>)}
 
               <div className="hb-grid">
                 <div className="field">
@@ -171,7 +229,14 @@ export default function HomeBanners() {
                 <div className="field">
                   {form.link_type === 'offer' && (<>
                     <label className="label">Offer code</label>
-                    <input className="input" list="hb-offers" placeholder="e.g. FREESHIP" value={form.link_value} onChange={e => set('link_value', e.target.value.toUpperCase())} />
+                    <input className="input" list="hb-offers" placeholder="e.g. FREESHIP" value={form.link_value} onChange={e => {
+                      const code = e.target.value.toUpperCase();
+                      // Fill an empty card from the real offer's own wording.
+                      const o = offers.find(x => x.code === code);
+                      setForm(f => (o && f.style === 'card'
+                        ? { ...f, link_value: code, title: f.title || o.title || '', subtitle: f.subtitle || o.description || '', cta_label: f.cta_label || `Use ${code}` }
+                        : { ...f, link_value: code }));
+                    }} />
                     <datalist id="hb-offers">{offers.map(o => <option key={o.code} value={o.code}>{o.title}</option>)}</datalist>
                   </>)}
                   {form.link_type === 'category' && (<>

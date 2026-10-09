@@ -8,6 +8,12 @@
 // their own. Times are entered and shown in New York time (the business's
 // clock); stored as timestamptz.
 //
+// Two designs (style):
+//   image -> a finished poster picture (about 1200x520)
+//   card  -> the app draws it, DoorDash-style: a coloured panel (bg_color)
+//            with the title as headline, subtitle, a button (cta_label) and the
+//            uploaded food photo on the right. Sharp text, no poster to design.
+//
 // Tap actions (link_type -> link_value):
 //   none     -> nothing
 //   offer    -> a coupon code; the app saves it for checkout (the server still
@@ -43,9 +49,22 @@ function cleanLink(type, value) {
   return { t, v: t === 'offer' ? v.toUpperCase() : v };
 }
 
+function cleanCard(b, cur = {}) {
+  const pick = (k, d) => (b[k] !== undefined ? b[k] : cur[k] ?? d);
+  const style = pick('style', 'image') === 'card' ? 'card' : 'image';
+  const subtitle = String(pick('subtitle', '') || '').trim();
+  const cta = String(pick('cta_label', '') || '').trim();
+  const bg = String(pick('bg_color', '') || '').trim();
+  if (subtitle.length > 160) throw new Error('Text is too long (160 characters max)');
+  if (cta.length > 30) throw new Error('Button text is too long (30 characters max)');
+  if (bg && !/^#[0-9a-f]{6}$/i.test(bg)) throw new Error('Pick a background colour');
+  return { style, subtitle: subtitle || null, cta: cta || null, bg: bg || null };
+}
+
 const imageFrom = f => (f ? (f.path?.startsWith('http') ? f.path : `/uploads/menus/${f.filename}`) : null);
 
 const ADMIN_COLS = `id, title, image_url, link_type, link_value, sort_order, is_active, created_at,
+  style, subtitle, cta_label, bg_color,
   to_char(starts_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD"T"HH24:MI') AS starts_at,
   to_char(ends_at   AT TIME ZONE '${TZ}', 'YYYY-MM-DD"T"HH24:MI') AS ends_at,
   (is_active AND (starts_at IS NULL OR starts_at <= NOW()) AND (ends_at IS NULL OR ends_at > NOW())) AS live_now`;
@@ -54,7 +73,7 @@ const ADMIN_COLS = `id, title, image_url, link_type, link_value, sort_order, is_
 exports.getPublicBanners = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, title, image_url, link_type, link_value FROM home_banners
+      `SELECT id, title, image_url, link_type, link_value, style, subtitle, cta_label, bg_color FROM home_banners
         WHERE is_active AND (starts_at IS NULL OR starts_at <= NOW()) AND (ends_at IS NULL OR ends_at > NOW())
         ORDER BY sort_order, id LIMIT ${MAX_PUBLIC}`);
     res.set('Cache-Control', 'public, max-age=60');
@@ -82,15 +101,16 @@ exports.createBanner = async (req, res) => {
     if (title.length > 120) return res.status(400).json({ message: 'Name is too long (120 characters max)' });
     const image_url = imageFrom(req.file);
     if (!image_url) return res.status(400).json({ message: 'Upload a poster image' });
-    let link, starts, ends;
-    try { link = cleanLink(req.body.link_type, req.body.link_value); starts = parseNyLocal(req.body.starts_at) ?? null; ends = parseNyLocal(req.body.ends_at) ?? null; }
+    let link, starts, ends, card;
+    try { link = cleanLink(req.body.link_type, req.body.link_value); starts = parseNyLocal(req.body.starts_at) ?? null; ends = parseNyLocal(req.body.ends_at) ?? null; card = cleanCard(req.body); }
     catch (e) { return res.status(400).json({ message: e.message }); }
     if (starts && ends && ends <= starts) return res.status(400).json({ message: 'The end time must be after the start time' });
     const { rows } = await pool.query(
-      `INSERT INTO home_banners (title, image_url, link_type, link_value, starts_at, ends_at, sort_order, is_active)
-       VALUES ($1, $2, $3, $4, $5::timestamp AT TIME ZONE '${TZ}', $6::timestamp AT TIME ZONE '${TZ}', $7, $8)
+      `INSERT INTO home_banners (title, image_url, link_type, link_value, starts_at, ends_at, sort_order, is_active, style, subtitle, cta_label, bg_color)
+       VALUES ($1, $2, $3, $4, $5::timestamp AT TIME ZONE '${TZ}', $6::timestamp AT TIME ZONE '${TZ}', $7, $8, $9, $10, $11, $12)
        RETURNING id`,
-      [title, image_url, link.t, link.v, starts, ends, parseInt(req.body.sort_order, 10) || 0, req.body.is_active !== 'false']);
+      [title, image_url, link.t, link.v, starts, ends, parseInt(req.body.sort_order, 10) || 0, req.body.is_active !== 'false',
+        card.style, card.subtitle, card.cta, card.bg]);
     const { rows: out } = await pool.query(`SELECT ${ADMIN_COLS} FROM home_banners WHERE id = $1`, [rows[0].id]);
     res.status(201).json(out[0]);
   } catch (err) {
@@ -108,8 +128,9 @@ exports.updateBanner = async (req, res) => {
     const title = b.title !== undefined ? String(b.title).trim() : c.title;
     if (!title) return res.status(400).json({ message: 'Give the banner a name' });
     if (title.length > 120) return res.status(400).json({ message: 'Name is too long (120 characters max)' });
-    let link, starts, ends;
+    let link, starts, ends, card;
     try {
+      card = cleanCard(b, c);
       link = b.link_type !== undefined ? cleanLink(b.link_type, b.link_value) : { t: c.link_type, v: c.link_value };
       starts = b.starts_at !== undefined ? parseNyLocal(b.starts_at) : c.starts_at;
       ends = b.ends_at !== undefined ? parseNyLocal(b.ends_at) : c.ends_at;
@@ -118,11 +139,12 @@ exports.updateBanner = async (req, res) => {
     await pool.query(
       `UPDATE home_banners SET title = $1, image_url = $2, link_type = $3, link_value = $4,
          starts_at = $5::timestamp AT TIME ZONE '${TZ}', ends_at = $6::timestamp AT TIME ZONE '${TZ}',
-         sort_order = $7, is_active = $8, updated_at = NOW()
+         sort_order = $7, is_active = $8, style = $10, subtitle = $11, cta_label = $12, bg_color = $13, updated_at = NOW()
        WHERE id = $9`,
       [title, imageFrom(req.file) || c.image_url, link.t, link.v, starts || null, ends || null,
         b.sort_order !== undefined ? parseInt(b.sort_order, 10) || 0 : c.sort_order,
-        b.is_active !== undefined ? b.is_active !== 'false' && b.is_active !== false : c.is_active, id]);
+        b.is_active !== undefined ? b.is_active !== 'false' && b.is_active !== false : c.is_active, id,
+        card.style, card.subtitle, card.cta, card.bg]);
     const { rows: out } = await pool.query(`SELECT ${ADMIN_COLS} FROM home_banners WHERE id = $1`, [id]);
     res.json(out[0]);
   } catch (err) {
