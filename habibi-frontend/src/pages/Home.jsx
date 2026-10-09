@@ -28,50 +28,9 @@ const FEAST_VIDEOS = [
 ];
 
 
-const EDITORIAL_REVIEWS = [
-  {
-    stars: 5,
-    text: "The best beef bowls in New York. Hands down. The mint teas are a plus. A staple in my weekly. A true authentic experience.",
-    logo: "/images/reviews/logo_1.webp",
-    name: "NY Foodie Mag",
-    type: "Editorial Review"
-  },
-  {
-    stars: 5,
-    text: "Incredible service and even better food. The atmosphere is sophisticated and welcoming... come here at least once a week!",
-    logo: "/images/reviews/logo_2.webp",
-    name: "Local Eats Guide",
-    type: "Featured Spot"
-  },
-  {
-    stars: 5,
-    text: "Finally a halal place that serves as much style and attention to details. An absolute sensory experience.",
-    logo: "/images/reviews/logo_3.webp",
-    name: "Culinary Times",
-    type: "Critics Choice"
-  },
-  {
-    stars: 5,
-    text: "Quick delivery, perfectly packaged, and the flavors remain as vibrant as dining in. Top tier service!",
-    logo: "/images/reviews/logo_4.webp",
-    name: "Express App",
-    type: "Top Rated"
-  },
-  {
-    stars: 5,
-    text: "A masterclass in modern Mediterranean cuisine. The fresh ingredients and bold spices make every dish unforgettable.",
-    logo: "/images/reviews/logo_5.webp",
-    name: "The Daily Courier",
-    type: "Weekly Feature"
-  },
-  {
-    stars: 5,
-    text: "Obsessed with their personalized bowls! You can literally taste the quality and love put into the prep.",
-    logo: "/images/reviews/logo_6.webp",
-    name: "Chef's Blog",
-    type: "Food Critic"
-  }
-];
+// The 'Wall of Love' quotes credited to made-up publications were removed
+// (invented endorsements: FTC 2024 fake-reviews rule). Real reviews only.
+
 
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -109,11 +68,11 @@ const FeastVideo = ({ src }) => {
   );
 };
 
+// Real numbers only (500+ items / 10K+ customers were not true). Halal is fixed
+// text: a counter passing "79% halal" read badly.
 const STATS = [
-  { value: 500,  suffix: '+',  labelKey: 'home.stats.menuItems',      icon: '🍽️' },
-  { value: 10,   suffix: 'K+', labelKey: 'home.stats.happyCustomers', icon: '❤️' },
   { value: 0,    suffix: '',   labelKey: 'home.stats.bronxLocations', icon: '📍' }, // the CPanel store count
-  { value: 100,  suffix: '%',  labelKey: 'home.stats.halalCertified', icon: '✅' },
+  { value: 100,  suffix: '%',  labelKey: 'home.stats.halalCertified', icon: '✅', fixed: '100%' },
 ];
 
 function useCountUp(target, duration = 1800, start = false) {
@@ -132,14 +91,14 @@ function useCountUp(target, duration = 1800, start = false) {
   return count;
 }
 
-function StatCard({ icon, value, suffix, labelKey, animate }) {
+function StatCard({ icon, value, suffix, labelKey, animate, fixed }) {
   const { t } = useTranslation();
-  const count = useCountUp(value, 1600, animate);
+  const count = useCountUp(fixed ? 0 : value, 1600, animate && !fixed);
   return (
     <div className="stat-card">
       <span className="stat-icon">{icon}</span>
       <div className="stat-value">
-        {count}{suffix}
+        {fixed || <>{count}{suffix}</>}
       </div>
       <div className="stat-label">{t(labelKey)}</div>
     </div>
@@ -599,42 +558,6 @@ const Home = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          WALL OF LOVE (REVIEWS)
-      ═══════════════════════════════════════════════════════ */}
-      <section className="section reviews-section">
-        <div className="container text-center">
-          <p className="section-eyebrow text-gold">{t('home.reviews.fansEyebrow')}</p>
-          <h2 className="heading-2 mb-5">{t('home.reviews.wallOfLove')}</h2>
-          
-          <div className="reviews-marquee-container">
-            <div className="reviews-marquee-content">
-              {Array.from({ length: 2 }).map((_, loopIdx) => (
-                <React.Fragment key={loopIdx}>
-                  {EDITORIAL_REVIEWS.map((rev, idx) => (
-                    <div key={`${loopIdx}-${idx}`} className="review-card">
-                      <div className="stars">
-                        {Array.from({ length: rev.stars }).map((_, i) => (
-                          <Star key={i} size={16} fill="#fbbf24" color="#fbbf24" />
-                        ))}
-                      </div>
-                      <p className="review-text">"{rev.text}"</p>
-                      <div className="reviewer">
-                        <img src={rev.logo} alt={rev.name} className="reviewer-img" />
-                        <div className="reviewer-info">
-                          <h4 className="reviewer-name">{rev.name}</h4>
-                          <p className="reviewer-type">{rev.type}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
           LIVE CUSTOMER REVIEWS (from backend)
       ═══════════════════════════════════════════════════════ */}
       {liveReviews.length > 0 && (
@@ -874,16 +797,13 @@ const Home = () => {
           {/* Right column — trust badges */}
           <div className="rb-right">
             <div className="rb-badges-grid">
-              <div className="rb-badge">
-                <span className="rb-badge-icon">🏆</span>
-                <p className="rb-badge-num">10K+</p>
-                <p className="rb-badge-label">{t('home.stats.happyCustomers')}</p>
-              </div>
-              <div className="rb-badge">
-                <span className="rb-badge-icon">⭐</span>
-                <p className="rb-badge-num">4.9</p>
-                <p className="rb-badge-label">{t('home.banner.averageRating')}</p>
-              </div>
+              {reviewStats && parseInt(reviewStats.total, 10) > 0 && (
+                <div className="rb-badge">
+                  <span className="rb-badge-icon">⭐</span>
+                  <p className="rb-badge-num">{parseFloat(reviewStats.avg_rating).toFixed(1)}</p>
+                  <p className="rb-badge-label">{t('home.banner.averageRating')}</p>
+                </div>
+              )}
               {stores.length > 0 && (
                 <div className="rb-badge">
                   <span className="rb-badge-icon">📍</span>
@@ -900,11 +820,6 @@ const Home = () => {
               )}
             </div>
 
-            <div className="rb-pull-quote">
-              <span className="rb-pull-quote-mark">"</span>
-              <p>The Bronx's crown jewel of authentic Halal cuisine, bold flavors, perfect every single time.</p>
-              <p className="rb-pull-quote-author">NY Foodie Magazine</p>
-            </div>
           </div>
         </div>
       </section>
