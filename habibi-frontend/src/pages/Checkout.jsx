@@ -2614,7 +2614,6 @@ const Checkout = () => {
                           <span className="tbl-full">{t('checkout.halalCertifiedFull')}</span>
                           <span className="tbl-short">{t('checkout.halalShort')}</span>
                         </span>
-                        <span className="trust-badge-sub">{t('checkout.endorsements')}</span>
                       </div>
                     </div>
                     <div className="trust-badge-sep" />
@@ -2662,7 +2661,6 @@ const Checkout = () => {
               <img src="/images/logos/halal-certified-premium.webp" alt={t('checkout.halalCertifiedFull')} className="halal-seal-img" />
               <div>
                 <p className="halal-seal-title">{t('checkout.halalCertifiedSeal')}</p>
-                <p className="halal-seal-sub">{t('checkout.premiumEndorsements')}</p>
               </div>
             </div>
           </div>
