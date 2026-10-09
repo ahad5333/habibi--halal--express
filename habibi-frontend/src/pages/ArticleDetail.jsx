@@ -170,7 +170,7 @@ export default function ArticleDetail() {
               {more.map(a => (
                 <Link key={a.slug} to={`/articles/${a.slug}`} className="article-more-card">
                   <div className="article-more-card-img">
-                    <img src={mediaSrc(a.media_url) || '/images/art-of-the-feast.webp'} alt="" loading="lazy" />
+                    <img src={mediaSrc(a.media_url) || '/images/chef-plating.webp'} alt="" loading="lazy" />
                     {a.category && <span className="article-more-card-cat">{a.category}</span>}
                   </div>
                   <div className="article-more-card-body">

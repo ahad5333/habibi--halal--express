@@ -110,7 +110,7 @@ export default function Articles() {
     category: a.category,
     dateLabel: fmtDate(a.created_at),
     readTimeLabel: readTime(a.excerpt),
-    image: mediaSrc(a.media_url) || '/images/art-of-the-feast.webp',
+    image: mediaSrc(a.media_url) || '/images/chef-plating.webp',
     excerpt: stripHtml(a.excerpt),
   }));
 

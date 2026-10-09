@@ -61,7 +61,7 @@ const CATEGORY_FALLBACKS = {
   extra:         '/images/halal-salad-v2.jpg',
   salad:         '/images/halal-salad-v2.jpg',
   'build your':  '/images/personalized-bowls.jpg',
-  special:       '/images/art-of-the-feast.jpg',
+  special:       '/images/mixed-platter.jpg', // not art-of-the-feast (wine glass)
 };
 
 const categoryFallback = (item) => {

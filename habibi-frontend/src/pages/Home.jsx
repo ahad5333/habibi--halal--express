@@ -376,7 +376,7 @@ const Home = () => {
             <div className="hero-arched-cards">
               {[
                 { src: '/images/mixed-platter.jpg',      alt: 'Bowl 1' },
-                { src: '/images/art-of-the-feast.jpg',   alt: 'Bowl 2' },
+                { src: '/images/chef-plating.jpg',       alt: 'Bowl 2' }, // not art-of-the-feast: it shows a wine glass
                 { src: '/images/personalized-bowls.jpg', alt: 'Bowl 3' },
               ].map(({ src, alt }) => (
                 <div key={alt} className="arched-card">
