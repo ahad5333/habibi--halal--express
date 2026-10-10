@@ -8,6 +8,7 @@
     "test:access": "node tests/manager-scope.test.js && node tests/manager-access.test.js",
     "test:serving": "node tests/serving-location.test.js",
     "test:phone": "node tests/phone-auth.test.js",
+    "test:recovery": "node tests/sms-recovery.test.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",
     "format": "prettier --write ."

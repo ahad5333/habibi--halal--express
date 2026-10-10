@@ -12,6 +12,7 @@ const { getAlertPhone } = require('../utils/alertPhone');
 // the MFA gate off that narrower set would have let managers in on a password
 // alone.
 const { PANEL_ROLES: PRIVILEGED_ROLES } = require('../middleware/managerMiddleware');
+const { revokeToken } = require('../middleware/authMiddleware');
 const { APP_SESSION } = require('./phoneAuthController');
 
 function setAuthCookie(res, token, maxAgeMs) {
@@ -686,6 +687,50 @@ const verifySmsRecoveryCode = async (req, res) => {
   }
 };
 
+/* ── Phone recovery: choose a new password ─────────────────────────
+   Only with the 15-minute token /sms-recovery/verify issues (sms_verified),
+   and only once: that token is revoked and a normal session issued. Before
+   this, phone recovery gave 15 minutes signed in and no way to set a new
+   password (changing it needs the current one). Same rules as resetPassword. */
+const setRecoveredPassword = async (req, res) => {
+  try {
+    if (req.user?.sms_verified !== true) {
+      return res.status(403).json({ message: 'Please verify your phone number first.' });
+    }
+    const password = req.body?.password;
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+    if (!/[0-9]/.test(password)) return res.status(400).json({ message: 'Password must contain at least one number.' });
+
+    const user = (await pool.query(
+      'SELECT id, name, email, role, is_partner, partner_id, is_active FROM users WHERE id = $1', [req.user.id]
+    )).rows[0];
+    if (!user || user.is_active === false || PRIVILEGED_ROLES.has(user.role)) {
+      return res.status(403).json({ message: 'This account cannot be recovered by phone.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await pool.query(
+      `UPDATE users SET password_hash = $1, password_set = TRUE, reset_token = NULL, reset_token_expires = NULL,
+              login_attempts = 0, login_lockout_until = NULL
+        WHERE id = $2`,
+      [hashedPassword, user.id]
+    );
+    revokeToken(req.user.jti, req.user.exp);
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role, is_partner: !!user.is_partner, partner_id: user.partner_id || null, jti: crypto.randomUUID() },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    setAuthCookie(res, token, 24 * 60 * 60 * 1000);
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch (error) {
+    res.status(500).json(safeError(error));
+  }
+};
+
 /* ── Phone signup OTP verification ──────────────────────────────── */
 const verifyPhoneOtp = async (req, res) => {
   try {
@@ -900,6 +945,7 @@ module.exports = {
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
+  setRecoveredPassword,
   socialAuth,
   changeAdminPassword,
 };

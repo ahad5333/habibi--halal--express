@@ -69,6 +69,7 @@ const {
   getMe,
   sendSmsRecoveryCode,
   verifySmsRecoveryCode,
+  setRecoveredPassword,
   socialAuth,
 } = require("../controllers/authController");
 const { startPhoneLogin, verifyPhoneLogin, completePhoneSignup } = require('../controllers/phoneAuthController');
@@ -131,6 +132,7 @@ router.post("/verify-phone-otp", smsVerifyLimiter, body('phone').trim().notEmpty
 
 // SMS 5-digit recovery code
 router.post("/sms-recovery/send",   smsLimiter,       body('phone').trim().notEmpty().withMessage('Phone is required.'), handleValidation, sendSmsRecoveryCode);
+router.post("/sms-recovery/set-password", smsVerifyLimiter, protect, setRecoveredPassword);
 router.post("/sms-recovery/verify", smsVerifyLimiter, body('phone').trim().notEmpty(), body('code').trim().isLength({ min: 5, max: 5 }).withMessage('Code must be 5 digits.'), handleValidation, verifySmsRecoveryCode);
 
 // Phone sign-in (customer app) — text a code, then sign in or create the account.

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Phone, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, Phone, Lock, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,10 @@ export default function ForgotPassword() {
   const [codeSent, setCodeSent] = useState(false);
   const [code,     setCode]    = useState('');
   const [verified, setVerified] = useState(false);
+  // After the code: choose a new password (the recovery sign-in lasts 15 min).
+  const [newPw,    setNewPw]   = useState('');
+  const [newPw2,   setNewPw2]  = useState('');
+  const [pwDone,   setPwDone]  = useState(false);
 
   const [loading,  setLoading] = useState(false);
   const [error,    setError]   = useState('');
@@ -63,9 +67,24 @@ export default function ForgotPassword() {
       // isLoggedIn — the user got redirected to /account still logged out.
       socialLogin(data);
       setVerified(true);
-      setTimeout(() => navigate('/account'), 2000);
     } catch (err) {
       setError(err.message || t('auth.errInvalidOrExpiredCode'));
+    } finally { setLoading(false); }
+  };
+
+  const handleSetPassword = async (e) => {
+    e.preventDefault();
+    if (newPw.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!/[0-9]/.test(newPw)) { setError('Password must contain at least one number.'); return; }
+    if (newPw !== newPw2) { setError('Passwords do not match.'); return; }
+    setLoading(true); setError('');
+    try {
+      const data = await authAPI.setRecoveredPassword(newPw);
+      socialLogin(data);
+      setPwDone(true);
+      setTimeout(() => navigate('/account'), 1500);
+    } catch (err) {
+      setError(err.message || t('auth.errSomethingWentWrong'));
     } finally { setLoading(false); }
   };
 
@@ -122,12 +141,42 @@ export default function ForgotPassword() {
 
         {/* ── Phone / SMS flow ── */}
         {tab === 'phone' && (
-          verified ? (
+          pwDone ? (
             <div className="fp-success">
               <CheckCircle size={48} className="fp-success-icon" />
-              <h2>{t('auth.identityVerified')}</h2>
+              <h2>Password updated</h2>
               <p>{t('auth.redirectingToAccount')}</p>
             </div>
+          ) : verified ? (
+            <>
+              <h1 className="fp-title">{t('auth.identityVerified')}</h1>
+              <p className="fp-sub">Choose a new password so you can sign in next time.</p>
+              {error && <div className="fp-error">⚠ {error}</div>}
+              <form onSubmit={handleSetPassword} className="fp-form">
+                <div className="fp-field">
+                  <label>New password</label>
+                  <div className="fp-input-wrap">
+                    <Lock size={15} className="fp-input-icon" />
+                    <input aria-label="New password" type="password" autoComplete="new-password" placeholder="At least 8 characters, with a number"
+                      value={newPw} onChange={e => setNewPw(e.target.value)} required autoFocus />
+                  </div>
+                </div>
+                <div className="fp-field">
+                  <label>Confirm new password</label>
+                  <div className="fp-input-wrap">
+                    <Lock size={15} className="fp-input-icon" />
+                    <input aria-label="Confirm new password" type="password" autoComplete="new-password"
+                      value={newPw2} onChange={e => setNewPw2(e.target.value)} required />
+                  </div>
+                </div>
+                <button type="submit" className="fp-btn-primary" disabled={loading}>
+                  {loading ? t('common.saving', 'Saving…') : 'Set new password'}
+                </button>
+                <button type="button" className="fp-btn-secondary" onClick={() => navigate('/account')}>
+                  Skip for now
+                </button>
+              </form>
+            </>
           ) : !codeSent ? (
             <>
               <h1 className="fp-title">{t('auth.recoverViaPhone')}</h1>

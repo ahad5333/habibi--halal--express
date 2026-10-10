@@ -1521,7 +1521,15 @@ const Account = () => {
   const initialTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(TAB_IDS.includes(initialTab) ? initialTab : 'profile');
 
-  if (loading) return null;
+  // The sign-in check can take a few seconds on a first load; show that it's
+  // working instead of a blank page (signed-out visitors then go to Log In).
+  if (loading) return (
+    <div className="account-page">
+      <div className="acct-empty" style={{ minHeight: '60vh' }} role="status" aria-label={t('common.loading', 'Loading')}>
+        <div className="acct-spinner" />
+      </div>
+    </div>
+  );
   if (!isLoggedIn) return <Navigate to="/login" replace />;
 
   return (

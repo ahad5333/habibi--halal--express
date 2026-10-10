@@ -75,6 +75,9 @@ export const authAPI = {
   /** POST /api/auth/sms-recovery/verify */
   verifySmsCode: (phone, code) =>
     request('/api/auth/sms-recovery/verify', { method: 'POST', body: JSON.stringify({ phone, code }) }),
+  /** After a phone recovery code: choose a new password (uses the recovery session once). */
+  setRecoveredPassword: (password) =>
+    request('/api/auth/sms-recovery/set-password', { method: 'POST', body: JSON.stringify({ password }) }),
 
   /** Kept for backward compat — prefer useAuth().isLoggedIn */
   isLoggedIn: () => !!localStorage.getItem('habibi_user'),
