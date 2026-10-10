@@ -26,7 +26,8 @@ const Signup = () => {
   const [signupMethod, setSignupMethod]     = useState('phone'); // 'email' | 'phone'
 
   // Phone OTP verification state
-  const [phoneOtpPending, setPhoneOtpPending] = useState(null); // { phone, name }
+  // Also arrives from the Login page's sign-up tab, which has no code screen.
+  const [phoneOtpPending, setPhoneOtpPending] = useState(() => location.state?.phoneOtp || null); // { phone, name }
   const [otp, setOtp]                         = useState('');
   const [otpLoading, setOtpLoading]           = useState(false);
   const [otpError, setOtpError]               = useState('');

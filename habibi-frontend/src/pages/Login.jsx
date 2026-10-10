@@ -131,14 +131,20 @@ const Login = () => {
     setLoading(true);
     try {
       const result = await register(name, email, password, { sms_consent: agreeSms });
+      // Phone sign-up: the server texted a 6-digit code. Without entering it the
+      // account stays unverified and is purged after 7 days, so hand over to the
+      // Sign Up page's code screen (this tab has none).
+      if (result?.requiresPhoneVerification) {
+        const qs = redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
+        navigate(`/signup${qs}`, { state: { phoneOtp: { phone: result.phone || email.trim(), name: name.trim() } } });
+        return;
+      }
       // Switch to login tab — keep email pre-filled so user doesn't have to retype
       setTab('login');
       setPassword('');
       setName('');
       if (result?.requiresVerification) {
         setSuccessMsg(t('auth.accountCreatedCheckEmail'));
-      } else if (result?.requiresPhoneVerification) {
-        setSuccessMsg(t('auth.accountCreatedCheckPhone'));
       } else {
         setSuccessMsg(t('auth.accountCreatedPleaseLoginBelow'));
       }

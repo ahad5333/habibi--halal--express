@@ -667,13 +667,17 @@ export default function MenuItemModal({
     });
 
     // Extras are picked per dish: 2 wraps with "Add a Drink" = 2 drinks, which is
-    // what the button total (unitPrice * qty) already showed.
+    // what the button total (unitPrice * qty) already showed. Each extra line's
+    // key includes its dish's key, so the same drink added with two different
+    // dishes stays two lines -- one shared line used to belong to the first
+    // dish only, and removing that dish took the other dish's drink with it.
+    const child = mi => emit({ ...mi, cartKey: `${parentKey}|${mi.cartKey ?? mi.id}`, qty: mi.qty * qty, parentCartKey: parentKey });
     // Universal Make it a Meal! / Add a Drink → separate cart entries (tagged with parentCartKey)
-    mealDrinkCartItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
+    mealDrinkCartItems.forEach(child);
     // Universal More Meat → separate cart entries, same treatment as Meal/Drink
-    moreMeatCartItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
+    moreMeatCartItems.forEach(child);
     // DB global group Make it a Meal!(9002) / Add a Drink(9003) → separate cart entries
-    addonMealItems.forEach(mi => emit({ ...mi, qty: mi.qty * qty, parentCartKey: parentKey }));
+    addonMealItems.forEach(child);
 
     if (onAddOverride) onAddOverride(itemsToEmit);
     setAdded(true);
