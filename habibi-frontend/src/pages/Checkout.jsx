@@ -1388,8 +1388,8 @@ const Checkout = () => {
           </div>
         )}
 
-        {/* Breadcrumbs */}
-        <div className="checkout-breadcrumbs">
+        {/* Breadcrumbs (steps mean nothing with an empty cart) */}
+        <div className="checkout-breadcrumbs" hidden={items.length === 0}>
           <span className="crumb active">{t('checkout.stepDetails')}</span>
           <span className="crumb-arrow">›</span>
           <span className={`crumb ${intentReady ? 'active' : ''}`}>{t('checkout.stepPayment')}</span>
@@ -1397,7 +1397,7 @@ const Checkout = () => {
           <span className="crumb">{t('checkout.stepConfirmation')}</span>
         </div>
 
-        <div className="checkout-layout">
+        <div className={`checkout-layout${items.length === 0 ? ' is-empty' : ''}`}>
 
           {/* ── Left ── */}
           <div className="checkout-main">
@@ -1665,6 +1665,9 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* Delivery, payment and the summary appear once there's something to
+                order; an empty cart shows only its empty state. */}
+            {items.length > 0 && (<>
             {/* Delivery Details */}
             <div className="checkout-section">
               <h2 className="checkout-section-title mb-6">{isDineIn ? t('checkout.yourDetails') : t('checkout.deliveryDetails')}</h2>
@@ -2369,10 +2372,12 @@ const Checkout = () => {
 
               </div>
             </div>}
+            </>)}
 
           </div>
 
           {/* ── Right — Order Summary ── */}
+          {items.length > 0 && (
           <div className="order-summary-card">
             <h3 className="summary-title">{t('checkout.summaryTitle')}</h3>
 
@@ -2664,6 +2669,7 @@ const Checkout = () => {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 

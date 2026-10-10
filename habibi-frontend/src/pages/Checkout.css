@@ -300,6 +300,9 @@
   gap: 3rem;
   align-items: flex-start;
 }
+/* Empty cart: only the empty state shows, centred at a readable width. */
+.checkout-layout.is-empty { max-width: 760px; margin-inline: auto; }
+.checkout-breadcrumbs[hidden] { display: none; }
 
 .checkout-main {
   flex: 2;
